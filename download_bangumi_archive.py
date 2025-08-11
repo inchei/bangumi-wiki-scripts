@@ -7,8 +7,8 @@ from datetime import datetime
 
 # 固定解压目标文件夹
 TARGET_FOLDER = "bangumi_archive"
-# 自动化模式标记
-AUTO_MODE = True  # 设为True时将自动执行，无需用户交互
+# 从环境变量判断是否为自动化模式（默认手动模式）
+AUTO_MODE = os.getenv("AUTO_MODE", "false").lower() == "true"
 
 def get_latest_info():
     """从aux/latest.json获取最新导出文件信息"""
@@ -131,14 +131,14 @@ def main():
     save_path = os.path.join(os.getcwd(), file_name)
     file_exists = os.path.exists(save_path)
     
-    # 自动化模式处理
+    # 自动化模式处理（无交互）
     if AUTO_MODE:
-        # 自动下载（无论是否存在）
         print("\n自动化模式: 开始下载文件...")
+        # 无论文件是否存在，都下载最新版本
         if not download_file(download_url, save_path):
             return
     else:
-        # 交互模式处理
+        # 手动模式处理（有交互）
         if file_exists:
             overwrite = input(f"\n文件 {file_name} 已存在，是否覆盖? (y/n): ").lower()
             if overwrite != 'y':
