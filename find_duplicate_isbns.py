@@ -3,13 +3,14 @@ import os
 import re
 import requests
 from collections import defaultdict
-from requests.exceptions import RequestException
+from datetime import datetime
 
 # 配置
 WHITE_LIST = ['9784801921436']
-AUTO_MODE = True  # 自动化模式，无交互
-DEFAULT_INPUT = "bangumi_archive/subject.jsonlines"  # 归档文件路径
-DEFAULT_OUTPUT = "duplicate_check_results.txt"  # 结果文件路径
+# 从环境变量判断是否为自动化模式（默认手动模式）
+AUTO_MODE = os.getenv("AUTO_MODE", "false").lower() == "true"
+DEFAULT_INPUT = "bangumi_archive/subject.jsonlines"
+DEFAULT_OUTPUT = "duplicate_check_results.txt"
 
 # 尝试导入可选库
 try:
@@ -24,6 +25,32 @@ try:
 except ImportError:
     has_bs4 = False
     print("错误：需安装beautifulsoup4库（pip install beautifulsoup4）")
+
+
+def get_report_page_links() -> list:
+    """获取汇报帖链接（自动化模式用环境变量，手动模式用交互输入）"""
+    if AUTO_MODE:
+        # 自动化模式：从环境变量读取
+        report_pages = os.getenv("REPORT_PAGES", "").strip()
+        if not report_pages:
+            print("自动化模式：未配置汇报帖链接（环境变量 REPORT_PAGES）")
+            return []
+        links = [link.strip() for link in report_pages.split(',') if link.strip()]
+        print(f"自动化模式：已加载 {len(links)} 个汇报帖链接")
+        return links
+    else:
+        # 手动模式：交互式输入
+        print("\n请输入汇报帖链接（每行一个，空行结束）：")
+        links = []
+        i = 1
+        while True:
+            link = input(f"汇报帖 {i}：").strip()
+            if not link:
+                print(f"已完成输入，共 {i-1} 个汇报帖链接")
+                break
+            links.append(link)
+            i += 1
+        return links
 
 
 def extract_japanese_isbns(infobox: str) -> list:
@@ -91,7 +118,6 @@ def fetch_and_extract_report_links(report_links: list) -> set:
 
 def normalize_title(title: str) -> str:
     """标准化标题，处理符号差异"""
-    # 替换全角符号为半角
     title = title.replace('？', '?').replace('！', '!').replace('，', ',').replace('。', '.')
     title = title.replace('；', ';').replace('：', ':').replace('（', '(').replace('）', ')')
     title = title.replace('【', '[').replace('】', ']').replace('“', '"').replace('”', '"')
@@ -102,7 +128,6 @@ def normalize_title(title: str) -> str:
     title = title.replace('＜', '<').replace('＞', '>').replace('？', '?').replace('／', '/')
     title = title.replace('～', '~').replace('〜', '~')
     
-    # 移除所有剩余的空格和符号
     return re.sub(r'[\s\?\!,\.\;\:\(\)\[\]\"\'<>~@#\$%\^&\*\-_\+=\{\}\|\\/]', '', title)
 
 
@@ -153,7 +178,6 @@ def find_duplicate_isbns(jsonlines_file: str, reported_links: set) -> dict:
                 if not subject_id:
                     continue
                 
-                # 使用原始名称，不优先中文名称
                 name = data.get('name', f"未知名称 (ID: {subject_id})")
                 is_series = data.get('series', False)
                 isbns = extract_japanese_isbns(data.get('infobox', ''))
@@ -190,7 +214,6 @@ def find_duplicate_isbns(jsonlines_file: str, reported_links: set) -> dict:
     if whitelisted:
         print(f"已跳过 {whitelisted} 个白名单ISBN")
     
-    # 过滤并分类
     filtered = {}
     for isbn, entries in isbn_map.items():
         if len(entries) >= 2:
@@ -210,11 +233,11 @@ def main():
         
     print(f"当前白名单: {', '.join(WHITE_LIST) if WHITE_LIST else '无'}")
     
-    # 自动化模式使用预设的汇报链接或空列表
-    report_links = []  # 可以在这里添加固定的汇报页面链接
+    # 获取汇报帖链接（自动/手动模式分别处理）
+    report_links = get_report_page_links()
     reported_links = fetch_and_extract_report_links(report_links)
     
-    # 自动化模式使用默认路径
+    # 路径处理（自动模式用默认路径，手动模式允许输入）
     if AUTO_MODE:
         input_file = DEFAULT_INPUT
         output_file = DEFAULT_OUTPUT
@@ -225,12 +248,15 @@ def main():
         input_file = input("\nJSONLines文件路径（默认subject.jsonlines）: ").strip() or "subject.jsonlines"
         output_file = input("结果输出路径（默认duplicate_check_results.txt）: ").strip() or "duplicate_check_results.txt"
     
-    # 初始化输出文件
     with open(output_file, 'w', encoding='utf-8') as f:
         f.write("重复ISBN检查结果\n==================\n")
         f.write(f"检查时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         if WHITE_LIST:
-            f.write(f"白名单: {', '.join(WHITE_LIST)}\n\n")
+            f.write(f"白名单: {', '.join(WHITE_LIST)}\n")
+        if report_links:
+            f.write(f"汇报帖链接: {', '.join(report_links)}\n\n")
+        else:
+            f.write("\n")
     
     duplicates = find_duplicate_isbns(input_file, reported_links)
     
@@ -241,7 +267,6 @@ def main():
             f.write(msg + '\n')
         return
     
-    # 统计信息
     stats = defaultdict(int)
     for data in duplicates.values():
         stats[data["category"]] += 1
@@ -251,7 +276,6 @@ def main():
     total_reported = sum(len(d["reported"]) for d in duplicates.values())
     total_unreported = sum(len(d["unreported"]) for d in duplicates.values())
     
-    # 控制台输出
     print("\n===== 结果总结 =====")
     print(f"1. 重复ISBN: {total_isbns} 个")
     print(f"2. 重复条目总数: {total_entries} 个")
@@ -261,9 +285,7 @@ def main():
     for cat, cnt in stats.items():
         print(f"   - {cat}: {cnt} 组")
     
-    # 写入文件
     with open(output_file, 'a', encoding='utf-8') as f:
-        # 未汇报条目
         f.write("\n===== 未汇报的重复条目 ====\n\n")
         unreported = defaultdict(list)
         for isbn, d in duplicates.items():
@@ -277,10 +299,9 @@ def main():
                 for e in d["unreported"]:
                     tags = f"（版本）" if e["is_version"] else ""
                     tags += f"（系列）" if e["series"] else ""
-                    f.write(f"{e['url']}{tags}\n")
+                    f.write(f"{e['url']} - {e['name']}{tags}\n")
                 f.write('\n')
         
-        # 已汇报条目
         f.write("\n===== 已汇报的重复条目 ====\n\n")
         reported = defaultdict(list)
         for isbn, d in duplicates.items():
@@ -294,10 +315,9 @@ def main():
                 for e in d["reported"]:
                     tags = f"（版本）" if e["is_version"] else ""
                     tags += f"（系列）" if e["series"] else ""
-                    f.write(f"{e['url']}{tags}\n")
+                    f.write(f"{e['url']} - {e['name']}{tags}\n")
                 f.write('\n')
         
-        # 最终统计
         f.write("\n===== 最终统计 =====\n")
         f.write(f"重复ISBN: {total_isbns} 个\n")
         f.write(f"总重复条目: {total_entries} 个\n")
@@ -311,6 +331,5 @@ def main():
 
 
 if __name__ == "__main__":
-    from datetime import datetime  # 仅在主程序运行时导入
     main()
     
