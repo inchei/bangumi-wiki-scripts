@@ -13,6 +13,7 @@ env:
     https://bgm.tv/group/topic/431206,
     https://bgm.tv/group/topic/431529,
     https://bgm.tv/group/topic/423940
+  AUTO_MODE: "true"
 
 jobs:
   check_duplicates:
@@ -39,9 +40,6 @@ jobs:
       
       - name: 执行重复条目检查
         run: python check_reported_duplicates.py
-        env:
-          REPORT_PAGES: ${{ env.REPORT_PAGES }}
-          AUTO_MODE: "true"
       
       - name: 上传检查结果
         uses: actions/upload-artifact@v4
