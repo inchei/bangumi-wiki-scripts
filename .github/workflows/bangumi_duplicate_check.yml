@@ -39,7 +39,7 @@ jobs:
         run: python download_bangumi_archive.py
       
       - name: 执行重复条目检查
-        run: python check_reported_duplicates.py
+        run: python find_duplicate_isbns.py
       
       - name: 上传检查结果
         uses: actions/upload-artifact@v4
