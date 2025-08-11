@@ -1,30 +1,32 @@
 重复ISBN检查结果
 ==================
-白名单ISBN: 9784801921436
+检查时间: 2025-08-11 13:59:26
+白名单: 9784801921436
 
-===== 未汇报的重复条目 =====
 
-【疑似不同作品误填】(198组)
+===== 未汇报的重复条目 ====
+
+【疑似不同作品误填】(179组)
 ----------------------------------------
 ISBN 1: 9784044712044
 https://bgm.tv/subject/1236
 https://bgm.tv/subject/50029
 
-ISBN 2: 9784044499051
+ISBN 2: 9784087460377
+https://bgm.tv/subject/1721（版本）
+https://bgm.tv/subject/145922
+
+ISBN 3: 9784087460384
+https://bgm.tv/subject/1721（版本）
+https://bgm.tv/subject/145923
+
+ISBN 4: 9784044499051
 https://bgm.tv/subject/3701
 https://bgm.tv/subject/3702
 
-ISBN 3: 9784904101698
-https://bgm.tv/subject/4340
-https://bgm.tv/subject/154342
-
-ISBN 4: 9784832281707
+ISBN 5: 9784832281707
 https://bgm.tv/subject/4877
 https://bgm.tv/subject/4878
-
-ISBN 5: 9784062758925
-https://bgm.tv/subject/5328
-https://bgm.tv/subject/5329
 
 ISBN 6: 9784403614897
 https://bgm.tv/subject/5557
@@ -38,176 +40,112 @@ ISBN 8: 9784758053433
 https://bgm.tv/subject/7879
 https://bgm.tv/subject/354024
 
-ISBN 9: 9784344818309
-https://bgm.tv/subject/9023
-https://bgm.tv/subject/13872
+ISBN 9: 9784575513448
+https://bgm.tv/subject/9562（版本）
+https://bgm.tv/subject/154299（版本）
 
-ISBN 10: 9784062759465
-https://bgm.tv/subject/10860
-https://bgm.tv/subject/10862
-
-ISBN 11: 9784047138780
-https://bgm.tv/subject/21585
-https://bgm.tv/subject/65359
-
-ISBN 12: 9784063845327
+ISBN 10: 9784063845327
 https://bgm.tv/subject/22577
 https://bgm.tv/subject/27994
 
-ISBN 13: 9784047125940
+ISBN 11: 9784047125940
 https://bgm.tv/subject/25089
 https://bgm.tv/subject/296920
 
-ISBN 14: 9784047126756
+ISBN 12: 9784047126756
 https://bgm.tv/subject/25092
 https://bgm.tv/subject/296923
 
-ISBN 15: 9784047126909
+ISBN 13: 9784047126909
 https://bgm.tv/subject/25093
 https://bgm.tv/subject/296924
 
-ISBN 16: 9784044604233
+ISBN 14: 9784044604233
 https://bgm.tv/subject/31259
 https://bgm.tv/subject/31276
 
-ISBN 17: 9784088538822
-https://bgm.tv/subject/34900
-https://bgm.tv/subject/201311
-
-ISBN 18: 9784088560021
-https://bgm.tv/subject/34928
-https://bgm.tv/subject/201312
-
-ISBN 19: 9784798601168
+ISBN 15: 9784798601168
 https://bgm.tv/subject/37276
 https://bgm.tv/subject/150155
 
-ISBN 20: 9784776795575
+ISBN 16: 9784776795575
 https://bgm.tv/subject/38011
 https://bgm.tv/subject/394265
 
-ISBN 21: 9784086306430
+ISBN 17: 9784086306430
 https://bgm.tv/subject/39036
 https://bgm.tv/subject/425013
 
-ISBN 22: 9784061732902
-https://bgm.tv/subject/42321
-https://bgm.tv/subject/559620
-
-ISBN 23: 9784798604275
+ISBN 18: 9784798604275
 https://bgm.tv/subject/46983
 https://bgm.tv/subject/343906
 
-ISBN 24: 9784943966418
+ISBN 19: 9784943966418
 https://bgm.tv/subject/51655
 https://bgm.tv/subject/136017
 
-ISBN 25: 9784943966586
+ISBN 20: 9784943966586
 https://bgm.tv/subject/51657
 https://bgm.tv/subject/136020
 
-ISBN 26: 9784943966975
+ISBN 21: 9784943966975
 https://bgm.tv/subject/51658
 https://bgm.tv/subject/136021
 
-ISBN 27: 9784943966289
+ISBN 22: 9784943966289
 https://bgm.tv/subject/51659
 https://bgm.tv/subject/136018
 
-ISBN 28: 9784821183456
+ISBN 23: 9784088623665
+https://bgm.tv/subject/52551
+https://bgm.tv/subject/75174
+
+ISBN 24: 9784821183456
 https://bgm.tv/subject/55999
 https://bgm.tv/subject/351329
 https://bgm.tv/subject/351332
 
-ISBN 29: 9784758071109
-https://bgm.tv/subject/58156
-https://bgm.tv/subject/166375
-
-ISBN 30: 9784832276239
+ISBN 25: 9784832276239
 https://bgm.tv/subject/58430
 https://bgm.tv/subject/477094
 
-ISBN 31: 9784088616636
+ISBN 26: 9784088616636
 https://bgm.tv/subject/70135
 https://bgm.tv/subject/81342
 
-ISBN 32: 9784778031749
+ISBN 27: 9784778031749
 https://bgm.tv/subject/70376
 https://bgm.tv/subject/341926
 
-ISBN 33: 9784047274020
+ISBN 28: 9784047274020
 https://bgm.tv/subject/72415
 https://bgm.tv/subject/285580
 
-ISBN 34: 9784048912983
+ISBN 29: 9784048912983
 https://bgm.tv/subject/78495
 https://bgm.tv/subject/391468
 
-ISBN 35: 9784775517550
-https://bgm.tv/subject/79028
-https://bgm.tv/subject/139630
-
-ISBN 36: 9784063710359
+ISBN 30: 9784063710359
 https://bgm.tv/subject/79757
 https://bgm.tv/subject/356274
 
-ISBN 37: 9784063710366
+ISBN 31: 9784063710366
 https://bgm.tv/subject/79758
 https://bgm.tv/subject/356275
 
-ISBN 38: 9784063710557
+ISBN 32: 9784063710557
 https://bgm.tv/subject/79759
 https://bgm.tv/subject/356277
 
-ISBN 39: 9784091324702
-https://bgm.tv/subject/85092
-https://bgm.tv/subject/200741
-
-ISBN 40: 9784091328380
-https://bgm.tv/subject/85093
-https://bgm.tv/subject/200744
-
-ISBN 41: 9784091328946
-https://bgm.tv/subject/85094
-https://bgm.tv/subject/200742
-
-ISBN 42: 9784091333032
-https://bgm.tv/subject/85097
-https://bgm.tv/subject/200743
-
-ISBN 43: 9784091334152
-https://bgm.tv/subject/85098
-https://bgm.tv/subject/200746
-
-ISBN 44: 9784091337450
-https://bgm.tv/subject/85099
-https://bgm.tv/subject/200748
-
-ISBN 45: 9784091340047
-https://bgm.tv/subject/85144
-https://bgm.tv/subject/200749
-
-ISBN 46: 9784091341860
-https://bgm.tv/subject/85145
-https://bgm.tv/subject/200747
-
-ISBN 47: 9784091343949
-https://bgm.tv/subject/85146
-https://bgm.tv/subject/200745
-
-ISBN 48: 9784091346124
-https://bgm.tv/subject/85147
-https://bgm.tv/subject/200750
-
-ISBN 49: 9784309272917
+ISBN 33: 9784309272917
 https://bgm.tv/subject/86303
 https://bgm.tv/subject/530512
 
-ISBN 50: 9784774701400
+ISBN 34: 9784774701400
 https://bgm.tv/subject/92062
 https://bgm.tv/subject/150859
 
-ISBN 51: 9784829138519
+ISBN 35: 9784829138519
 https://bgm.tv/subject/97028
 https://bgm.tv/subject/144623
 https://bgm.tv/subject/144624
@@ -215,594 +153,583 @@ https://bgm.tv/subject/144626
 https://bgm.tv/subject/144627
 https://bgm.tv/subject/144628
 
-ISBN 52: 9784757704749
+ISBN 36: 9784757704749
 https://bgm.tv/subject/97296
 https://bgm.tv/subject/123628
 
-ISBN 53: 9784863492295
+ISBN 37: 9784863492295
 https://bgm.tv/subject/100213
 https://bgm.tv/subject/100214
 
-ISBN 54: 9784063753981
+ISBN 38: 9784063753981
 https://bgm.tv/subject/109082
 https://bgm.tv/subject/162042
 
-ISBN 55: 9784091434821
+ISBN 39: 9784091434821
 https://bgm.tv/subject/111030
 https://bgm.tv/subject/137189
 
-ISBN 56: 9784757525887
+ISBN 40: 9784757525887
 https://bgm.tv/subject/111172
 https://bgm.tv/subject/111173
 
-ISBN 57: 9784757526624
+ISBN 41: 9784757526624
 https://bgm.tv/subject/111174
 https://bgm.tv/subject/111175
 
-ISBN 58: 9784800001962
-https://bgm.tv/subject/115986
-https://bgm.tv/subject/326198
-
-ISBN 59: 9784862637482
+ISBN 42: 9784862637482
 https://bgm.tv/subject/118125
 https://bgm.tv/subject/280935
 
-ISBN 60: 9784813051794
-https://bgm.tv/subject/119637
-https://bgm.tv/subject/154567
-
-ISBN 61: 9784832283749
-https://bgm.tv/subject/119638
-https://bgm.tv/subject/154568
-
-ISBN 62: 9784813050346
-https://bgm.tv/subject/121097
-https://bgm.tv/subject/121098
-
-ISBN 63: 9784870766945
+ISBN 43: 9784870766945
 https://bgm.tv/subject/122678
 https://bgm.tv/subject/345981
 
-ISBN 64: 9784896109368
+ISBN 44: 9784896109368
 https://bgm.tv/subject/123030
 https://bgm.tv/subject/355327
 
-ISBN 65: 9784088454825
-https://bgm.tv/subject/131915
-https://bgm.tv/subject/196946
-
-ISBN 66: 9784903421025
+ISBN 45: 9784903421025
 https://bgm.tv/subject/137917
 https://bgm.tv/subject/222659
 
-ISBN 67: 9784904468630
+ISBN 46: 9784904468630
 https://bgm.tv/subject/140002
 https://bgm.tv/subject/531723
 
-ISBN 68: 9784807840731
+ISBN 47: 9784807840731
 https://bgm.tv/subject/141813
 https://bgm.tv/subject/397279
 
-ISBN 69: 9784575832594
+ISBN 48: 9784575832594
 https://bgm.tv/subject/141816
 https://bgm.tv/subject/397280
 
-ISBN 70: 9784863490987
+ISBN 49: 9784863490987
 https://bgm.tv/subject/144760
 https://bgm.tv/subject/230801
 
-ISBN 71: 9784797334463
-https://bgm.tv/subject/147976
-https://bgm.tv/subject/327351
-
-ISBN 72: 9784048691680
+ISBN 50: 9784048691680
 https://bgm.tv/subject/148797
 https://bgm.tv/subject/324861
 
-ISBN 73: 9784091415660
+ISBN 51: 9784091415660
 https://bgm.tv/subject/156660
 https://bgm.tv/subject/434939
 
-ISBN 74: 9784896374087
+ISBN 52: 9784896374087
 https://bgm.tv/subject/161753
 https://bgm.tv/subject/161756
 
-ISBN 75: 9784091348791
-https://bgm.tv/subject/164145
-https://bgm.tv/subject/200724
-
-ISBN 76: 9784796403412
+ISBN 53: 9784796403412
 https://bgm.tv/subject/164151
 https://bgm.tv/subject/257405
 
-ISBN 77: 9784063416107
+ISBN 54: 9784063416107
 https://bgm.tv/subject/164169
 https://bgm.tv/subject/200835
 
-ISBN 78: 9784592851288
-https://bgm.tv/subject/166346
-https://bgm.tv/subject/212073
-
-ISBN 79: 9784773095463
+ISBN 55: 9784773095463
 https://bgm.tv/subject/169010
 https://bgm.tv/subject/169011
 
-ISBN 80: 9784870767072
+ISBN 56: 9784870767072
 https://bgm.tv/subject/172138
 https://bgm.tv/subject/230743
 
-ISBN 81: 9784863494848
+ISBN 57: 9784863494848
 https://bgm.tv/subject/172381
 https://bgm.tv/subject/440849
 
-ISBN 82: 9784040681610
-https://bgm.tv/subject/181826
-https://bgm.tv/subject/274940
-
-ISBN 83: 9784799715307
+ISBN 58: 9784799715307
 https://bgm.tv/subject/187455
 https://bgm.tv/subject/295060
 
-ISBN 84: 9784799725450
+ISBN 59: 9784799725450
 https://bgm.tv/subject/187456
 https://bgm.tv/subject/295061
 
-ISBN 85: 9784091573421
+ISBN 60: 9784091573421
 https://bgm.tv/subject/187758
 https://bgm.tv/subject/405083
 
-ISBN 86: 9784829677452
+ISBN 61: 9784829677452
 https://bgm.tv/subject/194941
 https://bgm.tv/subject/194942
 
-ISBN 87: 9784877348045
+ISBN 62: 9784877348045
 https://bgm.tv/subject/196186
 https://bgm.tv/subject/391323
 
-ISBN 88: 9784063415629
+ISBN 63: 9784063415629
 https://bgm.tv/subject/198407
 https://bgm.tv/subject/252768
 
-ISBN 89: 9784396763381
+ISBN 64: 9784396763381
 https://bgm.tv/subject/199155
 https://bgm.tv/subject/373285
 
-ISBN 90: 9784799208977
+ISBN 65: 9784799208977
 https://bgm.tv/subject/202549
 https://bgm.tv/subject/343481
 
-ISBN 91: 9784785939700
+ISBN 66: 9784785939700
 https://bgm.tv/subject/202574
 https://bgm.tv/subject/273894
 
-ISBN 92: 9784063411683
+ISBN 67: 9784063411683
 https://bgm.tv/subject/204100
 https://bgm.tv/subject/267264
 
-ISBN 93: 9784865541465
+ISBN 68: 9784865541465
 https://bgm.tv/subject/204842
 https://bgm.tv/subject/207538
 
-ISBN 94: 9784803009835
+ISBN 69: 9784803009835
 https://bgm.tv/subject/207250
 https://bgm.tv/subject/236278
 
-ISBN 95: 9784803009484
+ISBN 70: 9784803009484
 https://bgm.tv/subject/207251
 https://bgm.tv/subject/236277
 
-ISBN 96: 9784861274978
+ISBN 71: 9784861274978
 https://bgm.tv/subject/210778
 https://bgm.tv/subject/404982
 
-ISBN 97: 9784832243422
+ISBN 72: 9784832243422
 https://bgm.tv/subject/217053
 https://bgm.tv/subject/217057
 
-ISBN 98: 9784861274930
+ISBN 73: 9784861274930
 https://bgm.tv/subject/220866
 https://bgm.tv/subject/281208
 
-ISBN 99: 9784758076883
-https://bgm.tv/subject/227420
-https://bgm.tv/subject/532284
-
-ISBN 100: 9784894217218
+ISBN 74: 9784894217218
 https://bgm.tv/subject/230531
 https://bgm.tv/subject/268142
 
-ISBN 101: 9784776796718
+ISBN 75: 9784776796718
 https://bgm.tv/subject/235434
 https://bgm.tv/subject/452862
 
-ISBN 102: 9784040654959
+ISBN 76: 9784040654959
 https://bgm.tv/subject/238624
 https://bgm.tv/subject/275517
 
-ISBN 103: 9784799737422
+ISBN 77: 9784799737422
 https://bgm.tv/subject/242189
 https://bgm.tv/subject/317811
 
-ISBN 104: 9784776795681
+ISBN 78: 9784776795681
 https://bgm.tv/subject/243822
 https://bgm.tv/subject/413551
 
-ISBN 105: 9784087925234
+ISBN 79: 9784087925234
 https://bgm.tv/subject/248113
 https://bgm.tv/subject/419231
 
-ISBN 106: 9784800265647
+ISBN 80: 9784434246654
+https://bgm.tv/subject/252869
+https://bgm.tv/subject/558779（版本）
+
+ISBN 81: 9784800265647
 https://bgm.tv/subject/253343
 https://bgm.tv/subject/344114
 
-ISBN 107: 9784798616896
+ISBN 82: 9784798616896
 https://bgm.tv/subject/254531
 https://bgm.tv/subject/268363
 
-ISBN 108: 9784065120163
+ISBN 83: 9784065120163
 https://bgm.tv/subject/254644
 https://bgm.tv/subject/341663
 
-ISBN 109: 9784091421890
+ISBN 84: 9784091421890
 https://bgm.tv/subject/257693
 https://bgm.tv/subject/313132
 
-ISBN 110: 9784797396690
+ISBN 85: 9784797396690
 https://bgm.tv/subject/264434
 https://bgm.tv/subject/317561
 
-ISBN 111: 9784797399226
+ISBN 86: 9784797399226
 https://bgm.tv/subject/264435
 https://bgm.tv/subject/317562
 
-ISBN 112: 9784576181974
+ISBN 87: 9784576181974
 https://bgm.tv/subject/267321
 https://bgm.tv/subject/271973
 
-ISBN 113: 9784866691848
+ISBN 88: 9784866691848
 https://bgm.tv/subject/267325
 https://bgm.tv/subject/275580
 
-ISBN 114: 9784756732101
+ISBN 89: 9784756732101
 https://bgm.tv/subject/268479
 https://bgm.tv/subject/470389
 
-ISBN 115: 9784798618227
+ISBN 90: 9784798618227
 https://bgm.tv/subject/268839
 https://bgm.tv/subject/318252
 
-ISBN 116: 9784813706175
+ISBN 91: 9784813706175
 https://bgm.tv/subject/272992
 https://bgm.tv/subject/281833
 
-ISBN 117: 9784815601089
+ISBN 92: 9784815601089
 https://bgm.tv/subject/273651
 https://bgm.tv/subject/317563
 
-ISBN 118: 9784862975010
+ISBN 93: 9784862975010
 https://bgm.tv/subject/275853
 https://bgm.tv/subject/441871
 
-ISBN 119: 9784537141771
+ISBN 94: 9784537141771
 https://bgm.tv/subject/278221
 https://bgm.tv/subject/295633
 
-ISBN 120: 9784040656748
+ISBN 95: 9784040656748
 https://bgm.tv/subject/278426
 https://bgm.tv/subject/284404
 
-ISBN 121: 9784434259456
+ISBN 96: 9784434259456
 https://bgm.tv/subject/281814
 https://bgm.tv/subject/378099
 
-ISBN 122: 9784765935555
+ISBN 97: 9784765935555
 https://bgm.tv/subject/283739
 https://bgm.tv/subject/440470
 
-ISBN 123: 9784864686525
+ISBN 98: 9784864686525
 https://bgm.tv/subject/286004
 https://bgm.tv/subject/295190
 
-ISBN 124: 9784902307887
+ISBN 99: 9784902307887
 https://bgm.tv/subject/286854
 https://bgm.tv/subject/517109
 
-ISBN 125: 9784040728261
+ISBN 100: 9784040728261
 https://bgm.tv/subject/290370
 https://bgm.tv/subject/300181
 
-ISBN 126: 9784434266607
+ISBN 101: 9784434266607
 https://bgm.tv/subject/294456
 https://bgm.tv/subject/501644
 
-ISBN 127: 9784815605681
+ISBN 102: 9784815605681
 https://bgm.tv/subject/296601
 https://bgm.tv/subject/298854
 
-ISBN 128: 9784299000514
+ISBN 103: 9784299000514
 https://bgm.tv/subject/296623
 https://bgm.tv/subject/545224
 
-ISBN 129: 9784801922099
+ISBN 104: 9784801922099
 https://bgm.tv/subject/298799
 https://bgm.tv/subject/303252
 
-ISBN 130: 9784801922143
+ISBN 105: 9784801922143
 https://bgm.tv/subject/298800
 https://bgm.tv/subject/359198
 
-ISBN 131: 9784040641959
+ISBN 106: 9784040641959
 https://bgm.tv/subject/300393
 https://bgm.tv/subject/344509
 
-ISBN 132: 9784094522228
+ISBN 107: 9784094522228
 https://bgm.tv/subject/304952
 https://bgm.tv/subject/304953
 
-ISBN 133: 9784800009739
+ISBN 108: 9784800009739
 https://bgm.tv/subject/306465
 https://bgm.tv/subject/367711
 
-ISBN 134: 9784575935950
+ISBN 109: 9784575935950
 https://bgm.tv/subject/314619
 https://bgm.tv/subject/314621
 
-ISBN 135: 9784083216039
+ISBN 110: 9784049138771
+https://bgm.tv/subject/317394（版本）
+https://bgm.tv/subject/345148
+
+ISBN 111: 9784083216039
 https://bgm.tv/subject/317402
 https://bgm.tv/subject/421118
 
-ISBN 136: 9784040682556
+ISBN 112: 9784040682556
 https://bgm.tv/subject/318764
 https://bgm.tv/subject/318911
 
-ISBN 137: 9784866693415
+ISBN 113: 9784866693415
 https://bgm.tv/subject/320660
 https://bgm.tv/subject/321489
 
-ISBN 138: 9784091872906
+ISBN 114: 9784091872906
 https://bgm.tv/subject/324446
 https://bgm.tv/subject/324449
 
-ISBN 139: 9784049133264
+ISBN 115: 9784049133264
 https://bgm.tv/subject/325123
 https://bgm.tv/subject/325124
 
-ISBN 140: 9784801971851
+ISBN 116: 9784801971851
 https://bgm.tv/subject/326996
 https://bgm.tv/subject/367329
 
-ISBN 141: 9784798621425
+ISBN 117: 9784798621425
 https://bgm.tv/subject/329826
 https://bgm.tv/subject/329829
 
-ISBN 142: 9784801512856
+ISBN 118: 9784801512856
 https://bgm.tv/subject/330691
 https://bgm.tv/subject/552057
 
-ISBN 143: 9784801512078
+ISBN 119: 9784801512078
 https://bgm.tv/subject/330695
 https://bgm.tv/subject/551947
 
-ISBN 144: 9784863498679
+ISBN 120: 9784863498679
 https://bgm.tv/subject/331440
 https://bgm.tv/subject/341908
 
-ISBN 145: 9784403667688
+ISBN 121: 9784403667688
 https://bgm.tv/subject/335011
 https://bgm.tv/subject/336687
 
-ISBN 146: 9784046805140
+ISBN 122: 9784046805140
 https://bgm.tv/subject/335900
 https://bgm.tv/subject/338202
 
-ISBN 147: 9784041112984
+ISBN 123: 9784041112984
 https://bgm.tv/subject/336083
 https://bgm.tv/subject/338040
 
-ISBN 148: 9784088568881
+ISBN 124: 9784088568881
 https://bgm.tv/subject/337809
 https://bgm.tv/subject/337845
 
-ISBN 149: 9784758411707
+ISBN 125: 9784758411707
 https://bgm.tv/subject/337984
 https://bgm.tv/subject/465276
 
-ISBN 150: 9784091800107
+ISBN 126: 9784864108515
+https://bgm.tv/subject/340900（版本）
+https://bgm.tv/subject/402026
+
+ISBN 127: 9784091800107
 https://bgm.tv/subject/341775
 https://bgm.tv/subject/501332
 
-ISBN 151: 9784870767201
+ISBN 128: 9784870767201
 https://bgm.tv/subject/345982
 https://bgm.tv/subject/351843
 
-ISBN 152: 9784040741758
+ISBN 129: 9784040741758
 https://bgm.tv/subject/348463
 https://bgm.tv/subject/413150
 
-ISBN 153: 9784253219594
+ISBN 130: 9784253219594
 https://bgm.tv/subject/351872
 https://bgm.tv/subject/398368
 
-ISBN 154: 9784253219600
+ISBN 131: 9784253219600
 https://bgm.tv/subject/351873
 https://bgm.tv/subject/398369
 
-ISBN 155: 9784253219617
+ISBN 132: 9784253219617
 https://bgm.tv/subject/351874
 https://bgm.tv/subject/398370
 
-ISBN 156: 9784253219624
+ISBN 133: 9784253219624
 https://bgm.tv/subject/351875
 https://bgm.tv/subject/398371
 
-ISBN 157: 9784253219631
+ISBN 134: 9784253219631
 https://bgm.tv/subject/351876
 https://bgm.tv/subject/398372
 
-ISBN 158: 9784253219648
+ISBN 135: 9784253219648
 https://bgm.tv/subject/351877
 https://bgm.tv/subject/398373
 
-ISBN 159: 9784253219655
+ISBN 136: 9784253219655
 https://bgm.tv/subject/351878
 https://bgm.tv/subject/398374
 
-ISBN 160: 9784253219662
+ISBN 137: 9784253219662
 https://bgm.tv/subject/351879
 https://bgm.tv/subject/398375
 
-ISBN 161: 9784253219679
+ISBN 138: 9784253219679
 https://bgm.tv/subject/351880
 https://bgm.tv/subject/398376
 
-ISBN 162: 9784253219686
+ISBN 139: 9784253219686
 https://bgm.tv/subject/351881
 https://bgm.tv/subject/398377
 
-ISBN 163: 9784253219693
+ISBN 140: 9784253219693
 https://bgm.tv/subject/351882
 https://bgm.tv/subject/398378
 
-ISBN 164: 9784758023115
+ISBN 141: 9784758023115
 https://bgm.tv/subject/360378
 https://bgm.tv/subject/570861
 
-ISBN 165: 9784049141283
+ISBN 142: 9784049131383
+https://bgm.tv/subject/360747
+https://bgm.tv/subject/574004（版本）
+
+ISBN 143: 9784049141283
 https://bgm.tv/subject/363181
 https://bgm.tv/subject/526609
 
-ISBN 166: 9784049138559
+ISBN 144: 9784049138559
 https://bgm.tv/subject/370634
 https://bgm.tv/subject/504516
 
-ISBN 167: 9784088901084
+ISBN 145: 9784088901084
 https://bgm.tv/subject/372341
 https://bgm.tv/subject/372627
 
-ISBN 168: 9784785936273
+ISBN 146: 9784785936273
 https://bgm.tv/subject/374273
 https://bgm.tv/subject/508957
 
-ISBN 169: 9784824001139
+ISBN 147: 9784824001139
 https://bgm.tv/subject/374497
 https://bgm.tv/subject/395882
 
-ISBN 170: 9784807832774
+ISBN 148: 9784807832774
 https://bgm.tv/subject/378290
 https://bgm.tv/subject/441864
 
-ISBN 171: 9784785931865
+ISBN 149: 9784785931865
 https://bgm.tv/subject/381288
 https://bgm.tv/subject/405670
 
-ISBN 172: 9784047013360
+ISBN 150: 9784047013360
 https://bgm.tv/subject/382776
 https://bgm.tv/subject/382777
 
-ISBN 173: 9784799004593
+ISBN 151: 9784799004593
 https://bgm.tv/subject/384516
 https://bgm.tv/subject/417505
 
-ISBN 174: 9784765921442
+ISBN 152: 9784765921442
 https://bgm.tv/subject/392073
 https://bgm.tv/subject/492111
 
-ISBN 175: 9784829677926
+ISBN 153: 9784829677926
 https://bgm.tv/subject/399147
 https://bgm.tv/subject/440588
 
-ISBN 176: 9784056059601
+ISBN 154: 9784056059601
 https://bgm.tv/subject/400821
 https://bgm.tv/subject/477034
 
-ISBN 177: 9784801525016
+ISBN 155: 9784801525016
 https://bgm.tv/subject/402588
+https://bgm.tv/subject/553799
 
-ISBN 178: 9784041129494
+ISBN 156: 9784041129494
 https://bgm.tv/subject/403661
 https://bgm.tv/subject/567813
 
-ISBN 179: 9784785924454
+ISBN 157: 9784785924454
 https://bgm.tv/subject/405076
 https://bgm.tv/subject/507007
 
-ISBN 180: 9784403671357
+ISBN 158: 9784403671357
 https://bgm.tv/subject/411594
 https://bgm.tv/subject/411596
 
-ISBN 181: 9784877198480
+ISBN 159: 9784877198480
 https://bgm.tv/subject/413967
 https://bgm.tv/subject/413968
 
-ISBN 182: 9784790100133
+ISBN 160: 9784790100133
 https://bgm.tv/subject/418574
 https://bgm.tv/subject/508807
 
-ISBN 183: 9784893931955
+ISBN 161: 9784893931955
 https://bgm.tv/subject/428982
 https://bgm.tv/subject/428983
 
-ISBN 184: 9784835456942
+ISBN 162: 9784835456942
 https://bgm.tv/subject/439849
 https://bgm.tv/subject/508061
 
-ISBN 185: 9784594002664
+ISBN 163: 9784594002664
 https://bgm.tv/subject/455680
 https://bgm.tv/subject/455687
 
-ISBN 186: 9784056002478
+ISBN 164: 9784056002478
 https://bgm.tv/subject/455696
 https://bgm.tv/subject/455698
 
-ISBN 187: 9784801937468
+ISBN 165: 9784801937468
 https://bgm.tv/subject/460267
 https://bgm.tv/subject/465179
 
-ISBN 188: 9784049154924
+ISBN 166: 9784049154924
 https://bgm.tv/subject/465822
 https://bgm.tv/subject/473586
 
-ISBN 189: 9784575753332
+ISBN 167: 9784575753332
 https://bgm.tv/subject/466031
 https://bgm.tv/subject/473884
 
-ISBN 190: 9784047378254
+ISBN 168: 9784047378254
 https://bgm.tv/subject/477611
 https://bgm.tv/subject/491610
 
-ISBN 191: 9784344034983
+ISBN 169: 9784344034983
 https://bgm.tv/subject/480578
 https://bgm.tv/subject/553803
 
-ISBN 192: 9784878921711
+ISBN 170: 9784878921711
 https://bgm.tv/subject/483646
 https://bgm.tv/subject/483658
 
-ISBN 193: 9784867206638
+ISBN 171: 9784829127964
+https://bgm.tv/subject/487679
+https://bgm.tv/subject/542680
+
+ISBN 172: 9784901769747
+https://bgm.tv/subject/493720
+https://bgm.tv/subject/493722
+
+ISBN 173: 9784867206638
 https://bgm.tv/subject/498356
 https://bgm.tv/subject/506587
 
-ISBN 194: 9784872578355
+ISBN 174: 9784872578355
 https://bgm.tv/subject/553450
 https://bgm.tv/subject/553458
 
-ISBN 195: 9784257722397
+ISBN 175: 9784909824158
+https://bgm.tv/subject/554027
+https://bgm.tv/subject/570387
+
+ISBN 176: 9784257722397
 https://bgm.tv/subject/559969
 https://bgm.tv/subject/559976
 
-ISBN 196: 9784867168080
+ISBN 177: 9784867168080
 https://bgm.tv/subject/563225
 https://bgm.tv/subject/572611
 
-ISBN 197: 9784086805445
+ISBN 178: 9784086805445
 https://bgm.tv/subject/568985
 https://bgm.tv/subject/568987
 
-ISBN 198: 9784868430001
+ISBN 179: 9784868430001
 https://bgm.tv/subject/570928
 https://bgm.tv/subject/571268
 
-【疑似同系列单行本误填】(72组)
+【疑似同系列单行本误填】(73组)
 ----------------------------------------
 ISBN 1: 9784088745497
 https://bgm.tv/subject/1611
@@ -828,272 +755,276 @@ ISBN 6: 9784048680776
 https://bgm.tv/subject/4808
 https://bgm.tv/subject/19119
 
-ISBN 7: 9784063414424
+ISBN 7: 9784150308803
+https://bgm.tv/subject/22279
+https://bgm.tv/subject/22280
+
+ISBN 8: 9784063414424
 https://bgm.tv/subject/30661
 https://bgm.tv/subject/30696
 
-ISBN 8: 9784088467252
+ISBN 9: 9784088467252
 https://bgm.tv/subject/34117
 https://bgm.tv/subject/125556
 
-ISBN 9: 9784091804549
+ISBN 10: 9784091804549
 https://bgm.tv/subject/38585
 https://bgm.tv/subject/38587
 
-ISBN 10: 9784061025943
+ISBN 11: 9784061025943
 https://bgm.tv/subject/38790
 https://bgm.tv/subject/38793
 
-ISBN 11: 9784870255906
+ISBN 12: 9784870255906
 https://bgm.tv/subject/47471
 https://bgm.tv/subject/47850
 
-ISBN 12: 9784063846485
+ISBN 13: 9784063846485
 https://bgm.tv/subject/48750
 https://bgm.tv/subject/48752
 
-ISBN 13: 9784063845860
+ISBN 14: 9784063845860
 https://bgm.tv/subject/48754
 https://bgm.tv/subject/48756
 
-ISBN 14: 9784592172345
+ISBN 15: 9784592172345
 https://bgm.tv/subject/66109
 https://bgm.tv/subject/66112
 
-ISBN 15: 9784048540650
+ISBN 16: 9784048540650
 https://bgm.tv/subject/120464
 https://bgm.tv/subject/120466
 
-ISBN 16: 9784040663784
+ISBN 17: 9784040663784
 https://bgm.tv/subject/122161
 https://bgm.tv/subject/347478
 
-ISBN 17: 9784799728390
+ISBN 18: 9784799728390
 https://bgm.tv/subject/124801
 https://bgm.tv/subject/159278
 
-ISBN 18: 9784061736306
+ISBN 19: 9784061736306
 https://bgm.tv/subject/124880
 https://bgm.tv/subject/124912
 
-ISBN 19: 9784758014137
+ISBN 20: 9784758014137
 https://bgm.tv/subject/134342
 https://bgm.tv/subject/134349
 
-ISBN 20: 9784758059848
+ISBN 21: 9784758059848
 https://bgm.tv/subject/137807
 https://bgm.tv/subject/137808
 
-ISBN 21: 9784840133586
+ISBN 22: 9784840133586
 https://bgm.tv/subject/156715
 https://bgm.tv/subject/156716
 
-ISBN 22: 9784803011715
+ISBN 23: 9784803011715
 https://bgm.tv/subject/197637
 https://bgm.tv/subject/253661
 
-ISBN 23: 9784253152563
+ISBN 24: 9784253152563
 https://bgm.tv/subject/207058
 https://bgm.tv/subject/267232
 
-ISBN 24: 9784040723112
+ISBN 25: 9784040723112
 https://bgm.tv/subject/229969
 https://bgm.tv/subject/261855
 
-ISBN 25: 9784065120118
+ISBN 26: 9784065120118
 https://bgm.tv/subject/253421
 https://bgm.tv/subject/330913
 
-ISBN 26: 9784800008015
+ISBN 27: 9784800008015
 https://bgm.tv/subject/262539
 https://bgm.tv/subject/272754
 
-ISBN 27: 9784091866721
+ISBN 28: 9784091866721
 https://bgm.tv/subject/294578
 https://bgm.tv/subject/294582
 
-ISBN 28: 9784063802344
+ISBN 29: 9784063802344
 https://bgm.tv/subject/297602
 https://bgm.tv/subject/297603
 https://bgm.tv/subject/297604
 
-ISBN 29: 9784088614182
+ISBN 30: 9784088614182
 https://bgm.tv/subject/300849
 https://bgm.tv/subject/300850
 
-ISBN 30: 9784253131247
+ISBN 31: 9784253131247
 https://bgm.tv/subject/305755
 https://bgm.tv/subject/305756
 
-ISBN 31: 9784870255982
+ISBN 32: 9784870255982
 https://bgm.tv/subject/305927
 https://bgm.tv/subject/305929
 
-ISBN 32: 9784864728386
+ISBN 33: 9784864728386
 https://bgm.tv/subject/309184
 https://bgm.tv/subject/309185
 
-ISBN 33: 9784040649207
+ISBN 34: 9784040649207
 https://bgm.tv/subject/317814
 https://bgm.tv/subject/317815
 
-ISBN 34: 9784098501717
+ISBN 35: 9784098501717
 https://bgm.tv/subject/319304
 https://bgm.tv/subject/319305
 
-ISBN 35: 9784091297167
+ISBN 36: 9784091297167
 https://bgm.tv/subject/319916
 https://bgm.tv/subject/319917
 
-ISBN 36: 9784253238595
+ISBN 37: 9784253238595
 https://bgm.tv/subject/322272
 https://bgm.tv/subject/327926
 
-ISBN 37: 9784091285898
+ISBN 38: 9784091285898
 https://bgm.tv/subject/323689
 https://bgm.tv/subject/323692
 
-ISBN 38: 9784041099216
+ISBN 39: 9784041099216
 https://bgm.tv/subject/327297
 https://bgm.tv/subject/338012
 
-ISBN 39: 9784800009760
+ISBN 40: 9784800009760
 https://bgm.tv/subject/328851
 https://bgm.tv/subject/328852
 
-ISBN 40: 9784065231494
+ISBN 41: 9784065231494
 https://bgm.tv/subject/334174
 https://bgm.tv/subject/355821
 
-ISBN 41: 9784757569126
+ISBN 42: 9784757569126
 https://bgm.tv/subject/334676
 https://bgm.tv/subject/334678
 
-ISBN 42: 9784575814743
+ISBN 43: 9784575814743
 https://bgm.tv/subject/334780
 https://bgm.tv/subject/334781
 
-ISBN 43: 9784065236406
+ISBN 44: 9784065236406
 https://bgm.tv/subject/338480
 https://bgm.tv/subject/338481
 
-ISBN 44: 9784253235013
+ISBN 45: 9784253235013
 https://bgm.tv/subject/338524
 https://bgm.tv/subject/338532
 
-ISBN 45: 9784046803481
+ISBN 46: 9784046803481
 https://bgm.tv/subject/342037
 https://bgm.tv/subject/357987
 
-ISBN 46: 9784884753023
+ISBN 47: 9784884753023
 https://bgm.tv/subject/346273
 https://bgm.tv/subject/346274
 
-ISBN 47: 9784040731490
+ISBN 48: 9784040731490
 https://bgm.tv/subject/347466
 https://bgm.tv/subject/347468
 
-ISBN 48: 9784120020186
+ISBN 49: 9784120020186
 https://bgm.tv/subject/349511
 https://bgm.tv/subject/521929
 
-ISBN 49: 9784040740829
+ISBN 50: 9784040740829
 https://bgm.tv/subject/351500
 https://bgm.tv/subject/405064
 
-ISBN 50: 9784091836939
+ISBN 51: 9784091836939
 https://bgm.tv/subject/357503
 https://bgm.tv/subject/357516
 
-ISBN 51: 9784088574158
+ISBN 52: 9784088574158
 https://bgm.tv/subject/361310
 https://bgm.tv/subject/361315
 
-ISBN 52: 9784047361454
+ISBN 53: 9784047361454
 https://bgm.tv/subject/365278
 https://bgm.tv/subject/365281
 
-ISBN 53: 9784790119647
+ISBN 54: 9784790119647
 https://bgm.tv/subject/373502
 https://bgm.tv/subject/373503
 
-ISBN 54: 9784812477847
+ISBN 55: 9784812477847
 https://bgm.tv/subject/377302
 https://bgm.tv/subject/377303
 
-ISBN 55: 9784063288834
+ISBN 56: 9784063288834
 https://bgm.tv/subject/381775
 https://bgm.tv/subject/381781
 
-ISBN 56: 9784434292712
+ISBN 57: 9784434292712
 https://bgm.tv/subject/437759
 https://bgm.tv/subject/437762
 
-ISBN 57: 9784065184851
+ISBN 58: 9784065184851
 https://bgm.tv/subject/451565
 https://bgm.tv/subject/451566
 
-ISBN 58: 9784864235297
+ISBN 59: 9784864235297
 https://bgm.tv/subject/458962
 https://bgm.tv/subject/458964
 
-ISBN 59: 9784575417616
+ISBN 60: 9784575417616
 https://bgm.tv/subject/462059
 https://bgm.tv/subject/462060
 
-ISBN 60: 9784537006131
+ISBN 61: 9784537006131
 https://bgm.tv/subject/464149
 https://bgm.tv/subject/464151
 
-ISBN 61: 9784061767188
+ISBN 62: 9784061767188
 https://bgm.tv/subject/465457
 https://bgm.tv/subject/465458
 
-ISBN 62: 9784063882261
+ISBN 63: 9784063882261
 https://bgm.tv/subject/468718
 https://bgm.tv/subject/468720
 
-ISBN 63: 9784408641102
+ISBN 64: 9784408641102
 https://bgm.tv/subject/474315
 https://bgm.tv/subject/532999
 
-ISBN 64: 9784065132159
+ISBN 65: 9784065132159
 https://bgm.tv/subject/479678
 https://bgm.tv/subject/544710
 
-ISBN 65: 9784065350799
+ISBN 66: 9784065350799
 https://bgm.tv/subject/483640
 https://bgm.tv/subject/488301
 
-ISBN 66: 9784434311710
+ISBN 67: 9784434311710
 https://bgm.tv/subject/501153
 https://bgm.tv/subject/501155
 
-ISBN 67: 9784073099444
+ISBN 68: 9784073099444
 https://bgm.tv/subject/508100
 https://bgm.tv/subject/508102
 
-ISBN 68: 9784434323836
+ISBN 69: 9784434323836
 https://bgm.tv/subject/509179
 https://bgm.tv/subject/509181
 
-ISBN 69: 9784821127580
+ISBN 70: 9784821127580
 https://bgm.tv/subject/521679
 https://bgm.tv/subject/521683
 
-ISBN 70: 9784758026567
+ISBN 71: 9784758026567
 https://bgm.tv/subject/537593
 https://bgm.tv/subject/537595
 
-ISBN 71: 9784086017091
+ISBN 72: 9784086017091
 https://bgm.tv/subject/542552
 https://bgm.tv/subject/542554
 
-ISBN 72: 9784799219911
+ISBN 73: 9784799219911
 https://bgm.tv/subject/556833
 https://bgm.tv/subject/556834
 
-【疑似系列误填】(51组)
+【疑似系列误填】(52组)
 ----------------------------------------
 ISBN 1: 9784344815650
 https://bgm.tv/subject/4296（系列）
@@ -1113,6 +1044,7 @@ https://bgm.tv/subject/50649（系列）
 
 ISBN 5: 9784091847348
 https://bgm.tv/subject/31093
+https://bgm.tv/subject/455812（系列）
 
 ISBN 6: 9784758050074
 https://bgm.tv/subject/34786
@@ -1155,6 +1087,7 @@ https://bgm.tv/subject/109347
 https://bgm.tv/subject/109349（系列）
 
 ISBN 16: 9784091308993
+https://bgm.tv/subject/129622（系列）
 https://bgm.tv/subject/199781
 
 ISBN 17: 9784040676593
@@ -1185,492 +1118,577 @@ ISBN 23: 9784088563206
 https://bgm.tv/subject/204507
 https://bgm.tv/subject/204509（系列）
 
-ISBN 24: 9784813031611
+ISBN 24: 9784065107836
+https://bgm.tv/subject/234525
+https://bgm.tv/subject/238381（系列）
+
+ISBN 25: 9784813031611
 https://bgm.tv/subject/236077
 https://bgm.tv/subject/246301（系列）
 
-ISBN 25: 9784403622663
+ISBN 26: 9784403622663
 https://bgm.tv/subject/251014
 https://bgm.tv/subject/343368（系列）
 
-ISBN 26: 9784757501768
+ISBN 27: 9784757501768
 https://bgm.tv/subject/287118（系列）
 https://bgm.tv/subject/303365
 
-ISBN 27: 9784040732381
+ISBN 28: 9784040732381
 https://bgm.tv/subject/302315（系列）
 https://bgm.tv/subject/302317
 https://bgm.tv/subject/302321
 
-ISBN 28: 9784062850223
+ISBN 29: 9784062850223
 https://bgm.tv/subject/302330（系列）
 https://bgm.tv/subject/302332
 
-ISBN 29: 9784575752618
+ISBN 30: 9784575752618
 https://bgm.tv/subject/304887（系列）
 https://bgm.tv/subject/304888
 
-ISBN 30: 9784894650466
+ISBN 31: 9784894650466
 https://bgm.tv/subject/325847
 https://bgm.tv/subject/325852（系列）
 
-ISBN 31: 9784832291638
+ISBN 32: 9784832291638
 https://bgm.tv/subject/328809
 https://bgm.tv/subject/380061（系列）
 
-ISBN 32: 9784861764844
+ISBN 33: 9784861764844
 https://bgm.tv/subject/332662
 https://bgm.tv/subject/332664（系列）
 
-ISBN 33: 9784838723379
+ISBN 34: 9784838723379
 https://bgm.tv/subject/354274（系列）
 https://bgm.tv/subject/354280
 
-ISBN 34: 9784575856071
+ISBN 35: 9784575856071
 https://bgm.tv/subject/362554（系列）
 https://bgm.tv/subject/430070
 
-ISBN 35: 9784847035999
+ISBN 36: 9784847035999
 https://bgm.tv/subject/372803（系列）
 https://bgm.tv/subject/372804
 
-ISBN 36: 9784091381262
+ISBN 37: 9784091381262
 https://bgm.tv/subject/373280（系列）
 https://bgm.tv/subject/529423
 
-ISBN 37: 9784199500510
+ISBN 38: 9784199500510
 https://bgm.tv/subject/375946（系列）
 https://bgm.tv/subject/375949
 
-ISBN 38: 9784122040335
+ISBN 39: 9784122040335
 https://bgm.tv/subject/379375（系列）
 https://bgm.tv/subject/379376
 
-ISBN 39: 9784592881711
+ISBN 40: 9784592881711
 https://bgm.tv/subject/386442（系列）
 https://bgm.tv/subject/386652
 
-ISBN 40: 9784812480823
+ISBN 41: 9784812480823
 https://bgm.tv/subject/411406（系列）
 https://bgm.tv/subject/411407
 
-ISBN 41: 9784344834194
+ISBN 42: 9784344834194
 https://bgm.tv/subject/448318（系列）
 https://bgm.tv/subject/448320
 
-ISBN 42: 9784041093689
+ISBN 43: 9784041093689
 https://bgm.tv/subject/450233（系列）
 https://bgm.tv/subject/450235
 
-ISBN 43: 9784049152104
+ISBN 44: 9784049152104
 https://bgm.tv/subject/452383
 https://bgm.tv/subject/511479（系列）
 
-ISBN 44: 9784334101060
+ISBN 45: 9784334101060
 https://bgm.tv/subject/466145
 https://bgm.tv/subject/466147（系列）
 
-ISBN 45: 9784046818492
+ISBN 46: 9784046818492
 https://bgm.tv/subject/469627（系列）
 https://bgm.tv/subject/469628
 
-ISBN 46: 9784063759662
+ISBN 47: 9784063759662
 https://bgm.tv/subject/471618（系列）
 https://bgm.tv/subject/471619
 
-ISBN 47: 9784840218979
+ISBN 48: 9784840218979
 https://bgm.tv/subject/481678
 https://bgm.tv/subject/481679（系列）
 
-ISBN 48: 9784758025027
+ISBN 49: 9784758025027
 https://bgm.tv/subject/483056（系列）
 https://bgm.tv/subject/483057
 
-ISBN 49: 9784757507029
+ISBN 50: 9784757507029
 https://bgm.tv/subject/493762（系列）
 https://bgm.tv/subject/493763
 
-ISBN 50: 9784047278035
+ISBN 51: 9784047278035
 https://bgm.tv/subject/529290（系列）
 https://bgm.tv/subject/529291
 
-ISBN 51: 9784086120401
+ISBN 52: 9784086120401
 https://bgm.tv/subject/566653（系列）
 https://bgm.tv/subject/566655
 
-【疑似重复条目】(74组)
+【疑似重复条目】(110组)
 ----------------------------------------
-ISBN 1: 9784047131033
+ISBN 1: 9784904101698
+https://bgm.tv/subject/4340
+https://bgm.tv/subject/154342
+
+ISBN 2: 9784062758925
+https://bgm.tv/subject/5328
+https://bgm.tv/subject/5329
+
+ISBN 3: 9784344818309
+https://bgm.tv/subject/9023
+https://bgm.tv/subject/13872
+
+ISBN 4: 9784062759465
+https://bgm.tv/subject/10860
+https://bgm.tv/subject/10862
+
+ISBN 5: 9784047131033
 https://bgm.tv/subject/15378
 https://bgm.tv/subject/93171
 
-ISBN 2: 9784150308803
-https://bgm.tv/subject/22279
-https://bgm.tv/subject/22280
+ISBN 6: 9784047138780
+https://bgm.tv/subject/21585
+https://bgm.tv/subject/65359
 
-ISBN 3: 9784766335231
+ISBN 7: 9784766335231
 https://bgm.tv/subject/29960
 https://bgm.tv/subject/389714
 
-ISBN 4: 9784047131132
+ISBN 8: 9784088538822
+https://bgm.tv/subject/34900
+https://bgm.tv/subject/201311
+
+ISBN 9: 9784088560021
+https://bgm.tv/subject/34928
+https://bgm.tv/subject/201312
+
+ISBN 10: 9784061732902
+https://bgm.tv/subject/42321
+https://bgm.tv/subject/559620
+
+ISBN 11: 9784047131132
 https://bgm.tv/subject/43893
 https://bgm.tv/subject/93172
 
-ISBN 5: 9784047131286
+ISBN 12: 9784047131286
 https://bgm.tv/subject/43894
 https://bgm.tv/subject/93175
 
-ISBN 6: 9784047131453
+ISBN 13: 9784047131453
 https://bgm.tv/subject/43895
 https://bgm.tv/subject/93173
 
-ISBN 7: 9784047131750
+ISBN 14: 9784047131750
 https://bgm.tv/subject/43896
 https://bgm.tv/subject/93174
 
-ISBN 8: 9784047131859
+ISBN 15: 9784047131859
 https://bgm.tv/subject/43897
 https://bgm.tv/subject/93176
 
-ISBN 9: 9784048670302
+ISBN 16: 9784048670302
 https://bgm.tv/subject/45896
 https://bgm.tv/subject/395576
 
-ISBN 10: 9784758070041
+ISBN 17: 9784758070041
 https://bgm.tv/subject/51373
 https://bgm.tv/subject/129092
 
-ISBN 11: 9784088623665
-https://bgm.tv/subject/52551
-https://bgm.tv/subject/75174
+ISBN 18: 9784758071109
+https://bgm.tv/subject/58156
+https://bgm.tv/subject/166375
 
-ISBN 12: 9784877751340
+ISBN 19: 9784877751340
 https://bgm.tv/subject/58165
 https://bgm.tv/subject/184471
 
-ISBN 13: 9784757533837
+ISBN 20: 9784757533837
 https://bgm.tv/subject/58226
 https://bgm.tv/subject/168907
 
-ISBN 14: 9784893936127
+ISBN 21: 9784893936127
 https://bgm.tv/subject/61543
 https://bgm.tv/subject/326976
 
-ISBN 15: 9784887744820
+ISBN 22: 9784775517550
+https://bgm.tv/subject/79028
+https://bgm.tv/subject/139630
+
+ISBN 23: 9784887744820
 https://bgm.tv/subject/83258
 https://bgm.tv/subject/107962
 
-ISBN 16: 9784041203422
+ISBN 24: 9784091324702
+https://bgm.tv/subject/85092
+https://bgm.tv/subject/200741
+
+ISBN 25: 9784091328380
+https://bgm.tv/subject/85093
+https://bgm.tv/subject/200744
+
+ISBN 26: 9784091328946
+https://bgm.tv/subject/85094
+https://bgm.tv/subject/200742
+
+ISBN 27: 9784091333032
+https://bgm.tv/subject/85097
+https://bgm.tv/subject/200743
+
+ISBN 28: 9784091334152
+https://bgm.tv/subject/85098
+https://bgm.tv/subject/200746
+
+ISBN 29: 9784091337450
+https://bgm.tv/subject/85099
+https://bgm.tv/subject/200748
+
+ISBN 30: 9784091340047
+https://bgm.tv/subject/85144
+https://bgm.tv/subject/200749
+
+ISBN 31: 9784091341860
+https://bgm.tv/subject/85145
+https://bgm.tv/subject/200747
+
+ISBN 32: 9784091343949
+https://bgm.tv/subject/85146
+https://bgm.tv/subject/200745
+
+ISBN 33: 9784091346124
+https://bgm.tv/subject/85147
+https://bgm.tv/subject/200750
+
+ISBN 34: 9784041203422
 https://bgm.tv/subject/104206
 https://bgm.tv/subject/104208
 
-ISBN 17: 9784800000330
+ISBN 35: 9784800000330
 https://bgm.tv/subject/108844
 https://bgm.tv/subject/499786
 
-ISBN 18: 9784800001467
+ISBN 36: 9784800001467
 https://bgm.tv/subject/108845
 https://bgm.tv/subject/499787
 
-ISBN 19: 9784860326210
+ISBN 37: 9784800001962
+https://bgm.tv/subject/115986
+https://bgm.tv/subject/326198
+
+ISBN 38: 9784860326210
 https://bgm.tv/subject/117994
 https://bgm.tv/subject/395078
 
-ISBN 20: 9784063815016
+ISBN 39: 9784813051794
+https://bgm.tv/subject/119637
+https://bgm.tv/subject/154567
+
+ISBN 40: 9784832283749
+https://bgm.tv/subject/119638
+https://bgm.tv/subject/154568
+
+ISBN 41: 9784813050346
+https://bgm.tv/subject/121097
+https://bgm.tv/subject/121098
+
+ISBN 42: 9784088454825
+https://bgm.tv/subject/131915
+https://bgm.tv/subject/196946
+
+ISBN 43: 9784797334463
+https://bgm.tv/subject/147976
+https://bgm.tv/subject/327351
+
+ISBN 44: 9784063815016
 https://bgm.tv/subject/162311
 https://bgm.tv/subject/167403
 
-ISBN 21: 9784063419504
+ISBN 45: 9784091348791
+https://bgm.tv/subject/164145
+https://bgm.tv/subject/200724
+
+ISBN 46: 9784063419504
 https://bgm.tv/subject/164160
 https://bgm.tv/subject/200830
 
-ISBN 22: 9784063417777
+ISBN 47: 9784063417777
 https://bgm.tv/subject/164164
 https://bgm.tv/subject/203595
 
-ISBN 23: 9784829663486
+ISBN 48: 9784592851288
+https://bgm.tv/subject/166346
+https://bgm.tv/subject/212073
+
+ISBN 49: 9784829663486
 https://bgm.tv/subject/167610
 https://bgm.tv/subject/234084
 
-ISBN 24: 9784829663523
+ISBN 50: 9784829663523
 https://bgm.tv/subject/167635
 https://bgm.tv/subject/404557
 
-ISBN 25: 9784799203682
+ISBN 51: 9784799203682
 https://bgm.tv/subject/167642
 https://bgm.tv/subject/343476
 
-ISBN 26: 9784832278813
+ISBN 52: 9784040681610
+https://bgm.tv/subject/181826
+https://bgm.tv/subject/274940
+
+ISBN 53: 9784832278813
 https://bgm.tv/subject/186538
 https://bgm.tv/subject/477053
 
-ISBN 27: 9784862015938
+ISBN 54: 9784862015938
 https://bgm.tv/subject/205449
 https://bgm.tv/subject/304662
 
-ISBN 28: 9784776990420
+ISBN 55: 9784776990420
 https://bgm.tv/subject/205519
 https://bgm.tv/subject/205520
 
-ISBN 29: 9784592147169
+ISBN 56: 9784592147169
 https://bgm.tv/subject/209828
 https://bgm.tv/subject/265669
 
-ISBN 30: 9784063958805
+ISBN 57: 9784063958805
 https://bgm.tv/subject/216011
 https://bgm.tv/subject/433220
 
-ISBN 31: 9784041058282
+ISBN 58: 9784758076883
+https://bgm.tv/subject/227420
+https://bgm.tv/subject/532284
+
+ISBN 59: 9784041058282
 https://bgm.tv/subject/228746
 https://bgm.tv/subject/353436
 
-ISBN 32: 9784063650006
+ISBN 60: 9784063650006
 https://bgm.tv/subject/230126
 https://bgm.tv/subject/431688
 
-ISBN 33: 9784396784508
+ISBN 61: 9784396784508
 https://bgm.tv/subject/243007
 https://bgm.tv/subject/248817
 
-ISBN 34: 9784813705048
+ISBN 62: 9784813705048
 https://bgm.tv/subject/257627
 https://bgm.tv/subject/399280
 
-ISBN 35: 9784087920338
+ISBN 63: 9784087920338
 https://bgm.tv/subject/264210
 https://bgm.tv/subject/476132
 
-ISBN 36: 9784040655734
+ISBN 64: 9784040655734
 https://bgm.tv/subject/286644
 https://bgm.tv/subject/291268
 
-ISBN 37: 9784773089707
+ISBN 65: 9784773089707
 https://bgm.tv/subject/292143
 https://bgm.tv/subject/432070
 
-ISBN 38: 9784815604493
+ISBN 66: 9784815604493
 https://bgm.tv/subject/302201
 https://bgm.tv/subject/318829
 
-ISBN 39: 9784813708872
+ISBN 67: 9784813708872
 https://bgm.tv/subject/308072
 https://bgm.tv/subject/490173
 
-ISBN 40: 9784199800214
+ISBN 68: 9784199800214
 https://bgm.tv/subject/314891
 https://bgm.tv/subject/408428
 
-ISBN 41: 9784813709459
+ISBN 69: 9784813709459
 https://bgm.tv/subject/317697
 https://bgm.tv/subject/364316
 
-ISBN 42: 9784796414012
+ISBN 70: 9784796414012
 https://bgm.tv/subject/319757
 https://bgm.tv/subject/528785
 
-ISBN 43: 9784575411973
+ISBN 71: 9784575411973
 https://bgm.tv/subject/326064
 https://bgm.tv/subject/387524
 
-ISBN 44: 9784199608674
+ISBN 72: 9784199608674
 https://bgm.tv/subject/333796
 https://bgm.tv/subject/355957
 
-ISBN 45: 9784040741475
+ISBN 73: 9784040741475
 https://bgm.tv/subject/335997
 https://bgm.tv/subject/338061
 
-ISBN 46: 9784883863419
+ISBN 74: 9784883863419
 https://bgm.tv/subject/338313
 https://bgm.tv/subject/440420
 
-ISBN 47: 9784798625065
+ISBN 75: 9784798625065
 https://bgm.tv/subject/339651
 https://bgm.tv/subject/392100
 
-ISBN 48: 9784815603373
+ISBN 76: 9784815603373
 https://bgm.tv/subject/341986
 https://bgm.tv/subject/429481
 
-ISBN 49: 9784829621462
+ISBN 77: 9784829621462
 https://bgm.tv/subject/342469
 https://bgm.tv/subject/407776
 
-ISBN 50: 9784829684474
+ISBN 78: 9784829684474
 https://bgm.tv/subject/343699
 https://bgm.tv/subject/364088
 
-ISBN 51: 9784253236324
+ISBN 79: 9784253236324
 https://bgm.tv/subject/344195
 https://bgm.tv/subject/344196
 
-ISBN 52: 9784797390896
+ISBN 80: 9784797390896
 https://bgm.tv/subject/345499
 https://bgm.tv/subject/573022
 
-ISBN 53: 9784046803887
+ISBN 81: 9784046803887
 https://bgm.tv/subject/346845
 https://bgm.tv/subject/379161
 
-ISBN 54: 9784041113622
+ISBN 82: 9784041113622
 https://bgm.tv/subject/347446
 https://bgm.tv/subject/350541
 
-ISBN 55: 9784824000194
+ISBN 83: 9784824000194
 https://bgm.tv/subject/351756
 https://bgm.tv/subject/543627
 
-ISBN 56: 9784088444062
+ISBN 84: 9784088444062
 https://bgm.tv/subject/359308
 https://bgm.tv/subject/434034
 
-ISBN 57: 9784088445137
+ISBN 85: 9784088445137
 https://bgm.tv/subject/359309
 https://bgm.tv/subject/434035
 
-ISBN 58: 9784088446318
+ISBN 86: 9784088446318
 https://bgm.tv/subject/359310
 https://bgm.tv/subject/434036
 
-ISBN 59: 9784434296406
+ISBN 87: 9784434296406
 https://bgm.tv/subject/362929
 https://bgm.tv/subject/568961
 
-ISBN 60: 9784063245356
+ISBN 88: 9784063245356
 https://bgm.tv/subject/375850
 https://bgm.tv/subject/482919
 
-ISBN 61: 9784575458831
+ISBN 89: 9784575458831
 https://bgm.tv/subject/386630
 https://bgm.tv/subject/554430
 
-ISBN 62: 9784860323288
+ISBN 90: 9784860323288
 https://bgm.tv/subject/391614
 https://bgm.tv/subject/428994
 
-ISBN 63: 9784790103240
+ISBN 91: 9784790103240
 https://bgm.tv/subject/393141
 https://bgm.tv/subject/428996
 
-ISBN 64: 9784829669662
+ISBN 92: 9784829669662
 https://bgm.tv/subject/396765
 https://bgm.tv/subject/433373
 
-ISBN 65: 9784048680615
+ISBN 93: 9784048680615
 https://bgm.tv/subject/413186
 https://bgm.tv/subject/413837
 
-ISBN 66: 9784047372764
+ISBN 94: 9784047372764
 https://bgm.tv/subject/415737
 https://bgm.tv/subject/446082
 
-ISBN 67: 9784790100508
+ISBN 95: 9784790100508
 https://bgm.tv/subject/443508
 https://bgm.tv/subject/470446
 
-ISBN 68: 9784758021593
+ISBN 96: 9784758021593
 https://bgm.tv/subject/474013
 https://bgm.tv/subject/539168
 
-ISBN 69: 9784847049989
+ISBN 97: 9784847049989
 https://bgm.tv/subject/479680
 https://bgm.tv/subject/567044
 
-ISBN 70: 9784091990846
+ISBN 98: 9784091990846
 https://bgm.tv/subject/480962
 https://bgm.tv/subject/493112
 
-ISBN 71: 9784801513129
+ISBN 99: 9784801513129
 https://bgm.tv/subject/495729
 https://bgm.tv/subject/552193
 
-ISBN 72: 9784041136799
+ISBN 100: 9784801512764
+https://bgm.tv/subject/495931
+https://bgm.tv/subject/552058
+
+ISBN 101: 9784040755526
+https://bgm.tv/subject/509661
+https://bgm.tv/subject/512341
+
+ISBN 102: 9784480818614
+https://bgm.tv/subject/517162
+https://bgm.tv/subject/525250
+
+ISBN 103: 9784824203281
+https://bgm.tv/subject/523124
+https://bgm.tv/subject/559225
+
+ISBN 104: 9784867781333
+https://bgm.tv/subject/531721
+https://bgm.tv/subject/532356
+
+ISBN 105: 9784041157350
+https://bgm.tv/subject/543364
+https://bgm.tv/subject/558606
+
+ISBN 106: 9784041163221
+https://bgm.tv/subject/554488
+https://bgm.tv/subject/560619
+
+ISBN 107: 9784824012562
+https://bgm.tv/subject/562249
+https://bgm.tv/subject/571142
+
+ISBN 108: 9784041136799
 https://bgm.tv/subject/565041
 https://bgm.tv/subject/567814
 
-ISBN 73: 9784041145371
+ISBN 109: 9784041145371
 https://bgm.tv/subject/565042
 https://bgm.tv/subject/567815
 
-ISBN 74: 9784391165081
+ISBN 110: 9784391165081
 https://bgm.tv/subject/574883
 https://bgm.tv/subject/576271
 
 
-===== 已汇报的重复条目 =====
-
-【疑似系列误填】(3组)
-----------------------------------------
-ISBN 1: 9784091847348
-https://bgm.tv/subject/455812（系列）
-
-ISBN 2: 9784091308993
-https://bgm.tv/subject/129622（系列）
-
-ISBN 3: 9784065107836
-https://bgm.tv/subject/234525
-https://bgm.tv/subject/238381（系列）
-
-【疑似不同作品误填】(4组)
-----------------------------------------
-ISBN 1: 9784801525016
-https://bgm.tv/subject/553799
-
-ISBN 2: 9784829127964
-https://bgm.tv/subject/487679
-https://bgm.tv/subject/542680
-
-ISBN 3: 9784901769747
-https://bgm.tv/subject/493720
-https://bgm.tv/subject/493722
-
-ISBN 4: 9784909824158
-https://bgm.tv/subject/554027
-https://bgm.tv/subject/570387
-
-【疑似重复条目】(8组)
-----------------------------------------
-ISBN 1: 9784801512764
-https://bgm.tv/subject/495931
-https://bgm.tv/subject/552058
-
-ISBN 2: 9784040755526
-https://bgm.tv/subject/509661
-https://bgm.tv/subject/512341
-
-ISBN 3: 9784480818614
-https://bgm.tv/subject/517162
-https://bgm.tv/subject/525250
-
-ISBN 4: 9784824203281
-https://bgm.tv/subject/523124
-https://bgm.tv/subject/559225
-
-ISBN 5: 9784867781333
-https://bgm.tv/subject/531721
-https://bgm.tv/subject/532356
-
-ISBN 6: 9784041157350
-https://bgm.tv/subject/543364
-https://bgm.tv/subject/558606
-
-ISBN 7: 9784041163221
-https://bgm.tv/subject/554488
-https://bgm.tv/subject/560619
-
-ISBN 8: 9784824012562
-https://bgm.tv/subject/562249
-https://bgm.tv/subject/571142
+===== 已汇报的重复条目 ====
 
 
 ===== 最终统计 =====
-重复的ISBN数量: 407 个
-总重复条目数量: 821 个
-未汇报的条目数量: 794 个
-已汇报的条目数量: 27 个
+重复ISBN: 414 个
+总重复条目: 835 个
+未汇报: 835 个
+已汇报: 0 个
 
 分类统计:
-   - 疑似不同作品误填: 201 组
-   - 疑似同系列单行本误填: 72 组
+   - 疑似不同作品误填: 179 组
+   - 疑似同系列单行本误填: 73 组
    - 疑似系列误填: 52 组
-   - 疑似重复条目: 82 组
+   - 疑似重复条目: 110 组
