@@ -1,1691 +1,1702 @@
 重复ISBN检查结果
 ==================
-检查时间: 2025-08-11 13:59:26
+检查时间: 2025-08-11 14:22:19
 白名单: 9784801921436
+汇报帖链接: https://bgm.tv/group/topic/431206, https://bgm.tv/group/topic/431529, https://bgm.tv/group/topic/423940
 
 
 ===== 未汇报的重复条目 ====
 
-【疑似不同作品误填】(179组)
+【疑似不同作品误填】(154组)
 ----------------------------------------
 ISBN 1: 9784044712044
-https://bgm.tv/subject/1236
-https://bgm.tv/subject/50029
+https://bgm.tv/subject/1236 - らき☆すた―らき☆すた殺人事件
+https://bgm.tv/subject/50029 - らき☆すた―らき☆すたオンライン
 
 ISBN 2: 9784087460377
-https://bgm.tv/subject/1721（版本）
-https://bgm.tv/subject/145922
+https://bgm.tv/subject/1721 - ZOO（版本）
+https://bgm.tv/subject/145922 - ZOO〈1〉
 
 ISBN 3: 9784087460384
-https://bgm.tv/subject/1721（版本）
-https://bgm.tv/subject/145923
+https://bgm.tv/subject/1721 - ZOO（版本）
+https://bgm.tv/subject/145923 - ZOO〈2〉
 
 ISBN 4: 9784044499051
-https://bgm.tv/subject/3701
-https://bgm.tv/subject/3702
+https://bgm.tv/subject/3701 - 彩雲国物語〈4〉想いは遙かなる茶都へ
+https://bgm.tv/subject/3702 - 彩雲国物語〈5〉漆黒の月の宴
 
 ISBN 5: 9784832281707
-https://bgm.tv/subject/4877
-https://bgm.tv/subject/4878
+https://bgm.tv/subject/4877 - ハッピーヤローウエディング
+https://bgm.tv/subject/4878 - 恋友
 
 ISBN 6: 9784403614897
-https://bgm.tv/subject/5557
-https://bgm.tv/subject/230063
+https://bgm.tv/subject/5557 - さよならジュリエット
+https://bgm.tv/subject/230063 - ようならジュリエット
 
 ISBN 7: 9784103534228
-https://bgm.tv/subject/7388
-https://bgm.tv/subject/494231
+https://bgm.tv/subject/7388 - 1Q84
+https://bgm.tv/subject/494231 - ねじまき鳥クロニクル
 
 ISBN 8: 9784758053433
-https://bgm.tv/subject/7879
-https://bgm.tv/subject/354024
+https://bgm.tv/subject/7879 - あまつき絵巻 金華糖 ～小さめにしてみました。～
+https://bgm.tv/subject/354024 - あまつき絵巻 金華糖 ―小さめにしてみました。―
 
 ISBN 9: 9784575513448
-https://bgm.tv/subject/9562（版本）
-https://bgm.tv/subject/154299（版本）
+https://bgm.tv/subject/9562 - 告白（版本）
+https://bgm.tv/subject/154299 - 真夏の日の夢（版本）
 
 ISBN 10: 9784063845327
-https://bgm.tv/subject/22577
-https://bgm.tv/subject/27994
+https://bgm.tv/subject/22577 - 魔法先生ネギま！ 第３５巻
+https://bgm.tv/subject/27994 - 魔法先生ネギま! (35)
 
 ISBN 11: 9784047125940
-https://bgm.tv/subject/25089
-https://bgm.tv/subject/296920
+https://bgm.tv/subject/25089 - 伝説の勇者の伝説 (1) 昼寝王国の野望
+https://bgm.tv/subject/296920 - 伝説の勇者の伝説  (1)
 
 ISBN 12: 9784047126756
-https://bgm.tv/subject/25092
-https://bgm.tv/subject/296923
+https://bgm.tv/subject/25092 - 伝説の勇者の伝説 (4) 大掃除の宴
+https://bgm.tv/subject/296923 - 伝説の勇者の伝説  (4)
 
 ISBN 13: 9784047126909
-https://bgm.tv/subject/25093
-https://bgm.tv/subject/296924
+https://bgm.tv/subject/25093 - 伝説の勇者の伝説 (5) 出来心の後始末
+https://bgm.tv/subject/296924 - 伝説の勇者の伝説 (5)
 
 ISBN 14: 9784044604233
-https://bgm.tv/subject/31259
-https://bgm.tv/subject/31276
-
-ISBN 15: 9784798601168
-https://bgm.tv/subject/37276
-https://bgm.tv/subject/150155
-
-ISBN 16: 9784776795575
-https://bgm.tv/subject/38011
-https://bgm.tv/subject/394265
-
-ISBN 17: 9784086306430
-https://bgm.tv/subject/39036
-https://bgm.tv/subject/425013
-
-ISBN 18: 9784798604275
-https://bgm.tv/subject/46983
-https://bgm.tv/subject/343906
-
-ISBN 19: 9784943966418
-https://bgm.tv/subject/51655
-https://bgm.tv/subject/136017
-
-ISBN 20: 9784943966586
-https://bgm.tv/subject/51657
-https://bgm.tv/subject/136020
-
-ISBN 21: 9784943966975
-https://bgm.tv/subject/51658
-https://bgm.tv/subject/136021
-
-ISBN 22: 9784943966289
-https://bgm.tv/subject/51659
-https://bgm.tv/subject/136018
-
-ISBN 23: 9784088623665
-https://bgm.tv/subject/52551
-https://bgm.tv/subject/75174
-
-ISBN 24: 9784821183456
-https://bgm.tv/subject/55999
-https://bgm.tv/subject/351329
-https://bgm.tv/subject/351332
-
-ISBN 25: 9784832276239
-https://bgm.tv/subject/58430
-https://bgm.tv/subject/477094
-
-ISBN 26: 9784088616636
-https://bgm.tv/subject/70135
-https://bgm.tv/subject/81342
-
-ISBN 27: 9784778031749
-https://bgm.tv/subject/70376
-https://bgm.tv/subject/341926
-
-ISBN 28: 9784047274020
-https://bgm.tv/subject/72415
-https://bgm.tv/subject/285580
-
-ISBN 29: 9784048912983
-https://bgm.tv/subject/78495
-https://bgm.tv/subject/391468
-
-ISBN 30: 9784063710359
-https://bgm.tv/subject/79757
-https://bgm.tv/subject/356274
-
-ISBN 31: 9784063710366
-https://bgm.tv/subject/79758
-https://bgm.tv/subject/356275
-
-ISBN 32: 9784063710557
-https://bgm.tv/subject/79759
-https://bgm.tv/subject/356277
-
-ISBN 33: 9784309272917
-https://bgm.tv/subject/86303
-https://bgm.tv/subject/530512
-
-ISBN 34: 9784774701400
-https://bgm.tv/subject/92062
-https://bgm.tv/subject/150859
-
-ISBN 35: 9784829138519
-https://bgm.tv/subject/97028
-https://bgm.tv/subject/144623
-https://bgm.tv/subject/144624
-https://bgm.tv/subject/144626
-https://bgm.tv/subject/144627
-https://bgm.tv/subject/144628
-
-ISBN 36: 9784757704749
-https://bgm.tv/subject/97296
-https://bgm.tv/subject/123628
-
-ISBN 37: 9784863492295
-https://bgm.tv/subject/100213
-https://bgm.tv/subject/100214
-
-ISBN 38: 9784063753981
-https://bgm.tv/subject/109082
-https://bgm.tv/subject/162042
-
-ISBN 39: 9784091434821
-https://bgm.tv/subject/111030
-https://bgm.tv/subject/137189
-
-ISBN 40: 9784757525887
-https://bgm.tv/subject/111172
-https://bgm.tv/subject/111173
-
-ISBN 41: 9784757526624
-https://bgm.tv/subject/111174
-https://bgm.tv/subject/111175
-
-ISBN 42: 9784862637482
-https://bgm.tv/subject/118125
-https://bgm.tv/subject/280935
-
-ISBN 43: 9784870766945
-https://bgm.tv/subject/122678
-https://bgm.tv/subject/345981
-
-ISBN 44: 9784896109368
-https://bgm.tv/subject/123030
-https://bgm.tv/subject/355327
-
-ISBN 45: 9784903421025
-https://bgm.tv/subject/137917
-https://bgm.tv/subject/222659
-
-ISBN 46: 9784904468630
-https://bgm.tv/subject/140002
-https://bgm.tv/subject/531723
-
-ISBN 47: 9784807840731
-https://bgm.tv/subject/141813
-https://bgm.tv/subject/397279
-
-ISBN 48: 9784575832594
-https://bgm.tv/subject/141816
-https://bgm.tv/subject/397280
-
-ISBN 49: 9784863490987
-https://bgm.tv/subject/144760
-https://bgm.tv/subject/230801
-
-ISBN 50: 9784048691680
-https://bgm.tv/subject/148797
-https://bgm.tv/subject/324861
-
-ISBN 51: 9784091415660
-https://bgm.tv/subject/156660
-https://bgm.tv/subject/434939
-
-ISBN 52: 9784896374087
-https://bgm.tv/subject/161753
-https://bgm.tv/subject/161756
-
-ISBN 53: 9784796403412
-https://bgm.tv/subject/164151
-https://bgm.tv/subject/257405
-
-ISBN 54: 9784063416107
-https://bgm.tv/subject/164169
-https://bgm.tv/subject/200835
-
-ISBN 55: 9784773095463
-https://bgm.tv/subject/169010
-https://bgm.tv/subject/169011
-
-ISBN 56: 9784870767072
-https://bgm.tv/subject/172138
-https://bgm.tv/subject/230743
-
-ISBN 57: 9784863494848
-https://bgm.tv/subject/172381
-https://bgm.tv/subject/440849
-
-ISBN 58: 9784799715307
-https://bgm.tv/subject/187455
-https://bgm.tv/subject/295060
-
-ISBN 59: 9784799725450
-https://bgm.tv/subject/187456
-https://bgm.tv/subject/295061
-
-ISBN 60: 9784091573421
-https://bgm.tv/subject/187758
-https://bgm.tv/subject/405083
-
-ISBN 61: 9784829677452
-https://bgm.tv/subject/194941
-https://bgm.tv/subject/194942
-
-ISBN 62: 9784877348045
-https://bgm.tv/subject/196186
-https://bgm.tv/subject/391323
-
-ISBN 63: 9784063415629
-https://bgm.tv/subject/198407
-https://bgm.tv/subject/252768
-
-ISBN 64: 9784396763381
-https://bgm.tv/subject/199155
-https://bgm.tv/subject/373285
-
-ISBN 65: 9784799208977
-https://bgm.tv/subject/202549
-https://bgm.tv/subject/343481
-
-ISBN 66: 9784785939700
-https://bgm.tv/subject/202574
-https://bgm.tv/subject/273894
-
-ISBN 67: 9784063411683
-https://bgm.tv/subject/204100
-https://bgm.tv/subject/267264
-
-ISBN 68: 9784865541465
-https://bgm.tv/subject/204842
-https://bgm.tv/subject/207538
-
-ISBN 69: 9784803009835
-https://bgm.tv/subject/207250
-https://bgm.tv/subject/236278
-
-ISBN 70: 9784803009484
-https://bgm.tv/subject/207251
-https://bgm.tv/subject/236277
-
-ISBN 71: 9784861274978
-https://bgm.tv/subject/210778
-https://bgm.tv/subject/404982
-
-ISBN 72: 9784832243422
-https://bgm.tv/subject/217053
-https://bgm.tv/subject/217057
-
-ISBN 73: 9784861274930
-https://bgm.tv/subject/220866
-https://bgm.tv/subject/281208
-
-ISBN 74: 9784894217218
-https://bgm.tv/subject/230531
-https://bgm.tv/subject/268142
-
-ISBN 75: 9784776796718
-https://bgm.tv/subject/235434
-https://bgm.tv/subject/452862
-
-ISBN 76: 9784040654959
-https://bgm.tv/subject/238624
-https://bgm.tv/subject/275517
-
-ISBN 77: 9784799737422
-https://bgm.tv/subject/242189
-https://bgm.tv/subject/317811
-
-ISBN 78: 9784776795681
-https://bgm.tv/subject/243822
-https://bgm.tv/subject/413551
-
-ISBN 79: 9784087925234
-https://bgm.tv/subject/248113
-https://bgm.tv/subject/419231
-
-ISBN 80: 9784434246654
-https://bgm.tv/subject/252869
-https://bgm.tv/subject/558779（版本）
-
-ISBN 81: 9784800265647
-https://bgm.tv/subject/253343
-https://bgm.tv/subject/344114
-
-ISBN 82: 9784798616896
-https://bgm.tv/subject/254531
-https://bgm.tv/subject/268363
-
-ISBN 83: 9784065120163
-https://bgm.tv/subject/254644
-https://bgm.tv/subject/341663
-
-ISBN 84: 9784091421890
-https://bgm.tv/subject/257693
-https://bgm.tv/subject/313132
-
-ISBN 85: 9784797396690
-https://bgm.tv/subject/264434
-https://bgm.tv/subject/317561
-
-ISBN 86: 9784797399226
-https://bgm.tv/subject/264435
-https://bgm.tv/subject/317562
-
-ISBN 87: 9784576181974
-https://bgm.tv/subject/267321
-https://bgm.tv/subject/271973
-
-ISBN 88: 9784866691848
-https://bgm.tv/subject/267325
-https://bgm.tv/subject/275580
-
-ISBN 89: 9784756732101
-https://bgm.tv/subject/268479
-https://bgm.tv/subject/470389
-
-ISBN 90: 9784798618227
-https://bgm.tv/subject/268839
-https://bgm.tv/subject/318252
-
-ISBN 91: 9784813706175
-https://bgm.tv/subject/272992
-https://bgm.tv/subject/281833
-
-ISBN 92: 9784815601089
-https://bgm.tv/subject/273651
-https://bgm.tv/subject/317563
-
-ISBN 93: 9784862975010
-https://bgm.tv/subject/275853
-https://bgm.tv/subject/441871
-
-ISBN 94: 9784537141771
-https://bgm.tv/subject/278221
-https://bgm.tv/subject/295633
-
-ISBN 95: 9784040656748
-https://bgm.tv/subject/278426
-https://bgm.tv/subject/284404
-
-ISBN 96: 9784434259456
-https://bgm.tv/subject/281814
-https://bgm.tv/subject/378099
-
-ISBN 97: 9784765935555
-https://bgm.tv/subject/283739
-https://bgm.tv/subject/440470
-
-ISBN 98: 9784864686525
-https://bgm.tv/subject/286004
-https://bgm.tv/subject/295190
-
-ISBN 99: 9784902307887
-https://bgm.tv/subject/286854
-https://bgm.tv/subject/517109
-
-ISBN 100: 9784040728261
-https://bgm.tv/subject/290370
-https://bgm.tv/subject/300181
-
-ISBN 101: 9784434266607
-https://bgm.tv/subject/294456
-https://bgm.tv/subject/501644
-
-ISBN 102: 9784815605681
-https://bgm.tv/subject/296601
-https://bgm.tv/subject/298854
-
-ISBN 103: 9784299000514
-https://bgm.tv/subject/296623
-https://bgm.tv/subject/545224
-
-ISBN 104: 9784801922099
-https://bgm.tv/subject/298799
-https://bgm.tv/subject/303252
-
-ISBN 105: 9784801922143
-https://bgm.tv/subject/298800
-https://bgm.tv/subject/359198
-
-ISBN 106: 9784040641959
-https://bgm.tv/subject/300393
-https://bgm.tv/subject/344509
-
-ISBN 107: 9784094522228
-https://bgm.tv/subject/304952
-https://bgm.tv/subject/304953
-
-ISBN 108: 9784800009739
-https://bgm.tv/subject/306465
-https://bgm.tv/subject/367711
-
-ISBN 109: 9784575935950
-https://bgm.tv/subject/314619
-https://bgm.tv/subject/314621
-
-ISBN 110: 9784049138771
-https://bgm.tv/subject/317394（版本）
-https://bgm.tv/subject/345148
-
-ISBN 111: 9784083216039
-https://bgm.tv/subject/317402
-https://bgm.tv/subject/421118
-
-ISBN 112: 9784040682556
-https://bgm.tv/subject/318764
-https://bgm.tv/subject/318911
-
-ISBN 113: 9784866693415
-https://bgm.tv/subject/320660
-https://bgm.tv/subject/321489
-
-ISBN 114: 9784091872906
-https://bgm.tv/subject/324446
-https://bgm.tv/subject/324449
-
-ISBN 115: 9784049133264
-https://bgm.tv/subject/325123
-https://bgm.tv/subject/325124
-
-ISBN 116: 9784801971851
-https://bgm.tv/subject/326996
-https://bgm.tv/subject/367329
-
-ISBN 117: 9784798621425
-https://bgm.tv/subject/329826
-https://bgm.tv/subject/329829
-
-ISBN 118: 9784801512856
-https://bgm.tv/subject/330691
-https://bgm.tv/subject/552057
-
-ISBN 119: 9784801512078
-https://bgm.tv/subject/330695
-https://bgm.tv/subject/551947
-
-ISBN 120: 9784863498679
-https://bgm.tv/subject/331440
-https://bgm.tv/subject/341908
-
-ISBN 121: 9784403667688
-https://bgm.tv/subject/335011
-https://bgm.tv/subject/336687
-
-ISBN 122: 9784046805140
-https://bgm.tv/subject/335900
-https://bgm.tv/subject/338202
-
-ISBN 123: 9784041112984
-https://bgm.tv/subject/336083
-https://bgm.tv/subject/338040
-
-ISBN 124: 9784088568881
-https://bgm.tv/subject/337809
-https://bgm.tv/subject/337845
-
-ISBN 125: 9784758411707
-https://bgm.tv/subject/337984
-https://bgm.tv/subject/465276
-
-ISBN 126: 9784864108515
-https://bgm.tv/subject/340900（版本）
-https://bgm.tv/subject/402026
-
-ISBN 127: 9784091800107
-https://bgm.tv/subject/341775
-https://bgm.tv/subject/501332
-
-ISBN 128: 9784870767201
-https://bgm.tv/subject/345982
-https://bgm.tv/subject/351843
-
-ISBN 129: 9784040741758
-https://bgm.tv/subject/348463
-https://bgm.tv/subject/413150
-
-ISBN 130: 9784253219594
-https://bgm.tv/subject/351872
-https://bgm.tv/subject/398368
-
-ISBN 131: 9784253219600
-https://bgm.tv/subject/351873
-https://bgm.tv/subject/398369
-
-ISBN 132: 9784253219617
-https://bgm.tv/subject/351874
-https://bgm.tv/subject/398370
-
-ISBN 133: 9784253219624
-https://bgm.tv/subject/351875
-https://bgm.tv/subject/398371
-
-ISBN 134: 9784253219631
-https://bgm.tv/subject/351876
-https://bgm.tv/subject/398372
-
-ISBN 135: 9784253219648
-https://bgm.tv/subject/351877
-https://bgm.tv/subject/398373
-
-ISBN 136: 9784253219655
-https://bgm.tv/subject/351878
-https://bgm.tv/subject/398374
-
-ISBN 137: 9784253219662
-https://bgm.tv/subject/351879
-https://bgm.tv/subject/398375
-
-ISBN 138: 9784253219679
-https://bgm.tv/subject/351880
-https://bgm.tv/subject/398376
-
-ISBN 139: 9784253219686
-https://bgm.tv/subject/351881
-https://bgm.tv/subject/398377
-
-ISBN 140: 9784253219693
-https://bgm.tv/subject/351882
-https://bgm.tv/subject/398378
-
-ISBN 141: 9784758023115
-https://bgm.tv/subject/360378
-https://bgm.tv/subject/570861
-
-ISBN 142: 9784049131383
-https://bgm.tv/subject/360747
-https://bgm.tv/subject/574004（版本）
-
-ISBN 143: 9784049141283
-https://bgm.tv/subject/363181
-https://bgm.tv/subject/526609
-
-ISBN 144: 9784049138559
-https://bgm.tv/subject/370634
-https://bgm.tv/subject/504516
-
-ISBN 145: 9784088901084
-https://bgm.tv/subject/372341
-https://bgm.tv/subject/372627
-
-ISBN 146: 9784785936273
-https://bgm.tv/subject/374273
-https://bgm.tv/subject/508957
-
-ISBN 147: 9784824001139
-https://bgm.tv/subject/374497
-https://bgm.tv/subject/395882
-
-ISBN 148: 9784807832774
-https://bgm.tv/subject/378290
-https://bgm.tv/subject/441864
-
-ISBN 149: 9784785931865
-https://bgm.tv/subject/381288
-https://bgm.tv/subject/405670
-
-ISBN 150: 9784047013360
-https://bgm.tv/subject/382776
-https://bgm.tv/subject/382777
-
-ISBN 151: 9784799004593
-https://bgm.tv/subject/384516
-https://bgm.tv/subject/417505
-
-ISBN 152: 9784765921442
-https://bgm.tv/subject/392073
-https://bgm.tv/subject/492111
-
-ISBN 153: 9784829677926
-https://bgm.tv/subject/399147
-https://bgm.tv/subject/440588
-
-ISBN 154: 9784056059601
-https://bgm.tv/subject/400821
-https://bgm.tv/subject/477034
-
-ISBN 155: 9784801525016
-https://bgm.tv/subject/402588
-https://bgm.tv/subject/553799
-
-ISBN 156: 9784041129494
-https://bgm.tv/subject/403661
-https://bgm.tv/subject/567813
-
-ISBN 157: 9784785924454
-https://bgm.tv/subject/405076
-https://bgm.tv/subject/507007
-
-ISBN 158: 9784403671357
-https://bgm.tv/subject/411594
-https://bgm.tv/subject/411596
-
-ISBN 159: 9784877198480
-https://bgm.tv/subject/413967
-https://bgm.tv/subject/413968
-
-ISBN 160: 9784790100133
-https://bgm.tv/subject/418574
-https://bgm.tv/subject/508807
-
-ISBN 161: 9784893931955
-https://bgm.tv/subject/428982
-https://bgm.tv/subject/428983
-
-ISBN 162: 9784835456942
-https://bgm.tv/subject/439849
-https://bgm.tv/subject/508061
-
-ISBN 163: 9784594002664
-https://bgm.tv/subject/455680
-https://bgm.tv/subject/455687
-
-ISBN 164: 9784056002478
-https://bgm.tv/subject/455696
-https://bgm.tv/subject/455698
-
-ISBN 165: 9784801937468
-https://bgm.tv/subject/460267
-https://bgm.tv/subject/465179
-
-ISBN 166: 9784049154924
-https://bgm.tv/subject/465822
-https://bgm.tv/subject/473586
-
-ISBN 167: 9784575753332
-https://bgm.tv/subject/466031
-https://bgm.tv/subject/473884
-
-ISBN 168: 9784047378254
-https://bgm.tv/subject/477611
-https://bgm.tv/subject/491610
-
-ISBN 169: 9784344034983
-https://bgm.tv/subject/480578
-https://bgm.tv/subject/553803
-
-ISBN 170: 9784878921711
-https://bgm.tv/subject/483646
-https://bgm.tv/subject/483658
-
-ISBN 171: 9784829127964
-https://bgm.tv/subject/487679
-https://bgm.tv/subject/542680
-
-ISBN 172: 9784901769747
-https://bgm.tv/subject/493720
-https://bgm.tv/subject/493722
-
-ISBN 173: 9784867206638
-https://bgm.tv/subject/498356
-https://bgm.tv/subject/506587
-
-ISBN 174: 9784872578355
-https://bgm.tv/subject/553450
-https://bgm.tv/subject/553458
-
-ISBN 175: 9784909824158
-https://bgm.tv/subject/554027
-https://bgm.tv/subject/570387
-
-ISBN 176: 9784257722397
-https://bgm.tv/subject/559969
-https://bgm.tv/subject/559976
-
-ISBN 177: 9784867168080
-https://bgm.tv/subject/563225
-https://bgm.tv/subject/572611
-
-ISBN 178: 9784086805445
-https://bgm.tv/subject/568985
-https://bgm.tv/subject/568987
-
-ISBN 179: 9784868430001
-https://bgm.tv/subject/570928
-https://bgm.tv/subject/571268
+https://bgm.tv/subject/31259 - 新ロードス島戦記〈1〉闇の森の魔獣
+https://bgm.tv/subject/31276 - 新ロードス島戦記〈2〉新生の魔帝国
+
+ISBN 15: 9784821183456
+https://bgm.tv/subject/55999 - KATANA (1) 襲刀
+https://bgm.tv/subject/351329 - KATANA (8) 長船三姉妹
+https://bgm.tv/subject/351332 - KATANA (9) 刀中の剣
+
+ISBN 16: 9784088616636
+https://bgm.tv/subject/70135 - オークション・ハウス (03)
+https://bgm.tv/subject/81342 - 殺し屋1 第8巻
+
+ISBN 17: 9784774701400
+https://bgm.tv/subject/92062 - コスプレ❤ドール
+https://bgm.tv/subject/150859 - コスプレ♥ドール
+
+ISBN 18: 9784829138519
+https://bgm.tv/subject/97028 - 再生のパラダイムシフト  リ・ユニオン
+https://bgm.tv/subject/144623 - 再生のパラダイムシフトⅡ ダブル・トリガー
+https://bgm.tv/subject/144624 - 再生のパラダイムシフトⅢ ゴースト・エッジ
+https://bgm.tv/subject/144626 - 再生のパラダイムシフトⅣ ナイト・オブ・アイリス
+https://bgm.tv/subject/144627 - 再生のパラダイムシフトⅤ スクランブル・フェスタ
+https://bgm.tv/subject/144628 - 再生のパラダイムシフトⅥ リ・ライト
+
+ISBN 19: 9784863492295
+https://bgm.tv/subject/100213 - シェイカー
+https://bgm.tv/subject/100214 - 小中ロック2
+
+ISBN 20: 9784091434821
+https://bgm.tv/subject/111030 - モジャ公 (藤子・F・不二雄大全集)
+https://bgm.tv/subject/137189 - モジャ公
+
+ISBN 21: 9784757525887
+https://bgm.tv/subject/111172 - ひぐらしのなく頃に解 祭囃し編 (1)
+https://bgm.tv/subject/111173 - ひぐらしのなく頃に解 皆殺し編 (2)
+
+ISBN 22: 9784757526624
+https://bgm.tv/subject/111174 - ひぐらしのなく頃に解 皆殺し編 (3)
+https://bgm.tv/subject/111175 - ひぐらしのなく頃に解 祭囃し編 (2)
+
+ISBN 23: 9784862637482
+https://bgm.tv/subject/118125 - A・D -天使の嘘- (1)
+https://bgm.tv/subject/280935 - A・D -天使の嘘-
+
+ISBN 24: 9784870766945
+https://bgm.tv/subject/122678 - 惡德乃榮
+https://bgm.tv/subject/345981 - 悪徳乃榮
+
+ISBN 25: 9784896109368
+https://bgm.tv/subject/123030 - 化物語 KEY ANIMATION NOTE 下巻
+https://bgm.tv/subject/355327 - 化物語 KEY ANIMATION NOTE 上巻
+
+ISBN 26: 9784903421025
+https://bgm.tv/subject/137917 - 竜鳴ツンデレ白書
+https://bgm.tv/subject/222659 - 竜鳴ツンデレ白書サマースペシャル
+
+ISBN 27: 9784904468630
+https://bgm.tv/subject/140002 - ヘンタイ教師と生意気ヤンキー指導の心
+https://bgm.tv/subject/531723 - ヘンタイ教師と生意気ヤンキー 指導の心得
+
+ISBN 28: 9784807840731
+https://bgm.tv/subject/141813 - 淫猥天使 (TOEN COMICS)
+https://bgm.tv/subject/397279 - 淫猥天使 Dirty Angel
+
+ISBN 29: 9784575832594
+https://bgm.tv/subject/141816 - Joy toy
+https://bgm.tv/subject/397280 - JoyToy
+
+ISBN 30: 9784863490987
+https://bgm.tv/subject/144760 - せめ ちち
+https://bgm.tv/subject/230801 - せめ・ちち
+
+ISBN 31: 9784048691680
+https://bgm.tv/subject/148797 - Fate/strange Fake (1)
+https://bgm.tv/subject/324861 - 重复条目，待处理
+
+ISBN 32: 9784091415660
+https://bgm.tv/subject/156660 - 新ドラベース 第1巻 (てんとう虫コロコロコミックス)
+https://bgm.tv/subject/434939 - 新ドラベース (1)
+
+ISBN 33: 9784896374087
+https://bgm.tv/subject/161753 - 奇異太郎少年の妖怪絵日記 伍
+https://bgm.tv/subject/161756 - 奇異太郎少年の妖怪絵日記 四
+
+ISBN 34: 9784796403412
+https://bgm.tv/subject/164151 - 極道の花嫁 ~ニューヨークへ行く~
+https://bgm.tv/subject/257405 - 極道の花嫁 ―ニューヨークへ行く―
+
+ISBN 35: 9784063416107
+https://bgm.tv/subject/164169 - Ｓ彼好きですが、なにか？
+https://bgm.tv/subject/200835 - S彼好きですが、なにか?
+
+ISBN 36: 9784773095463
+https://bgm.tv/subject/169010 - LIFE FORMS
+https://bgm.tv/subject/169011 - E-G-TOWN こどもたちの街
+
+ISBN 37: 9784870767072
+https://bgm.tv/subject/172138 - 彩恋 (いずみコミックス 7)
+https://bgm.tv/subject/230743 - 彩恋
+
+ISBN 38: 9784863494848
+https://bgm.tv/subject/172381 - あなたの子種が欲しいのっ
+https://bgm.tv/subject/440849 - あなたの子種がほしいのっ
+
+ISBN 39: 9784799715307
+https://bgm.tv/subject/187455 - ジュリアが首ったけ (1)
+https://bgm.tv/subject/295060 - ジュリアが首ったけ（1）
+
+ISBN 40: 9784799725450
+https://bgm.tv/subject/187456 - ジュリアが首ったけ (2)
+https://bgm.tv/subject/295061 - ジュリアが首ったけ（2）
+
+ISBN 41: 9784091573421
+https://bgm.tv/subject/187758 - なのに、ボクはイヤといえない (1)
+https://bgm.tv/subject/405083 - ラブねこ(生)
+
+ISBN 42: 9784829677452
+https://bgm.tv/subject/194941 - コヨーテ
+https://bgm.tv/subject/194942 - COYOTE 反逆のレジスタンス
+
+ISBN 43: 9784877348045
+https://bgm.tv/subject/196186 - 秘密の基地で×××
+https://bgm.tv/subject/391323 - 秘密の基地でXXX
+
+ISBN 44: 9784063415629
+https://bgm.tv/subject/198407 - ヒミツのカレ
+https://bgm.tv/subject/252768 - BF リアル・ラブ・コレクション 涙100万粒のリアル・ラブ ヒミツのカレ
+
+ISBN 45: 9784396763381
+https://bgm.tv/subject/199155 - Free soul
+https://bgm.tv/subject/373285 - フリー・ソウル
+
+ISBN 46: 9784799208977
+https://bgm.tv/subject/202549 - 百合ドルミッション！ライバル解散ハニートラップ
+https://bgm.tv/subject/343481 - うちのメイドはメイドなアイドル
+
+ISBN 47: 9784785939700
+https://bgm.tv/subject/202574 - ユミンにご飯を食べさせたい
+https://bgm.tv/subject/273894 - ユミンにご飯を食べさせたい～ユミンと一緒に食べる韓国料理～
+
+ISBN 48: 9784063411683
+https://bgm.tv/subject/204100 - 思いっきり100p
+https://bgm.tv/subject/267264 - 思いっきり100p pt.3
+
+ISBN 49: 9784865541465
+https://bgm.tv/subject/204842 - 骸骨騎士様、只今異世界へお出掛け中 III
+https://bgm.tv/subject/207538 - 骸骨騎士様、只今異世界へお出掛け中 IV
+
+ISBN 50: 9784803009835
+https://bgm.tv/subject/207250 - 人狼への転生、魔王の副官_始動編 (02)
+https://bgm.tv/subject/236278 - 人狼への転生、魔王の副官 始動編 (2)
+
+ISBN 51: 9784803009484
+https://bgm.tv/subject/207251 - 人狼への転生、魔王の副官_始動編 (01)
+https://bgm.tv/subject/236277 - 人狼への転生、魔王の副官 始動編 (1)
+
+ISBN 52: 9784832243422
+https://bgm.tv/subject/217053 - ソラミちゃんの唄 (1)
+https://bgm.tv/subject/217057 - ぷらいまりィずむ!  (1)
+
+ISBN 53: 9784861274930
+https://bgm.tv/subject/220866 - Replica 1
+https://bgm.tv/subject/281208 - Replica-レプリカ
+
+ISBN 54: 9784894217218
+https://bgm.tv/subject/230531 - シたい!着せたい!脱がせたい!!
+https://bgm.tv/subject/268142 - シたい 着せたい 脱がしたい
+
+ISBN 55: 9784776796718
+https://bgm.tv/subject/235434 - 三国恋戦記 ～思いでがえし～ 公式ビジュアルファンブック 十色永色
+https://bgm.tv/subject/452862 - 三国恋戦記 思いでがえし 十色永色 公式ビジュアルファンブック
+
+ISBN 56: 9784040654959
+https://bgm.tv/subject/238624 - チアーズ!
+https://bgm.tv/subject/275517 - チアーズ!  (1)
+
+ISBN 57: 9784799737422
+https://bgm.tv/subject/242189 - 恋チン!
+https://bgm.tv/subject/317811 - 恋チン! (1)
+
+ISBN 58: 9784776795681
+https://bgm.tv/subject/243822 - Wonderful Wonder Book Alice Archives Greencover 〜ハート&クローバー&ジョーカーの国のアリス S
+https://bgm.tv/subject/413551 - Alice Archives Green cover ～ハート＆クローバー＆ジョーカーの国のアリス SS&イラスト集～
+
+ISBN 59: 9784087925234
+https://bgm.tv/subject/248113 - COLORWALK 8 WOLF ONEPIECEイラスト集
+https://bgm.tv/subject/419231 - ONEPIECEイラスト集 COLORWALK (8) WOLF
+
+ISBN 60: 9784434246654
+https://bgm.tv/subject/252869 - 強面王子のハレムに潜入したら、なぜかべた惚れされまして!?
+https://bgm.tv/subject/558779 - 堅物王子と砂漠の秘めごと（版本）
+
+ISBN 61: 9784800265647
+https://bgm.tv/subject/253343 - 猫と竜と冒険王子とぐうたら少女
+https://bgm.tv/subject/344114 - 猫と竜 冒険王子とぐうたら少女
+
+ISBN 62: 9784798616896
+https://bgm.tv/subject/254531 - 勤労魔導士が、かわいい嫁と暮らしたら? 2 「はい、しあわせです! 」
+https://bgm.tv/subject/268363 - 勤労魔導士が、かわいい嫁と暮らしたら？ 3 「はい、しあわせです！」
+
+ISBN 63: 9784065120163
+https://bgm.tv/subject/254644 - バカレイドッグス (3)
+https://bgm.tv/subject/341663 - バカレイドッグス Loser (3)
+
+ISBN 64: 9784091421890
+https://bgm.tv/subject/257693 - 怪盗ジョーカー　ミラクルファンＢＯＯＫ
+https://bgm.tv/subject/313132 - 怪盗ジョーカー ミラクルファンBOOK
+
+ISBN 65: 9784797396690
+https://bgm.tv/subject/264434 - モンスターがあふれる世界になったので、好きに生きたいと思います (1)
+https://bgm.tv/subject/317561 - モンス夕一があふれる世界になったので、好きに生きたいと思います 1
+
+ISBN 66: 9784797399226
+https://bgm.tv/subject/264435 - モンスターがあふれる世界になったので、好きに生きたいと思います (2)
+https://bgm.tv/subject/317562 - モンス夕一があふれる世界になったので、好きに生きたいと思います 2
+
+ISBN 67: 9784576181974
+https://bgm.tv/subject/267321 - 一途な公爵の不埒すぎる溺愛
+https://bgm.tv/subject/271973 - 一途な侯爵の不埒すぎる溺愛
+
+ISBN 68: 9784866691848
+https://bgm.tv/subject/267325 - 泣き虫な彼の育て方(仮)
+https://bgm.tv/subject/275580 - 竜が来りて恋びより
+
+ISBN 69: 9784756732101
+https://bgm.tv/subject/268479 - Flower complex
+https://bgm.tv/subject/470389 - フラワーコンプレックス
+
+ISBN 70: 9784798618227
+https://bgm.tv/subject/268839 - 嘘つき少年の異世界謀略ゲーム ~異世界で領主に成り上がった少女を連れ戻します~
+https://bgm.tv/subject/318252 - 嘘つき少年の異世界謀略ゲ一ム~異世界で領主に成り上がった少女を連れ戻します~
+
+ISBN 71: 9784813706175
+https://bgm.tv/subject/272992 - 旦那様は溺愛暴君⁉　偽装結婚でイチャイチャは必要ですか？
+https://bgm.tv/subject/281833 - 旦那様は溺愛暴君⁉ 偽装結婚なのに、イチャイチャしすぎです
+
+ISBN 72: 9784815601089
+https://bgm.tv/subject/273651 - モンスターがあふれる世界になったので、好きに生きたいと思います (3)
+https://bgm.tv/subject/317563 - モンス夕一があふれる世界になったので、好きに生きたいと思います 3
+
+ISBN 73: 9784862975010
+https://bgm.tv/subject/275853 - 妖怪と俺のえっちな性活
+https://bgm.tv/subject/441871 - 妖怪と俺のえっちな性活 〜お寺の家業は性教育〜
+
+ISBN 74: 9784537141771
+https://bgm.tv/subject/278221 - コワモテくんの乙女同盟
+https://bgm.tv/subject/295633 - コワモテくんの乙女同盟 (1)
+
+ISBN 75: 9784040656748
+https://bgm.tv/subject/278426 - スコップ無双 「スコップ波動砲！」(　｀・ω・´)♂〓〓〓〓★(゜Д　゜　;;;).:∴ドゴォォ
+https://bgm.tv/subject/284404 - スコップ無双2 「スコップ波動砲!」( `・ω・´)♂〓〓〓〓★(゜Д ゜ ;;;).:∴ドゴォォ
+
+ISBN 76: 9784434259456
+https://bgm.tv/subject/281814 - 甘い懲罰~私は看守専用ペット (6)
+https://bgm.tv/subject/378099 - 甘い懲罰 SCARLET ~私は看守専用ペット (6)
+
+ISBN 77: 9784765935555
+https://bgm.tv/subject/283739 - 生がいいのー林檎たちのデリヘル日記
+https://bgm.tv/subject/440470 - 生がいいの 〜林檎のデリヘル体験記〜
+
+ISBN 78: 9784864686525
+https://bgm.tv/subject/286004 - ダブル (01)
+https://bgm.tv/subject/295190 - ダブル(1)
+
+ISBN 79: 9784902307887
+https://bgm.tv/subject/286854 - キミだけにするんだから
+https://bgm.tv/subject/517109 - 小さくってもイけるのよ
+
+ISBN 80: 9784040728261
+https://bgm.tv/subject/290370 - 真ハイスクールＤ×Ｄ　2 実力試験のルイン・プリンセス
+https://bgm.tv/subject/300181 - 真ハイスクールD×D (2) 実力試験のルイン・プリンセス
+
+ISBN 81: 9784434266607
+https://bgm.tv/subject/294456 - 甘い懲罰~私は看守専用ペット (7)
+https://bgm.tv/subject/501644 - 甘い懲罰 SCARLET ~私は看守専用ペット (7)
+
+ISBN 82: 9784815605681
+https://bgm.tv/subject/296601 - 転生者に、抗え　～平凡な現地人はそれでも諦めない～
+https://bgm.tv/subject/298854 - 平凡な現地人、女神(猫)の加護で転生者に抗え!
+
+ISBN 83: 9784299000514
+https://bgm.tv/subject/296623 - 転生して成長チートを手に入れたら、最凶スキルもついたのですが!? 学園生活始めました
+https://bgm.tv/subject/545224 - 転生して成長チートを手に入れたら、最凶スキルもついたのですが!?2
+
+ISBN 84: 9784801922099
+https://bgm.tv/subject/298799 - 契約結婚だと思ったのに、なぜか王弟殿下に溺愛されています!?(仮)
+https://bgm.tv/subject/303252 - 契約結婚だと思ったのに、なぜか王弟殿下に溺愛されています!? 竜騎士サマと巣ごもり蜜月
+
+ISBN 85: 9784801922143
+https://bgm.tv/subject/298800 - 林檎の婚活ラプソディ(仮)
+https://bgm.tv/subject/359198 - 成約率100%の婚活アドバイザーに“すべて”教えられてしまいました
+
+ISBN 86: 9784040641959
+https://bgm.tv/subject/300393 - —異能—
+https://bgm.tv/subject/344509 - ―異能―
+
+ISBN 87: 9784094522228
+https://bgm.tv/subject/304952 - 幽霊伯爵の花嫁 （4） 偽りの聖女と地下牢の怪人
+https://bgm.tv/subject/304953 - 幽霊伯爵の花嫁 （5） 悪魔の罪過と忘れられた愛嬢
+
+ISBN 88: 9784800009739
+https://bgm.tv/subject/306465 - スローライフがしたい大賢者、娘を拾う。  (1)
+https://bgm.tv/subject/367711 - スローライフがしたい大賢者、娘を拾う。 (4)
+
+ISBN 89: 9784575935950
+https://bgm.tv/subject/314619 - ゲッターロボサーガ（1）ゲッターロボ 1
+https://bgm.tv/subject/314621 - ゲッターロボサーガ（3） ゲッターロボ 3
+
+ISBN 90: 9784083216039
+https://bgm.tv/subject/317402 - 劇場版 鬼滅の刃 無限列車編 ノベライズ
+https://bgm.tv/subject/421118 - 劇場版 鬼滅の刃 無限列車編 ノベライズ みらい文庫版
+
+ISBN 91: 9784040682556
+https://bgm.tv/subject/318764 - COBRA Magicdoll 後編
+https://bgm.tv/subject/318911 - COBRA VOL.12 MAGIC DOLL 後編
+
+ISBN 92: 9784866693415
+https://bgm.tv/subject/320660 - 愛しい人の幸せのため、悪役だって全力で頑張ります! (フェアリーキス(ピュア))
+https://bgm.tv/subject/321489 - 愛しい人の幸せのため、悪役だって全力で頑張ります!
+
+ISBN 93: 9784091872906
+https://bgm.tv/subject/324446 - 写真屋カフカ (1)
+https://bgm.tv/subject/324449 - 教育指導
+
+ISBN 94: 9784049133264
+https://bgm.tv/subject/325123 - キノの旅 the Beautiful World Best Selection II
+https://bgm.tv/subject/325124 - キノの旅 the Beautiful World　Best Selection III
+
+ISBN 95: 9784801971851
+https://bgm.tv/subject/326996 - とどのつまりパラダイス
+https://bgm.tv/subject/367329 - とどのつまりパラダイス
+
+ISBN 96: 9784798621425
+https://bgm.tv/subject/329826 - 魔界帰りの劣等能力者 3.二人の英雄
+https://bgm.tv/subject/329829 - 魔界帰りの劣等能力者 6.二人の仙道使い
+
+ISBN 97: 9784801512856
+https://bgm.tv/subject/330691 - 【モテすぎ注意】最高の美少女たちを都合よく調教してみた
+https://bgm.tv/subject/552057 - 【モテすぎ注意】最高の美少女たちを都合よく調教してみた
+
+ISBN 98: 9784801512078
+https://bgm.tv/subject/330695 - 孕ませプリンセス
+https://bgm.tv/subject/551947 - 孕ませプリンセス ふたりの姫との子作り関係
+
+ISBN 99: 9784863498679
+https://bgm.tv/subject/331440 - 女のコはその指の動きに弱いんです
+https://bgm.tv/subject/341908 - きて！みて！イジって！
+
+ISBN 100: 9784403667688
+https://bgm.tv/subject/335011 - パパセクスキャラメリゼ
+https://bgm.tv/subject/336687 - パパセクスキャラメリゼ
+
+ISBN 101: 9784046805140
+https://bgm.tv/subject/335900 - 緋弾のアリアＸＸＸV 侵掠の花嫁
+https://bgm.tv/subject/338202 - 緋弾のアリア XXXV 侵掠の花嫁
+
+ISBN 102: 9784041112984
+https://bgm.tv/subject/336083 - 落第賢者の学院無双６ ～二度転生した最強賢者、400年後の世界を魔剣で無双～
+https://bgm.tv/subject/338040 - 落第賢者の学院無双 ~二度転生した最強賢者、400年後の世界を魔剣で無双~ (6)
+
+ISBN 103: 9784088568881
+https://bgm.tv/subject/337809 - COJI-COJ（3）
+https://bgm.tv/subject/337845 - COJI-COJI（3）
+
+ISBN 104: 9784758411707
+https://bgm.tv/subject/337984 - 番狂わせ　警視庁警備部特殊車輌二課
+https://bgm.tv/subject/465276 - 番狂わせ 警視庁警備部特殊車輛二課
+
+ISBN 105: 9784864108515
+https://bgm.tv/subject/340900 - 私が見た未来（版本）
+https://bgm.tv/subject/402026 - 私が見た未来 完全版
+
+ISBN 106: 9784091800107
+https://bgm.tv/subject/341775 - 愛・水族館
+https://bgm.tv/subject/501332 - 愛・水族館 柏木ハルコ傑作短編集
+
+ISBN 107: 9784870767201
+https://bgm.tv/subject/345982 - 生贄と牢獄
+https://bgm.tv/subject/351843 - 生蟄と牢獄
+
+ISBN 108: 9784040741758
+https://bgm.tv/subject/348463 - 魔王学園の反逆者 2 ~人類初の魔王候補、眷属少女と王座を目指して成り上がる~
+https://bgm.tv/subject/413150 - 魔王学園の反逆者 ~人類初の魔王候補、眷属少女と王座を目指して成り上がる~ (2)
+
+ISBN 109: 9784253219594
+https://bgm.tv/subject/351872 - クローズZERO2 鈴蘭×鳳仙 (1)
+https://bgm.tv/subject/398368 - クローズZERO II 鈴蘭×鳳仙 (1)
+
+ISBN 110: 9784253219600
+https://bgm.tv/subject/351873 - クローズZERO2 鈴蘭×鳳仙 (2)
+https://bgm.tv/subject/398369 - クローズZERO II 鈴蘭×鳳仙 (2)
+
+ISBN 111: 9784253219617
+https://bgm.tv/subject/351874 - クローズZERO2 鈴蘭×鳳仙 (3)
+https://bgm.tv/subject/398370 - クローズZERO II 鈴蘭×鳳仙 (3)
+
+ISBN 112: 9784253219624
+https://bgm.tv/subject/351875 - クローズZERO2 鈴蘭×鳳仙 (4)
+https://bgm.tv/subject/398371 - クローズZERO II 鈴蘭×鳳仙 (4)
+
+ISBN 113: 9784253219631
+https://bgm.tv/subject/351876 - クローズZERO2 鈴蘭×鳳仙 (5)
+https://bgm.tv/subject/398372 - クローズZERO II 鈴蘭×鳳仙 (5)
+
+ISBN 114: 9784253219648
+https://bgm.tv/subject/351877 - クローズZERO2 鈴蘭×鳳仙 (6)
+https://bgm.tv/subject/398373 - クローズZERO II 鈴蘭×鳳仙 (6)
+
+ISBN 115: 9784253219655
+https://bgm.tv/subject/351878 - クローズZERO2 鈴蘭×鳳仙 (7)
+https://bgm.tv/subject/398374 - クローズZERO II 鈴蘭×鳳仙 (7)
+
+ISBN 116: 9784253219662
+https://bgm.tv/subject/351879 - クローズZERO2 鈴蘭×鳳仙 (8)
+https://bgm.tv/subject/398375 - クローズZERO II 鈴蘭×鳳仙 (8)
+
+ISBN 117: 9784253219679
+https://bgm.tv/subject/351880 - クローズZERO2 鈴蘭×鳳仙 (9)
+https://bgm.tv/subject/398376 - クローズZERO II 鈴蘭×鳳仙 (9)
+
+ISBN 118: 9784253219686
+https://bgm.tv/subject/351881 - クローズZERO2 鈴蘭×鳳仙 (10)
+https://bgm.tv/subject/398377 - クローズZERO II 鈴蘭×鳳仙 (10)
+
+ISBN 119: 9784253219693
+https://bgm.tv/subject/351882 - クローズZERO2 鈴蘭×鳳仙 (11)
+https://bgm.tv/subject/398378 - クローズZERO II 鈴蘭×鳳仙 (11)
+
+ISBN 120: 9784758023115
+https://bgm.tv/subject/360378 - プロジェクトセカイ カラフルステージ! feat.初音ミク コミックアンソロジー
+https://bgm.tv/subject/570861 - プロジェクトセカイ カラフルステージ! feat.初音ミク コミックアンソロジー vol.4
+
+ISBN 121: 9784049131383
+https://bgm.tv/subject/360747 - 星の降る家のローレン 僕を見つける旅にでる
+https://bgm.tv/subject/574004 - 星の降る家のローレン（版本）
+
+ISBN 122: 9784049141283
+https://bgm.tv/subject/363181 - Fate/Grand Order SABER WARS Ⅱ 番外編 ジェーン&イシュタル ～100万光年の流れ星～
+https://bgm.tv/subject/526609 - Fate/Grand Order SABER WARS 2 番外編 ジェーン&イシュタル ~100万光年の流れ星~
+
+ISBN 123: 9784049138559
+https://bgm.tv/subject/370634 - 限界超えの天賦は、転生者にしか扱えない ‐オーバーリミット・スキルホルダー‐ (1)
+https://bgm.tv/subject/504516 - 限界超えの天賦は、転生者にしか扱えない -オーバーリミット・スキルホルダー（1）
+
+ISBN 124: 9784088901084
+https://bgm.tv/subject/372341 - バルセロナの太陽 (4)
+https://bgm.tv/subject/372627 - したいコとしよっ！
+
+ISBN 125: 9784785936273
+https://bgm.tv/subject/374273 - だいすきっーひかるとさくらー
+https://bgm.tv/subject/508957 - だいすきっ‐ひかるとさくら‐
+
+ISBN 126: 9784824001139
+https://bgm.tv/subject/374497 - 不死者の弟子 5　～邪神の不興を買って奈落に落とされた俺の英雄譚～
+https://bgm.tv/subject/395882 - 不死者の弟子 ~邪神の不興を買って奈落に落とされた俺の英雄譚~ (5)
+
+ISBN 127: 9784807832774
+https://bgm.tv/subject/378290 - MARIA
+https://bgm.tv/subject/441864 - MARiA  マリア
+
+ISBN 128: 9784785931865
+https://bgm.tv/subject/381288 - ワケあり
+https://bgm.tv/subject/405670 - ワケあり～幽良物件あります～
+
+ISBN 129: 9784047013360
+https://bgm.tv/subject/382776 - アンジェリーク EXTRA VERSION (2) 幻国の楽園
+https://bgm.tv/subject/382777 - アンジェリーク EXTRA VERSION (3) 辺境の王子
+
+ISBN 130: 9784799004593
+https://bgm.tv/subject/384516 - 絶対敗北お姉さん
+https://bgm.tv/subject/417505 - 絶対敗北♡お姉さん
+
+ISBN 131: 9784765921442
+https://bgm.tv/subject/392073 - ピンキー・パニック
+https://bgm.tv/subject/492111 - ピンキー·パ二ック
+
+ISBN 132: 9784829677926
+https://bgm.tv/subject/399147 - 69 s○x revolver
+https://bgm.tv/subject/440588 - 69 S○X-REVOLVER
+
+ISBN 133: 9784056059601
+https://bgm.tv/subject/400821 - DARKER THAN BLACK -流星の双子- VISUAL FAN BOOK
+https://bgm.tv/subject/477034 - ダーカーザンブラック流星の双子 ビジュアルファンブック
+
+ISBN 134: 9784801525016
+https://bgm.tv/subject/402588 - ホーリーアンデッド ~非モテでぼっちの死霊術士が、聖女に転生してお友達を増やします~ (1)
+https://bgm.tv/subject/553799 - 【収納空間】を極める男 (1) ~俺はモンスターを狩りたいだけなのにぃ~!
+
+ISBN 135: 9784041129494
+https://bgm.tv/subject/403661 - 雨宮兄弟の骨董事件簿
+https://bgm.tv/subject/567813 - 雨宮兄弟の骨董事件簿  (1)
+
+ISBN 136: 9784403671357
+https://bgm.tv/subject/411594 - ささだあすか短篇集 きらきらのなつ
+https://bgm.tv/subject/411596 - 白い部屋のふたり 山岸涼子傑作集
+
+ISBN 137: 9784877198480
+https://bgm.tv/subject/413967 - アンジェリーク トロワ スウィートガイド
+https://bgm.tv/subject/413968 - アンジェリーク トロワ 恋愛講座
+
+ISBN 138: 9784790100133
+https://bgm.tv/subject/418574 - よい子の性教育 ロリコン日記
+https://bgm.tv/subject/508807 - よい子の性教育
+
+ISBN 139: 9784893931955
+https://bgm.tv/subject/428982 - エンジェリック・インパクト NUMBER 07 復活!! アスカ篇
+https://bgm.tv/subject/428983 - エンジェリック・インパクト 〈８〉
+
+ISBN 140: 9784835456942
+https://bgm.tv/subject/439849 - いのまたむつみ画業40周年記念画集
+https://bgm.tv/subject/508061 - いのまたむつみ画業40周年画集 Sanctuary
+
+ISBN 141: 9784594002664
+https://bgm.tv/subject/455680 - 渡辺満里奈写真集 ONE DAY
+https://bgm.tv/subject/455687 - P-CAN ISLAND 西田ひかる写真集
+
+ISBN 142: 9784056002478
+https://bgm.tv/subject/455696 - 高橋由美子 Perfect Photo Book
+https://bgm.tv/subject/455698 - IL DINJA
+
+ISBN 143: 9784801937468
+https://bgm.tv/subject/460267 - マンガでわかる小林剛の麻雀必勝法 (1)
+https://bgm.tv/subject/465179 - マンガでわかる小林剛の麻雀必勝法
+
+ISBN 144: 9784049154924
+https://bgm.tv/subject/465822 - この恋を星には願わない (2)
+https://bgm.tv/subject/473586 - びっちびっち♥
+
+ISBN 145: 9784575753332
+https://bgm.tv/subject/466031 - 救世の冒険者は、雑用係に憧れる ~世界最強だけど、俺は自由に生きていく~ (1)
+https://bgm.tv/subject/473884 - 英雄ブランの人生計画 (1) 第二の人生は雑用係でお願いします
+
+ISBN 146: 9784047378254
+https://bgm.tv/subject/477611 - ミリしら転生ゲーマー　～1ミリも知らないゲームの世界に転生したけど全力で原作を守護ります～ 01
+https://bgm.tv/subject/491610 - ミリしら転生ゲーマー ~1ミリも知らないゲームの世界に転生したけど全力で原作を守護ります~ (1)
+
+ISBN 147: 9784344034983
+https://bgm.tv/subject/480578 - 青春の瓶詰め
+https://bgm.tv/subject/553803 - 小池美波ファースト写真集 青春の瓶詰め
+
+ISBN 148: 9784878921711
+https://bgm.tv/subject/483646 - 学園秘芸帳１ 縛って！！正義の女王様
+https://bgm.tv/subject/483658 - 愛と正義の保健医・白河聖子
+
+ISBN 149: 9784867206638
+https://bgm.tv/subject/498356 - 人喰い姫のカヴァリエーレ (3)
+https://bgm.tv/subject/506587 - ごめんねオカルト遊ばせて? (1)
+
+ISBN 150: 9784872578355
+https://bgm.tv/subject/553450 - 罪と罰
+https://bgm.tv/subject/553458 - レ・ミゼラブル
+
+ISBN 151: 9784257722397
+https://bgm.tv/subject/559969 - 嵐のデスティニィ①
+https://bgm.tv/subject/559976 - 嵐のデスティニィ⑥
+
+ISBN 152: 9784867168080
+https://bgm.tv/subject/563225 - 賢者の弟子を名乗る賢者 THE COMIC (14)
+https://bgm.tv/subject/572611 - 転生競走馬 エッチマン (10)
+
+ISBN 153: 9784086805445
+https://bgm.tv/subject/568985 - 煙突掃除令嬢は妖精さんの夢を見る ~革命後夜の恋語り~
+https://bgm.tv/subject/568987 - 西荻窪ブックカフェの恋の魔女 迷子の子羊と猫と、時々ワンプレート
+
+ISBN 154: 9784868430001
+https://bgm.tv/subject/570928 - 雪華邸美術館の魔女
+https://bgm.tv/subject/571268 - 雪華邸美術館の魔女 (1)
 
 【疑似同系列单行本误填】(73组)
 ----------------------------------------
 ISBN 1: 9784088745497
-https://bgm.tv/subject/1611
-https://bgm.tv/subject/1613
+https://bgm.tv/subject/1611 - 屍鬼 (1)
+https://bgm.tv/subject/1613 - 屍鬼 (3)
 
 ISBN 2: 9784894256606
-https://bgm.tv/subject/1825
-https://bgm.tv/subject/352711
+https://bgm.tv/subject/1825 - いちばんうしろの大魔王 ACT1
+https://bgm.tv/subject/352711 - いちばんうしろの大魔王 ACT13
 
 ISBN 3: 9784592184287
-https://bgm.tv/subject/4551
-https://bgm.tv/subject/4552
+https://bgm.tv/subject/4551 - お兄ちゃんと一緒 (8)
+https://bgm.tv/subject/4552 - お兄ちゃんと一緒 (9)
 
 ISBN 4: 9784048671361
-https://bgm.tv/subject/4806
-https://bgm.tv/subject/19117
+https://bgm.tv/subject/4806 - 付喪堂骨董店〈1〉―“不思議”取り扱います
+https://bgm.tv/subject/19117 - 付喪堂骨董店〈4〉―“不思議”取り扱います
 
 ISBN 5: 9784048674652
-https://bgm.tv/subject/4807
-https://bgm.tv/subject/19118
+https://bgm.tv/subject/4807 - 付喪堂骨董店〈2〉―“不思議”取り扱います
+https://bgm.tv/subject/19118 - 付喪堂骨董店〈5〉―“不思議”取り扱います
 
 ISBN 6: 9784048680776
-https://bgm.tv/subject/4808
-https://bgm.tv/subject/19119
+https://bgm.tv/subject/4808 - 付喪堂骨董店〈3〉―“不思議”取り扱います
+https://bgm.tv/subject/19119 - 付喪堂骨董店〈6〉―“不思議”取り扱います
 
 ISBN 7: 9784150308803
-https://bgm.tv/subject/22279
-https://bgm.tv/subject/22280
+https://bgm.tv/subject/22279 - 星界の断章(1)
+https://bgm.tv/subject/22280 - 星界の断章(2)
 
 ISBN 8: 9784063414424
-https://bgm.tv/subject/30661
-https://bgm.tv/subject/30696
+https://bgm.tv/subject/30661 - 純愛特攻隊長! (1)
+https://bgm.tv/subject/30696 - 純愛特攻隊長! (2)
 
 ISBN 9: 9784088467252
-https://bgm.tv/subject/34117
-https://bgm.tv/subject/125556
+https://bgm.tv/subject/34117 - うそつきリリィ (06)
+https://bgm.tv/subject/125556 - うそつきリリィ (17)
 
 ISBN 10: 9784091804549
-https://bgm.tv/subject/38585
-https://bgm.tv/subject/38587
+https://bgm.tv/subject/38585 - めぞん一刻 (04)
+https://bgm.tv/subject/38587 - めぞん一刻 (1)
 
 ISBN 11: 9784061025943
-https://bgm.tv/subject/38790
-https://bgm.tv/subject/38793
+https://bgm.tv/subject/38790 - 風子のいる店 1
+https://bgm.tv/subject/38793 - 風子のいる店 2
 
 ISBN 12: 9784870255906
-https://bgm.tv/subject/47471
-https://bgm.tv/subject/47850
+https://bgm.tv/subject/47471 - 聖戦記エルナサーガ (5)
+https://bgm.tv/subject/47850 - 聖戦記エルナサーガ (9)
 
 ISBN 13: 9784063846485
-https://bgm.tv/subject/48750
-https://bgm.tv/subject/48752
+https://bgm.tv/subject/48750 - AKB49〜恋愛禁止条例〜 (08)
+https://bgm.tv/subject/48752 - AKB49〜恋愛禁止条例〜 (07)
 
 ISBN 14: 9784063845860
-https://bgm.tv/subject/48754
-https://bgm.tv/subject/48756
+https://bgm.tv/subject/48754 - AKB49〜恋愛禁止条例〜 (06)
+https://bgm.tv/subject/48756 - AKB49〜恋愛禁止条例〜 (05)
 
 ISBN 15: 9784592172345
-https://bgm.tv/subject/66109
-https://bgm.tv/subject/66112
+https://bgm.tv/subject/66109 - 笑えない理由 (02)
+https://bgm.tv/subject/66112 - 笑えない理由 (04)
 
 ISBN 16: 9784048540650
-https://bgm.tv/subject/120464
-https://bgm.tv/subject/120466
+https://bgm.tv/subject/120464 - コードギアス 反逆のルルーシュ 第1巻
+https://bgm.tv/subject/120466 - コードギアス 反逆のルルーシュ 第2巻
 
 ISBN 17: 9784040663784
-https://bgm.tv/subject/122161
-https://bgm.tv/subject/347478
+https://bgm.tv/subject/122161 - 魔法戦争 7
+https://bgm.tv/subject/347478 - 魔法戦争 8
 
 ISBN 18: 9784799728390
-https://bgm.tv/subject/124801
-https://bgm.tv/subject/159278
+https://bgm.tv/subject/124801 - 媚の凶刃 (1)
+https://bgm.tv/subject/159278 - 媚の凶刃 (2)
 
 ISBN 19: 9784061736306
-https://bgm.tv/subject/124880
-https://bgm.tv/subject/124912
+https://bgm.tv/subject/124880 - 鉄拳チンミ (2)
+https://bgm.tv/subject/124912 - 鉄拳チンミ (1)
 
 ISBN 20: 9784758014137
-https://bgm.tv/subject/134342
-https://bgm.tv/subject/134349
+https://bgm.tv/subject/134342 - 機動戦士ガンダムUCインサイドアニメーションワークス1
+https://bgm.tv/subject/134349 - 機動戦士ガンダムUCインサイドアニメーションワークス2
 
 ISBN 21: 9784758059848
-https://bgm.tv/subject/137807
-https://bgm.tv/subject/137808
+https://bgm.tv/subject/137807 - Are you Alice? (11)
+https://bgm.tv/subject/137808 - Are you Alice? (12)
 
 ISBN 22: 9784840133586
-https://bgm.tv/subject/156715
-https://bgm.tv/subject/156716
+https://bgm.tv/subject/156715 - ゼロの使い魔 シュヴァリエ 1
+https://bgm.tv/subject/156716 - ゼロの使い魔 シュヴァリエ 2
 
 ISBN 23: 9784803011715
-https://bgm.tv/subject/197637
-https://bgm.tv/subject/253661
+https://bgm.tv/subject/197637 - 魔法少女なんてもういいですから。(2)
+https://bgm.tv/subject/253661 - 魔法少女なんてもういいですから。(3)
 
 ISBN 24: 9784253152563
-https://bgm.tv/subject/207058
-https://bgm.tv/subject/267232
+https://bgm.tv/subject/207058 - マリア (01)
+https://bgm.tv/subject/267232 - マリア (1)
 
 ISBN 25: 9784040723112
-https://bgm.tv/subject/229969
-https://bgm.tv/subject/261855
+https://bgm.tv/subject/229969 - 放課後は、異世界喫茶でコーヒーを (2)
+https://bgm.tv/subject/261855 - 放課後は、異世界喫茶でコーヒーを (4)
 
 ISBN 26: 9784065120118
-https://bgm.tv/subject/253421
-https://bgm.tv/subject/330913
+https://bgm.tv/subject/253421 - 聖☆おにいさん (15)
+https://bgm.tv/subject/330913 - 聖☆おにいさん (19)
 
 ISBN 27: 9784800008015
-https://bgm.tv/subject/262539
-https://bgm.tv/subject/272754
+https://bgm.tv/subject/262539 - とつくにの少女 6
+https://bgm.tv/subject/272754 - とつくにの少女 7
 
 ISBN 28: 9784091866721
-https://bgm.tv/subject/294578
-https://bgm.tv/subject/294582
+https://bgm.tv/subject/294578 - イリヤッド-入矢堂見聞録-2
+https://bgm.tv/subject/294582 - イリヤッド-入矢堂見聞録-6
 
 ISBN 29: 9784063802344
-https://bgm.tv/subject/297602
-https://bgm.tv/subject/297603
-https://bgm.tv/subject/297604
+https://bgm.tv/subject/297602 - 竜の翼に君をのせて!(1)
+https://bgm.tv/subject/297603 - 竜の翼に君をのせて!(2)
+https://bgm.tv/subject/297604 - 竜の翼に君をのせて!(3)
 
 ISBN 30: 9784088614182
-https://bgm.tv/subject/300849
-https://bgm.tv/subject/300850
+https://bgm.tv/subject/300849 - ハッピーピープル 8
+https://bgm.tv/subject/300850 - ハッピーピープル 9
 
 ISBN 31: 9784253131247
-https://bgm.tv/subject/305755
-https://bgm.tv/subject/305756
+https://bgm.tv/subject/305755 - バイオハザード～ヘヴンリーアイランド～ (4)
+https://bgm.tv/subject/305756 - バイオハザード～ヘヴンリーアイランド～ (5)
 
 ISBN 32: 9784870255982
-https://bgm.tv/subject/305927
-https://bgm.tv/subject/305929
+https://bgm.tv/subject/305927 - ファイアーエムブレム 暗黒竜と光の剣 10
+https://bgm.tv/subject/305929 - ファイアーエムブレム 暗黒竜と光の剣 12
 
 ISBN 33: 9784864728386
-https://bgm.tv/subject/309184
-https://bgm.tv/subject/309185
+https://bgm.tv/subject/309184 - 穏やか貴族の休暇のすすめ。 (6)
+https://bgm.tv/subject/309185 - 穏やか貴族の休暇のすすめ。 (7)
 
 ISBN 34: 9784040649207
-https://bgm.tv/subject/317814
-https://bgm.tv/subject/317815
+https://bgm.tv/subject/317814 - あなたと食べるしあわせを‐槙と花澤‐2
+https://bgm.tv/subject/317815 - あなたと食べるしあわせを‐槙と花澤‐1
 
 ISBN 35: 9784098501717
-https://bgm.tv/subject/319304
-https://bgm.tv/subject/319305
+https://bgm.tv/subject/319304 - トニカクカワイイ (12)
+https://bgm.tv/subject/319305 - トニカクカワイイ (13)
 
 ISBN 36: 9784091297167
-https://bgm.tv/subject/319916
-https://bgm.tv/subject/319917
+https://bgm.tv/subject/319916 - 殺し屋Sのゆらぎ (2)
+https://bgm.tv/subject/319917 - 殺し屋Sのゆらぎ (3)
 
 ISBN 37: 9784253238595
-https://bgm.tv/subject/322272
-https://bgm.tv/subject/327926
+https://bgm.tv/subject/322272 - 衛府の七忍 (9)
+https://bgm.tv/subject/327926 - 衛府の七忍 (10)
 
 ISBN 38: 9784091285898
-https://bgm.tv/subject/323689
-https://bgm.tv/subject/323692
+https://bgm.tv/subject/323689 - THE SHOWMAN (3)
+https://bgm.tv/subject/323692 - THE SHOWMAN (2)
 
 ISBN 39: 9784041099216
-https://bgm.tv/subject/327297
-https://bgm.tv/subject/338012
+https://bgm.tv/subject/327297 - ひぐらしのなく頃に 業 (2)
+https://bgm.tv/subject/338012 - ひぐらしのなく頃に 業 (3)
 
 ISBN 40: 9784800009760
-https://bgm.tv/subject/328851
-https://bgm.tv/subject/328852
+https://bgm.tv/subject/328851 - こりせんまん (3)
+https://bgm.tv/subject/328852 - こりせんまん (4)
 
 ISBN 41: 9784065231494
-https://bgm.tv/subject/334174
-https://bgm.tv/subject/355821
+https://bgm.tv/subject/334174 - お願い、脱がシて。 (7)
+https://bgm.tv/subject/355821 - お願い、脱がシて。 (9)
 
 ISBN 42: 9784757569126
-https://bgm.tv/subject/334676
-https://bgm.tv/subject/334678
+https://bgm.tv/subject/334676 - 八雲さんは餌づけがしたい。 (9)
+https://bgm.tv/subject/334678 - 八雲さんは餌づけがしたい。 (10)
 
 ISBN 43: 9784575814743
-https://bgm.tv/subject/334780
-https://bgm.tv/subject/334781
+https://bgm.tv/subject/334780 - シャッター (11)
+https://bgm.tv/subject/334781 - シャッター (12)
 
 ISBN 44: 9784065236406
-https://bgm.tv/subject/338480
-https://bgm.tv/subject/338481
+https://bgm.tv/subject/338480 - 新装版 バイオメガ (1)
+https://bgm.tv/subject/338481 - 新装版 バイオメガ (2)
 
 ISBN 45: 9784253235013
-https://bgm.tv/subject/338524
-https://bgm.tv/subject/338532
+https://bgm.tv/subject/338524 - 真マジンガーZEROvs暗黒大将軍 (3)
+https://bgm.tv/subject/338532 - 真マジンガーZEROvs暗黒大将軍 (1)
 
 ISBN 46: 9784046803481
-https://bgm.tv/subject/342037
-https://bgm.tv/subject/357987
+https://bgm.tv/subject/342037 - 君ノ声 (2)
+https://bgm.tv/subject/357987 - 君ノ声 (3)
 
 ISBN 47: 9784884753023
-https://bgm.tv/subject/346273
-https://bgm.tv/subject/346274
+https://bgm.tv/subject/346273 - フリテンくん (1)
+https://bgm.tv/subject/346274 - フリテンくん (2)
 
 ISBN 48: 9784040731490
-https://bgm.tv/subject/347466
-https://bgm.tv/subject/347468
+https://bgm.tv/subject/347466 - 通常攻撃が全体攻撃で二回攻撃のお母さんは好きですか? (9)
+https://bgm.tv/subject/347468 - 通常攻撃が全体攻撃で二回攻撃のお母さんは好きですか? (10)
 
 ISBN 49: 9784120020186
-https://bgm.tv/subject/349511
-https://bgm.tv/subject/521929
+https://bgm.tv/subject/349511 - 同棲時代 愛蔵版 (1)
+https://bgm.tv/subject/521929 - 同棲時代 愛蔵版 (2)
 
 ISBN 50: 9784040740829
-https://bgm.tv/subject/351500
-https://bgm.tv/subject/405064
+https://bgm.tv/subject/351500 - 【さびついた剣】を試しに強化してみたら、とんでもない魔剣に化けました (1)
+https://bgm.tv/subject/405064 - 【さびついた剣】を試しに強化してみたら、とんでもない魔剣に化けました (3)
 
 ISBN 51: 9784091836939
-https://bgm.tv/subject/357503
-https://bgm.tv/subject/357516
+https://bgm.tv/subject/357503 - 愛しのバットマン (1)
+https://bgm.tv/subject/357516 - 愛しのバットマン (13)
 
 ISBN 52: 9784088574158
-https://bgm.tv/subject/361310
-https://bgm.tv/subject/361315
+https://bgm.tv/subject/361310 - 天より高く (3)
+https://bgm.tv/subject/361315 - 天より高く (5)
 
 ISBN 53: 9784047361454
-https://bgm.tv/subject/365278
-https://bgm.tv/subject/365281
+https://bgm.tv/subject/365278 - 十三歳の誕生日、皇后になりました。 (3)
+https://bgm.tv/subject/365281 - 十三歳の誕生日、皇后になりました。 (4)
 
 ISBN 54: 9784790119647
-https://bgm.tv/subject/373502
-https://bgm.tv/subject/373503
+https://bgm.tv/subject/373502 - 誰にも言えない(秘) 30
+https://bgm.tv/subject/373503 - 誰にも言えない(秘) 31
 
 ISBN 55: 9784812477847
-https://bgm.tv/subject/377302
-https://bgm.tv/subject/377303
+https://bgm.tv/subject/377302 - ばつ×いち (3)
+https://bgm.tv/subject/377303 - ばつ×いち (2)
 
 ISBN 56: 9784063288834
-https://bgm.tv/subject/381775
-https://bgm.tv/subject/381781
+https://bgm.tv/subject/381775 - どうだ貫一 (1)
+https://bgm.tv/subject/381781 - どうだ貫一 (6)
 
 ISBN 57: 9784434292712
-https://bgm.tv/subject/437759
-https://bgm.tv/subject/437762
+https://bgm.tv/subject/437759 - 勘違いの工房主 英雄パーティの元雑用係が、実は戦闘以外がSSSランクだったというよくある話 (8)
+https://bgm.tv/subject/437762 - 勘違いの工房主 英雄パーティの元雑用係が、実は戦闘以外がSSSランクだったというよくある話 (7)
 
 ISBN 58: 9784065184851
-https://bgm.tv/subject/451565
-https://bgm.tv/subject/451566
+https://bgm.tv/subject/451565 - NeuN〈ノイン〉 (5)
+https://bgm.tv/subject/451566 - NeuN〈ノイン〉 (6)
 
 ISBN 59: 9784864235297
-https://bgm.tv/subject/458962
-https://bgm.tv/subject/458964
+https://bgm.tv/subject/458962 - MOON・TRICK (9)
+https://bgm.tv/subject/458964 - MOON・TRICK (11)
 
 ISBN 60: 9784575417616
-https://bgm.tv/subject/462059
-https://bgm.tv/subject/462060
+https://bgm.tv/subject/462059 - ええ、召喚されて困っている聖女（仮）とは私のことです (1)
+https://bgm.tv/subject/462060 - ええ、召喚されて困っている聖女（仮）とは私のことです (2)
 
 ISBN 61: 9784537006131
-https://bgm.tv/subject/464149
-https://bgm.tv/subject/464151
+https://bgm.tv/subject/464149 - ピンクのカーテン 5
+https://bgm.tv/subject/464151 - ピンクのカーテン 6
 
 ISBN 62: 9784061767188
-https://bgm.tv/subject/465457
-https://bgm.tv/subject/465458
+https://bgm.tv/subject/465457 - SD武者ガンダム風雲録 9
+https://bgm.tv/subject/465458 - SD武者ガンダム風雲録 7
 
 ISBN 63: 9784063882261
-https://bgm.tv/subject/468718
-https://bgm.tv/subject/468720
+https://bgm.tv/subject/468718 - プ~ねこ (6)
+https://bgm.tv/subject/468720 - プ~ねこ (8)
 
 ISBN 64: 9784408641102
-https://bgm.tv/subject/474315
-https://bgm.tv/subject/532999
+https://bgm.tv/subject/474315 - 静かなるドン -もうひとつの最終章- (1)
+https://bgm.tv/subject/532999 - 静かなるドン -もうひとつの最終章- (4)
 
 ISBN 65: 9784065132159
-https://bgm.tv/subject/479678
-https://bgm.tv/subject/544710
+https://bgm.tv/subject/479678 - 白翼のポラリス２
+https://bgm.tv/subject/544710 - 白翼のポラリス2
 
 ISBN 66: 9784065350799
-https://bgm.tv/subject/483640
-https://bgm.tv/subject/488301
+https://bgm.tv/subject/483640 - 追放されたチート付与魔術師は気ままなセカンドライフを謳歌する。 (8)
+https://bgm.tv/subject/488301 - 追放されたチート付与魔術師は気ままなセカンドライフを謳歌する。 (9)
 
 ISBN 67: 9784434311710
-https://bgm.tv/subject/501153
-https://bgm.tv/subject/501155
+https://bgm.tv/subject/501153 - 最強の職業は勇者でも賢者でもなく鑑定士(仮)らしいですよ? (7)
+https://bgm.tv/subject/501155 - 最強の職業は勇者でも賢者でもなく鑑定士(仮)らしいですよ? (9)
 
 ISBN 68: 9784073099444
-https://bgm.tv/subject/508100
-https://bgm.tv/subject/508102
+https://bgm.tv/subject/508100 - 鉄コミュニケイション 1
+https://bgm.tv/subject/508102 - 鉄コミュニケイション 3
 
 ISBN 69: 9784434323836
-https://bgm.tv/subject/509179
-https://bgm.tv/subject/509181
+https://bgm.tv/subject/509179 - 孕むまで乱れいけ～身代わり花嫁と軍服の猛愛 (1)
+https://bgm.tv/subject/509181 - 孕むまで乱れいけ～身代わり花嫁と軍服の猛愛 (3)
 
 ISBN 70: 9784821127580
-https://bgm.tv/subject/521679
-https://bgm.tv/subject/521683
+https://bgm.tv/subject/521679 - 太一くんに餌付けされてます~ごはんからエッチまで~(1)
+https://bgm.tv/subject/521683 - 太一くんに餌付けされてます~ごはんからエッチまで~(6)
 
 ISBN 71: 9784758026567
-https://bgm.tv/subject/537593
-https://bgm.tv/subject/537595
+https://bgm.tv/subject/537593 - 秘密ありきの僕たちですが (1)
+https://bgm.tv/subject/537595 - 秘密ありきの僕たちですが (2)
 
 ISBN 72: 9784086017091
-https://bgm.tv/subject/542552
-https://bgm.tv/subject/542554
+https://bgm.tv/subject/542552 - 写楽あやかし草紙1 花霞のディーバ
+https://bgm.tv/subject/542554 - 写楽あやかし草紙2 花霞のディーバ
 
 ISBN 73: 9784799219911
-https://bgm.tv/subject/556833
-https://bgm.tv/subject/556834
+https://bgm.tv/subject/556833 - 人外レズ風俗 (1)
+https://bgm.tv/subject/556834 - 人外レズ風俗 (2)
 
-【疑似系列误填】(52组)
+【疑似系列误填】(51组)
 ----------------------------------------
 ISBN 1: 9784344815650
-https://bgm.tv/subject/4296（系列）
-https://bgm.tv/subject/9026
+https://bgm.tv/subject/4296 - ACID TOWN（系列）
+https://bgm.tv/subject/9026 - ACID TOWN (1)
 
 ISBN 2: 9784088732282
-https://bgm.tv/subject/14722
-https://bgm.tv/subject/65658（系列）
+https://bgm.tv/subject/14722 - 魔砲使い黒姫 1
+https://bgm.tv/subject/65658 - 魔砲使い黒姫（系列）
 
 ISBN 3: 9784758061889
-https://bgm.tv/subject/27718（系列）
-https://bgm.tv/subject/34234
+https://bgm.tv/subject/27718 - eden*（系列）
+https://bgm.tv/subject/34234 - eden* (01)
 
 ISBN 4: 9784403615887
-https://bgm.tv/subject/30778
-https://bgm.tv/subject/50649（系列）
+https://bgm.tv/subject/30778 - 西洋骨董洋菓子店 (1)
+https://bgm.tv/subject/50649 - 西洋骨董洋菓子店（系列）
 
 ISBN 5: 9784091847348
-https://bgm.tv/subject/31093
-https://bgm.tv/subject/455812（系列）
+https://bgm.tv/subject/31093 - ZERO - The flower blooms on the ring…alone.(上)
 
 ISBN 6: 9784758050074
-https://bgm.tv/subject/34786
-https://bgm.tv/subject/75790（系列）
+https://bgm.tv/subject/34786 - 最遊記 (1)
+https://bgm.tv/subject/75790 - 最遊記（系列）
 
 ISBN 7: 9784775518519
-https://bgm.tv/subject/48373
-https://bgm.tv/subject/108045（系列）
+https://bgm.tv/subject/48373 - 子羊プロジェクト 1
+https://bgm.tv/subject/108045 - 子羊プロジェクト（系列）
 
 ISBN 8: 9784757504226
-https://bgm.tv/subject/55909
-https://bgm.tv/subject/55910（系列）
+https://bgm.tv/subject/55909 - ヴァルキリープロファイル (02)
+https://bgm.tv/subject/55910 - ヴァルキリープロファイル（系列）
 
 ISBN 9: 9784829127278
-https://bgm.tv/subject/65654（系列）
-https://bgm.tv/subject/150366
+https://bgm.tv/subject/65654 - 召喚教師リアルバウトハイスクール（系列）
+https://bgm.tv/subject/150366 - 召喚教師リアルバウトハイスクール〈1〉
 
 ISBN 10: 9784758052030
-https://bgm.tv/subject/75779
-https://bgm.tv/subject/75782（系列）
+https://bgm.tv/subject/75779 - 最遊記外伝 01
+https://bgm.tv/subject/75782 - 最遊記外伝（系列）
 
 ISBN 11: 9784091376831
-https://bgm.tv/subject/77877（系列）
-https://bgm.tv/subject/80178
+https://bgm.tv/subject/77877 - げっちゅー（系列）
+https://bgm.tv/subject/80178 - げっちゅー (1)
 
 ISBN 12: 9784041106341
-https://bgm.tv/subject/94498
-https://bgm.tv/subject/191511（系列）
+https://bgm.tv/subject/94498 - 艦隊これくしょん -艦これ- 艦娘型録
+https://bgm.tv/subject/191511 - 艦隊これくしょん -艦これ- 艦娘型録シーリズ（系列）
 
 ISBN 13: 9784344825567
-https://bgm.tv/subject/95967
-https://bgm.tv/subject/95972（系列）
+https://bgm.tv/subject/95967 - 明日屋商い繁盛 1
+https://bgm.tv/subject/95972 - 明日屋商い繁盛（系列）
 
 ISBN 14: 9784048543231
-https://bgm.tv/subject/96871（系列）
-https://bgm.tv/subject/96910
+https://bgm.tv/subject/96871 - るったとこだま（系列）
+https://bgm.tv/subject/96910 - るったとこだま
 
 ISBN 15: 9784063805345
-https://bgm.tv/subject/109347
-https://bgm.tv/subject/109349（系列）
+https://bgm.tv/subject/109347 - ケモノキングダムZOO (1)
+https://bgm.tv/subject/109349 - ケモノキングダムZOO（系列）
 
 ISBN 16: 9784091308993
-https://bgm.tv/subject/129622（系列）
-https://bgm.tv/subject/199781
+https://bgm.tv/subject/199781 - ダイヤモンド・ライフ (1)
 
 ISBN 17: 9784040676593
-https://bgm.tv/subject/135234（系列）
-https://bgm.tv/subject/223957
+https://bgm.tv/subject/135234 - 魔学の覇王と科法の銃姫（系列）
+https://bgm.tv/subject/223957 - 魔学の覇王と科法の銃姫 1
 
 ISBN 18: 9784199503733
-https://bgm.tv/subject/142127
-https://bgm.tv/subject/142128（系列）
+https://bgm.tv/subject/142127 - Mr.NOBODY (3)
+https://bgm.tv/subject/142128 - Mr.Nobody（系列）
 
 ISBN 19: 9784042560036
-https://bgm.tv/subject/183243（系列）
-https://bgm.tv/subject/183244
+https://bgm.tv/subject/183243 - 皿の上の聖騎士（系列）
+https://bgm.tv/subject/183244 - 皿の上の聖騎士〈パラディン〉1 ‐ A Tale of Armour ‐
 
 ISBN 20: 9784040684239
-https://bgm.tv/subject/184642
-https://bgm.tv/subject/205311（系列）
+https://bgm.tv/subject/184642 - ハイスクール・フリート いんたーばるっ
+https://bgm.tv/subject/205311 - ハイスクール・フリート いんたーばるっ（系列）
 
 ISBN 21: 9784040683140
-https://bgm.tv/subject/187611（系列）
-https://bgm.tv/subject/228497
+https://bgm.tv/subject/187611 - クソゲー・オンライン(仮)（系列）
+https://bgm.tv/subject/228497 - クソゲー・オンライン（仮）「運営は全員逃げたけどなんの問題もないわ！」
 
 ISBN 22: 9784908757518
-https://bgm.tv/subject/199961（系列）
-https://bgm.tv/subject/246330
+https://bgm.tv/subject/199961 - 柴くんとシェパードさん（系列）
+https://bgm.tv/subject/246330 - 柴くんとシェパードさん (1)
 
 ISBN 23: 9784088563206
-https://bgm.tv/subject/204507
-https://bgm.tv/subject/204509（系列）
+https://bgm.tv/subject/204507 - 世紀末のエンジェル (4)
+https://bgm.tv/subject/204509 - 世紀末のエンジェル（系列）
 
-ISBN 24: 9784065107836
-https://bgm.tv/subject/234525
-https://bgm.tv/subject/238381（系列）
+ISBN 24: 9784813031611
+https://bgm.tv/subject/236077 - 被写界深度 上
+https://bgm.tv/subject/246301 - 被写界深度（系列）
 
-ISBN 25: 9784813031611
-https://bgm.tv/subject/236077
-https://bgm.tv/subject/246301（系列）
+ISBN 25: 9784403622663
+https://bgm.tv/subject/251014 - NEIN 1
+https://bgm.tv/subject/343368 - NEIN（系列）
 
-ISBN 26: 9784403622663
-https://bgm.tv/subject/251014
-https://bgm.tv/subject/343368（系列）
+ISBN 26: 9784757501768
+https://bgm.tv/subject/287118 - タクティクスオウガ（系列）
+https://bgm.tv/subject/303365 - タクティクスオウガ（1）
 
-ISBN 27: 9784757501768
-https://bgm.tv/subject/287118（系列）
-https://bgm.tv/subject/303365
+ISBN 27: 9784040732381
+https://bgm.tv/subject/302315 - 旺華国後宮の薬師（系列）
+https://bgm.tv/subject/302317 - 旺華国後宮の薬師 (1)
+https://bgm.tv/subject/302321 - 旺華国後宮の薬師 (2)
 
-ISBN 28: 9784040732381
-https://bgm.tv/subject/302315（系列）
-https://bgm.tv/subject/302317
-https://bgm.tv/subject/302321
+ISBN 28: 9784062850223
+https://bgm.tv/subject/302330 - あやかしの鏡（系列）
+https://bgm.tv/subject/302332 - あやかしの鏡 1
 
-ISBN 29: 9784062850223
-https://bgm.tv/subject/302330（系列）
-https://bgm.tv/subject/302332
+ISBN 29: 9784575752618
+https://bgm.tv/subject/304887 - 隣の席になった美少女が惚れさせようとからかってくるがいつの間にか返り討ちにしていた（系列）
+https://bgm.tv/subject/304888 - 隣の席になった美少女が惚れさせようとからかってくるがいつの間にか返り討ちにしていた (1)
 
-ISBN 30: 9784575752618
-https://bgm.tv/subject/304887（系列）
-https://bgm.tv/subject/304888
+ISBN 30: 9784894650466
+https://bgm.tv/subject/325847 - 黄金色舞台 1
+https://bgm.tv/subject/325852 - 黄金色舞台（系列）
 
-ISBN 31: 9784894650466
-https://bgm.tv/subject/325847
-https://bgm.tv/subject/325852（系列）
+ISBN 31: 9784832291638
+https://bgm.tv/subject/328809 - 未熟なパパはシェアハウスで恋を知る (1)
+https://bgm.tv/subject/380061 - 未熟なパパはシェアハウスで恋を知る（系列）
 
-ISBN 32: 9784832291638
-https://bgm.tv/subject/328809
-https://bgm.tv/subject/380061（系列）
+ISBN 32: 9784861764844
+https://bgm.tv/subject/332662 - Doll master 1―彷徨の六花
+https://bgm.tv/subject/332664 - DOLLMASTER　彷徨の六花（系列）
 
-ISBN 33: 9784861764844
-https://bgm.tv/subject/332662
-https://bgm.tv/subject/332664（系列）
+ISBN 33: 9784838723379
+https://bgm.tv/subject/354274 - 僕の姉ちゃん（系列）
+https://bgm.tv/subject/354280 - 僕の姉ちゃん
 
-ISBN 34: 9784838723379
-https://bgm.tv/subject/354274（系列）
-https://bgm.tv/subject/354280
+ISBN 34: 9784575856071
+https://bgm.tv/subject/362554 - ひとくい家族（系列）
+https://bgm.tv/subject/430070 - ひとくい家族 (1)
 
-ISBN 35: 9784575856071
-https://bgm.tv/subject/362554（系列）
-https://bgm.tv/subject/430070
+ISBN 35: 9784847035999
+https://bgm.tv/subject/372803 - マギーペール（系列）
+https://bgm.tv/subject/372804 - マギーペール 1
 
-ISBN 36: 9784847035999
-https://bgm.tv/subject/372803（系列）
-https://bgm.tv/subject/372804
+ISBN 36: 9784091381262
+https://bgm.tv/subject/373280 - スパーク!! ララナギはりけ〜ん（系列）
+https://bgm.tv/subject/529423 - スパーク!!ララナギはりけーん 1
 
-ISBN 37: 9784091381262
-https://bgm.tv/subject/373280（系列）
-https://bgm.tv/subject/529423
+ISBN 37: 9784199500510
+https://bgm.tv/subject/375946 - ルー=ガルー 忌避すべき狼（系列）
+https://bgm.tv/subject/375949 - ルー=ガルー 忌避すべき狼 (1)(リュウコミックス)
 
-ISBN 38: 9784199500510
-https://bgm.tv/subject/375946（系列）
-https://bgm.tv/subject/375949
+ISBN 38: 9784122040335
+https://bgm.tv/subject/379375 - おにいさまへ…（系列）
+https://bgm.tv/subject/379376 - おにいさまへ… 1 (中公文庫 コミック版 い 1-43)
 
-ISBN 39: 9784122040335
-https://bgm.tv/subject/379375（系列）
-https://bgm.tv/subject/379376
+ISBN 39: 9784592881711
+https://bgm.tv/subject/386442 - 妖精王（系列）
+https://bgm.tv/subject/386652 - 妖精王 (第1巻)
 
-ISBN 40: 9784592881711
-https://bgm.tv/subject/386442（系列）
-https://bgm.tv/subject/386652
+ISBN 40: 9784812480823
+https://bgm.tv/subject/411406 - さん・ぱいっ! 私立星川学園巫女部（系列）
+https://bgm.tv/subject/411407 - さん・ぱいっ! 私立星川学園巫女部 (1)
 
-ISBN 41: 9784812480823
-https://bgm.tv/subject/411406（系列）
-https://bgm.tv/subject/411407
+ISBN 41: 9784344834194
+https://bgm.tv/subject/448318 - 棘の王様（系列）
+https://bgm.tv/subject/448320 - 棘の王様（上）
 
-ISBN 42: 9784344834194
-https://bgm.tv/subject/448318（系列）
-https://bgm.tv/subject/448320
+ISBN 42: 9784041093689
+https://bgm.tv/subject/450233 - 愛蔵版 新世紀エヴァンゲリオン（系列）
+https://bgm.tv/subject/450235 - 愛蔵版 新世紀エヴァンゲリオン (1)
 
-ISBN 43: 9784041093689
-https://bgm.tv/subject/450233（系列）
-https://bgm.tv/subject/450235
+ISBN 43: 9784049152104
+https://bgm.tv/subject/452383 - ソードアート・オンライン オルタナティブ グルメ・シーカーズ
+https://bgm.tv/subject/511479 - ソードアート・オンライン オルタナティブ グルメ・シーカーズ（系列）
 
-ISBN 44: 9784049152104
-https://bgm.tv/subject/452383
-https://bgm.tv/subject/511479（系列）
+ISBN 44: 9784334101060
+https://bgm.tv/subject/466145 - うそつきオメガと溺愛アルファ（上）
+https://bgm.tv/subject/466147 - うそつきオメガと溺愛アルファ（系列）
 
-ISBN 45: 9784334101060
-https://bgm.tv/subject/466145
-https://bgm.tv/subject/466147（系列）
+ISBN 45: 9784046818492
+https://bgm.tv/subject/469627 - 最後の竜騎士の英雄譚 〜パンジャール猟兵団戦記〜（系列）
+https://bgm.tv/subject/469628 - 最後の竜騎士の英雄譚 パンジャール猟兵団戦記 (1)
 
-ISBN 46: 9784046818492
-https://bgm.tv/subject/469627（系列）
-https://bgm.tv/subject/469628
+ISBN 46: 9784063759662
+https://bgm.tv/subject/471618 - 攻殻機動隊S.A.C. タチコマなヒビ（系列）
+https://bgm.tv/subject/471619 - 攻殻機動隊S.A.C. タチコマなヒビ(1)
 
-ISBN 47: 9784063759662
-https://bgm.tv/subject/471618（系列）
-https://bgm.tv/subject/471619
+ISBN 47: 9784840218979
+https://bgm.tv/subject/481678 - 熱砂のレクイエムII 協同戦線
+https://bgm.tv/subject/481679 - 熱砂のレクイエム（系列）
 
-ISBN 48: 9784840218979
-https://bgm.tv/subject/481678
-https://bgm.tv/subject/481679（系列）
+ISBN 48: 9784758025027
+https://bgm.tv/subject/483056 - 恋する秘文の戦士たち（系列）
+https://bgm.tv/subject/483057 - 恋する秘文の戦士たち (1)
 
-ISBN 49: 9784758025027
-https://bgm.tv/subject/483056（系列）
-https://bgm.tv/subject/483057
+ISBN 49: 9784757507029
+https://bgm.tv/subject/493762 - 真世の王（系列）
+https://bgm.tv/subject/493763 - 真世の王 上
 
-ISBN 50: 9784757507029
-https://bgm.tv/subject/493762（系列）
-https://bgm.tv/subject/493763
+ISBN 50: 9784047278035
+https://bgm.tv/subject/529290 - マジキュー4コマ ブラック★ロックシューター THE GAME（系列）
+https://bgm.tv/subject/529291 - マジキュー4コマ ブラック★ロックシューター THE GAME(1)
 
-ISBN 51: 9784047278035
-https://bgm.tv/subject/529290（系列）
-https://bgm.tv/subject/529291
+ISBN 51: 9784086120401
+https://bgm.tv/subject/566653 - 珠玉傑作集（系列）
+https://bgm.tv/subject/566655 - きょうの子守唄
 
-ISBN 52: 9784086120401
-https://bgm.tv/subject/566653（系列）
-https://bgm.tv/subject/566655
-
-【疑似重复条目】(110组)
+【疑似重复条目】(73组)
 ----------------------------------------
 ISBN 1: 9784904101698
-https://bgm.tv/subject/4340
-https://bgm.tv/subject/154342
+https://bgm.tv/subject/4340 - その手を取れば
+https://bgm.tv/subject/154342 - その手を取れば
 
 ISBN 2: 9784062758925
-https://bgm.tv/subject/5328
-https://bgm.tv/subject/5329
+https://bgm.tv/subject/5328 - 空の境界（上）
+https://bgm.tv/subject/5329 - 空の境界 (上)
 
 ISBN 3: 9784344818309
-https://bgm.tv/subject/9023
-https://bgm.tv/subject/13872
+https://bgm.tv/subject/9023 - 恋などとうに成就してた
+https://bgm.tv/subject/13872 - 恋などとうに成就してた
 
 ISBN 4: 9784062759465
-https://bgm.tv/subject/10860
-https://bgm.tv/subject/10862
+https://bgm.tv/subject/10860 - 空の境界（下）
+https://bgm.tv/subject/10862 - 空の境界 (下)
 
 ISBN 5: 9784047131033
-https://bgm.tv/subject/15378
-https://bgm.tv/subject/93171
+https://bgm.tv/subject/15378 - 機動戦士クロスボーン・ガンダム (1)
+https://bgm.tv/subject/93171 - 機動戦士クロスボーン・ガンダム (1)
 
 ISBN 6: 9784047138780
-https://bgm.tv/subject/21585
-https://bgm.tv/subject/65359
+https://bgm.tv/subject/21585 - 失踪HOLIDAY
+https://bgm.tv/subject/65359 - 失踪HOLIDAY
 
 ISBN 7: 9784766335231
-https://bgm.tv/subject/29960
-https://bgm.tv/subject/389714
-
-ISBN 8: 9784088538822
-https://bgm.tv/subject/34900
-https://bgm.tv/subject/201311
-
-ISBN 9: 9784088560021
-https://bgm.tv/subject/34928
-https://bgm.tv/subject/201312
-
-ISBN 10: 9784061732902
-https://bgm.tv/subject/42321
-https://bgm.tv/subject/559620
-
-ISBN 11: 9784047131132
-https://bgm.tv/subject/43893
-https://bgm.tv/subject/93172
-
-ISBN 12: 9784047131286
-https://bgm.tv/subject/43894
-https://bgm.tv/subject/93175
-
-ISBN 13: 9784047131453
-https://bgm.tv/subject/43895
-https://bgm.tv/subject/93173
-
-ISBN 14: 9784047131750
-https://bgm.tv/subject/43896
-https://bgm.tv/subject/93174
-
-ISBN 15: 9784047131859
-https://bgm.tv/subject/43897
-https://bgm.tv/subject/93176
-
-ISBN 16: 9784048670302
-https://bgm.tv/subject/45896
-https://bgm.tv/subject/395576
-
-ISBN 17: 9784758070041
-https://bgm.tv/subject/51373
-https://bgm.tv/subject/129092
-
-ISBN 18: 9784758071109
-https://bgm.tv/subject/58156
-https://bgm.tv/subject/166375
-
-ISBN 19: 9784877751340
-https://bgm.tv/subject/58165
-https://bgm.tv/subject/184471
-
-ISBN 20: 9784757533837
-https://bgm.tv/subject/58226
-https://bgm.tv/subject/168907
-
-ISBN 21: 9784893936127
-https://bgm.tv/subject/61543
-https://bgm.tv/subject/326976
-
-ISBN 22: 9784775517550
-https://bgm.tv/subject/79028
-https://bgm.tv/subject/139630
-
-ISBN 23: 9784887744820
-https://bgm.tv/subject/83258
-https://bgm.tv/subject/107962
-
-ISBN 24: 9784091324702
-https://bgm.tv/subject/85092
-https://bgm.tv/subject/200741
-
-ISBN 25: 9784091328380
-https://bgm.tv/subject/85093
-https://bgm.tv/subject/200744
-
-ISBN 26: 9784091328946
-https://bgm.tv/subject/85094
-https://bgm.tv/subject/200742
-
-ISBN 27: 9784091333032
-https://bgm.tv/subject/85097
-https://bgm.tv/subject/200743
-
-ISBN 28: 9784091334152
-https://bgm.tv/subject/85098
-https://bgm.tv/subject/200746
-
-ISBN 29: 9784091337450
-https://bgm.tv/subject/85099
-https://bgm.tv/subject/200748
-
-ISBN 30: 9784091340047
-https://bgm.tv/subject/85144
-https://bgm.tv/subject/200749
-
-ISBN 31: 9784091341860
-https://bgm.tv/subject/85145
-https://bgm.tv/subject/200747
-
-ISBN 32: 9784091343949
-https://bgm.tv/subject/85146
-https://bgm.tv/subject/200745
-
-ISBN 33: 9784091346124
-https://bgm.tv/subject/85147
-https://bgm.tv/subject/200750
-
-ISBN 34: 9784041203422
-https://bgm.tv/subject/104206
-https://bgm.tv/subject/104208
-
-ISBN 35: 9784800000330
-https://bgm.tv/subject/108844
-https://bgm.tv/subject/499786
-
-ISBN 36: 9784800001467
-https://bgm.tv/subject/108845
-https://bgm.tv/subject/499787
-
-ISBN 37: 9784800001962
-https://bgm.tv/subject/115986
-https://bgm.tv/subject/326198
-
-ISBN 38: 9784860326210
-https://bgm.tv/subject/117994
-https://bgm.tv/subject/395078
-
-ISBN 39: 9784813051794
-https://bgm.tv/subject/119637
-https://bgm.tv/subject/154567
-
-ISBN 40: 9784832283749
-https://bgm.tv/subject/119638
-https://bgm.tv/subject/154568
-
-ISBN 41: 9784813050346
-https://bgm.tv/subject/121097
-https://bgm.tv/subject/121098
-
-ISBN 42: 9784088454825
-https://bgm.tv/subject/131915
-https://bgm.tv/subject/196946
-
-ISBN 43: 9784797334463
-https://bgm.tv/subject/147976
-https://bgm.tv/subject/327351
-
-ISBN 44: 9784063815016
-https://bgm.tv/subject/162311
-https://bgm.tv/subject/167403
-
-ISBN 45: 9784091348791
-https://bgm.tv/subject/164145
-https://bgm.tv/subject/200724
-
-ISBN 46: 9784063419504
-https://bgm.tv/subject/164160
-https://bgm.tv/subject/200830
-
-ISBN 47: 9784063417777
-https://bgm.tv/subject/164164
-https://bgm.tv/subject/203595
-
-ISBN 48: 9784592851288
-https://bgm.tv/subject/166346
-https://bgm.tv/subject/212073
-
-ISBN 49: 9784829663486
-https://bgm.tv/subject/167610
-https://bgm.tv/subject/234084
-
-ISBN 50: 9784829663523
-https://bgm.tv/subject/167635
-https://bgm.tv/subject/404557
-
-ISBN 51: 9784799203682
-https://bgm.tv/subject/167642
-https://bgm.tv/subject/343476
-
-ISBN 52: 9784040681610
-https://bgm.tv/subject/181826
-https://bgm.tv/subject/274940
-
-ISBN 53: 9784832278813
-https://bgm.tv/subject/186538
-https://bgm.tv/subject/477053
-
-ISBN 54: 9784862015938
-https://bgm.tv/subject/205449
-https://bgm.tv/subject/304662
-
-ISBN 55: 9784776990420
-https://bgm.tv/subject/205519
-https://bgm.tv/subject/205520
-
-ISBN 56: 9784592147169
-https://bgm.tv/subject/209828
-https://bgm.tv/subject/265669
-
-ISBN 57: 9784063958805
-https://bgm.tv/subject/216011
-https://bgm.tv/subject/433220
-
-ISBN 58: 9784758076883
-https://bgm.tv/subject/227420
-https://bgm.tv/subject/532284
-
-ISBN 59: 9784041058282
-https://bgm.tv/subject/228746
-https://bgm.tv/subject/353436
-
-ISBN 60: 9784063650006
-https://bgm.tv/subject/230126
-https://bgm.tv/subject/431688
-
-ISBN 61: 9784396784508
-https://bgm.tv/subject/243007
-https://bgm.tv/subject/248817
-
-ISBN 62: 9784813705048
-https://bgm.tv/subject/257627
-https://bgm.tv/subject/399280
-
-ISBN 63: 9784087920338
-https://bgm.tv/subject/264210
-https://bgm.tv/subject/476132
-
-ISBN 64: 9784040655734
-https://bgm.tv/subject/286644
-https://bgm.tv/subject/291268
-
-ISBN 65: 9784773089707
-https://bgm.tv/subject/292143
-https://bgm.tv/subject/432070
-
-ISBN 66: 9784815604493
-https://bgm.tv/subject/302201
-https://bgm.tv/subject/318829
-
-ISBN 67: 9784813708872
-https://bgm.tv/subject/308072
-https://bgm.tv/subject/490173
-
-ISBN 68: 9784199800214
-https://bgm.tv/subject/314891
-https://bgm.tv/subject/408428
-
-ISBN 69: 9784813709459
-https://bgm.tv/subject/317697
-https://bgm.tv/subject/364316
-
-ISBN 70: 9784796414012
-https://bgm.tv/subject/319757
-https://bgm.tv/subject/528785
-
-ISBN 71: 9784575411973
-https://bgm.tv/subject/326064
-https://bgm.tv/subject/387524
-
-ISBN 72: 9784199608674
-https://bgm.tv/subject/333796
-https://bgm.tv/subject/355957
-
-ISBN 73: 9784040741475
-https://bgm.tv/subject/335997
-https://bgm.tv/subject/338061
-
-ISBN 74: 9784883863419
-https://bgm.tv/subject/338313
-https://bgm.tv/subject/440420
-
-ISBN 75: 9784798625065
-https://bgm.tv/subject/339651
-https://bgm.tv/subject/392100
-
-ISBN 76: 9784815603373
-https://bgm.tv/subject/341986
-https://bgm.tv/subject/429481
-
-ISBN 77: 9784829621462
-https://bgm.tv/subject/342469
-https://bgm.tv/subject/407776
-
-ISBN 78: 9784829684474
-https://bgm.tv/subject/343699
-https://bgm.tv/subject/364088
-
-ISBN 79: 9784253236324
-https://bgm.tv/subject/344195
-https://bgm.tv/subject/344196
-
-ISBN 80: 9784797390896
-https://bgm.tv/subject/345499
-https://bgm.tv/subject/573022
-
-ISBN 81: 9784046803887
-https://bgm.tv/subject/346845
-https://bgm.tv/subject/379161
-
-ISBN 82: 9784041113622
-https://bgm.tv/subject/347446
-https://bgm.tv/subject/350541
-
-ISBN 83: 9784824000194
-https://bgm.tv/subject/351756
-https://bgm.tv/subject/543627
-
-ISBN 84: 9784088444062
-https://bgm.tv/subject/359308
-https://bgm.tv/subject/434034
-
-ISBN 85: 9784088445137
-https://bgm.tv/subject/359309
-https://bgm.tv/subject/434035
-
-ISBN 86: 9784088446318
-https://bgm.tv/subject/359310
-https://bgm.tv/subject/434036
-
-ISBN 87: 9784434296406
-https://bgm.tv/subject/362929
-https://bgm.tv/subject/568961
-
-ISBN 88: 9784063245356
-https://bgm.tv/subject/375850
-https://bgm.tv/subject/482919
-
-ISBN 89: 9784575458831
-https://bgm.tv/subject/386630
-https://bgm.tv/subject/554430
-
-ISBN 90: 9784860323288
-https://bgm.tv/subject/391614
-https://bgm.tv/subject/428994
-
-ISBN 91: 9784790103240
-https://bgm.tv/subject/393141
-https://bgm.tv/subject/428996
-
-ISBN 92: 9784829669662
-https://bgm.tv/subject/396765
-https://bgm.tv/subject/433373
-
-ISBN 93: 9784048680615
-https://bgm.tv/subject/413186
-https://bgm.tv/subject/413837
-
-ISBN 94: 9784047372764
-https://bgm.tv/subject/415737
-https://bgm.tv/subject/446082
-
-ISBN 95: 9784790100508
-https://bgm.tv/subject/443508
-https://bgm.tv/subject/470446
-
-ISBN 96: 9784758021593
-https://bgm.tv/subject/474013
-https://bgm.tv/subject/539168
-
-ISBN 97: 9784847049989
-https://bgm.tv/subject/479680
-https://bgm.tv/subject/567044
-
-ISBN 98: 9784091990846
-https://bgm.tv/subject/480962
-https://bgm.tv/subject/493112
-
-ISBN 99: 9784801513129
-https://bgm.tv/subject/495729
-https://bgm.tv/subject/552193
-
-ISBN 100: 9784801512764
-https://bgm.tv/subject/495931
-https://bgm.tv/subject/552058
-
-ISBN 101: 9784040755526
-https://bgm.tv/subject/509661
-https://bgm.tv/subject/512341
-
-ISBN 102: 9784480818614
-https://bgm.tv/subject/517162
-https://bgm.tv/subject/525250
-
-ISBN 103: 9784824203281
-https://bgm.tv/subject/523124
-https://bgm.tv/subject/559225
-
-ISBN 104: 9784867781333
-https://bgm.tv/subject/531721
-https://bgm.tv/subject/532356
-
-ISBN 105: 9784041157350
-https://bgm.tv/subject/543364
-https://bgm.tv/subject/558606
-
-ISBN 106: 9784041163221
-https://bgm.tv/subject/554488
-https://bgm.tv/subject/560619
-
-ISBN 107: 9784824012562
-https://bgm.tv/subject/562249
-https://bgm.tv/subject/571142
-
-ISBN 108: 9784041136799
-https://bgm.tv/subject/565041
-https://bgm.tv/subject/567814
-
-ISBN 109: 9784041145371
-https://bgm.tv/subject/565042
-https://bgm.tv/subject/567815
-
-ISBN 110: 9784391165081
-https://bgm.tv/subject/574883
-https://bgm.tv/subject/576271
+https://bgm.tv/subject/29960 - ぶっ☆かけ 7
+https://bgm.tv/subject/389714 - ぶっ☆かけ (7)
+
+ISBN 8: 9784061732902
+https://bgm.tv/subject/42321 - ブッダ （4）
+https://bgm.tv/subject/559620 - ブッダ (4)
+
+ISBN 9: 9784800001962
+https://bgm.tv/subject/115986 - 優等生以上、フリョー未満な俺ら。
+https://bgm.tv/subject/326198 - 優等生以上、フリョー未満な俺ら。
+
+ISBN 10: 9784860326210
+https://bgm.tv/subject/117994 - 戦姫魔導伝アスカ&シズル
+https://bgm.tv/subject/395078 - 戦姫魔導伝アスカ＆シズル
+
+ISBN 11: 9784813051794
+https://bgm.tv/subject/119637 - 君ノ手ヲ感ジテル
+https://bgm.tv/subject/154567 - 君ノ手ヲ感ジテル
+
+ISBN 12: 9784832283749
+https://bgm.tv/subject/119638 - 恋人たちが降る窓
+https://bgm.tv/subject/154568 - 恋人たちが降る窓
+
+ISBN 13: 9784813050346
+https://bgm.tv/subject/121097 - チープ・チェイス
+https://bgm.tv/subject/121098 - チープ・チェイス
+
+ISBN 14: 9784088454825
+https://bgm.tv/subject/131915 - ときめいちゃってゴメンね?
+https://bgm.tv/subject/196946 - ときめいちゃってゴメンね?
+
+ISBN 15: 9784797334463
+https://bgm.tv/subject/147976 - ハノン~君の目指す明日へ~
+https://bgm.tv/subject/327351 - ハノン ~君の目指す明日へ~
+
+ISBN 16: 9784063815016
+https://bgm.tv/subject/162311 - さすがです勇者さま!
+https://bgm.tv/subject/167403 - さすがです勇者さま!
+
+ISBN 17: 9784091348791
+https://bgm.tv/subject/164145 - 快楽協定
+https://bgm.tv/subject/200724 - 快楽協定
+
+ISBN 18: 9784063419504
+https://bgm.tv/subject/164160 - 先生と近キョリ
+https://bgm.tv/subject/200830 - 先生と近キョリ
+
+ISBN 19: 9784063417777
+https://bgm.tv/subject/164164 - ヒミツの、萌え恋。
+https://bgm.tv/subject/203595 - ヒミツの、萌え恋。
+
+ISBN 20: 9784592851288
+https://bgm.tv/subject/166346 - 桜ノ国～キルシュブリューテ～
+https://bgm.tv/subject/212073 - 桜ノ国~キルシュブリューテ~
+
+ISBN 21: 9784829663486
+https://bgm.tv/subject/167610 - おいでよ! 私立ヤリま×り学園
+https://bgm.tv/subject/234084 - おいでよ! 私立ヤリま×り学園
+
+ISBN 22: 9784829663523
+https://bgm.tv/subject/167635 - エロ勇者転生 召喚の巫女も姫騎士も淫魔族も!
+https://bgm.tv/subject/404557 - エロ勇者転生 召喚の巫女も姫騎士も淫魔族も！
+
+ISBN 23: 9784799203682
+https://bgm.tv/subject/167642 - ツンツンお嬢様は僕専用の性処理道具!
+https://bgm.tv/subject/343476 - ツンツンお嬢様は僕専用の性処理道具！
+
+ISBN 24: 9784040681610
+https://bgm.tv/subject/181826 - わたしの友達が世界一かわいい (1)
+https://bgm.tv/subject/274940 - わたしの友達が世界一かわいい 1
+
+ISBN 25: 9784832278813
+https://bgm.tv/subject/186538 - けいおん！超イラストレーションズ！ VOL.1
+https://bgm.tv/subject/477053 - けいおん!超イラストレーションズ! VOL.1
+
+ISBN 26: 9784862015938
+https://bgm.tv/subject/205449 - わたしたちのひりだす快楽
+https://bgm.tv/subject/304662 - わたしたちのひりだす快楽
+
+ISBN 27: 9784776990420
+https://bgm.tv/subject/205519 - 催眠妹痴態
+https://bgm.tv/subject/205520 - 催眠妹痴態
+
+ISBN 28: 9784592147169
+https://bgm.tv/subject/209828 - クソゲー・オンライン(仮) 1
+https://bgm.tv/subject/265669 - クソゲー・オンライン(仮)  (1)
+
+ISBN 29: 9784063958805
+https://bgm.tv/subject/216011 - 男三女四(6)
+https://bgm.tv/subject/433220 - 男三女四 (6)
+
+ISBN 30: 9784758076883
+https://bgm.tv/subject/227420 - 恋はエチュード！
+https://bgm.tv/subject/532284 - 恋はエチュード!
+
+ISBN 31: 9784041058282
+https://bgm.tv/subject/228746 - 快楽島 ~淫神の贄
+https://bgm.tv/subject/353436 - 快楽島 ~淫神の贄~
+
+ISBN 32: 9784063650006
+https://bgm.tv/subject/230126 - 獄扉絵画 江口夏実「鬼灯の冷徹」トビラ絵コレクション
+https://bgm.tv/subject/431688 - 獄扉絵画　江口夏実「鬼灯の冷徹」トビラ絵コレクション
+
+ISBN 33: 9784396784508
+https://bgm.tv/subject/243007 - 愛し
+https://bgm.tv/subject/248817 - 愛 し
+
+ISBN 34: 9784813705048
+https://bgm.tv/subject/257627 - だったら俺にすれば?~オレ様御曹司と契約結婚~
+https://bgm.tv/subject/399280 - だったら俺にすれば? ~オレ様御曹司と契約結婚~
+
+ISBN 35: 9784087920338
+https://bgm.tv/subject/264210 - THE一条ゆかり 集英社デビュー50周年イラスト集
+https://bgm.tv/subject/476132 - THE一条ゆかり 集英社デビュー50周年イラスト集
+
+ISBN 36: 9784040655734
+https://bgm.tv/subject/286644 - ガールズ&パンツァー リボンの武者 (11)
+https://bgm.tv/subject/291268 - ガールズ&パンツァー リボンの武者 (11)
+
+ISBN 37: 9784773089707
+https://bgm.tv/subject/292143 - オメガの恋は秘密の子を抱きしめる ～シナモンロールの記憶～
+https://bgm.tv/subject/432070 - オメガの恋は秘密の子を抱きしめる -シナモンロールの記憶-
+
+ISBN 38: 9784815604493
+https://bgm.tv/subject/302201 - お前らどれだけ俺のこと好きだったんだよ!
+https://bgm.tv/subject/318829 - お前らどれだけ俺のこと好きだったんだよ！
+
+ISBN 39: 9784813708872
+https://bgm.tv/subject/308072 - 転生令嬢はのんびり暮らしたい~おいしいプリンを召し上がれ~
+https://bgm.tv/subject/490173 - 転生令嬢はのんびり暮らしたい ~おいしいプリンを召し上がれ~
+
+ISBN 40: 9784199800214
+https://bgm.tv/subject/314891 - 裁判長!ぼくの弟懲役4年でどうすか
+https://bgm.tv/subject/408428 - 裁判長！ぼくの弟懲役4年でどうすか
+
+ISBN 41: 9784813709459
+https://bgm.tv/subject/317697 - ラスト・ゲーム～バスケ馬鹿の君に捧ぐ～
+https://bgm.tv/subject/364316 - ラスト・ゲーム~バスケ馬鹿の君に捧ぐ
+
+ISBN 42: 9784796414012
+https://bgm.tv/subject/319757 - 白雪姫にくちづけ(2)
+https://bgm.tv/subject/528785 - 白雪姫にくちづけ 2
+
+ISBN 43: 9784575411973
+https://bgm.tv/subject/326064 - ずたぼろ令嬢は姉の元婚約者に溺愛される  (1)
+https://bgm.tv/subject/387524 - ずたぼろ令嬢は姉の元婚約者に溺愛される (1)
+
+ISBN 44: 9784199608674
+https://bgm.tv/subject/333796 - SHOW TIME！
+https://bgm.tv/subject/355957 - SHOW TIME!
+
+ISBN 45: 9784040741475
+https://bgm.tv/subject/335997 - ロクでなし魔術講師と禁忌教典19
+https://bgm.tv/subject/338061 - ロクでなし魔術講師と禁忌教典 (19)
+
+ISBN 46: 9784883863419
+https://bgm.tv/subject/338313 - 弾アモウ (5)
+https://bgm.tv/subject/440420 - 弾（アモウ） 5
+
+ISBN 47: 9784798625065
+https://bgm.tv/subject/339651 - グッバイ現実世界〈リアルワールド〉ハッキングから始まる異世界改変
+https://bgm.tv/subject/392100 - グッバイ現実世界〈リアルワールド〉 ハッキングから始まる異世界改変
+
+ISBN 48: 9784815603373
+https://bgm.tv/subject/341986 - その冒険者、取り扱い注意。2
+https://bgm.tv/subject/429481 - その冒険者、取り扱い注意。 (2)
+
+ISBN 49: 9784829621462
+https://bgm.tv/subject/342469 - 異世界(エロ)チート賢者 銀髪の宮廷女魔術師とハーレムを!
+https://bgm.tv/subject/407776 - 異世界（エロ）チート賢者 銀髪の宮廷女魔術師とハーレムを！
+
+ISBN 50: 9784829684474
+https://bgm.tv/subject/343699 - 溺愛心中 仙女は褥で乱される
+https://bgm.tv/subject/364088 - 溺愛心中: 仙女は褥で乱される
+
+ISBN 51: 9784253236324
+https://bgm.tv/subject/344195 - ガンフロンティア―ハーロック&トチロー青春の旅
+https://bgm.tv/subject/344196 - ガンフロンティア―ハーロック&トチロー青春の旅
+
+ISBN 52: 9784797390896
+https://bgm.tv/subject/345499 - ギャンブル・ウィッチ・キングダム2
+https://bgm.tv/subject/573022 - ギャンブル・ウィッチ・キングダム (2)
+
+ISBN 53: 9784046803887
+https://bgm.tv/subject/346845 - 魔技科の剣士と召喚魔王 15
+https://bgm.tv/subject/379161 - 魔技科の剣士と召喚魔王 (15)
+
+ISBN 54: 9784041113622
+https://bgm.tv/subject/347446 - 丸の内で就職したら、幽霊物件担当でした。(1)
+https://bgm.tv/subject/350541 - 丸の内で就職したら、幽霊物件担当でした。 (1)
+
+ISBN 55: 9784824000194
+https://bgm.tv/subject/351756 - 月50万もらっても生き甲斐のない隣のお姉さんに30万で雇われて「おかえり」って言うお仕事が楽しい (3)
+https://bgm.tv/subject/543627 - 月50万もらっても生き甲斐のない隣のお姉さんに30万で雇われて「おかえり」って言うお仕事が楽しい 3
+
+ISBN 56: 9784088444062
+https://bgm.tv/subject/359308 - まんまるポタジェII 1
+https://bgm.tv/subject/434034 - まんまるポタジェII (1)
+
+ISBN 57: 9784088445137
+https://bgm.tv/subject/359309 - まんまるポタジェII 2
+https://bgm.tv/subject/434035 - まんまるポタジェII (2)
+
+ISBN 58: 9784088446318
+https://bgm.tv/subject/359310 - まんまるポタジェII 3
+https://bgm.tv/subject/434036 - まんまるポタジェII (3)
+
+ISBN 59: 9784434296406
+https://bgm.tv/subject/362929 - もうすぐ死ぬ悪女に転生してしまった: ~生き残るために清楚系美女を演じていたら聖女に選ばれました~
+https://bgm.tv/subject/568961 - もうすぐ死ぬ悪女に転生してしまった ~生き残るために清楚系美女を演じていたら聖女に選ばれました~
+
+ISBN 60: 9784063245356
+https://bgm.tv/subject/375850 - カードキャプターさくらメモリアルブック
+https://bgm.tv/subject/482919 - カードキャプターさくら メモリアルブック
+
+ISBN 61: 9784575458831
+https://bgm.tv/subject/386630 - ゴジラ S.P <シンギュラポイント>ファンブック
+https://bgm.tv/subject/554430 - ゴジラ S.P <シンギュラポイント>ファンブック
+
+ISBN 62: 9784860323288
+https://bgm.tv/subject/391614 - バニーガール アンソロジーコミックス
+https://bgm.tv/subject/428994 - バニーガールアンソロジーコミックス
+
+ISBN 63: 9784790103240
+https://bgm.tv/subject/393141 - クライマックス・コレクション
+https://bgm.tv/subject/428996 - クライマックス・コレクション
+
+ISBN 64: 9784829669662
+https://bgm.tv/subject/396765 - 寂しがり王子様は私にだけ甘えたいらしい
+https://bgm.tv/subject/433373 - 寂しがり王子様は私にだけ甘えたいらしい
+
+ISBN 65: 9784048680615
+https://bgm.tv/subject/413186 - Vitaminシリーズパーフェクトファンブック VitaminP
+https://bgm.tv/subject/413837 - Vitaminシリーズ パーフェクトファンブック VitaminP
+
+ISBN 66: 9784047372764
+https://bgm.tv/subject/415737 - 未実装のラスボス達が仲間になりました。5
+https://bgm.tv/subject/446082 - 未実装のラスボス達が仲間になりました。 (5)
+
+ISBN 67: 9784790100508
+https://bgm.tv/subject/443508 - エレベーターレッスン
+https://bgm.tv/subject/470446 - エレベーターレッスン
+
+ISBN 68: 9784758021593
+https://bgm.tv/subject/474013 - ぽちゃクライム! (2)
+https://bgm.tv/subject/539168 - ぽちゃクライム！ (2)
+
+ISBN 69: 9784847049989
+https://bgm.tv/subject/479680 - 岡田奈々ファースト写真集 『 飾らない宝石 』
+https://bgm.tv/subject/567044 - 岡田奈々ファースト写真集『飾らない宝石』
+
+ISBN 70: 9784091990846
+https://bgm.tv/subject/480962 - からかい上手の高木さん 画集「卒業アルバム」 山本崇一朗カラーワークス
+https://bgm.tv/subject/493112 - からかい上手の高木さん 画集「卒業アルバム」山本崇一朗カラーワークス
+
+ISBN 71: 9784041136799
+https://bgm.tv/subject/565041 - 雨宮兄弟の骨董事件簿 2
+https://bgm.tv/subject/567814 - 雨宮兄弟の骨董事件簿 (2)
+
+ISBN 72: 9784041145371
+https://bgm.tv/subject/565042 - 雨宮兄弟の骨董事件簿 3
+https://bgm.tv/subject/567815 - 雨宮兄弟の骨董事件簿 (3)
+
+ISBN 73: 9784391165081
+https://bgm.tv/subject/574883 - TVアニメ『夏目友人帳』公式ビジュアルブック～時の面影～
+https://bgm.tv/subject/576271 - TVアニメ『夏目友人帳』公式ビジュアルブック ~時の面影~
 
 
 ===== 已汇报的重复条目 ====
+
+【疑似系列误填】(3组)
+----------------------------------------
+ISBN 1: 9784091847348
+https://bgm.tv/subject/455812 - ZERO  松本大洋（系列）
+
+ISBN 2: 9784091308993
+https://bgm.tv/subject/129622 - ダイヤモンド・ライフ（系列）
+
+ISBN 3: 9784065107836
+https://bgm.tv/subject/234525 - にちぶっ！ (1)
+https://bgm.tv/subject/238381 - にちぶっ!(1)（系列）
+
+【疑似重复条目】(37组)
+----------------------------------------
+ISBN 1: 9784088538822
+https://bgm.tv/subject/34900 - 君しかいらない1
+https://bgm.tv/subject/201311 - 君しかいらない (1)
+
+ISBN 2: 9784088560021
+https://bgm.tv/subject/34928 - 君しかいらない2
+https://bgm.tv/subject/201312 - 君しかいらない (2)
+
+ISBN 3: 9784047131132
+https://bgm.tv/subject/43893 - 機動戦士クロスボーン・ガンダム (2)
+https://bgm.tv/subject/93172 - 機動戦士クロスボーン・ガンダム (2)
+
+ISBN 4: 9784047131286
+https://bgm.tv/subject/43894 - 機動戦士クロスボーン・ガンダム (3)
+https://bgm.tv/subject/93175 - 機動戦士クロスボーン・ガンダム (3)
+
+ISBN 5: 9784047131453
+https://bgm.tv/subject/43895 - 機動戦士クロスボーン・ガンダム (4)
+https://bgm.tv/subject/93173 - 機動戦士クロスボーン・ガンダム (4)
+
+ISBN 6: 9784047131750
+https://bgm.tv/subject/43896 - 機動戦士クロスボーン・ガンダム (5)
+https://bgm.tv/subject/93174 - 機動戦士クロスボーン・ガンダム (5)
+
+ISBN 7: 9784047131859
+https://bgm.tv/subject/43897 - 機動戦士クロスボーン・ガンダム (6)
+https://bgm.tv/subject/93176 - 機動戦士クロスボーン・ガンダム (6)
+
+ISBN 8: 9784048670302
+https://bgm.tv/subject/45896 - MOEOHセレクション カスタムメイド・ガール ~みやま零画集~
+https://bgm.tv/subject/395576 - MOEOHセレクション カスタムメイド・ガール ~みやま零画集~
+
+ISBN 9: 9784758070041
+https://bgm.tv/subject/51373 - 少女美学
+https://bgm.tv/subject/129092 - 少女美学
+
+ISBN 10: 9784758071109
+https://bgm.tv/subject/58156 - 犬と私
+https://bgm.tv/subject/166375 - 犬と私
+
+ISBN 11: 9784877751340
+https://bgm.tv/subject/58165 - 裏刀神記
+https://bgm.tv/subject/184471 - 裏刀神記
+
+ISBN 12: 9784757533837
+https://bgm.tv/subject/58226 - 堀田きいちOFFICIAL FANBOOK 君と僕。 -AFTER SCHOOL-
+https://bgm.tv/subject/168907 - 堀田きいちOFFICIAL FANBOOK 君と僕。 -AFTER SCHOOL-
+
+ISBN 13: 9784893936127
+https://bgm.tv/subject/61543 - 当世浮世絵類考猫舌ごころも恋のうち
+https://bgm.tv/subject/326976 - 当世浮世絵類考 猫舌ごころも恋のうち
+
+ISBN 14: 9784775517550
+https://bgm.tv/subject/79028 - 海老原さんの言うとおり
+https://bgm.tv/subject/139630 - 海老原さんの言うとおり
+
+ISBN 15: 9784887744820
+https://bgm.tv/subject/83258 - 美少女クラブ 下
+https://bgm.tv/subject/107962 - 美少女クラブ 下
+
+ISBN 16: 9784091324702
+https://bgm.tv/subject/85092 - はぴまり〜Happy Marriage!?〜 (1)
+https://bgm.tv/subject/200741 - はぴまり~Happy Marriage!?~ (1)
+
+ISBN 17: 9784091328380
+https://bgm.tv/subject/85093 - はぴまり〜Happy Marriage!?〜 (2)
+https://bgm.tv/subject/200744 - はぴまり~Happy Marriage!?~ (2)
+
+ISBN 18: 9784091328946
+https://bgm.tv/subject/85094 - はぴまり〜Happy Marriage!?〜 (3)
+https://bgm.tv/subject/200742 - はぴまり~Happy Marriage!?~ (3)
+
+ISBN 19: 9784091333032
+https://bgm.tv/subject/85097 - はぴまり〜Happy Marriage!?〜 (4)
+https://bgm.tv/subject/200743 - はぴまり~Happy Marriage!?~ (4)
+
+ISBN 20: 9784091334152
+https://bgm.tv/subject/85098 - はぴまり〜Happy Marriage!?〜 (5)
+https://bgm.tv/subject/200746 - はぴまり~Happy Marriage!?~ (5)
+
+ISBN 21: 9784091337450
+https://bgm.tv/subject/85099 - はぴまり〜Happy Marriage!?〜 (6)
+https://bgm.tv/subject/200748 - はぴまり~Happy Marriage!?~ (6)
+
+ISBN 22: 9784091340047
+https://bgm.tv/subject/85144 - はぴまり〜Happy Marriage!?〜 (7)
+https://bgm.tv/subject/200749 - はぴまり~Happy Marriage!?~ (7)
+
+ISBN 23: 9784091341860
+https://bgm.tv/subject/85145 - はぴまり〜Happy Marriage!?〜 (8)
+https://bgm.tv/subject/200747 - はぴまり~Happy Marriage!?~ (8)
+
+ISBN 24: 9784091343949
+https://bgm.tv/subject/85146 - はぴまり〜Happy Marriage!?〜 (9)
+https://bgm.tv/subject/200745 - はぴまり~Happy Marriage!?~ (9)
+
+ISBN 25: 9784091346124
+https://bgm.tv/subject/85147 - はぴまり〜Happy Marriage!?〜 (10)
+https://bgm.tv/subject/200750 - はぴまり~Happy Marriage!?~ (10)
+
+ISBN 26: 9784041203422
+https://bgm.tv/subject/104206 - 大好きです！！魔法天使こすもす 05
+https://bgm.tv/subject/104208 - 大好きです!!魔法天使こすもす 05
+
+ISBN 27: 9784800000330
+https://bgm.tv/subject/108844 - Mortal METAL屍鋼 1
+https://bgm.tv/subject/499786 - Mortal METAL 屍鋼 (1)
+
+ISBN 28: 9784800001467
+https://bgm.tv/subject/108845 - Mortal METAL屍鋼 2
+https://bgm.tv/subject/499787 - Mortal METAL 屍鋼 (2)
+
+ISBN 29: 9784801513129
+https://bgm.tv/subject/495729 - 引きこもりの妹が身体で家賃を払おうとしてくるんだが
+https://bgm.tv/subject/552193 - 引きこもりの妹が身体で家賃を払おうとしてくるんだが!?
+
+ISBN 30: 9784801512764
+https://bgm.tv/subject/495931 - 貞操観念が逆転した世界で美少女たちの性欲がヤバすぎる! ?
+https://bgm.tv/subject/552058 - 貞操観念が逆転した世界で美少女たちの性欲がヤバすぎる!?
+
+ISBN 31: 9784040755526
+https://bgm.tv/subject/509661 - 双星の天剣使い(2)
+https://bgm.tv/subject/512341 - 双星の天剣使い  (2)
+
+ISBN 32: 9784480818614
+https://bgm.tv/subject/517162 - RPGのつくりかた ――橋野桂と『メタファー：リファンタジオ』
+https://bgm.tv/subject/525250 - RPGのつくりかた――橋野桂と『メタファー: リファンタジオ』
+
+ISBN 33: 9784824203281
+https://bgm.tv/subject/523124 - 異世界転生したら愛犬ベスのほうが強かったんだが～職業街の人でも出来る宿屋経営と街の守り方～ (1)
+https://bgm.tv/subject/559225 - 異世界転生したら愛犬ベスのほうが強かったんだが ~職業街の人でも出来る宿屋経営と街の守り方~ (1)
+
+ISBN 34: 9784867781333
+https://bgm.tv/subject/531721 - STK 好きです つきましては 嗅がせてください!
+https://bgm.tv/subject/532356 - STK 好きです つきましては 嗅がせてください！
+
+ISBN 35: 9784041157350
+https://bgm.tv/subject/543364 - 終末トレインどこへいく？　公式ガイドブック　マージナル・ダイヤグラム
+https://bgm.tv/subject/558606 - 終末トレインどこへいく? 公式ガイドブック マージナル・ダイヤグラム
+
+ISBN 36: 9784041163221
+https://bgm.tv/subject/554488 - ウマ娘 プリティーダービー アニメーションガイド ROAD TO THE TOP & 新時代の扉
+https://bgm.tv/subject/560619 - ウマ娘 プリティーダービー アニメーションガイド ROAD TO THE TOP & 新時代の扉
+
+ISBN 37: 9784824012562
+https://bgm.tv/subject/562249 - カナンの城 ～亡国の王女と世界の秘宝、それを巡る最強盗賊団と覇権国家の大活劇～
+https://bgm.tv/subject/571142 - カナンの城 ~亡国の王女と世界の秘宝、それを巡る最強盗賊団と覇権国家の大活劇~
+
+【疑似不同作品误填】(25组)
+----------------------------------------
+ISBN 1: 9784798601168
+https://bgm.tv/subject/37276 - 気になるあの娘はエロゲンガー！
+https://bgm.tv/subject/150155 - 気になるあの娘はエロゲンガ―！
+
+ISBN 2: 9784776795575
+https://bgm.tv/subject/38011 - 由良SuperPack!! -由良&Tennenouji 描き下ろし&SS集-
+https://bgm.tv/subject/394265 - 由良SuperPack!!
+
+ISBN 3: 9784086306430
+https://bgm.tv/subject/39036 - 嘘つき天使は死にました! 1
+https://bgm.tv/subject/425013 - 嘘つき天使は死にました！
+
+ISBN 4: 9784798604275
+https://bgm.tv/subject/46983 - 紅鋼の精霊操者
+https://bgm.tv/subject/343906 - 紅鉄の精霊操者
+
+ISBN 5: 9784943966418
+https://bgm.tv/subject/51655 - 鎧伝サムライトルーパー vol.2 (Animate Cassette Collection 7)
+https://bgm.tv/subject/136017 - 鎧伝サムライトルーパー vol.2 また、逢えたね。
+
+ISBN 6: 9784943966586
+https://bgm.tv/subject/51657 - 鎧伝サムライトルーパー vol.3 そして5人 (Animate Cassette Collection 10)
+https://bgm.tv/subject/136020 - 鎧伝サムライトルーパー vol.3 そして5人
+
+ISBN 7: 9784943966975
+https://bgm.tv/subject/51658 - 鬼哭―鎧伝サムライトルーパー 四魔将篇 (アニメイトコレクション)
+https://bgm.tv/subject/136021 - 鎧伝サムライトルーパー4 鬼哭 永遠の戦い
+
+ISBN 8: 9784943966289
+https://bgm.tv/subject/51659 - 鎧伝サムライトルーパー (<カセット>)
+https://bgm.tv/subject/136018 - 鎧伝サムライトルーパー それからの戦士たち
+
+ISBN 9: 9784088623665
+https://bgm.tv/subject/52551 - 空の成分 SORA NO SEIBUN
+https://bgm.tv/subject/75174 - 空の成分
+
+ISBN 10: 9784832276239
+https://bgm.tv/subject/58430 - ひだまりスケッチブック ～ビジュアルファンブック～
+https://bgm.tv/subject/477094 - ひだまりスケッチブック―「ひだまりスケッチ」ビジュアルファンブック
+
+ISBN 11: 9784778031749
+https://bgm.tv/subject/70376 - 主婦の生活完全版
+https://bgm.tv/subject/341926 - 完全版 主婦の生活
+
+ISBN 12: 9784047274020
+https://bgm.tv/subject/72415 - 龍天動地
+https://bgm.tv/subject/285580 - 龍天動地 布施龍太 -MONSTER HUNTER- 画集
+
+ISBN 13: 9784048912983
+https://bgm.tv/subject/78495 - ホワイトアルバム2 幸せの向こう側 公式ガイドブック
+https://bgm.tv/subject/391468 - WHITE ALBUM2 OFFICIAL GUIDE BOOK
+
+ISBN 14: 9784063710359
+https://bgm.tv/subject/79757 - A．S．（1）
+https://bgm.tv/subject/356274 - A.S. (1)
+
+ISBN 15: 9784063710366
+https://bgm.tv/subject/79758 - A．S．（2）
+https://bgm.tv/subject/356275 - A.S. (2)
+
+ISBN 16: 9784063710557
+https://bgm.tv/subject/79759 - A．S．（3）＜完＞
+https://bgm.tv/subject/356277 - A.S. (3)
+
+ISBN 17: 9784309272917
+https://bgm.tv/subject/86303 - アニメーション監督 出崎統の世界 ---「人間」を描き続けた映像の魔術師
+https://bgm.tv/subject/530512 - アニメ一ション監督 出崎統の世界
+
+ISBN 18: 9784757704749
+https://bgm.tv/subject/97296 - 顔のない月 ビジュアルファンブック
+https://bgm.tv/subject/123628 - 顔のない月 ビジュアルファンブック (MAGICAL CUTE)
+
+ISBN 19: 9784063753981
+https://bgm.tv/subject/109082 - 僕の文芸部にビッチがいるなんてありえない。 (1)
+https://bgm.tv/subject/162042 - 我的文藝部裡不可能會有bitch
+
+ISBN 20: 9784861274978
+https://bgm.tv/subject/210778 - 夢一夜―木下さくら・東山和子コンパクトイラストレーションズ
+https://bgm.tv/subject/404982 - 夢一夜 木下さくら・東山和子コンパクトイラストレーションズ
+
+ISBN 21: 9784049138771
+https://bgm.tv/subject/317394 - 青の誓約 市条高校サッカー部（版本）
+https://bgm.tv/subject/345148 - セレストブルーの誓約 市条高校サッカー部
+
+ISBN 22: 9784785924454
+https://bgm.tv/subject/405076 - ラブ♥ハニ
+https://bgm.tv/subject/507007 - ラブ・ハニ
+
+ISBN 23: 9784829127964
+https://bgm.tv/subject/487679 - ドラゴンズ・ウィル
+https://bgm.tv/subject/542680 - ラゴンズ·ウィル
+
+ISBN 24: 9784901769747
+https://bgm.tv/subject/493720 - 「バンパイヤ」第二部完結編
+https://bgm.tv/subject/493722 - 「バンパイヤ」第二部完結編　手塚治虫未完作品、続きの夢を紡ぐ
+
+ISBN 25: 9784909824158
+https://bgm.tv/subject/554027 - P.A.WORKS 25周年記念書籍
+https://bgm.tv/subject/570387 - 未来を照らす、灯りをつくる。 アニメの制作会社が自立するために～アニメーション制作会社・P.A.WORKS 25年物語
 
 
 ===== 最终统计 =====
 重复ISBN: 414 个
 总重复条目: 835 个
-未汇报: 835 个
-已汇报: 0 个
+未汇报: 707 个
+已汇报: 128 个
 
 分类统计:
    - 疑似不同作品误填: 179 组
