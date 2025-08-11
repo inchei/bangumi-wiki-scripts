@@ -1,6 +1,5 @@
 name: Bangumi 重复条目检查
     
-# 每周二21:30执行（UTC时间）
 on:
   schedule:
     - cron: '30 21 * * 2'
@@ -9,6 +8,12 @@ on:
 permissions:
   contents: write
 
+env:
+  REPORT_PAGES: >-
+    https://bgm.tv/group/topic/431206,
+    https://bgm.tv/group/topic/431529,
+    https://bgm.tv/group/topic/423940
+
 jobs:
   check_duplicates:
     runs-on: ubuntu-latest
@@ -16,6 +21,8 @@ jobs:
     steps:
       - name: 拉取代码仓库
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
       
       - name: 设置Python环境
         uses: actions/setup-python@v5
@@ -31,7 +38,10 @@ jobs:
         run: python download_bangumi_archive.py
       
       - name: 执行重复条目检查
-        run: python find_duplicate_isbns.py
+        run: python check_reported_duplicates.py
+        env:
+          REPORT_PAGES: ${{ env.REPORT_PAGES }}
+          AUTO_MODE: "true"
       
       - name: 上传检查结果
         uses: actions/upload-artifact@v4
