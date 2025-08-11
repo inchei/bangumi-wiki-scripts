@@ -1,10 +1,10 @@
 name: Bangumi 重复条目检查
     
-# 每周二21:30执行
+# 每周二21:30执行（UTC时间）
 on:
   schedule:
-    - cron: '30 21 * * 2'  # 格式: 分 时 日 月 星期(0=周日, 2=周二)
-  workflow_dispatch:  # 允许手动触发
+    - cron: '30 21 * * 2'
+  workflow_dispatch:
 
 jobs:
   check_duplicates:
@@ -12,10 +12,10 @@ jobs:
     
     steps:
       - name: 拉取代码仓库
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4  # 同时建议将checkout也更新到最新v4版本
       
       - name: 设置Python环境
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5  # 同步更新到最新v5版本
         with:
           python-version: '3.9'
       
@@ -31,7 +31,7 @@ jobs:
         run: python check_reported_duplicates.py
       
       - name: 上传检查结果
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4  # 关键更新：从v3升级到v4
         with:
           name: duplicate-check-results
           path: duplicate_check_results.txt
@@ -43,5 +43,5 @@ jobs:
           git add duplicate_check_results.txt
           git commit -m "自动更新: 重复条目检查结果 $(date +'%Y-%m-%d')"
           git push
-        continue-on-error: true  # 即使提交失败也不中断工作流
+        continue-on-error: true
     
