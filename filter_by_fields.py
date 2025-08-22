@@ -5,9 +5,107 @@ import csv
 from tqdm import tqdm
 from collections import defaultdict
 
-def load_relations(input_file_dir):
+# 关系类型定义（仅包含ID和中文名）
+# 来源：https://github.com/bangumi/server/blob/7f04de44248033060610e7afe34c634d19afb7d6/pkg/vars/relations.go.json
+
+# 动画（anime）关系类型
+ANIME_RELATIONS = {
+    1: "改编",
+    2: "前传",
+    3: "续集",
+    4: "总集篇",
+    5: "全集",
+    6: "番外篇",
+    7: "角色出演",
+    8: "相同世界观",
+    9: "不同世界观",
+    10: "不同演绎",
+    11: "衍生",
+    12: "主线故事",
+    14: "联动",
+    99: "其他",
+}
+
+# 书籍（book）关系类型
+BOOK_RELATIONS = {
+    1: "改编",
+    1002: "系列",
+    1003: "单行本",
+    1004: "画集",
+    1005: "前传",
+    1006: "续集",
+    1007: "番外篇",
+    1008: "主线故事",
+    1010: "不同版本",
+    1011: "角色出演",
+    1012: "相同世界观",
+    1013: "不同世界观",
+    1014: "联动",
+    1015: "不同演绎",
+    1099: "其他",
+}
+
+# 音乐（music）关系类型
+MUSIC_RELATIONS = {
+    3001: "原声集",
+    3002: "角色歌",
+    3003: "片头曲",
+    3004: "片尾曲",
+    3005: "插入歌",
+    3006: "印象曲",
+    3007: "广播剧",
+    3099: "其他",
+}
+
+# 游戏（game）关系类型
+GAME_RELATIONS = {
+    1: "改编",
+    4002: "前传",
+    4003: "续集",
+    4006: "外传",
+    4007: "角色出演",
+    4008: "相同世界观",
+    4009: "不同世界观",
+    4010: "不同演绎",
+    4012: "主线故事",
+    4014: "联动",
+    4015: "扩展包",
+    4016: "不同版本",
+    4017: "主版本",
+    4018: "合集",
+    4019: "收录作品",
+    4099: "其他",
+}
+
+# 现实（real）关系类型
+REAL_RELATIONS = {
+    1: "改编",
+    2: "前传",
+    3: "续集",
+    4: "总集篇",
+    5: "全集",
+    6: "番外篇",
+    7: "角色出演",
+    8: "相同世界观",
+    9: "不同世界观",
+    10: "不同演绎",
+    11: "衍生",
+    12: "主线故事",
+    14: "联动",
+    99: "其他",
+}
+
+# 整合所有关系类型，建立中文名称到数字的映射
+cn_to_relation_id = {}
+for rel_dict in [ANIME_RELATIONS, BOOK_RELATIONS, MUSIC_RELATIONS, GAME_RELATIONS, REAL_RELATIONS]:
+    for rel_id, rel_cn in rel_dict.items():
+        if rel_cn not in cn_to_relation_id:
+            cn_to_relation_id[rel_cn] = rel_id
+
+
+def load_relations(archive_dir):
     """加载关系数据"""
-    relations_file = os.path.join(input_file_dir, "subject-relations.jsonlines")
+    relations_file = os.path.join(archive_dir, "subject-relations.jsonlines")
     if not os.path.exists(relations_file):
         return None
     
@@ -22,25 +120,19 @@ def load_relations(input_file_dir):
                 continue
     return relations
 
+
 def extract_field_value(data, field_name):
-    """
-    从数据中提取字段值
-    先尝试从顶级字段获取，再尝试从infobox中提取
-    """
-    # 先检查是否为顶级字段
+    """提取字段值"""
     if field_name in data:
         value = data[field_name]
-        # 处理布尔值
         if isinstance(value, bool):
             return "true" if value else "false"
         return str(value)
     
-    # 检查infobox中的字段
     infobox = data.get('infobox', '')
     if not infobox:
         return ""
 
-    # 确保不会匹配到空值或相邻字段
     pattern = re.compile(
         fr'\|{re.escape(field_name)}\s*[:=]\s*(.*?)(?:\s*\||\s*}}|\s*{{|\s*$|\r\n|\n)',
         re.IGNORECASE
@@ -48,16 +140,17 @@ def extract_field_value(data, field_name):
     match = pattern.search(infobox)
     if match:
         value = match.group(1).strip()
-        # 过滤掉空值和大括号
         if not value or value in ('{', '}'):
             return ""
         return value
     
     return ""
 
+
 def matches_condition(value, condition):
-    """检查值是否满足条件（支持普通文本包含和正则表达式）"""
-    # 检查是否为正则表达式（以re:开头）
+    """检查条件匹配"""
+    if not condition:
+        return True
     if condition.startswith('re:'):
         regex_pattern = condition[3:]
         try:
@@ -65,121 +158,116 @@ def matches_condition(value, condition):
         except re.error:
             print(f"警告：正则表达式 '{regex_pattern}' 无效，将视为普通文本匹配")
             return condition in value
-    # 普通文本包含
     return condition in value
 
+
 def get_user_filters():
-    """获取用户定义的筛选条件，输入空字段名称结束添加"""
+    """获取用户筛选条件"""
     filters = []
-    relation_filters = []
+    relation_filters = []  # 格式：(rel_id, related_conditions, negate)
     tag_filters = []
     i = 1
 
-    print("请添加筛选条件（输入空的字段名称结束添加）")
-    print("提示：如果需要筛选条目关系，字段名称请以 'relation:' 开头")
-    print("      在关系类型前加!表示没有该关系，例如 relation:!1002")
-    print("      如果需要筛选TAG，字段名称请以 'tag:' 开头")
-    print("      在TAG前加!表示不含该TAG，例如 tag:!轻小说")
+    print("请添加筛选条件（输入空行结束添加）")
+    print("格式说明：")
+    print("- 普通字段：字段名:条件（例如：出版社:角川、发售日:re:\\d{4}、id:12345）")
+    print("- 关系筛选（无关联条件）：中文关系名:（例如：单行本:）")
+    print("- 关系筛选（单个条件）：中文关系名:字段名:条件（例如：单行本:发售日:re:\\d{4}）")
+    print("- 关系筛选（多个条件）：relation:中文关系名（回车后输入条件，空行结束）")
+    print("- 标签筛选：tag:标签名 或 tag:!标签名（例如：tag:轻小说、tag:!动画）")
 
     while True:
-        print(f"\n设置第 {i} 个筛选条件:")
-        field_name = input(f"请输入字段名称 (例如: 出版社、name、relation:1002 或 tag:轻小说): ").strip()
+        print(f"\n条件 {i} (输入空行结束)：")
+        condition_str = input("请输入筛选条件: ").strip()
 
-        # 如果字段名称为空，结束添加
-        if not field_name:
-            if i == 1:  # 还没有添加任何条件
+        if not condition_str:
+            if i == 1:
                 print("未添加任何筛选条件")
             else:
                 print(f"已完成筛选条件添加，共设置 {i-1} 个条件")
             break
 
-        # 关系筛选条件
-        if field_name.startswith('relation:'):
-            relation_part = field_name.split(':')[1]
-            negate = False
-            
-            # 检查是否是否定条件
-            if relation_part.startswith('!'):
-                negate = True
-                try:
-                    relation_type = int(relation_part[1:])
-                except ValueError:
-                    print("错误：关系类型必须是数字 (例如 relation:!1002)")
-                    continue
-            else:
-                try:
-                    relation_type = int(relation_part)
-                except ValueError:
-                    print("错误：关系类型必须是数字 (例如 relation:1002)")
-                    continue
-            
-            print("提示：关系代码对应关系请参考 https://github.com/bangumi/server/blob/736b2e02d7f1165955ef30f3b12b29e2ba204bd6/pol/db/const.py#L139")
-            
-            related_conditions = []
-            if not negate:
-                print("是否需要对关联条目设置筛选条件？(y/n)")
-                choice = input().strip().lower()
-                
-                if choice == 'y':
-                    print("设置关联条目的筛选条件:")
-                    while True:
-                        related_field = input("请输入关联条目的字段名称 (留空结束): ").strip()
-                        if not related_field:
-                            break
-                        
-                        print("条件格式说明:")
-                        print("- 普通文本: 直接输入要包含的文本 (例如: 、)")
-                        print("- 正则表达式: 以 re: 开头 (例如: re:\\d{4}-\\d{2}-\\d{2})")
-                        condition = input("请输入筛选条件: ")
-                        
-                        if not condition:
-                            print("筛选条件不能为空，跳过此条件")
-                            continue
-                        
-                        related_conditions.append((related_field, condition))
-            
-            relation_filters.append((relation_type, related_conditions, negate))
-            i += 1
-            continue
+        # 先处理特殊前缀（relation: 或 tag:）
+        if condition_str.startswith(('relation:', 'tag:')):
+            key_part, value_part = [p.strip() for p in condition_str.split(':', 1)]
 
-        # TAG筛选条件
-        if field_name.startswith('tag:'):
-            tag_part = field_name.split(':')[1]
-            negate = False
-            
-            # 检查是否是否定条件
-            if tag_part.startswith('!'):
-                negate = True
-                tag_name = tag_part[1:]
-            else:
-                tag_name = tag_part
-            
-            if not tag_name:
-                print("错误：TAG名称不能为空")
+            # 处理relation:中文关系名
+            if key_part == 'relation':
+                negate = False
+                rel_cn = value_part
+                if rel_cn.startswith('!'):
+                    negate = True
+                    rel_cn = rel_cn[1:].strip()
+                rel_id = cn_to_relation_id.get(rel_cn)
+                if rel_id is None:
+                    print(f"错误：未找到关系名称 '{rel_cn}'")
+                    continue
+                print(f"设置'{rel_cn}'的关联条件（格式：字段名:条件，空行结束）:")
+                related_conditions = []
+                while True:
+                    related_cond = input("关联条件: ").strip()
+                    if not related_cond:
+                        break
+                    if ':' not in related_cond:
+                        print("格式错误：关联条件需包含冒号（字段名:条件），跳过")
+                        continue
+                    field, cond = [p.strip() for p in related_cond.split(':', 1)]
+                    related_conditions.append((field, cond))
+                relation_filters.append((rel_id, related_conditions, negate))
+                i += 1
                 continue
-            
-            # 对于TAG筛选，条件字段固定为tag_name
-            condition = tag_name
-            tag_filters.append((condition, negate))
-            i += 1
+
+            # 处理标签筛选
+            if key_part == 'tag':
+                tag_part = value_part
+                negate = False
+                if tag_part.startswith('!'):
+                    negate = True
+                    tag_name = tag_part[1:].strip()
+                else:
+                    tag_name = tag_part.strip()
+                if not tag_name:
+                    print("错误：TAG名称不能为空")
+                    continue
+                tag_filters.append((tag_name, negate))
+                i += 1
+                continue
+
+        # 检查是否是关系筛选格式（中文关系名: 或 中文关系名:字段:条件）
+        parts = condition_str.split(':', 2)
+        rel_cn_candidate = parts[0].strip()
+        is_relation = rel_cn_candidate in cn_to_relation_id
+        
+        if is_relation:
+            # 情况1：中文关系名:（无关联条件）
+            if len(parts) == 1 or (len(parts) >= 2 and not parts[1].strip()):
+                rel_id = cn_to_relation_id.get(rel_cn_candidate)
+                relation_filters.append((rel_id, [], False))
+                i += 1
+                continue
+            # 情况2：中文关系名:字段:条件（单个条件）
+            if len(parts) == 3:
+                field, cond = [p.strip() for p in parts[1:]]
+                rel_id = cn_to_relation_id.get(rel_cn_candidate)
+                relation_filters.append((rel_id, [(field, cond)], False))
+                i += 1
+                continue
+
+        # 视为普通字段筛选
+        if ':' not in condition_str:
+            print("格式错误：条件需包含冒号（字段名:条件）")
             continue
-
-        print("条件格式说明:")
-        print("- 普通文本: 直接输入要包含的文本 (例如: 、)")
-        print("- 正则表达式: 以 re: 开头 (例如: re:\\d{4}-\\d{2}-\\d{2})")
-        condition = input("请输入筛选条件: ")
-
-        if not condition:
-            print("筛选条件不能为空，请重新输入")
-            continue
-
+        key_part, value_part = [p.strip() for p in condition_str.split(':', 1)]
+        field_name = key_part
+        condition = value_part
         filters.append((field_name, condition))
         i += 1
 
     return filters, relation_filters, tag_filters
 
+
 def group_filters_by_field(filters):
-    """将筛选条件按字段分组，相同字段的条件放在一起"""
+    """按字段分组筛选条件"""
     grouped = {}
     for field, condition in filters:
         if field not in grouped:
@@ -187,60 +275,104 @@ def group_filters_by_field(filters):
         grouped[field].append(condition)
     return grouped
 
-def write_csv_file(output_csv_file, results, grouped_filters, relation_filters, tag_filters):
-    """将结果写入CSV文件"""
+
+def write_csv_file(output_csv_file, results, grouped_filters, relation_filters, all_subjects):
+    """生成CSV文件（先列所有关联条目字段，再列所有关联条目ID）"""
     unique_fields = list(grouped_filters.keys())
-    relation_headers = []
-    tag_headers = []
+    
+    # 收集所有需要展示的关联条目字段（如“发售日”）
+    related_fields = set()
+    for rel_id, related_conditions, _ in relation_filters:
+        for field, _ in related_conditions:
+            related_fields.add(field)
+    related_fields = list(related_fields)  # 转为列表（如['发售日']）
 
-    # 为关系筛选添加表头
-    for rel_type, _, negate in relation_filters:
+    # 统计每种关系类型的最大关联条目数（用于动态生成表头）
+    max_relations = defaultdict(int)
+    for result in results:
+        for rel_id_str, related_ids in result['relations'].items():
+            rel_id = int(rel_id_str)
+            current_count = len(related_ids) if isinstance(related_ids, list) else 0
+            if current_count > max_relations[rel_id]:
+                max_relations[rel_id] = current_count
+
+    # 生成表头
+    headers = ['ID', 'URL']
+    headers.extend(unique_fields)  # 添加普通字段
+
+    # 构建ID到中文名的映射
+    id_to_cn = {}
+    for rel_dict in [ANIME_RELATIONS, BOOK_RELATIONS, MUSIC_RELATIONS, GAME_RELATIONS, REAL_RELATIONS]:
+        for rel_id, rel_cn in rel_dict.items():
+            if rel_id not in id_to_cn:
+                id_to_cn[rel_id] = rel_cn
+
+    # ------------------------------
+    # 核心修改1：调整表头顺序
+    # 先按序号列出所有关联条目的字段（如单行本_1_发售日, 单行本_2_发售日...）
+    # 再按序号列出所有关联条目的ID（如单行本_1_ID, 单行本_2_ID...）
+    # ------------------------------
+    for rel_id, related_conditions, negate in relation_filters:
+        rel_cn = id_to_cn.get(rel_id, f"relation_{rel_id}")
         prefix = "no_" if negate else ""
-        relation_headers.append(f"{prefix}relation_{rel_type}")
+        rel_header_base = f"{prefix}{rel_cn}"
+        max_count = max_relations.get(rel_id, 0)
+        
+        # 第一部分：关联条目的字段（按序号）
+        for idx in range(1, max_count + 1):
+            for field in related_fields:
+                headers.append(f"{rel_header_base}_{idx}_{field}")
+        
+        # 第二部分：关联条目的ID（按序号）
+        for idx in range(1, max_count + 1):
+            headers.append(f"{rel_header_base}_{idx}_ID")
 
-    # 为TAG筛选添加表头
-    for tag_name, negate in tag_filters:
-        prefix = "no_" if negate else ""
-        tag_headers.append(f"{prefix}tag_{tag_name}")
-
+    # 写入数据
     with open(output_csv_file, 'w', encoding='utf-8', newline='') as csvfile:
         writer = csv.writer(csvfile)
-
-        # 写入表头
-        headers = ['ID', 'URL']
-        headers.extend(unique_fields)
-        headers.extend(relation_headers)
-        headers.extend(tag_headers)
         writer.writerow(headers)
 
-        # 写入数据行
         for result in results:
             row = [result['id'], result['url']]
             
-            # 添加普通字段
+            # 添加普通字段值
             for field in unique_fields:
                 row.append(result['fields'].get(field, ''))
             
-            # 添加关系字段
-            for rel_type, _, negate in relation_filters:
-                if negate:
-                    # 对于否定关系，显示"无"表示满足条件
-                    row.append("无" if str(rel_type) not in result['relations'] else "有")
-                else:
-                    row.append(result['relations'].get(str(rel_type), '无'))
-            
-            # 添加TAG字段
-            for tag_name, negate in tag_filters:
-                if negate:
-                    # 对于否定TAG，显示"无"表示满足条件
-                    row.append("无" if tag_name not in result['tags'] else "有")
-                else:
-                    row.append("有" if tag_name in result['tags'] else "无")
-            
+            # ------------------------------
+            # 核心修改2：调整数据行顺序（与表头对应）
+            # 先写所有关联条目的字段值，再写所有关联条目的ID
+            # ------------------------------
+            for rel_id, related_conditions, negate in relation_filters:
+                rel_cn = id_to_cn.get(rel_id, f"relation_{rel_id}")
+                prefix = "no_" if negate else ""
+                rel_header_base = f"{prefix}{rel_cn}"
+                related_ids = result['relations'].get(str(rel_id), [])
+                if not isinstance(related_ids, list):
+                    related_ids = []
+                max_count = max_relations.get(rel_id, 0)
+                
+                # 第一部分：写入关联条目的字段值（按序号）
+                for idx in range(1, max_count + 1):
+                    related_id = related_ids[idx - 1] if idx - 1 < len(related_ids) else None
+                    for field in related_fields:
+                        if related_id and all_subjects and related_id in all_subjects:
+                            related_data = all_subjects[related_id]
+                            value = extract_field_value(related_data, field)
+                            row.append(value)
+                        else:
+                            row.append("")  # 空值占位
+                
+                # 第二部分：写入关联条目的ID（按序号）
+                for idx in range(1, max_count + 1):
+                    related_id = related_ids[idx - 1] if idx - 1 < len(related_ids) else None
+                    row.append(related_id if related_id else "")
+
             writer.writerow(row)
 
+
 def check_files_overwrite(output_file, output_csv_file):
-    """检查文件是否存在，如果存在则询问用户是否覆盖"""
+    """检查文件覆盖"""
     existing_files = []
     if os.path.exists(output_file):
         existing_files.append(output_file)
@@ -258,11 +390,12 @@ def check_files_overwrite(output_file, output_csv_file):
             return False
     return True
 
+
 def check_related_subject(subject_data, relations_data, related_subject_id, related_conditions):
-    """检查关联条目是否满足条件"""
+    """检查关联条目条件"""
     if not related_conditions:
         return True
-    
+
     related_data = relations_data.get(str(related_subject_id))
     if not related_data:
         return False
@@ -273,16 +406,17 @@ def check_related_subject(subject_data, relations_data, related_subject_id, rela
             return False
     return True
 
+
 def needs_full_load(relation_filters):
-    """检查是否需要预加载所有subject数据"""
-    for rel_type, related_conditions, negate in relation_filters:
-        # 如果有非否定的关系条件且有关联条目的筛选条件，则需要预加载
+    """检查是否需要预加载数据"""
+    for rel_id, related_conditions, negate in relation_filters:
         if not negate and related_conditions:
             return True
     return False
 
+
 def check_tag_conditions(data, tag_filters):
-    """检查TAG条件是否满足"""
+    """检查标签条件"""
     if not tag_filters:
         return True
     
@@ -291,30 +425,38 @@ def check_tag_conditions(data, tag_filters):
     
     for tag_name, negate in tag_filters:
         if negate:
-            # 否定条件：条目不能含有该TAG
             if tag_name in tag_names:
                 return False
         else:
-            # 肯定条件：条目必须含有该TAG
             if tag_name not in tag_names:
                 return False
     return True
 
+
 def main():
-    # 获取用户定义的筛选条件
+    default_archive = "bangumi_archive"
+    archive_dir = input(f"请输入bangumi_archive文件夹路径（默认: {default_archive}）: ").strip() or default_archive
+    if not os.path.isdir(archive_dir):
+        print(f"错误：文件夹 {archive_dir} 不存在或不是有效的目录")
+        return
+
+    default_input_file = "subject.jsonlines"
+    input_file = input(f"请输入要筛选的JSONLines文件名（默认: {default_archive}/{default_input_file}）: ").strip() or os.path.join(default_archive, default_input_file)
+    if not os.path.exists(input_file):
+        print(f"错误：文件 {input_file} 不存在")
+        return
+
     filters, relation_filters, tag_filters = get_user_filters()
     if not filters and not relation_filters and not tag_filters:
         print("未设置任何筛选条件，程序退出")
         return
 
-    # 将筛选条件按字段分组
     grouped_filters = group_filters_by_field(filters)
     unique_fields = list(grouped_filters.keys())
 
-    # 显示用户设置的筛选条件（分组显示）
+    # 显示筛选条件
     print("\n===== 筛选条件 =====")
-    
-    # 普通字段条件
+    # 普通字段
     for i, field in enumerate(unique_fields, 1):
         conditions = grouped_filters[field]
         print(f"{i}. 字段: {field}")
@@ -322,70 +464,57 @@ def main():
             cond_type = "正则匹配" if condition.startswith('re:') else "文本包含"
             cond_display = condition[3:] if condition.startswith('re:') else condition
             print(f"   条件 {j}: ({cond_type}) {cond_display}")
-        if len(conditions) > 1:
-            print(f"   （以上 {len(conditions)} 个条件为且关系，需同时满足）")
-    
     # 关系条件
+    id_to_cn = {}
+    for rel_dict in [ANIME_RELATIONS, BOOK_RELATIONS, MUSIC_RELATIONS, GAME_RELATIONS, REAL_RELATIONS]:
+        for rel_id, rel_cn in rel_dict.items():
+            if rel_id not in id_to_cn:
+                id_to_cn[rel_id] = rel_cn
+
     rel_start = len(unique_fields) + 1
-    for i, (rel_type, related_conditions, negate) in enumerate(relation_filters, rel_start):
-        print(f"{i}. 关系类型: {'不包含' if negate else '包含'} {rel_type}")
-        if not negate and related_conditions:
-            print("   关联条目需满足以下条件:")
+    for i, (rel_id, related_conditions, negate) in enumerate(relation_filters, rel_start):
+        rel_cn = id_to_cn.get(rel_id, f"relation_{rel_id}")
+        print(f"{i}. 关系类型: {'不包含' if negate else '包含'} {rel_cn}（ID: {rel_id}）")
+        if related_conditions:
+            print("   关联条目条件:")
             for j, (field, condition) in enumerate(related_conditions, 1):
                 cond_type = "正则匹配" if condition.startswith('re:') else "文本包含"
                 cond_display = condition[3:] if condition.startswith('re:') else condition
                 print(f"     条件 {j}: 字段 '{field}' ({cond_type}) {cond_display}")
-    
-    # TAG条件
+    # 标签条件
     tag_start = rel_start + len(relation_filters)
     for i, (tag_name, negate) in enumerate(tag_filters, tag_start):
         print(f"{i}. TAG: {'不包含' if negate else '包含'} '{tag_name}'")
-    
     print("====================\n")
-    print("不同字段之间的条件关系为且关系，需同时满足所有字段的条件\n")
 
-    # 获取文件路径
-    default_input = "bangumi_archive/subject.jsonlines"
+    # 输出文件设置
     default_output = "filtered_results"
-
-    input_file = input(f"请输入JSONLines文件路径（默认: {default_input}）: ").strip() or default_input
     output_name = input(f"请输入结果输出文件名（默认: {default_output}）: ").strip() or default_output
-
     output_file = f"{output_name}.jsonlines"
     output_csv_file = f"{output_name}.csv"
-
-    # 检查输入文件
-    if not os.path.exists(input_file):
-        print(f"错误：文件 {input_file} 不存在")
-        return
-
-    # 检查输出文件是否已存在
     if not check_files_overwrite(output_file, output_csv_file):
         return
 
     # 加载关系数据
-    input_file_dir = os.path.dirname(input_file)
-    relations_data = load_relations(input_file_dir)
-    
-    # 如果设置了关系筛选但没有找到关系数据文件
+    relations_data = load_relations(archive_dir)
     if relation_filters and relations_data is None:
-        print("错误：需要筛选关系但未找到 subject-relations.jsonlines 文件")
+        print("错误：需要筛选关系但未找到 subject-relations.jsonlines 文件（应在bangumi_archive文件夹下）")
         return
-    
-    # 检查是否需要预加载所有subject数据
-    need_full_load = needs_full_load(relation_filters)
+
+    # 预加载subject数据（如需）
+    need_full_load_flag = needs_full_load(relation_filters)
     all_subjects = {}
-    
-    if need_full_load:
-        # 预加载所有subject数据到内存
-        print("\n正在预加载subject数据...")
-        
-        # 获取文件总行数用于进度条
-        with open(input_file, 'r', encoding='utf-8') as f:
+    original_subject_file = os.path.join(archive_dir, "subject.jsonlines")
+    if need_full_load_flag:
+        if not os.path.exists(original_subject_file):
+            print(f"错误：需要预加载subject数据，但未找到 {original_subject_file}")
+            return
+            
+        print("\n正在预加载原始subject数据...")
+        with open(original_subject_file, 'r', encoding='utf-8') as f:
             total_lines = sum(1 for _ in f)
         
-        # 重新打开文件读取内容
-        with open(input_file, 'r', encoding='utf-8') as f:
+        with open(original_subject_file, 'r', encoding='utf-8') as f:
             for line in tqdm(f, total=total_lines, desc="加载进度"):
                 try:
                     data = json.loads(line.strip())
@@ -395,13 +524,11 @@ def main():
                 except json.JSONDecodeError:
                     continue
 
-    # 处理文件
+    # 处理筛选
     results = []
     matched_count = 0
-
-    print(f"\n开始处理数据...")
+    print(f"\n开始处理 {input_file} ...")
     
-    # 获取文件总行数用于进度条
     with open(input_file, 'r', encoding='utf-8') as f:
         total_lines = sum(1 for _ in f)
     
@@ -415,11 +542,11 @@ def main():
                 if not subject_id:
                     continue
 
-                # 检查TAG条件
+                # 检查标签条件
                 if not check_tag_conditions(data, tag_filters):
                     continue
 
-                # 检查所有普通条件
+                # 检查普通字段条件
                 field_values = {}
                 all_matched = True
 
@@ -427,7 +554,6 @@ def main():
                     value = extract_field_value(data, field)
                     field_values[field] = value
 
-                    # 检查该字段的所有条件
                     field_conditions = grouped_filters[field]
                     field_matched = True
 
@@ -448,77 +574,61 @@ def main():
                 if relation_filters:
                     subject_relations = relations_data.get(int(subject_id), []) if relations_data else []
                     
-                    for rel_type, related_conditions, negate in relation_filters:
+                    for rel_id, related_conditions, negate in relation_filters:
                         matched = False
                         related_ids = []
                         
-                        # 查找该类型的所有关系
                         for rel in subject_relations:
-                            if rel['relation_type'] == rel_type:
-                                # 检查关联条目是否满足条件
+                            if rel['relation_type'] == rel_id:
                                 if not negate:
-                                    if need_full_load:
-                                        # 需要检查关联条目的具体条件
+                                    if need_full_load_flag:
                                         if check_related_subject(data, all_subjects, rel['related_subject_id'], related_conditions):
                                             related_ids.append(str(rel['related_subject_id']))
                                             matched = True
                                     else:
-                                        # 不需要检查具体条件，只要有该关系就匹配
                                         related_ids.append(str(rel['related_subject_id']))
                                         matched = True
                                 elif negate:
-                                    # 对于否定条件，只要找到任何该类型的关系就不匹配
                                     matched = True
                                     break
                         
                         if negate:
-                            # 对于否定条件，matched=True表示有该关系，不符合要求
                             if matched:
                                 all_matched = False
                                 break
-                            relation_values[str(rel_type)] = "无"
+                            relation_values[str(rel_id)] = []
                         else:
                             if not matched:
                                 all_matched = False
                                 break
-                            relation_values[str(rel_type)] = ", ".join(related_ids) if related_ids else "无"
+                            relation_values[str(rel_id)] = related_ids
 
                 if all_matched:
                     url = f"https://bgm.tv/subject/{subject_id}"
                     
-                    # 获取TAG信息用于CSV输出
-                    tag_info = {}
-                    if tag_filters:
-                        tags = data.get('tags', [])
-                        tag_names = [tag['name'] for tag in tags]
-                        for tag_name, _ in tag_filters:
-                            tag_info[tag_name] = "有" if tag_name in tag_names else "无"
-                    
-                    # 写入原始行
                     out_f.write(json.dumps(data, ensure_ascii=False) + "\n")
                     
-                    # 保存结果
                     results.append({
                         'id': subject_id,
                         'url': url,
                         'fields': field_values,
-                        'relations': relation_values,
-                        'tags': tag_info
+                        'relations': relation_values
                     })
                     matched_count += 1
 
             except Exception as e:
-                print(f"\n处理条目 {subject_id} 时出错: {str(e)}")
+                print(f"\n处理条目时出错: {str(e)}")
                 continue
 
-    # 写入CSV文件
+    # 生成CSV
     if results:
         print("\n正在生成CSV文件...")
-        write_csv_file(output_csv_file, results, grouped_filters, relation_filters, tag_filters)
+        write_csv_file(output_csv_file, results, grouped_filters, relation_filters, all_subjects)
 
-    print(f"\n处理完成，共找到 {matched_count} 个符合所有条件的条目")
+    print(f"\n处理完成，共找到 {matched_count} 个符合条件的条目")
     print(f"原始数据已保存至 {output_file}")
     print(f"表格数据已保存至 {output_csv_file}")
+
 
 if __name__ == "__main__":
     main()
