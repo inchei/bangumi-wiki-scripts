@@ -9,7 +9,8 @@
   - 限定了 9784 开头（日本），因为大陆出版物很多用丛书号
   - 可指定汇报帖以排除已汇报 ISBN
   - 可以通过修改查找重复的脚本中的 WHITE_LIST，设置丛书号等不参与查找的 ISBN 的白名单
-- [filter_by_fields.py](https://github.com/inchei/bangumi-wiki-scripts/blob/main/filter_by_fields.py)：查找指定字段含有指定文本/符合指定正则表达式/有无指定关联/有无指定标签的条目
+- [filter_by_fields.py](https://github.com/inchei/bangumi-wiki-scripts/blob/main/filter_by_fields.py)：查找指定字段含有指定文本/符合指定正则表达式/有无指定关联/有无指定标签的条目，输出相应 csv 表格和 jsonlines
+- [wikiBatch.user.js](https://github.com/inchei/bangumi-wiki-scripts/blob/main/wikiBatch.user.js)：在 https://next.bgm.tv 根据含有 ID 和字段列的 csv 批量审核编辑，需要维基权限，**不完善，请谨慎使用，注意审核**
 
 ## GitHub Actions
 当前执行的自动任务：
