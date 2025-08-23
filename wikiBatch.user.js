@@ -628,7 +628,7 @@ function createFloatButton() {
         currentSubjectData: null, // 当前处理的条目数据
         currentFieldUpdates: null, // 当前字段更新
         currentWikitext: null, // 当前编辑的Wikitext
-        currentCommitMessage: null, // 当前提交说明
+        currentCommitMessage: null, // 当前编辑摘要
         isCommitMessageLocked: localStorage.getItem('bgmIsCommitMessageLocked') === 'true' || false,
         lockedCommitMessage: localStorage.getItem('bgmLockedCommitMessage') || '',
         retryCount: {} // 记录每个条目的重试次数（不保存到localStorage）
@@ -1003,10 +1003,10 @@ function createFloatButton() {
         if (hasUpdates) {
             content += `
             <div class="commit-message-area">
-                <label>提交说明:</label>
+                <label>编辑摘要:</label>
                 <div style="display: flex; align-items: center; gap: 8px;">
-                    <input type="text" id="commit-message" placeholder="请输入提交说明" style="flex-grow: 1;">
-                    <button id="lock-commit-message" class="secondary" title="${state.isCommitMessageLocked ? '解锁提交说明' : '固定提交说明'}">
+                    <input type="text" id="commit-message" placeholder="请输入编辑摘要" style="flex-grow: 1;">
+                    <button id="lock-commit-message" class="secondary" title="${state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要'}">
                         <i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>
                     </button>
                 </div>
@@ -1057,10 +1057,10 @@ function createFloatButton() {
                 if (state.isCommitMessageLocked) {
                     state.lockedCommitMessage = commitMessageInput.value;
                     lockButton.innerHTML = '<i class="fas fa-lock"></i>';
-                    lockButton.title = '解锁提交说明';
+                    lockButton.title = '解锁编辑摘要';
                 } else {
                     lockButton.innerHTML = '<i class="fas fa-lock-open"></i>';
-                    lockButton.title = '固定提交说明';
+                    lockButton.title = '固定编辑摘要';
                     state.currentCommitMessage = generateCommitMessage(state.currentFieldUpdates);
                     commitMessageInput.value = state.currentCommitMessage;
                 }
@@ -1405,12 +1405,14 @@ function createFloatButton() {
 
                 // 保存当前条目数据
                 state.currentSubjectData = subjectData;
-                state.currentWikitext = null; // 重置当前编辑的Wikitext
-                state.currentCommitMessage = null; // 重置当前提交说明
+                state.currentWikitext = null;
+                state.currentCommitMessage = null;
 
                 // 获取最后更新时间
-                const lastUpdateTime = historyData.length > 0 ? historyData[0].createdAt : 0;
+                const lastUpdateTime = historyData[0]?.createdAt || 0;
                 const lastUpdateDate = lastUpdateTime ? new Date(lastUpdateTime * 1000) : null;
+                const lastCreator = historyData[0]?.creator.username || '';
+                const lastCommitMessage = historyData[0]?.commitMessage || '';
 
                 // 检查是否需要警告最近更新
                 const shouldWarn = isRecentUpdate(lastUpdateTime);
@@ -1437,7 +1439,7 @@ function createFloatButton() {
                 if (lastUpdateDate) {
                     content += `
                     <div class="last-update-info" ${shouldWarn ? 'style="color:#d9534f"' : ''}>
-                        最后更新时间: ${lastUpdateDate.toLocaleString()}
+                        <a href="https://bgm.tv/subject/${currentItem.id}/edit" target="_blank">最后更新: ${lastUpdateDate.toLocaleString()} ${lastCreator} ${lastCommitMessage}</a>
                     </div>
                 `;
                 }
@@ -1460,10 +1462,10 @@ function createFloatButton() {
                 if (hasUpdates) {
                     content += `
                     <div class="commit-message-area">
-                        <label>提交说明:</label>
+                        <label>编辑摘要:</label>
                         <div style="display: flex; align-items: center; gap: 8px;">
-                            <input type="text" id="commit-message" placeholder="请输入提交说明" style="flex-grow: 1;">
-                            <button id="lock-commit-message" class="secondary" title="${state.isCommitMessageLocked ? '解锁提交说明' : '固定提交说明'}">
+                            <input type="text" id="commit-message" placeholder="请输入编辑摘要" style="flex-grow: 1;">
+                            <button id="lock-commit-message" class="secondary" title="${state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要'}">
                                 <i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>
                             </button>
                         </div>
@@ -1517,10 +1519,10 @@ function createFloatButton() {
                             state.lockedCommitMessage = commitMessageInput.value;
                             state.currentCommitMessage = commitMessageInput.value;
                             lockButton.innerHTML = '<i class="fas fa-lock"></i>';
-                            lockButton.title = '解锁提交说明';
+                            lockButton.title = '解锁编辑摘要';
                         } else {
                             lockButton.innerHTML = '<i class="fas fa-lock-open"></i>';
-                            lockButton.title = '固定提交说明';
+                            lockButton.title = '固定编辑摘要';
                             state.currentCommitMessage = generateCommitMessage(state.currentFieldUpdates);
                             commitMessageInput.value = state.currentCommitMessage;
                         }
@@ -1919,7 +1921,7 @@ function createFloatButton() {
                 hideLoadingOverlay();
 
                 const updatedFields = Object.keys(getFieldUpdates(csvItem)).join(', ');
-                logResult(itemId, itemName, '成功', `已更新字段: ${updatedFields} (提交说明: ${commitMessage})`);
+                logResult(itemId, itemName, '成功', `已更新字段: ${updatedFields} (编辑摘要: ${commitMessage})`);
                 state.results.success++;
                 state.currentIndex++;
                 state.currentSubjectData = null;
@@ -2089,7 +2091,6 @@ function createFloatButton() {
         localStorage.setItem('bgmBatchMode', state.batchMode.toString());
         localStorage.setItem('bgmIsCommitMessageLocked', state.isCommitMessageLocked.toString());
         localStorage.setItem('bgmLockedCommitMessage', state.lockedCommitMessage);
-        // 不再保存重试次数到localStorage
     }
 
     // 下载日志
