@@ -278,7 +278,7 @@ def write_csv_file(output_csv_file, results, grouped_filters, relation_filters, 
             headers.append(f"{rel_base}_{idx}_ID")
 
     # 写入CSV
-    with open(output_csv_file, 'w', encoding='utf-8', newline='') as csvfile:
+    with open(output_csv_file, 'w', encoding='utf-8-sig', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(headers)
         for result in results:
