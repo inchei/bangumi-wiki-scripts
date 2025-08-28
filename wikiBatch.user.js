@@ -2033,6 +2033,11 @@ function createFloatButton() {
         updateDiffDisplay(oldText, newText, containerId);
     }
 
+    function sanitizeRegExp(str) {
+        const regexSpecialChars = /[.*+?^${}()|[\]\\]/g;
+        return str.replace(regexSpecialChars, '\\$&');
+    }
+
     // 字段更新处理（修改：只处理选中的列）
     function getFieldUpdates(csvItem, oldInfobox) {
         const updates = {};
@@ -2041,7 +2046,7 @@ function createFloatButton() {
             if (key.toLowerCase() === 'tags') return;
 
             if (csvItem[key] !== undefined &&
-                !new RegExp(`\\|${key}=\\s*${csvItem[key]}`, 'i').test(oldInfobox)) {
+                !new RegExp(`\\|${sanitizeRegExp(key)}=\\s*${sanitizeRegExp(csvItem[key])}`, 'i').test(oldInfobox)) {
                 updates[key] = csvItem[key];
             }
         });
@@ -2079,7 +2084,7 @@ function createFloatButton() {
 
         // 处理每个字段更新
         Object.entries(fieldUpdates).forEach(([field, value]) => {
-            const regex = new RegExp(`\\|${field}\\s*=.*`, 'i');
+            const regex = new RegExp(`\\|${sanitizeRegExp(field)}\\s*=.*`, 'i');
             if (regex.test(newInfobox)) {
                 // 替换现有字段
                 newInfobox = newInfobox.replace(regex, `|${field}= ${value}`);
