@@ -1,13 +1,10 @@
 // ==UserScript==
-// @name         bangumi wiki 批量更新工具（wcode版）
+// @name         bangumi wiki 批量更新工具
 // @namespace    http://tampermonkey.net/
-// @version      7.0
-// @description  支持更新任意字段和标签，始终显示编辑框，优化更新检查
+// @version      8.0
+// @description  支持两种提交方式，可在设置页面选择，支持编辑Wcode和标签
 // @author       You
-// @match        https://next.bgm.tv/*
-// @match        https://bgm.tv/subject/*/edit_detail
-// @match        https://bangumi.tv.tv/subject/*/edit_detail
-// @match        https://chii.in/subject/*/edit_detail
+// @match        https://next.bgm.tv/
 // @grant        GM_addStyle
 // @grant        GM_setValue
 // @grant        GM_getValue
@@ -106,7 +103,6 @@ GM_addStyle(`
     transition: width 0.3s ease;
 }
 
-/* 提示条样式和动画 */
 #bgm-status-message {
     position: fixed;
     bottom: 20px;
@@ -201,7 +197,6 @@ GM_addStyle(`
 }
 
 #bgm-tool-container label {
-    display: block;
     margin-bottom: 8px;
     font-weight: 500;
     color: #495057;
@@ -378,7 +373,6 @@ GM_addStyle(`
     border-bottom: 1px solid #e0e0e0;
 }
 
-/* 搜索框样式 */
 .log-search-container {
     margin-bottom: 15px;
 }
@@ -392,7 +386,6 @@ GM_addStyle(`
     font-size: 14px;
 }
 
-/* 过滤按钮组 */
 .log-filter {
     display: flex;
     gap: 8px;
@@ -415,7 +408,6 @@ GM_addStyle(`
     border-color: #6c757d;
 }
 
-/* 布局样式 */
 .loading-container {
     position: relative;
     flex-grow: 1;
@@ -433,12 +425,10 @@ GM_addStyle(`
     overflow-y: auto;
 }
 
-/* 核心内容容器：一次性创建，后续只更新内容 */
 #core-content {
     width: 100%;
 }
 
-/* 按钮容器：一次性创建，事件委托绑定 */
 .buttons-container {
     padding: 15px 20px;
     background: #f8f9fa;
@@ -492,10 +482,9 @@ GM_addStyle(`
     to { transform: rotate(360deg); }
 }
 
-/* 编辑区域样式：一次性创建容器 */
 .edit-area {
     margin: 15px 0;
-    display: block; /* 始终显示编辑框 */
+    display: block;
 }
 
 .edit-area textarea {
@@ -511,7 +500,7 @@ GM_addStyle(`
 
 .tags-edit-area {
     margin: 15px 0;
-    display: block; /* 始终显示标签编辑框 */
+    display: block;
 }
 
 .tags-edit-area input {
@@ -526,12 +515,12 @@ GM_addStyle(`
     font-size: 14px;
     color: #666;
     margin: 10px 0;
-    display: none; /* 默认隐藏，按需显示 */
+    display: none;
 }
 
 .commit-message-area {
     margin: 15px 0;
-    display: block; /* 始终显示编辑摘要 */
+    display: block;
 }
 
 .commit-message-area input {
@@ -547,7 +536,7 @@ GM_addStyle(`
     padding: 15px;
     background: #f8f9fa;
     border-radius: 4px;
-    display: block; /* 始终显示差异区域 */
+    display: block;
 }
 
 .diff-section-title {
@@ -557,7 +546,6 @@ GM_addStyle(`
     border-bottom: 1px solid #e0e0e0;
 }
 
-/* 上一条目链接样式 */
 .prev-item-link {
     font-size: 14px;
     margin: 10px 0;
@@ -565,7 +553,6 @@ GM_addStyle(`
     display: block;
 }
 
-/* https://github.com/rtfpessoa/diff2html/issues/381#issuecomment-909260886 */
 .d2h-code-linenumber {
   position: relative !important;
   display: table-cell !important;
@@ -577,7 +564,6 @@ GM_addStyle(`
   display: none !important;
 }
 
-/* 悬浮按钮样式 */
 #bgm-float-button {
     position: fixed;
     bottom: 20px;
@@ -602,14 +588,35 @@ GM_addStyle(`
     transform: scale(1.05);
 }
 
-/* 状态容器：一次性创建，按需显示 */
 #status-container {
     margin: 15px 0;
     display: none;
 }
+
+.method-option-group {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.method-option-title {
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: block;
+}
+
+.formhash-hint {
+    font-size: 13px;
+    color: #666;
+    margin-top: 5px;
+    padding: 8px;
+    background: #fff8f8;
+    border-radius: 4px;
+    border-left: 3px solid #e74c3c;
+}
 `);
 
-// 加载外部资源
 const diffLink = document.createElement('link');
 diffLink.rel = 'stylesheet';
 diffLink.href = 'https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css';
@@ -620,7 +627,6 @@ fontAwesome.rel = 'stylesheet';
 fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
 document.head.appendChild(fontAwesome);
 
-// 创建悬浮按钮
 function createFloatButton() {
     let floatBtn = document.getElementById('bgm-float-button');
     if (!floatBtn) {
@@ -643,35 +649,33 @@ function createFloatButton() {
 (function () {
     'use strict';
 
-    // 状态管理
     const state = {
         accessToken: GM_getValue('bgmAccessToken') || '',
+        formhash: GM_getValue('bgmFormhash') || '',
+        submitMethod: GM_getValue('bgmSubmitMethod', 'patch'), // 'patch' 或 'post'
         csvData: JSON.parse(localStorage.getItem('bgmCsvData') || 'null'),
         currentIndex: parseInt(localStorage.getItem('bgmCurrentIndex') || '0'),
         totalItems: 0,
         processing: false,
         paused: false,
-        currentView: 'setup', // 当前视图: setup, processing, completed
-        currentSubjectData: null, // 当前处理的条目数据
-        currentFieldUpdates: null, // 当前字段更新
-        currentTagUpdates: null, // 当前标签更新
-        currentWcode: null, // 当前编辑的Wcode
-        currentTags: null, // 当前编辑的标签
-        currentCommitMessage: null, // 当前编辑摘要
+        currentView: 'setup',
+        currentSubjectData: null,
+        currentFieldUpdates: null,
+        currentTagUpdates: null,
+        currentWcode: null,
+        currentTags: null,
+        currentCommitMessage: null,
         isCommitMessageLocked: localStorage.getItem('bgmIsCommitMessageLocked') === 'true' || false,
         lockedCommitMessage: localStorage.getItem('bgmLockedCommitMessage') || '',
-        retryCount: {}, // 记录每个条目的重试次数
-        currentItemId: null, // 当前处理的条目ID
+        retryCount: {},
+        currentItemId: null,
         previousItem: JSON.parse(localStorage.getItem('bgmPreviousItem') || 'null')
     };
 
-    // 一次性创建固定DOM结构
     function createStaticDOM() {
-        // 先隐藏悬浮按钮
         const floatBtn = createFloatButton();
         floatBtn.style.display = 'none';
 
-        // 主容器：只创建一次
         if (document.getElementById('bgm-tool-container')) {
             document.getElementById('bgm-tool-container').style.display = 'flex';
             return;
@@ -696,14 +700,11 @@ function createFloatButton() {
                 </div>
             </div>
             <div class="loading-container">
-                <!-- 核心内容容器：后续只更新内部HTML -->
                 <div id="bgm-tool-body">
                     <div id="core-content"></div>
-                    <!-- 编辑区域容器：一次性创建，始终显示 -->
                     <div id="edit-regions">
-                        <!-- 上一条目链接：只在编辑页面显示 -->
                         <div class="prev-item-link" id="prev-item-link"></div>
-                        
+
                         <div class="last-update-info" id="static-last-update"></div>
                         <div class="commit-message-area" id="static-commit-area">
                             <label>编辑摘要:</label>
@@ -728,23 +729,18 @@ function createFloatButton() {
                         <div id="status-container" class="status-box"></div>
                     </div>
                 </div>
-                <!-- 按钮容器：一次性创建，事件委托绑定 -->
                 <div class="buttons-container" id="static-buttons-container"></div>
-                <!-- 加载遮罩：只创建一次 -->
                 <div id="bgm-loading-overlay">
                     <div id="loading-spinner"></div>
                     <div id="loading-text"></div>
                 </div>
             </div>
-            <!-- 状态消息：只创建一次 -->
             <div id="bgm-status-message"></div>
         `;
         document.body.appendChild(container);
 
-        // 事件委托（只绑定一次）
         bindEventDelegation();
 
-        // 头部按钮事件（只绑定一次）
         document.getElementById('bgm-tool-close').addEventListener('click', () => {
             container.style.display = 'none';
             createFloatButton().style.display = 'flex';
@@ -756,14 +752,11 @@ function createFloatButton() {
             switchToSetupView();
         });
 
-        // 编辑区固定事件（只绑定一次）
         bindEditRegionEvents();
 
-        // 初始显示设置视图
         switchToSetupView();
     }
 
-    // 事件委托实现（统一处理所有按钮事件）
     function bindEventDelegation() {
         const buttonsContainer = document.getElementById('static-buttons-container');
 
@@ -774,7 +767,6 @@ function createFloatButton() {
             const btnId = targetBtn.id;
             const currentView = state.currentView;
 
-            // 根据当前视图和按钮ID分发事件
             switch (currentView) {
                 case 'setup':
                     handleSetupViewButtons(btnId);
@@ -789,19 +781,15 @@ function createFloatButton() {
         });
     }
 
-    // 编辑区固定事件（只绑定一次，避免反复绑定）
     function bindEditRegionEvents() {
-        // 1. 编辑摘要输入事件
         const commitInput = document.getElementById('static-commit-input');
         commitInput.addEventListener('input', (e) => {
             if (state.currentView === 'processing' && state.currentSubjectData) {
                 state.currentCommitMessage = e.target.value;
-                // 检查是否有更新，并更新按钮文本
                 updateConfirmButtonState();
             }
         });
 
-        // 2. 编辑摘要锁定/解锁事件
         const lockCommitBtn = document.getElementById('static-lock-commit');
         lockCommitBtn.addEventListener('click', () => {
             if (state.currentView !== 'processing' || !state.currentSubjectData) return;
@@ -816,7 +804,6 @@ function createFloatButton() {
             } else {
                 lockCommitBtn.innerHTML = '<i class="fas fa-lock-open"></i>';
                 lockCommitBtn.title = '固定编辑摘要';
-                // 重新生成默认摘要
                 state.currentCommitMessage = generateCommitMessage(
                     state.currentFieldUpdates,
                     state.currentTagUpdates
@@ -824,11 +811,9 @@ function createFloatButton() {
                 commitInput.value = state.currentCommitMessage;
             }
             saveState();
-            // 检查是否有更新，并更新按钮文本
             updateConfirmButtonState();
         });
 
-        // 3. Wcode编辑事件
         const wcodeInput = document.getElementById('static-wcode-input');
         wcodeInput.addEventListener('input', (e) => {
             if (state.currentView === 'processing' && state.currentSubjectData) {
@@ -838,12 +823,10 @@ function createFloatButton() {
                     e.target.value,
                     'static-content-diff-container'
                 );
-                // 检查是否有更新，并更新按钮文本
                 updateConfirmButtonState();
             }
         });
 
-        // 4. 标签编辑事件
         const tagsInput = document.getElementById('static-tags-input');
         tagsInput.addEventListener('input', (e) => {
             if (state.currentView === 'processing' && state.currentSubjectData) {
@@ -853,18 +836,15 @@ function createFloatButton() {
                     e.target.value.split(' ').filter(t => t),
                     'static-tags-diff-container'
                 );
-                // 检查是否有更新，并更新按钮文本
                 updateConfirmButtonState();
             }
         });
     }
 
-    // 更新确认按钮状态和文本
     function updateConfirmButtonState() {
         const confirmBtn = document.querySelector('#static-buttons-container button#process-confirm-update');
         if (!confirmBtn) return;
 
-        // 检查是否有实际更新
         const hasUpdates = checkForUpdates();
 
         if (hasUpdates) {
@@ -872,34 +852,28 @@ function createFloatButton() {
             confirmBtn.disabled = false;
         } else {
             confirmBtn.textContent = '确认更新（无实质修改）';
-            confirmBtn.disabled = false; // 不禁用，但会提示无修改
+            confirmBtn.disabled = false;
         }
     }
 
-    // 检查是否有实际更新
     function checkForUpdates() {
         if (!state.currentSubjectData) return false;
 
-        // 获取当前编辑值
         const currentWcode = document.getElementById('static-wcode-input').value;
         const currentTags = document.getElementById('static-tags-input').value.split(' ').filter(t => t);
 
-        // 原始值
         const originalWcode = state.currentSubjectData.infobox || '';
         const originalTags = state.currentSubjectData.metaTags || [];
 
-        // 比较Wcode
         const normalizedCurrentWcode = currentWcode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
         const normalizedOriginalWcode = originalWcode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
         const wcodeChanged = normalizedCurrentWcode !== normalizedOriginalWcode;
 
-        // 比较标签
         const tagsChanged = !arraysEqual(currentTags, originalTags);
 
         return wcodeChanged || tagsChanged;
     }
 
-    // 辅助函数：检查两个数组是否相等
     function arraysEqual(a, b) {
         if (a.length !== b.length) return false;
         for (let i = 0; i < a.length; i++) {
@@ -908,28 +882,51 @@ function createFloatButton() {
         return true;
     }
 
-    // 视图切换逻辑（只更新内容，不重建DOM）
-    // 1. 切换到设置视图
     function switchToSetupView() {
         state.currentView = 'setup';
         const coreContent = document.getElementById('core-content');
         const buttonsContainer = document.getElementById('static-buttons-container');
 
-        // 隐藏编辑区和进度条
         document.getElementById('edit-regions').style.display = 'none';
         hideProgressBar();
 
-        // 更新核心内容（只更新HTML，不重建容器）
         coreContent.innerHTML = `
             <div>
                 <h3 class="section-title">基本设置</h3>
+
                 <div class="form-group">
+                    <label>提交方式选择</label>
+                    <div class="method-option-group">
+                        <span>
+                            <input type="radio" id="method-patch" name="submit-method" value="patch" ${state.submitMethod === 'patch' ? 'checked' : ''}>
+                            <label for="method-patch">Private API</label>
+                        </span>
+                        <span style="margin-left: 10px;">
+                            <input type="radio" id="method-post" name="submit-method" value="post" ${state.submitMethod === 'post' ? 'checked' : ''}>
+                            <label for="method-post">旧 API</label>
+                        </span>
+                    </div>
+                </div>
+
+                <div id="patch-method-options" class="form-group ${state.submitMethod === 'patch' ? '' : 'hidden'}">
                     <label for="setup-access-token">Access Token</label>
                     <input type="password" id="setup-access-token" value="${state.accessToken}">
-                    <p style="font-size: 13px; color: #666; margin-top: 5px;">
-                        您可以在<a href="https://next.bgm.tv/demo/access-token" target="_blank">个人令牌页</a>中获取 Access Token
+                    <p class="formhash-hint">
+                        你可以在<a href="https://next.bgm.tv/demo/access-token" target="_blank">个人令牌页</a>中获取 Access Token
                     </p>
                 </div>
+
+                <div id="post-method-options" class="form-group ${state.submitMethod === 'post' ? '' : 'hidden'}">
+                    <label for="setup-formhash">Formhash</label>
+                    <input type="text" id="setup-formhash" value="${state.formhash}">
+                    <p class="formhash-hint">
+                        如何获取formhash：<br>
+                        1. 打开条目编辑页面（如 <a href="https://bgm.tv/subject/354667/edit_detail">https://bgm.tv/subject/354667/edit_detail</a>）<br>
+                        2. 在浏览器控制台执行：<code>document.querySelector('[name=formhash]').value</code><br>
+                        3. 将返回的值复制到上方输入框
+                    </p>
+                </div>
+
                 <div class="form-group">
                     <label for="setup-csv-file">CSV文件 (包含ID、要更新的字段列或tags列)</label>
                     <input type="file" id="setup-csv-file" accept=".csv">
@@ -951,12 +948,10 @@ function createFloatButton() {
             </div>
         `;
 
-        // 更新按钮组（只更新按钮，不重建容器）
         buttonsContainer.innerHTML = `
             <button id="setup-start-processing" class="primary">开始处理</button>
         `;
 
-        // 绑定设置视图独有的输入事件（只绑定一次，后续复用）
         const accessTokenInput = document.getElementById('setup-access-token');
         if (accessTokenInput) {
             accessTokenInput.addEventListener('input', (e) => {
@@ -965,13 +960,32 @@ function createFloatButton() {
             });
         }
 
+        const formhashInput = document.getElementById('setup-formhash');
+        if (formhashInput) {
+            formhashInput.addEventListener('input', (e) => {
+                state.formhash = e.target.value;
+                GM_setValue('bgmFormhash', state.formhash);
+            });
+        }
+
+        const methodRadios = document.querySelectorAll('input[name="submit-method"]');
+        methodRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                state.submitMethod = e.target.value;
+                GM_setValue('bgmSubmitMethod', state.submitMethod);
+
+                // 显示/隐藏对应选项
+                document.getElementById('patch-method-options').classList.toggle('hidden', state.submitMethod !== 'patch');
+                document.getElementById('post-method-options').classList.toggle('hidden', state.submitMethod !== 'post');
+            });
+        });
+
         const csvFileInput = document.getElementById('setup-csv-file');
         if (csvFileInput) {
             csvFileInput.addEventListener('change', handleFileUpload);
         }
     }
 
-    // 2. 切换到处理视图（条目编辑）
     function switchToProcessingView(itemData) {
         state.currentView = 'processing';
         const { currentItem, subjectData, historyData } = itemData;
@@ -985,12 +999,10 @@ function createFloatButton() {
         const buttonsContainer = document.getElementById('static-buttons-container');
         const editRegions = document.getElementById('edit-regions');
 
-        // 显示编辑区和全局进度条
         editRegions.style.display = 'block';
         showProgressBar();
         updateProgressBar(state.currentIndex, state.totalItems);
 
-        // 1. 处理基础数据
         const itemName = subjectData.name || '未知名称';
         const oldInfobox = subjectData.infobox || '';
         const oldTags = subjectData.metaTags || [];
@@ -999,7 +1011,6 @@ function createFloatButton() {
         state.currentFieldUpdates = fieldUpdates;
         state.currentTagUpdates = tagUpdates;
 
-        // 2. 处理最后更新时间（只更新内容，不重建容器）
         const lastUpdateEl = document.getElementById('static-last-update');
         const lastUpdateTime = historyData[0]?.createdAt || 0;
         const lastUpdateDate = lastUpdateTime ? new Date(lastUpdateTime * 1000) : null;
@@ -1019,11 +1030,10 @@ function createFloatButton() {
             lastUpdateEl.style.display = 'none';
         }
 
-        // 3. 显示上一条目链接（如果有）
         const prevLinkEl = document.getElementById('prev-item-link');
         if (state.previousItem && state.currentIndex > 0) {
             prevLinkEl.innerHTML = `
-                <i class="fas fa-arrow-left"></i> 上一条目: 
+                <i class="fas fa-arrow-left"></i> 上一条目:
                 <a href="https://bgm.tv/subject/${state.previousItem.id}" target="_blank">
                     ${state.previousItem.name}（${state.previousItem.id}）
                 </a>
@@ -1033,7 +1043,6 @@ function createFloatButton() {
             prevLinkEl.style.display = 'none';
         }
 
-        // 4. 处理编辑摘要区（只更新值和显示状态）
         const commitInput = document.getElementById('static-commit-input');
         const lockCommitBtn = document.getElementById('static-lock-commit');
 
@@ -1042,17 +1051,14 @@ function createFloatButton() {
         lockCommitBtn.innerHTML = `<i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>`;
         lockCommitBtn.title = state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要';
 
-        // 5. 处理Wcode编辑区（始终显示）
         const wcodeInput = document.getElementById('static-wcode-input');
         const contentDiffSection = document.getElementById('static-content-diff-container');
 
         const newInfobox = updateInfobox(oldInfobox, fieldUpdates);
         wcodeInput.value = newInfobox;
-        // 更新差异（复用固定容器）
         updateDiffDisplay(oldInfobox, newInfobox, 'static-content-diff-container');
         contentDiffSection.style.display = 'block';
 
-        // 6. 处理标签编辑区（始终显示）
         const tagsInput = document.getElementById('static-tags-input');
         const tagsDiffSection = document.getElementById('static-tags-diff-container');
 
@@ -1061,11 +1067,9 @@ function createFloatButton() {
         updateTagsDiffDisplay(oldTags, newTags, 'static-tags-diff-container');
         tagsDiffSection.style.display = 'block';
 
-        // 7. 处理状态提示和条目进度（只更新内容）
         const statusContainer = document.getElementById('status-container');
         statusContainer.style.display = 'none';
 
-        // 8. 更新核心内容（只显示条目信息，其他内容在固定编辑区）
         coreContent.innerHTML = `
             <div>
                 <div class="item-info">
@@ -1074,34 +1078,28 @@ function createFloatButton() {
             </div>
         `;
 
-        // 9. 更新按钮组（始终显示更新和跳过按钮）
         buttonsContainer.innerHTML = `
             <button id="process-skip-update" class="secondary">跳过</button>
             <button id="process-confirm-update" class="primary">确认更新</button>
         `;
 
-        // 检查是否有更新，并更新按钮文本
         updateConfirmButtonState();
     }
 
-    // 3. 切换到处理错误视图（复用容器，只更新内容）
     function switchToProcessingErrorView(currentItem, errorMsg) {
         state.currentView = 'processing';
         const coreContent = document.getElementById('core-content');
         const buttonsContainer = document.getElementById('static-buttons-container');
         const editRegions = document.getElementById('edit-regions');
 
-        // 隐藏编辑区，显示全局进度条
         editRegions.style.display = 'none';
         showProgressBar();
         updateProgressBar(state.currentIndex, state.totalItems);
 
-        // 计算重试次数
         const itemId = currentItem.id;
         const currentRetryCount = (state.retryCount[itemId] || 0) + 1;
         state.retryCount[itemId] = currentRetryCount;
 
-        // 更新核心内容（只更新HTML）
         coreContent.innerHTML = `
             <div>
                 <div class="item-info">
@@ -1118,31 +1116,26 @@ function createFloatButton() {
             </div>
         `;
 
-        // 更新按钮组
         buttonsContainer.innerHTML = `
             <button id="process-skip-error" class="secondary">跳过</button>
             <button id="process-retry-error" class="primary">重试</button>
         `;
     }
 
-    // 4. 切换到更新失败视图（复用容器，只更新内容）
     function switchToUpdateErrorView(errorMsg) {
         state.currentView = 'processing';
         const coreContent = document.getElementById('core-content');
         const buttonsContainer = document.getElementById('static-buttons-container');
         const editRegions = document.getElementById('edit-regions');
 
-        // 隐藏编辑区，显示全局进度条
         editRegions.style.display = 'none';
         showProgressBar();
         updateProgressBar(state.currentIndex, state.totalItems);
 
-        // 计算重试次数
         const itemId = state.currentItemId;
         const currentRetryCount = (state.retryCount[itemId] || 0) + 1;
         state.retryCount[itemId] = currentRetryCount;
 
-        // 更新核心内容
         const subjectData = state.currentSubjectData;
         const itemName = subjectData?.name || '未知名称';
         coreContent.innerHTML = `
@@ -1157,26 +1150,22 @@ function createFloatButton() {
             </div>
         `;
 
-        // 更新按钮组
         buttonsContainer.innerHTML = `
             <button id="process-skip-update-fail" class="secondary">跳过</button>
             <button id="process-retry-update" class="primary">重试</button>
         `;
     }
 
-    // 5. 切换到完成视图（只更新内容）
     function switchToCompletedView() {
         state.currentView = 'completed';
         const coreContent = document.getElementById('core-content');
         const buttonsContainer = document.getElementById('static-buttons-container');
         const editRegions = document.getElementById('edit-regions');
 
-        // 隐藏编辑区，显示全局进度条（100%）
         editRegions.style.display = 'none';
         showProgressBar();
         updateProgressBar(state.totalItems, state.totalItems);
 
-        // 更新核心内容
         coreContent.innerHTML = `
             <div>
                 <h3 class="section-title">处理完成</h3>
@@ -1190,14 +1179,11 @@ function createFloatButton() {
             </div>
         `;
 
-        // 更新按钮组
         buttonsContainer.innerHTML = `
             <button id="completed-back-to-setup" class="primary">返回设置</button>
         `;
     }
 
-    // 按钮事件处理（按视图分发，避免重复绑定）
-    // 设置视图按钮处理
     function handleSetupViewButtons(btnId) {
         switch (btnId) {
             case 'setup-start-processing':
@@ -1206,14 +1192,13 @@ function createFloatButton() {
             case 'setup-reset-progress':
                 state.currentIndex = 0;
                 state.retryCount = {};
-                state.previousItem = null; // 重置上一条目记录
+                state.previousItem = null;
                 localStorage.setItem('bgmCurrentIndex', '0');
                 switchToSetupView();
                 break;
         }
     }
 
-    // 处理视图按钮处理
     function handleProcessingViewButtons(btnId) {
         const currentItem = state.csvData[state.currentIndex];
         const subjectData = state.currentSubjectData;
@@ -1222,24 +1207,19 @@ function createFloatButton() {
 
         switch (btnId) {
             case 'process-confirm-update':
-                // 确认更新
                 const oldInfobox = subjectData.infobox || '';
                 const oldTags = subjectData.metaTags || [];
 
-                // 只获取必要的输入值（不重建输入框）
                 const finalWcode = document.getElementById('static-wcode-input').value;
                 const finalTags = document.getElementById('static-tags-input').value.split(' ').filter(t => t);
                 const commitMessage = document.getElementById('static-commit-input').value ||
                     generateCommitMessage(state.currentFieldUpdates, state.currentTagUpdates);
 
-                // 检查是否有实际更新
                 const hasUpdates = checkForUpdates();
 
                 if (!hasUpdates) {
-                    // 没有实质更新，不发起请求，但继续到下一条
                     showStatusMessage('没有检测到实质修改，已跳过更新');
 
-                    // 记录当前条目作为下一条的上一条
                     state.previousItem = {
                         id: itemId,
                         name: itemName
@@ -1252,13 +1232,11 @@ function createFloatButton() {
                     return;
                 }
 
-                // 有更新，禁用按钮，显示加载
                 document.querySelectorAll('#static-buttons-container button').forEach(btn => {
                     btn.disabled = true;
                 });
                 showLoadingOverlay('正在提交更新...');
 
-                // 提交更新
                 submitUpdate(
                     itemId,
                     finalWcode,
@@ -1266,9 +1244,7 @@ function createFloatButton() {
                     itemName,
                     currentItem,
                     commitMessage,
-                    // 成功回调
                     () => {
-                        // 记录当前条目作为下一条的上一条
                         state.previousItem = {
                             id: itemId,
                             name: itemName
@@ -1279,7 +1255,6 @@ function createFloatButton() {
                         saveState();
                         processNextItem();
                     },
-                    // 失败回调
                     (error) => {
                         hideLoadingOverlay();
                         document.querySelectorAll('#static-buttons-container button').forEach(btn => {
@@ -1291,8 +1266,6 @@ function createFloatButton() {
                 break;
 
             case 'process-skip-update':
-                // 跳过更新
-                // 记录当前条目作为下一条的上一条
                 state.previousItem = {
                     id: itemId,
                     name: itemName
@@ -1305,8 +1278,6 @@ function createFloatButton() {
                 break;
 
             case 'process-confirm-continue':
-                // 无需更新，继续
-                // 记录当前条目作为下一条的上一条
                 state.previousItem = {
                     id: itemId,
                     name: itemName
@@ -1319,7 +1290,6 @@ function createFloatButton() {
                 break;
 
             case 'process-skip-error':
-                // 跳过错误条目
                 state.currentIndex++;
                 resetProcessingState();
                 saveState();
@@ -1327,15 +1297,12 @@ function createFloatButton() {
                 break;
 
             case 'process-retry-error':
-                // 重试获取条目信息
                 const currentRetryCount = state.retryCount[itemId] || 0;
                 showStatusMessage(`正在重试（${currentRetryCount}次）...`);
                 processNextItem();
                 break;
 
             case 'process-skip-update-fail':
-                // 跳过更新失败条目
-                // 记录当前条目作为下一条的上一条
                 state.previousItem = {
                     id: itemId,
                     name: itemName
@@ -1348,16 +1315,13 @@ function createFloatButton() {
                 break;
 
             case 'process-retry-update':
-                // 重试更新
                 const retryCurrentCount = state.retryCount[itemId] || 0;
                 showStatusMessage(`正在重试（${retryCurrentCount}次）...`);
-                // 重新切换到编辑视图
                 processNextItem(true);
                 break;
         }
     }
 
-    // 完成视图按钮处理
     function handleCompletedViewButtons(btnId) {
         switch (btnId) {
             case 'completed-back-to-setup':
@@ -1367,8 +1331,6 @@ function createFloatButton() {
         }
     }
 
-    // 工具函数
-    // 重置处理状态（避免内存泄漏）
     function resetProcessingState() {
         state.currentSubjectData = null;
         state.currentItemId = null;
@@ -1379,7 +1341,6 @@ function createFloatButton() {
         state.currentTagUpdates = null;
     }
 
-    // 进度条控制（只更新宽度，不重建容器）
     function showProgressBar() {
         document.getElementById('bgm-tool-progress').style.display = 'block';
     }
@@ -1394,7 +1355,6 @@ function createFloatButton() {
         document.getElementById('bgm-tool-progress').style.display = 'none';
     }
 
-    // 加载遮罩（只更新文本，不重建容器）
     function showLoadingOverlay(text) {
         const overlay = document.getElementById('bgm-loading-overlay');
         const textElement = document.getElementById('loading-text');
@@ -1407,11 +1367,10 @@ function createFloatButton() {
         overlay.classList.remove('active');
     }
 
-    // 状态消息（只更新文本，不重建容器）
     function showStatusMessage(text) {
         const message = document.getElementById('bgm-status-message');
         message.classList.remove('show');
-        void message.offsetWidth; // 强制重绘
+        void message.offsetWidth;
         message.textContent = text;
         message.classList.add('show');
 
@@ -1425,12 +1384,10 @@ function createFloatButton() {
         message.classList.remove('show');
     }
 
-    // 处理CSV上传
     function handleFileUpload(e) {
         const file = e.target.files[0];
         if (!file) return;
 
-        // 禁用按钮，显示加载
         document.querySelectorAll('#static-buttons-container button').forEach(btn => {
             btn.disabled = true;
         });
@@ -1443,7 +1400,7 @@ function createFloatButton() {
                 state.csvData = parseCSV(csvContent);
                 state.currentIndex = 0;
                 state.retryCount = {};
-                state.previousItem = null; // 重置上一条目记录
+                state.previousItem = null;
                 localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
                 localStorage.setItem('bgmCurrentIndex', '0');
                 switchToSetupView();
@@ -1461,7 +1418,6 @@ function createFloatButton() {
         reader.readAsText(file);
     }
 
-    // 解析CSV
     function parseCSV(csvContent) {
         const lines = csvContent.split('\n')
             .map(line => line.trim())
@@ -1538,10 +1494,15 @@ function createFloatButton() {
         return values;
     }
 
-    // 开始处理
     function startProcessing() {
-        if (!state.accessToken) {
+        // 验证所选提交方式的必要参数
+        if (state.submitMethod === 'patch' && !state.accessToken) {
             showStatusMessage('请输入Access Token');
+            return;
+        }
+
+        if (state.submitMethod === 'post' && !state.formhash) {
+            showStatusMessage('请输入Formhash');
             return;
         }
 
@@ -1554,7 +1515,6 @@ function createFloatButton() {
         state.processing = true;
         state.paused = false;
 
-        // 切换到处理准备视图
         const coreContent = document.getElementById('core-content');
         coreContent.innerHTML = `
             <div>
@@ -1562,21 +1522,17 @@ function createFloatButton() {
             </div>
         `;
 
-        // 更新按钮组
         const buttonsContainer = document.getElementById('static-buttons-container');
         buttonsContainer.innerHTML = `
             <button id="process-cancel" class="danger">取消</button>
         `;
 
-        // 开始处理下一个条目
         processNextItem();
     }
 
-    // 处理下一个条目（优化DOM操作：只切换视图，不重建容器）
     function processNextItem(isRetry = false) {
         if (state.paused || !state.processing) return;
 
-        // 处理完成，切换到完成视图
         if (state.currentIndex >= state.totalItems) {
             switchToCompletedView();
             return;
@@ -1587,23 +1543,25 @@ function createFloatButton() {
             updateProgressBar(state.currentIndex, state.totalItems);
         }
 
-        // 禁用按钮，显示加载
         document.querySelectorAll('#static-buttons-container button').forEach(btn => {
             btn.disabled = true;
         });
         showLoadingOverlay('正在获取条目信息...');
 
-        // 获取条目信息
         Promise.all([
             GM_fetch(`/p1/wiki/subjects/${currentItem.id}`, {
-                headers: {
+                headers: state.submitMethod === 'patch' ? {
                     'Authorization': `Bearer ${state.accessToken}`,
+                    'Accept': 'application/json'
+                } : {
                     'Accept': 'application/json'
                 }
             }),
             GM_fetch(`/p1/wiki/subjects/${currentItem.id}/history-summary`, {
-                headers: {
+                headers: state.submitMethod === 'patch' ? {
                     'Authorization': `Bearer ${state.accessToken}`,
+                    'Accept': 'application/json'
+                } : {
                     'Accept': 'application/json'
                 }
             })
@@ -1617,14 +1575,12 @@ function createFloatButton() {
                 return { currentItem, subjectData, historyData };
             })
             .then((itemData) => {
-                // 成功获取，重置重试计数
                 state.retryCount[itemData.currentItem.id] = 0;
                 hideLoadingOverlay();
                 document.querySelectorAll('#static-buttons-container button').forEach(btn => {
                     btn.disabled = false;
                 });
 
-                // 切换到处理视图（只更新内容）
                 switchToProcessingView(itemData);
             })
             .catch(error => {
@@ -1633,48 +1589,104 @@ function createFloatButton() {
                     btn.disabled = false;
                 });
 
-                // 切换到错误视图（只更新内容）
                 switchToProcessingErrorView(currentItem, error.message);
             });
     }
 
-    // 提交更新
+    // 核心修改：支持两种提交方式
     function submitUpdate(itemId, newWcode, newTags, itemName, currentItem, commitMessage, onSuccess, onError) {
         state.processing = true;
 
-        GM_fetch(`/p1/wiki/subjects/${itemId}`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${state.accessToken}`,
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            },
-            body: JSON.stringify({
-                commitMessage: commitMessage,
-                subject: {
-                    infobox: newWcode,
-                    metaTags: newTags
-                }
+        // 根据选择的提交方式处理
+        if (state.submitMethod === 'patch') {
+            // PATCH API方式
+            GM_fetch(`/p1/wiki/subjects/${itemId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${state.accessToken}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    commitMessage: commitMessage,
+                    subject: {
+                        infobox: newWcode,
+                        metaTags: newTags
+                    }
+                })
             })
-        })
-            .then(response => {
-                if (!response.ok) {
-                    return response.text().then(text => {
-                        throw new Error(`HTTP ${response.status} - ${text || '更新失败'}`);
-                    });
-                }
-                return response;
-            })
-            .then(() => {
-                hideLoadingOverlay();
-                onSuccess();
-            })
-            .catch(error => {
-                onError(error);
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(`HTTP ${response.status} - ${text || '更新失败'}`);
+                        });
+                    }
+                    return response;
+                })
+                .then(() => {
+                    hideLoadingOverlay();
+                    onSuccess();
+                })
+                .catch(error => {
+                    onError(error);
+                });
+        } else {
+            // POST表单提交方式
+            // 确保换行符是\r\n
+            const formattedInfobox = newWcode.replace(/\n/g, '\r\n');
+
+            // 构建表单数据
+            const formData = new FormData();
+            formData.append('formhash', state.formhash);
+            formData.append('subject_title', state.currentSubjectData.name || '');
+            formData.append('platform', state.currentSubjectData.platform || '');
+            formData.append('subject_infobox', formattedInfobox);
+            formData.append('subject_summary', state.currentSubjectData.summary || '');
+            formData.append('subject_meta_tags', newTags.join(' '));
+            formData.append('editSummary', commitMessage);
+            formData.append('series', '1'); // 默认为系列
+            formData.append('submit', '提交');
+
+            // 转换为URL编码的字符串
+            const formParams = new URLSearchParams();
+            formData.forEach((value, key) => {
+                formParams.append(key, value);
             });
+
+            GM.xmlHttpRequest({
+                method: 'POST',
+                url: `https://bgm.tv/subject/${itemId}/new_revision`,
+                data: formParams.toString(),
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                onload: function (response) {
+                    hideLoadingOverlay();
+
+                    // 检查标题判断是否成功
+                    const successPattern = new RegExp(`${itemName} 的新描述`);
+                    if (successPattern.test(response.responseText)) {
+                        onError(new Error('更新失败，可能是formhash无效或权限不足'));
+                    } else {
+                        onSuccess();
+                    }
+                },
+                onerror: function (error) {
+                    hideLoadingOverlay();
+                    onError(new Error(`网络错误: ${error.message}`));
+                },
+                onabort: function () {
+                    hideLoadingOverlay();
+                    onError(new Error('请求已中止'));
+                },
+                ontimeout: function () {
+                    hideLoadingOverlay();
+                    onError(new Error('请求超时'));
+                }
+            });
+        }
     }
 
-    // 其他工具函数
     function generateCommitMessage(fieldUpdates, tagUpdates) {
         const updatedFields = Object.keys(fieldUpdates || {});
         return [
@@ -1702,7 +1714,6 @@ function createFloatButton() {
             const diff2htmlUi = new Diff2HtmlUI(container, diffString, configuration);
             diff2htmlUi.draw();
 
-            // 清除旧的事件监听（如果有）
             const scripts = container.querySelectorAll('script');
             scripts.forEach(script => {
                 const newScript = document.createElement('script');
@@ -1729,7 +1740,6 @@ function createFloatButton() {
 
     function getFieldUpdates(csvItem, oldInfobox) {
         const updates = {};
-        // 排除ID和tags字段，其他都是要更新的字段
         Object.keys(csvItem).forEach(key => {
             if (!['id', 'tags'].includes(key.toLowerCase())) {
                 updates[key] = csvItem[key];
@@ -1738,7 +1748,6 @@ function createFloatButton() {
         return updates;
     }
 
-    // 标签更新处理
     function getTagUpdates(csvItem, oldTags) {
         const tagsStr = csvItem.tags || '';
         const tags = tagsStr.split(' ').filter(t => t);
@@ -1757,18 +1766,14 @@ function createFloatButton() {
         return { add, remove };
     }
 
-    // 更新信息框内容
     function updateInfobox(oldInfobox, fieldUpdates) {
         let newInfobox = oldInfobox;
 
-        // 处理每个字段更新
         Object.entries(fieldUpdates).forEach(([field, value]) => {
             const regex = new RegExp(`\\|${sanitizeRegExp(field)}\\s*=.*`, 'i');
             if (regex.test(newInfobox)) {
-                // 替换现有字段
                 newInfobox = newInfobox.replace(regex, `|${field}= ${value}`);
             } else {
-                // 添加新字段（在第一个空行或末尾）
                 const emptyLineIndex = newInfobox.indexOf('\n\n');
                 if (emptyLineIndex !== -1) {
                     newInfobox = newInfobox.substring(0, emptyLineIndex) +
@@ -1783,7 +1788,6 @@ function createFloatButton() {
         return newInfobox;
     }
 
-    // 应用标签更新
     function applyTagUpdates(oldTags, tagUpdates) {
         const newTagsSet = new Set(oldTags);
         tagUpdates.add.forEach(tag => newTagsSet.add(tag));
@@ -1791,16 +1795,16 @@ function createFloatButton() {
         return [...newTagsSet];
     }
 
-    // 检查是否是最近更新（24小时内）
     function isRecentUpdate(timestamp) {
         if (!timestamp) return false;
         const twentyFourHoursAgo = Date.now() - (24 * 60 * 60 * 1000);
         return timestamp * 1000 > twentyFourHoursAgo;
     }
 
-    // 保存状态到本地存储
     function saveState() {
         GM_setValue('bgmAccessToken', state.accessToken);
+        GM_setValue('bgmFormhash', state.formhash);
+        GM_setValue('bgmSubmitMethod', state.submitMethod);
         localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
         localStorage.setItem('bgmCurrentIndex', state.currentIndex.toString());
         localStorage.setItem('bgmIsCommitMessageLocked', state.isCommitMessageLocked.toString());
