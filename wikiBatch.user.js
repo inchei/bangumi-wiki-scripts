@@ -1,17 +1,21 @@
 // ==UserScript==
-// @name         bangumi wiki 批量更新工具
+// @name         bangumi wiki 批量更新工具（无日志版）
 // @namespace    http://tampermonkey.net/
-// @version      4.6
-// @description  支持更新任意字段和标签，可选择需要修改的CSV列，显示最后更新时间，并提供更新警告
+// @version      6.0
+// @description  支持更新任意字段和标签，始终覆盖，显示最后上一条目链接
 // @author       You
 // @match        https://next.bgm.tv/*
+// @match        https://bgm.tv/subject/*/edit_detail
+// @match        https://bangumi.tv.tv/subject/*/edit_detail
+// @match        https://chii.in/subject/*/edit_detail
 // @grant        GM_addStyle
+// @grant        GM.xmlHttpRequest
+// @require      https://cdn.jsdelivr.net/npm/@trim21/gm-fetch
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.2.0/diff.min.js
 // @require      https://unpkg.com/diff2html/bundles/js/diff2html-ui.min.js
 // @license      MIT
 // ==/UserScript==
 
-// 灰白简约风格样式（保持不变）
 GM_addStyle(`
 #bgm-tool-container {
     position: fixed;
@@ -49,7 +53,7 @@ GM_addStyle(`
     gap: 10px;
 }
 
-#bgm-tool-view-log {
+#bgm-tool-header-actions span {
     cursor: pointer;
     color: #666666;
     font-size: 16px;
@@ -62,24 +66,7 @@ GM_addStyle(`
     transition: background 0.2s ease;
 }
 
-#bgm-tool-view-log:hover {
-    background: #e9ecef;
-}
-
-#bgm-tool-close {
-    cursor: pointer;
-    color: #666666;
-    font-size: 18px;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    transition: background 0.2s ease;
-}
-
-#bgm-tool-close:hover {
+#bgm-tool-header-actions span:hover {
     background: #e9ecef;
 }
 
@@ -568,6 +555,14 @@ GM_addStyle(`
     border-bottom: 1px solid #e0e0e0;
 }
 
+/* 上一条目链接样式 */
+.prev-item-link {
+    font-size: 14px;
+    margin: 10px 0;
+    color: #6c757d;
+    display: block;
+}
+
 /* https://github.com/rtfpessoa/diff2html/issues/381#issuecomment-909260886 */
 .d2h-code-linenumber {
   position: relative !important;
@@ -610,78 +605,9 @@ GM_addStyle(`
     margin: 15px 0;
     display: none;
 }
-
-/* 列选择样式 */
-.columns-selection {
-    max-height: 300px;
-    overflow-y: auto;
-    border: 1px solid #e9ecef;
-    border-radius: 4px;
-    margin: 15px 0;
-}
-
-.column-item {
-    padding: 10px 15px;
-    border-bottom: 1px solid #f1f1f1;
-    display: flex;
-    align-items: center;
-}
-
-.column-item:last-child {
-    border-bottom: none;
-}
-
-.column-item:hover {
-    background-color: #f8f9fa;
-}
-
-.column-item input {
-    margin-right: 10px;
-}
-
-.column-item label {
-    margin: 0;
-    flex-grow: 1;
-}
-
-.column-description {
-    font-size: 12px;
-    color: #666;
-    margin-top: 3px;
-}
-
-/* 参考信息样式 */
-.reference-info {
-    margin: 15px 0;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 4px;
-}
-
-.reference-title {
-    font-weight: 600;
-    margin-bottom: 10px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid #e0e0e0;
-}
-
-.reference-fields {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 10px;
-}
-
-.reference-field {
-    font-size: 14px;
-}
-
-.reference-field-name {
-    color: #666;
-    font-weight: 500;
-}
 `);
 
-// 加载外部资源（保持不变）
+// 加载外部资源
 const diffLink = document.createElement('link');
 diffLink.rel = 'stylesheet';
 diffLink.href = 'https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css';
@@ -692,7 +618,7 @@ fontAwesome.rel = 'stylesheet';
 fontAwesome.href = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css';
 document.head.appendChild(fontAwesome);
 
-// 创建悬浮按钮（保持不变）
+// 创建悬浮按钮
 function createFloatButton() {
     let floatBtn = document.getElementById('bgm-float-button');
     if (!floatBtn) {
@@ -715,18 +641,16 @@ function createFloatButton() {
 (function () {
     'use strict';
 
-    // 状态管理（添加列选择相关状态）
+    // 状态管理 - 移除所有日志相关状态
     const state = {
         accessToken: localStorage.getItem('bgmAccessToken') || '',
         csvData: JSON.parse(localStorage.getItem('bgmCsvData') || 'null'),
-        csvHeaders: JSON.parse(localStorage.getItem('bgmCsvHeaders') || '[]'), // 新增：CSV列头
-        selectedColumns: JSON.parse(localStorage.getItem('bgmSelectedColumns') || '[]'), // 新增：选中的列
         currentIndex: parseInt(localStorage.getItem('bgmCurrentIndex') || '0'),
         totalItems: 0,
-        results: JSON.parse(localStorage.getItem('bgmResults') || '{"success":0,"failed":0,"logs":[]}'),
+        // 移除所有日志相关属性
         processing: false,
         paused: false,
-        currentView: 'setup', // 当前视图: setup, columns-selection, processing, logs, completed
+        currentView: 'setup', // 当前视图: setup, processing, completed
         currentSubjectData: null, // 当前处理的条目数据
         currentFieldUpdates: null, // 当前字段更新
         currentTagUpdates: null, // 当前标签更新
@@ -736,13 +660,11 @@ function createFloatButton() {
         isCommitMessageLocked: localStorage.getItem('bgmIsCommitMessageLocked') === 'true' || false,
         lockedCommitMessage: localStorage.getItem('bgmLockedCommitMessage') || '',
         retryCount: {}, // 记录每个条目的重试次数
-        // 新增：当前处理的条目ID（用于事件委托时定位上下文）
-        currentItemId: null
+        currentItemId: null, // 当前处理的条目ID
+        previousItem: localStorage.getItem('bgmPreviousItem') || null;
     };
 
-    // --------------------------
-    // 核心优化1：一次性创建固定DOM结构
-    // --------------------------
+    // 一次性创建固定DOM结构
     function createStaticDOM() {
         // 先隐藏悬浮按钮
         const floatBtn = createFloatButton();
@@ -760,7 +682,7 @@ function createFloatButton() {
             <div id="bgm-tool-header">
                 bangumi wiki 批量更新工具
                 <div id="bgm-tool-header-actions">
-                    <span id="bgm-tool-view-log" title="查看日志"><i class="fas fa-history"></i></span>
+                    <span id="bgm-tool-settings" title="设置"><i class="fas fa-cog"></i></span>
                     <span id="bgm-tool-close">×</span>
                 </div>
             </div>
@@ -778,6 +700,9 @@ function createFloatButton() {
                     <div id="core-content"></div>
                     <!-- 编辑区域容器：一次性创建，按需显示/隐藏 -->
                     <div id="edit-regions" style="display: none;">
+                        <!-- 上一条目链接：只在编辑页面显示 -->
+                        <div class="prev-item-link" id="prev-item-link" style="display: none;"></div>
+                        
                         <div class="last-update-info" id="static-last-update"></div>
                         <div class="commit-message-area" id="static-commit-area">
                             <label>编辑摘要:</label>
@@ -815,9 +740,7 @@ function createFloatButton() {
         `;
         document.body.appendChild(container);
 
-        // --------------------------
-        // 核心优化2：事件委托（只绑定一次）
-        // --------------------------
+        // 事件委托（只绑定一次）
         bindEventDelegation();
 
         // 头部按钮事件（只绑定一次）
@@ -828,20 +751,18 @@ function createFloatButton() {
             saveState();
         });
 
-        document.getElementById('bgm-tool-view-log').addEventListener('click', () => {
-            switchToLogsView();
+        document.getElementById('bgm-tool-settings').addEventListener('click', () => {
+            switchToSetupView();
         });
 
-        // 编辑区固定事件（只绑定一次，避免反复绑定）
+        // 编辑区固定事件（只绑定一次）
         bindEditRegionEvents();
 
         // 初始显示设置视图
         switchToSetupView();
     }
 
-    // --------------------------
-    // 核心优化2：事件委托实现（统一处理所有按钮事件）
-    // --------------------------
+    // 事件委托实现（统一处理所有按钮事件）
     function bindEventDelegation() {
         const buttonsContainer = document.getElementById('static-buttons-container');
 
@@ -857,14 +778,8 @@ function createFloatButton() {
                 case 'setup':
                     handleSetupViewButtons(btnId);
                     break;
-                case 'columns-selection': // 新增：列选择视图
-                    handleColumnsSelectionViewButtons(btnId);
-                    break;
                 case 'processing':
                     handleProcessingViewButtons(btnId);
-                    break;
-                case 'logs':
-                    handleLogsViewButtons(btnId);
                     break;
                 case 'completed':
                     handleCompletedViewButtons(btnId);
@@ -933,53 +848,9 @@ function createFloatButton() {
                 );
             }
         });
-
-        // 5. 日志搜索事件（只绑定一次）
-        const logSearch = document.createElement('input');
-        logSearch.id = 'log-search';
-        logSearch.type = 'text';
-        logSearch.placeholder = '搜索日志...';
-        logSearch.style.display = 'none'; // 默认隐藏
-        document.getElementById('core-content').appendChild(logSearch);
-
-        logSearch.addEventListener('input', (e) => {
-            if (state.currentView !== 'logs') return;
-
-            const searchTerm = e.target.value.toLowerCase();
-            const logEntries = document.querySelectorAll('.log-entry');
-            logEntries.forEach(entry => {
-                const content = entry.getAttribute('data-content').toLowerCase();
-                entry.style.display = content.includes(searchTerm) ? '' : 'none';
-            });
-        });
-
-        // 6. 日志过滤事件（委托到核心内容容器）
-        document.getElementById('core-content').addEventListener('click', (e) => {
-            if (state.currentView !== 'logs') return;
-
-            const filterBtn = e.target.closest('.filter-btn');
-            if (!filterBtn) return;
-
-            // 移除所有按钮的active状态
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            // 激活当前按钮
-            filterBtn.classList.add('active');
-
-            // 过滤日志
-            const filter = filterBtn.getAttribute('data-filter');
-            const logEntries = document.querySelectorAll('.log-entry');
-            logEntries.forEach(entry => {
-                entry.style.display = (filter === 'all' || entry.getAttribute('data-status') === filter)
-                    ? '' : 'none';
-            });
-        });
     }
 
-    // --------------------------
     // 视图切换逻辑（只更新内容，不重建DOM）
-    // --------------------------
     // 1. 切换到设置视图
     function switchToSetupView() {
         state.currentView = 'setup';
@@ -1004,7 +875,7 @@ function createFloatButton() {
                 <div class="form-group">
                     <label for="setup-csv-file">CSV文件 (包含ID、要更新的字段列或tags列)</label>
                     <input type="file" id="setup-csv-file" accept=".csv">
-                    ${state.csvData ? `<div style="margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 14px;">已加载CSV: ${state.csvData.length} 条记录，共 ${state.csvHeaders.length} 列</div>` : ''}
+                    ${state.csvData ? `<div style="margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 14px;">已加载CSV: ${state.csvData.length} 条记录</div>` : ''}
                     <p style="font-size: 13px; color: #666; margin-top: 5px;">
                         tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签
                     </p>
@@ -1042,99 +913,7 @@ function createFloatButton() {
         }
     }
 
-    // 新增：2. 切换到列选择视图
-    function switchToColumnsSelectionView() {
-        state.currentView = 'columns-selection';
-        const coreContent = document.getElementById('core-content');
-        const buttonsContainer = document.getElementById('static-buttons-container');
-
-        // 隐藏编辑区和进度条
-        document.getElementById('edit-regions').style.display = 'none';
-        hideProgressBar();
-
-        // 如果没有选择任何列，默认选中tags列（如果存在）
-        if (state.selectedColumns.length === 0 && state.csvHeaders.length > 0) {
-            state.selectedColumns = state.csvHeaders
-                .filter(header => header.toLowerCase() === 'tags')
-                .map(header => header);
-        }
-
-        // 生成列选择HTML
-        const columnsHTML = state.csvHeaders
-            .filter(header => header.toLowerCase() !== 'id') // ID列不参与选择，必须包含
-            .map(header => {
-                const isSelected = state.selectedColumns.includes(header);
-                const isTagsColumn = header.toLowerCase() === 'tags';
-                return `
-                    <div class="column-item">
-                        <input type="checkbox" id="column-${header}" ${isSelected ? 'checked' : ''}
-                               data-column="${header}">
-                        <label for="column-${header}">
-                            ${header}
-                            ${isTagsColumn ? '<span class="column-description">标签列（空格分隔，-前缀表示删除）</span>' : ''}
-                        </label>
-                    </div>
-                `;
-            }).join('');
-
-        // 更新核心内容
-        coreContent.innerHTML = `
-            <div>
-                <h3 class="section-title">选择需要更新的列</h3>
-                <p>请选择CSV中需要用于更新的列，未选中的列将仅作为参考信息显示。</p>
-                <p style="color: #666; font-size: 14px;">提示：ID列将自动包含，无需选择。</p>
-
-                <div class="columns-selection">
-                    ${columnsHTML}
-                </div>
-
-                <div style="margin-top: 15px;">
-                    <button id="select-all-columns" class="secondary">全选</button>
-                    <button id="deselect-all-columns" class="secondary">取消全选</button>
-                </div>
-            </div>
-        `;
-
-        // 更新按钮组
-        buttonsContainer.innerHTML = `
-            <button id="columns-back" class="secondary">返回</button>
-            <button id="columns-continue" class="primary">继续处理</button>
-        `;
-
-        // 绑定列选择事件
-        document.querySelectorAll('.column-item input').forEach(checkbox => {
-            checkbox.addEventListener('change', (e) => {
-                const column = e.target.getAttribute('data-column');
-                if (e.target.checked) {
-                    if (!state.selectedColumns.includes(column)) {
-                        state.selectedColumns.push(column);
-                    }
-                } else {
-                    state.selectedColumns = state.selectedColumns.filter(c => c !== column);
-                }
-            });
-        });
-
-        // 全选/取消全选事件
-        document.getElementById('select-all-columns').addEventListener('click', () => {
-            const columnsToSelect = state.csvHeaders
-                .filter(header => header.toLowerCase() !== 'id');
-
-            state.selectedColumns = [...new Set(columnsToSelect)];
-            document.querySelectorAll('.column-item input').forEach(checkbox => {
-                checkbox.checked = true;
-            });
-        });
-
-        document.getElementById('deselect-all-columns').addEventListener('click', () => {
-            state.selectedColumns = [];
-            document.querySelectorAll('.column-item input').forEach(checkbox => {
-                checkbox.checked = false;
-            });
-        });
-    }
-
-    // 3. 切换到处理视图（条目编辑）
+    // 2. 切换到处理视图（条目编辑）
     function switchToProcessingView(itemData) {
         state.currentView = 'processing';
         const { currentItem, subjectData, historyData } = itemData;
@@ -1162,6 +941,10 @@ function createFloatButton() {
         state.currentFieldUpdates = fieldUpdates;
         state.currentTagUpdates = tagUpdates;
 
+        const hasFieldUpdates = Object.keys(fieldUpdates).length;
+        const hasTagUpdates = tagUpdates.add.length || tagUpdates.remove.length;
+        const hasUpdates = hasFieldUpdates || hasTagUpdates;
+
         // 2. 处理最后更新时间（只更新内容，不重建容器）
         const lastUpdateEl = document.getElementById('static-last-update');
         const lastUpdateTime = historyData[0]?.createdAt || 0;
@@ -1182,67 +965,77 @@ function createFloatButton() {
             lastUpdateEl.style.display = 'none';
         }
 
-        // 3. 处理编辑摘要区（只更新值和显示状态）
+        // 3. 显示上一条目链接（如果有）
+        const prevLinkEl = document.getElementById('prev-item-link');
+        if (state.previousItem && state.currentIndex > 0) {
+            prevLinkEl.innerHTML = `
+                <i class="fas fa-arrow-left"></i> 上一条目: 
+                <a href="https://bgm.tv/subject/${state.previousItem.id}" target="_blank">
+                    ${state.previousItem.name}（${state.previousItem.id}）
+                </a>
+            `;
+            prevLinkEl.style.display = 'block';
+        } else {
+            prevLinkEl.style.display = 'none';
+        }
+
+        // 4. 处理编辑摘要区（只更新值和显示状态）
         const commitArea = document.getElementById('static-commit-area');
         const commitInput = document.getElementById('static-commit-input');
         const lockCommitBtn = document.getElementById('static-lock-commit');
 
-        const defaultCommitMsg = generateCommitMessage(fieldUpdates, tagUpdates);
-        commitInput.value = state.isCommitMessageLocked ? state.lockedCommitMessage : defaultCommitMsg;
-        lockCommitBtn.innerHTML = `<i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>`;
-        lockCommitBtn.title = state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要';
-        commitArea.style.display = 'block';
+        if (hasUpdates) {
+            const defaultCommitMsg = generateCommitMessage(fieldUpdates, tagUpdates);
+            commitInput.value = state.isCommitMessageLocked ? state.lockedCommitMessage : defaultCommitMsg;
+            lockCommitBtn.innerHTML = `<i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>`;
+            lockCommitBtn.title = state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要';
+            commitArea.style.display = 'block';
+        } else {
+            commitArea.style.display = 'none';
+        }
 
-        // 4. 处理WikiText编辑区（只更新值和显示状态）
+        // 5. 处理WikiText编辑区（只更新值和显示状态）
         const wikitextArea = document.getElementById('static-wikitext-area');
         const wikitextInput = document.getElementById('static-wikitext-input');
         const contentDiffSection = document.getElementById('static-content-diff-container');
 
-        const newInfobox = updateInfobox(oldInfobox, fieldUpdates);
-        wikitextInput.value = newInfobox;
-        wikitextArea.style.display = 'block';
-        // 更新差异（复用固定容器）
-        updateDiffDisplay(oldInfobox, newInfobox, 'static-content-diff-container');
-        contentDiffSection.style.display = 'block';
+        if (hasFieldUpdates) {
+            const newInfobox = updateInfobox(oldInfobox, fieldUpdates);
+            wikitextInput.value = newInfobox;
+            wikitextArea.style.display = 'block';
+            // 更新差异（复用固定容器）
+            updateDiffDisplay(oldInfobox, newInfobox, 'static-content-diff-container');
+            contentDiffSection.style.display = 'block';
+        } else {
+            wikitextArea.style.display = 'none';
+            contentDiffSection.style.display = 'none';
+        }
 
-        // 5. 处理标签编辑区（只更新值和显示状态）
+        // 6. 处理标签编辑区（只更新值和显示状态）
         const tagsArea = document.getElementById('static-tags-area');
         const tagsInput = document.getElementById('static-tags-input');
         const tagsDiffSection = document.getElementById('static-tags-diff-container');
 
-        const newTags = applyTagUpdates(oldTags, tagUpdates);
-        tagsInput.value = newTags.join(' ');
-        tagsArea.style.display = 'block';
-        updateTagsDiffDisplay(oldTags, newTags, 'static-tags-diff-container');
-        tagsDiffSection.style.display = 'block';
+        if (hasTagUpdates) {
+            const newTags = applyTagUpdates(oldTags, tagUpdates);
+            tagsInput.value = newTags.join(' ');
+            tagsArea.style.display = 'block';
+            updateTagsDiffDisplay(oldTags, newTags, 'static-tags-diff-container');
+            tagsDiffSection.style.display = 'block';
+        } else {
+            tagsArea.style.display = 'none';
+            tagsDiffSection.style.display = 'none';
+        }
 
-        // 6. 处理状态提示和条目进度（只更新内容）
+        // 7. 处理状态提示和条目进度（只更新内容）
         const statusContainer = document.getElementById('status-container');
 
-        statusContainer.style.display = 'none';
-
-        // 7. 生成参考信息HTML（未选中的列）
-        const referenceFields = Object.entries(currentItem)
-            .filter(([key]) =>
-                key.toLowerCase() !== 'id' &&
-                !state.selectedColumns.includes(key) &&
-                state.csvHeaders.includes(key)
-            );
-
-        let referenceHTML = '';
-        if (referenceFields.length > 0) {
-            referenceHTML = `
-                <div class="reference-info">
-                    <div class="reference-title">参考信息（不参与更新）</div>
-                    <div class="reference-fields">
-                        ${referenceFields.map(([name, value]) => `
-                            <div class="reference-field">
-                                <span class="reference-field-name">${name}:</span> ${value || '无'}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
+        if (!hasUpdates) {
+            statusContainer.className = 'status-box success';
+            statusContainer.innerHTML = '没有需要更新的字段和标签';
+            statusContainer.style.display = 'block';
+        } else {
+            statusContainer.style.display = 'none';
         }
 
         // 8. 更新核心内容（只显示条目信息，其他内容在固定编辑区）
@@ -1251,18 +1044,23 @@ function createFloatButton() {
                 <div class="item-info">
                     当前条目：<a href="https://bgm.tv/subject/${currentItem.id}" target="_blank">${itemName}</a>（${currentItem.id}）
                 </div>
-                ${referenceHTML}
             </div>
         `;
 
         // 9. 更新按钮组（根据是否有更新切换按钮）
-        buttonsContainer.innerHTML = `
-            <button id="process-skip-update" class="secondary">跳过</button>
-            <button id="process-confirm-update" class="primary">确认更新</button>
-        `;
+        if (hasUpdates) {
+            buttonsContainer.innerHTML = `
+                <button id="process-skip-update" class="secondary">跳过</button>
+                <button id="process-confirm-update" class="primary">确认更新</button>
+            `;
+        } else {
+            buttonsContainer.innerHTML = `
+                <button id="process-confirm-continue" class="primary">确认继续</button>
+            `;
+        }
     }
 
-    // 4. 切换到处理错误视图（复用容器，只更新内容）
+    // 3. 切换到处理错误视图（复用容器，只更新内容）
     function switchToProcessingErrorView(currentItem, errorMsg) {
         state.currentView = 'processing';
         const coreContent = document.getElementById('core-content');
@@ -1279,30 +1077,6 @@ function createFloatButton() {
         const currentRetryCount = (state.retryCount[itemId] || 0) + 1;
         state.retryCount[itemId] = currentRetryCount;
 
-        // 生成参考信息HTML（未选中的列）
-        const referenceFields = Object.entries(currentItem)
-            .filter(([key]) =>
-                key.toLowerCase() !== 'id' &&
-                !state.selectedColumns.includes(key) &&
-                state.csvHeaders.includes(key)
-            );
-
-        let referenceHTML = '';
-        if (referenceFields.length > 0) {
-            referenceHTML = `
-                <div class="reference-info">
-                    <div class="reference-title">参考信息（不参与更新）</div>
-                    <div class="reference-fields">
-                        ${referenceFields.map(([name, value]) => `
-                            <div class="reference-field">
-                                <span class="reference-field-name">${name}:</span> ${value || '无'}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
         // 更新核心内容（只更新HTML）
         coreContent.innerHTML = `
             <div>
@@ -1313,7 +1087,6 @@ function createFloatButton() {
                     无法获取条目信息: ${errorMsg}
                     ${currentRetryCount > 1 ? `<br>已重试 ${currentRetryCount - 1} 次` : ''}
                 </div>
-                ${referenceHTML}
                 <p>是否继续处理？</p>
                 <div class="progress-bar-container">
                     <div class="progress-bar" style="width: ${(state.currentIndex / state.totalItems) * 100}%"></div>
@@ -1328,7 +1101,7 @@ function createFloatButton() {
         `;
     }
 
-    // 5. 切换到更新失败视图（复用容器，只更新内容）
+    // 4. 切换到更新失败视图（复用容器，只更新内容）
     function switchToUpdateErrorView(errorMsg) {
         state.currentView = 'processing';
         const coreContent = document.getElementById('core-content');
@@ -1367,68 +1140,7 @@ function createFloatButton() {
         `;
     }
 
-    // 6. 切换到日志视图（只更新内容，复用搜索/过滤容器）
-    function switchToLogsView() {
-        state.currentView = 'logs';
-        const coreContent = document.getElementById('core-content');
-        const buttonsContainer = document.getElementById('static-buttons-container');
-        const editRegions = document.getElementById('edit-regions');
-
-        // 隐藏编辑区和全局进度条
-        editRegions.style.display = 'none';
-        hideProgressBar();
-
-        // 生成日志HTML（只更新内容，不重建容器）
-        let logsHTML = '';
-        if (state.results.logs.length === 0) {
-            logsHTML = '<div class="status-box info" style="text-align: center;">暂无日志记录</div>';
-        } else {
-            const reversedLogs = [...state.results.logs].reverse();
-            logsHTML = `
-                <div class="log-search-container">
-                    <input type="text" id="log-search" placeholder="搜索日志...">
-                </div>
-                <div class="log-filter">
-                    <button class="filter-btn active" data-filter="all">全部</button>
-                    <button class="filter-btn" data-filter="success">成功</button>
-                    <button class="filter-btn" data-filter="failed">失败</button>
-                    <button class="filter-btn" data-filter="skip">跳过</button>
-                </div>
-                <div class="log-container" id="full-log-container">
-                    ${reversedLogs.map(log => `
-                        <div class="log-entry log-${log.status === '成功' ? 'success' : log.status === '跳过' ? 'info' : 'error'}"
-                             data-status="${log.status === '成功' ? 'success' : log.status === '跳过' ? 'skip' : 'failed'}"
-                             data-content="${escapeHTML(log.name + log.message + log.id)}">
-                            <div style="margin-bottom: 4px; font-size: 12px; color: #888;">
-                                ${new Date(log.timestamp).toLocaleString()}
-                            </div>
-                            <strong><a href="https://bgm.tv/subject/${log.id}" target="_blank">${log.name}</a></strong>（${log.id}）: ${log.message}
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-
-        // 更新核心内容
-        coreContent.innerHTML = `
-            <div>
-                <h3 class="section-title">处理日志</h3>
-                <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>共 ${state.results.logs.length} 条记录</div>
-                    <button id="log-clear" class="danger" style="padding: 4px 10px; font-size: 13px;">清空日志</button>
-                </div>
-                ${logsHTML}
-            </div>
-        `;
-
-        // 更新按钮组
-        buttonsContainer.innerHTML = `
-            <button id="log-download" class="secondary">下载完整日志</button>
-            <button id="log-back" class="primary">返回</button>
-        `;
-    }
-
-    // 7. 切换到完成视图（只更新内容）
+    // 5. 切换到完成视图（只更新内容）
     function switchToCompletedView() {
         state.currentView = 'completed';
         const coreContent = document.getElementById('core-content');
@@ -1450,84 +1162,29 @@ function createFloatButton() {
                         <span class="stats-label">总条目</span>
                         <span class="stats-value">${state.totalItems}</span>
                     </div>
-                    <div class="stats-item">
-                        <span class="stats-label">成功</span>
-                        <span class="stats-value">${state.results.success}</span>
-                    </div>
-                    <div class="stats-item">
-                        <span class="stats-label">失败/跳过</span>
-                        <span class="stats-value">${state.results.failed}</span>
-                    </div>
-                </div>
-                <div>
-                    <p><strong>最近处理记录:</strong></p>
-                    <div class="log-container">
-                        ${state.results.logs.slice(-5).map(log => `
-                            <div class="log-entry ${log.status === '成功' ? 'log-success' : 'log-error'}">
-                                <strong><a href="https://bgm.tv/subject/${log.id}" target="_blank">${log.name}</a></strong>（${log.id}）: ${log.message}
-                            </div>
-                        `).join('')}
-                    </div>
                 </div>
             </div>
         `;
 
         // 更新按钮组
         buttonsContainer.innerHTML = `
-            <button id="completed-download-log" class="secondary">下载完整日志</button>
             <button id="completed-back-to-setup" class="primary">返回设置</button>
         `;
     }
 
-    // --------------------------
     // 按钮事件处理（按视图分发，避免重复绑定）
-    // --------------------------
     // 设置视图按钮处理
     function handleSetupViewButtons(btnId) {
         switch (btnId) {
             case 'setup-start-processing':
-                // 检查是否有CSV数据
-                if (!state.csvData || state.csvData.length === 0) {
-                    showStatusMessage('请上传有效的CSV文件');
-                    return;
-                }
-
-                // 检查是否有Access Token
-                if (!state.accessToken) {
-                    showStatusMessage('请输入Access Token');
-                    return;
-                }
-
-                // 切换到列选择视图
-                switchToColumnsSelectionView();
+                startProcessing();
                 break;
             case 'setup-reset-progress':
                 state.currentIndex = 0;
                 state.retryCount = {};
+                state.previousItem = null; // 重置上一条目记录
                 localStorage.setItem('bgmCurrentIndex', '0');
                 switchToSetupView();
-                break;
-        }
-    }
-
-    // 新增：列选择视图按钮处理
-    function handleColumnsSelectionViewButtons(btnId) {
-        switch (btnId) {
-            case 'columns-back':
-                switchToSetupView();
-                break;
-            case 'columns-continue':
-                // 验证至少选择了一列
-                if (state.selectedColumns.length === 0) {
-                    showStatusMessage('请至少选择一列进行更新');
-                    return;
-                }
-
-                // 保存选择的列
-                saveState();
-
-                // 开始处理
-                startProcessing();
                 break;
         }
     }
@@ -1541,9 +1198,19 @@ function createFloatButton() {
 
         switch (btnId) {
             case 'process-confirm-update':
+                // 确认更新
+                const hasFieldUpdates = Object.keys(state.currentFieldUpdates || {}).length > 0;
+                const hasTagUpdates = (state.currentTagUpdates?.add.length || 0) + (state.currentTagUpdates?.remove.length || 0) > 0;
+                const oldInfobox = subjectData.infobox || '';
+                const oldTags = subjectData.metaTags || [];
+
                 // 只获取必要的输入值（不重建输入框）
-                const finalWikitext = document.getElementById('static-wikitext-input').value
-                const finalTags = document.getElementById('static-tags-input').value.split(' ').filter(t => t)
+                const finalWikitext = hasFieldUpdates
+                    ? document.getElementById('static-wikitext-input').value
+                    : oldInfobox;
+                const finalTags = hasTagUpdates
+                    ? document.getElementById('static-tags-input').value.split(' ').filter(t => t)
+                    : oldTags;
                 const commitMessage = document.getElementById('static-commit-input').value ||
                     generateCommitMessage(state.currentFieldUpdates, state.currentTagUpdates);
 
@@ -1563,8 +1230,12 @@ function createFloatButton() {
                     commitMessage,
                     // 成功回调
                     () => {
-                        logResult(itemId, itemName, '成功', commitMessage);
-                        state.results.success++;
+                        // 记录当前条目作为下一条的上一条
+                        state.previousItem = {
+                            id: itemId,
+                            name: itemName
+                        };
+
                         state.currentIndex++;
                         resetProcessingState();
                         saveState();
@@ -1583,8 +1254,12 @@ function createFloatButton() {
 
             case 'process-skip-update':
                 // 跳过更新
-                logResult(itemId, itemName, '跳过', '用户选择跳过');
-                state.results.failed++;
+                // 记录当前条目作为下一条的上一条
+                state.previousItem = {
+                    id: itemId,
+                    name: itemName
+                };
+
                 state.currentIndex++;
                 resetProcessingState();
                 saveState();
@@ -1593,8 +1268,12 @@ function createFloatButton() {
 
             case 'process-confirm-continue':
                 // 无需更新，继续
-                logResult(itemId, itemName, '成功', '无需更新，继续处理');
-                state.results.success++;
+                // 记录当前条目作为下一条的上一条
+                state.previousItem = {
+                    id: itemId,
+                    name: itemName
+                };
+
                 state.currentIndex++;
                 resetProcessingState();
                 saveState();
@@ -1603,8 +1282,6 @@ function createFloatButton() {
 
             case 'process-skip-error':
                 // 跳过错误条目
-                logResult(itemId, '未知名称', '失败', `获取信息错误 (已跳过)`);
-                state.results.failed++;
                 state.currentIndex++;
                 resetProcessingState();
                 saveState();
@@ -1620,8 +1297,12 @@ function createFloatButton() {
 
             case 'process-skip-update-fail':
                 // 跳过更新失败条目
-                logResult(itemId, itemName, '失败', `更新失败 (已跳过)`);
-                state.results.failed++;
+                // 记录当前条目作为下一条的上一条
+                state.previousItem = {
+                    id: itemId,
+                    name: itemName
+                };
+
                 state.currentIndex++;
                 resetProcessingState();
                 saveState();
@@ -1638,38 +1319,9 @@ function createFloatButton() {
         }
     }
 
-    // 日志视图按钮处理
-    function handleLogsViewButtons(btnId) {
-        switch (btnId) {
-            case 'log-download':
-            case 'log-download-full-log':
-                downloadLog();
-                break;
-            case 'log-back':
-                // 返回之前的视图
-                if (state.csvData && state.currentIndex < state.csvData.length) {
-                    processNextItem(true); // 重新加载当前条目
-                } else {
-                    switchToSetupView();
-                }
-                break;
-            case 'log-clear':
-                if (confirm('确定要清空所有日志记录吗？此操作不可恢复。')) {
-                    state.results = { success: 0, failed: 0, logs: [] };
-                    saveState();
-                    switchToLogsView();
-                    showStatusMessage('日志已清空');
-                }
-                break;
-        }
-    }
-
     // 完成视图按钮处理
     function handleCompletedViewButtons(btnId) {
         switch (btnId) {
-            case 'completed-download-log':
-                downloadLog();
-                break;
             case 'completed-back-to-setup':
                 switchToSetupView();
                 hideProgressBar();
@@ -1677,9 +1329,7 @@ function createFloatButton() {
         }
     }
 
-    // --------------------------
-    // 工具函数（保持原有逻辑，优化DOM操作）
-    // --------------------------
+    // 工具函数
     // 重置处理状态（避免内存泄漏）
     function resetProcessingState() {
         state.currentSubjectData = null;
@@ -1737,7 +1387,7 @@ function createFloatButton() {
         message.classList.remove('show');
     }
 
-    // 处理CSV上传（保持原有逻辑，添加列头保存）
+    // 处理CSV上传
     function handleFileUpload(e) {
         const file = e.target.files[0];
         if (!file) return;
@@ -1752,16 +1402,12 @@ function createFloatButton() {
         reader.onload = function (event) {
             try {
                 const csvContent = event.target.result;
-                const { data, headers } = parseCSV(csvContent); // 修改：返回数据和列头
-                state.csvData = data;
-                state.csvHeaders = headers;
-                state.selectedColumns = []; // 重置选择的列
+                state.csvData = parseCSV(csvContent);
                 state.currentIndex = 0;
                 state.retryCount = {};
+                state.previousItem = null; // 重置上一条目记录
                 localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
-                localStorage.setItem('bgmCsvHeaders', JSON.stringify(state.csvHeaders)); // 保存列头
                 localStorage.setItem('bgmCurrentIndex', '0');
-                localStorage.setItem('bgmSelectedColumns', JSON.stringify(state.selectedColumns)); // 保存选择的列
                 switchToSetupView();
                 showStatusMessage('CSV文件加载成功');
             } catch (error) {
@@ -1777,7 +1423,7 @@ function createFloatButton() {
         reader.readAsText(file);
     }
 
-    // 解析CSV（修改：返回数据和列头）
+    // 解析CSV
     function parseCSV(csvContent) {
         const lines = csvContent.split('\n')
             .map(line => line.trim())
@@ -1817,7 +1463,7 @@ function createFloatButton() {
             throw new Error('未找到有效的数据行');
         }
 
-        return { data, headers }; // 返回数据和列头
+        return data;
     }
 
     function parseCSVLine(line) {
@@ -1854,8 +1500,18 @@ function createFloatButton() {
         return values;
     }
 
-    // 开始处理（保持原有逻辑，切换视图）
+    // 开始处理
     function startProcessing() {
+        if (!state.accessToken) {
+            showStatusMessage('请输入Access Token');
+            return;
+        }
+
+        if (!state.csvData || state.csvData.length === 0) {
+            showStatusMessage('请上传有效的CSV文件');
+            return;
+        }
+
         state.totalItems = state.csvData.length;
         state.processing = true;
         state.paused = false;
@@ -1899,15 +1555,15 @@ function createFloatButton() {
         });
         showLoadingOverlay('正在获取条目信息...');
 
-        // 获取条目信息（保持原有逻辑）
+        // 获取条目信息
         Promise.all([
-            fetch(`/p1/wiki/subjects/${currentItem.id}`, {
+            GM_fetch(`/p1/wiki/subjects/${currentItem.id}`, {
                 headers: {
                     'Authorization': `Bearer ${state.accessToken}`,
                     'Accept': 'application/json'
                 }
             }),
-            fetch(`/p1/wiki/subjects/${currentItem.id}/history-summary`, {
+            GM_fetch(`/p1/wiki/subjects/${currentItem.id}/history-summary`, {
                 headers: {
                     'Authorization': `Bearer ${state.accessToken}`,
                     'Accept': 'application/json'
@@ -1944,11 +1600,11 @@ function createFloatButton() {
             });
     }
 
-    // 提交更新（保持原有逻辑，优化回调）
-    function submitUpdate(itemId, newInfobox, newTags, itemName, csvItem, commitMessage, onSuccess, onError) {
+    // 提交更新
+    function submitUpdate(itemId, newInfobox, newTags, itemName, currentItem, commitMessage, onSuccess, onError) {
         state.processing = true;
 
-        fetch(`/p1/wiki/subjects/${itemId}`, {
+        GM_fetch(`/p1/wiki/subjects/${itemId}`, {
             method: 'PATCH',
             headers: {
                 'Authorization': `Bearer ${state.accessToken}`,
@@ -1980,7 +1636,7 @@ function createFloatButton() {
             });
     }
 
-    // 其他工具函数（保持原有逻辑，优化DOM操作）
+    // 其他工具函数
     function generateCommitMessage(fieldUpdates, tagUpdates) {
         const updatedFields = Object.keys(fieldUpdates || {});
         return [
@@ -2033,35 +1689,21 @@ function createFloatButton() {
         updateDiffDisplay(oldText, newText, containerId);
     }
 
-    function sanitizeRegExp(str) {
-        const regexSpecialChars = /[.*+?^${}()|[\]\\]/g;
-        return str.replace(regexSpecialChars, '\\$&');
-    }
-
-    // 字段更新处理（修改：只处理选中的列）
     function getFieldUpdates(csvItem, oldInfobox) {
         const updates = {};
-        // 只处理选中的非标签列
-        state.selectedColumns.forEach(key => {
-            if (key.toLowerCase() === 'tags') return;
-
-            if (csvItem[key] !== undefined &&
-                !new RegExp(`\\|${sanitizeRegExp(key)}=\\s*${sanitizeRegExp(csvItem[key])}`, 'i').test(oldInfobox)) {
+        // 排除ID和tags字段，其他都是要更新的字段
+        Object.keys(csvItem).forEach(key => {
+            if (!['id', 'tags'].includes(key.toLowerCase())
+                && !new RegExp(`\\|${sanitizeRegExp(key)}=\\s*${sanitizeRegExp(csvItem[key])}`, 'i').test(oldInfobox)) {
                 updates[key] = csvItem[key];
             }
         });
         return updates;
     }
 
-    // 标签更新处理（修改：只处理选中的标签列）
+    // 标签更新处理
     function getTagUpdates(csvItem, oldTags) {
-        // 检查tags列是否被选中
-        const tagsColumn = state.selectedColumns.find(col => col.toLowerCase() === 'tags');
-        if (!tagsColumn) {
-            return { add: [], remove: [] };
-        }
-
-        const tagsStr = csvItem[tagsColumn] || '';
+        const tagsStr = csvItem.tags || '';
         const tags = tagsStr.split(' ').filter(t => t);
 
         const add = [];
@@ -2119,56 +1761,22 @@ function createFloatButton() {
         return timestamp * 1000 > twentyFourHoursAgo;
     }
 
-    // 记录结果
-    function logResult(id, name, status, message) {
-        state.results.logs.push({
-            timestamp: new Date().toISOString(),
-            id,
-            name,
-            status,
-            message
-        });
-    }
-
-    // 保存状态到本地存储（添加列相关状态）
+    // 保存状态到本地存储
     function saveState() {
         localStorage.setItem('bgmAccessToken', state.accessToken);
         localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
-        localStorage.setItem('bgmCsvHeaders', JSON.stringify(state.csvHeaders)); // 保存列头
-        localStorage.setItem('bgmSelectedColumns', JSON.stringify(state.selectedColumns)); // 保存选择的列
         localStorage.setItem('bgmCurrentIndex', state.currentIndex.toString());
-        localStorage.setItem('bgmResults', JSON.stringify(state.results));
         localStorage.setItem('bgmIsCommitMessageLocked', state.isCommitMessageLocked.toString());
         localStorage.setItem('bgmLockedCommitMessage', state.lockedCommitMessage);
+        if (state.previousItem) {
+            localStorage.setItem('bgmPreviousItem', JSON.stringify(state.previousItem));
+        }
     }
 
-    // 下载日志
-    function downloadLog() {
-        const logText = state.results.logs.map(log =>
-            `${new Date(log.timestamp).toLocaleString()} [${log.status}] ${log.name}（${log.id}）: ${log.message}`
-        ).join('\n');
-
-        const blob = new Blob([logText], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `bgm_update_log_${new Date().toISOString().slice(0, 10)}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    function sanitizeRegExp(str) {
+        const regexSpecialChars = /[.*+?^${}()|[\]\\]/g;
+        return str.replace(regexSpecialChars, '\\$&');
     }
 
-    // HTML转义
-    function escapeHTML(str) {
-        return str
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
-
-    // 初始化
     createStaticDOM();
 })();
