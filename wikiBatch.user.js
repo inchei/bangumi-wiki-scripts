@@ -9,6 +9,8 @@
 // @match        https://bangumi.tv.tv/subject/*/edit_detail
 // @match        https://chii.in/subject/*/edit_detail
 // @grant        GM_addStyle
+// @grant        GM_setValue
+// @grant        GM_getValue
 // @grant        GM.xmlHttpRequest
 // @require      https://cdn.jsdelivr.net/npm/@trim21/gm-fetch
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jsdiff/5.2.0/diff.min.js
@@ -643,7 +645,7 @@ function createFloatButton() {
 
     // 状态管理
     const state = {
-        accessToken: localStorage.getItem('bgmAccessToken') || '',
+        accessToken: GM_getValue('bgmAccessToken') || '',
         csvData: JSON.parse(localStorage.getItem('bgmCsvData') || 'null'),
         currentIndex: parseInt(localStorage.getItem('bgmCurrentIndex') || '0'),
         totalItems: 0,
@@ -959,7 +961,7 @@ function createFloatButton() {
         if (accessTokenInput) {
             accessTokenInput.addEventListener('input', (e) => {
                 state.accessToken = e.target.value;
-                localStorage.setItem('bgmAccessToken', state.accessToken);
+                GM_setValue('bgmAccessToken', state.accessToken);
             });
         }
 
@@ -1798,7 +1800,7 @@ function createFloatButton() {
 
     // 保存状态到本地存储
     function saveState() {
-        localStorage.setItem('bgmAccessToken', state.accessToken);
+        GM_setValue('bgmAccessToken', state.accessToken);
         localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
         localStorage.setItem('bgmCurrentIndex', state.currentIndex.toString());
         localStorage.setItem('bgmIsCommitMessageLocked', state.isCommitMessageLocked.toString());
