@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         bangumi wiki 批量更新工具（无日志版）
+// @name         bangumi wiki 批量更新工具（wcode版）
 // @namespace    http://tampermonkey.net/
-// @version      6.0
-// @description  支持更新任意字段和标签，始终覆盖，显示最后上一条目链接
+// @version      7.0
+// @description  支持更新任意字段和标签，始终显示编辑框，优化更新检查
 // @author       You
 // @match        https://next.bgm.tv/*
 // @match        https://bgm.tv/subject/*/edit_detail
@@ -493,7 +493,7 @@ GM_addStyle(`
 /* 编辑区域样式：一次性创建容器 */
 .edit-area {
     margin: 15px 0;
-    display: none; /* 默认隐藏，按需显示 */
+    display: block; /* 始终显示编辑框 */
 }
 
 .edit-area textarea {
@@ -509,7 +509,7 @@ GM_addStyle(`
 
 .tags-edit-area {
     margin: 15px 0;
-    display: none; /* 默认隐藏，按需显示 */
+    display: block; /* 始终显示标签编辑框 */
 }
 
 .tags-edit-area input {
@@ -529,7 +529,7 @@ GM_addStyle(`
 
 .commit-message-area {
     margin: 15px 0;
-    display: none; /* 默认隐藏，按需显示 */
+    display: block; /* 始终显示编辑摘要 */
 }
 
 .commit-message-area input {
@@ -545,7 +545,7 @@ GM_addStyle(`
     padding: 15px;
     background: #f8f9fa;
     border-radius: 4px;
-    display: none; /* 默认隐藏，按需显示 */
+    display: block; /* 始终显示差异区域 */
 }
 
 .diff-section-title {
@@ -641,27 +641,26 @@ function createFloatButton() {
 (function () {
     'use strict';
 
-    // 状态管理 - 移除所有日志相关状态
+    // 状态管理
     const state = {
         accessToken: localStorage.getItem('bgmAccessToken') || '',
         csvData: JSON.parse(localStorage.getItem('bgmCsvData') || 'null'),
         currentIndex: parseInt(localStorage.getItem('bgmCurrentIndex') || '0'),
         totalItems: 0,
-        // 移除所有日志相关属性
         processing: false,
         paused: false,
         currentView: 'setup', // 当前视图: setup, processing, completed
         currentSubjectData: null, // 当前处理的条目数据
         currentFieldUpdates: null, // 当前字段更新
         currentTagUpdates: null, // 当前标签更新
-        currentWikitext: null, // 当前编辑的Wikitext
+        currentWcode: null, // 当前编辑的Wcode
         currentTags: null, // 当前编辑的标签
         currentCommitMessage: null, // 当前编辑摘要
         isCommitMessageLocked: localStorage.getItem('bgmIsCommitMessageLocked') === 'true' || false,
         lockedCommitMessage: localStorage.getItem('bgmLockedCommitMessage') || '',
         retryCount: {}, // 记录每个条目的重试次数
         currentItemId: null, // 当前处理的条目ID
-        previousItem: localStorage.getItem('bgmPreviousItem') || null;
+        previousItem: JSON.parse(localStorage.getItem('bgmPreviousItem') || 'null')
     };
 
     // 一次性创建固定DOM结构
@@ -698,10 +697,10 @@ function createFloatButton() {
                 <!-- 核心内容容器：后续只更新内部HTML -->
                 <div id="bgm-tool-body">
                     <div id="core-content"></div>
-                    <!-- 编辑区域容器：一次性创建，按需显示/隐藏 -->
-                    <div id="edit-regions" style="display: none;">
+                    <!-- 编辑区域容器：一次性创建，始终显示 -->
+                    <div id="edit-regions">
                         <!-- 上一条目链接：只在编辑页面显示 -->
-                        <div class="prev-item-link" id="prev-item-link" style="display: none;"></div>
+                        <div class="prev-item-link" id="prev-item-link"></div>
                         
                         <div class="last-update-info" id="static-last-update"></div>
                         <div class="commit-message-area" id="static-commit-area">
@@ -713,9 +712,9 @@ function createFloatButton() {
                                 </button>
                             </div>
                         </div>
-                        <div class="edit-area" id="static-wikitext-area">
-                            <label>WikiText:</label>
-                            <textarea id="static-wikitext-input"></textarea>
+                        <div class="edit-area" id="static-wcode-area">
+                            <label>Wcode:</label>
+                            <textarea id="static-wcode-input"></textarea>
                         <div id="static-content-diff-container" class="diff-container"></div>
                         </div>
                         <div class="tags-edit-area" id="static-tags-area">
@@ -795,6 +794,8 @@ function createFloatButton() {
         commitInput.addEventListener('input', (e) => {
             if (state.currentView === 'processing' && state.currentSubjectData) {
                 state.currentCommitMessage = e.target.value;
+                // 检查是否有更新，并更新按钮文本
+                updateConfirmButtonState();
             }
         });
 
@@ -821,18 +822,22 @@ function createFloatButton() {
                 commitInput.value = state.currentCommitMessage;
             }
             saveState();
+            // 检查是否有更新，并更新按钮文本
+            updateConfirmButtonState();
         });
 
-        // 3. WikiText编辑事件
-        const wikitextInput = document.getElementById('static-wikitext-input');
-        wikitextInput.addEventListener('input', (e) => {
+        // 3. Wcode编辑事件
+        const wcodeInput = document.getElementById('static-wcode-input');
+        wcodeInput.addEventListener('input', (e) => {
             if (state.currentView === 'processing' && state.currentSubjectData) {
-                state.currentWikitext = e.target.value;
+                state.currentWcode = e.target.value;
                 updateDiffDisplay(
                     state.currentSubjectData.infobox || '',
                     e.target.value,
                     'static-content-diff-container'
                 );
+                // 检查是否有更新，并更新按钮文本
+                updateConfirmButtonState();
             }
         });
 
@@ -846,8 +851,59 @@ function createFloatButton() {
                     e.target.value.split(' ').filter(t => t),
                     'static-tags-diff-container'
                 );
+                // 检查是否有更新，并更新按钮文本
+                updateConfirmButtonState();
             }
         });
+    }
+
+    // 更新确认按钮状态和文本
+    function updateConfirmButtonState() {
+        const confirmBtn = document.querySelector('#static-buttons-container button#process-confirm-update');
+        if (!confirmBtn) return;
+
+        // 检查是否有实际更新
+        const hasUpdates = checkForUpdates();
+
+        if (hasUpdates) {
+            confirmBtn.textContent = '确认更新';
+            confirmBtn.disabled = false;
+        } else {
+            confirmBtn.textContent = '确认更新（无实质修改）';
+            confirmBtn.disabled = false; // 不禁用，但会提示无修改
+        }
+    }
+
+    // 检查是否有实际更新
+    function checkForUpdates() {
+        if (!state.currentSubjectData) return false;
+
+        // 获取当前编辑值
+        const currentWcode = document.getElementById('static-wcode-input').value;
+        const currentTags = document.getElementById('static-tags-input').value.split(' ').filter(t => t);
+
+        // 原始值
+        const originalWcode = state.currentSubjectData.infobox || '';
+        const originalTags = state.currentSubjectData.metaTags || [];
+
+        // 比较Wcode
+        const normalizedCurrentWcode = currentWcode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+        const normalizedOriginalWcode = originalWcode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
+        const wcodeChanged = normalizedCurrentWcode !== normalizedOriginalWcode;
+
+        // 比较标签
+        const tagsChanged = !arraysEqual(currentTags, originalTags);
+
+        return wcodeChanged || tagsChanged;
+    }
+
+    // 辅助函数：检查两个数组是否相等
+    function arraysEqual(a, b) {
+        if (a.length !== b.length) return false;
+        for (let i = 0; i < a.length; i++) {
+            if (a[i] !== b[i]) return false;
+        }
+        return true;
     }
 
     // 视图切换逻辑（只更新内容，不重建DOM）
@@ -919,7 +975,7 @@ function createFloatButton() {
         const { currentItem, subjectData, historyData } = itemData;
         state.currentSubjectData = subjectData;
         state.currentItemId = currentItem.id;
-        state.currentWikitext = null;
+        state.currentWcode = null;
         state.currentTags = null;
         state.currentCommitMessage = null;
 
@@ -940,10 +996,6 @@ function createFloatButton() {
         const tagUpdates = getTagUpdates(currentItem, oldTags);
         state.currentFieldUpdates = fieldUpdates;
         state.currentTagUpdates = tagUpdates;
-
-        const hasFieldUpdates = Object.keys(fieldUpdates).length;
-        const hasTagUpdates = tagUpdates.add.length || tagUpdates.remove.length;
-        const hasUpdates = hasFieldUpdates || hasTagUpdates;
 
         // 2. 处理最后更新时间（只更新内容，不重建容器）
         const lastUpdateEl = document.getElementById('static-last-update');
@@ -980,63 +1032,36 @@ function createFloatButton() {
         }
 
         // 4. 处理编辑摘要区（只更新值和显示状态）
-        const commitArea = document.getElementById('static-commit-area');
         const commitInput = document.getElementById('static-commit-input');
         const lockCommitBtn = document.getElementById('static-lock-commit');
 
-        if (hasUpdates) {
-            const defaultCommitMsg = generateCommitMessage(fieldUpdates, tagUpdates);
-            commitInput.value = state.isCommitMessageLocked ? state.lockedCommitMessage : defaultCommitMsg;
-            lockCommitBtn.innerHTML = `<i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>`;
-            lockCommitBtn.title = state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要';
-            commitArea.style.display = 'block';
-        } else {
-            commitArea.style.display = 'none';
-        }
+        const defaultCommitMsg = generateCommitMessage(fieldUpdates, tagUpdates);
+        commitInput.value = state.isCommitMessageLocked ? state.lockedCommitMessage : defaultCommitMsg;
+        lockCommitBtn.innerHTML = `<i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>`;
+        lockCommitBtn.title = state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要';
 
-        // 5. 处理WikiText编辑区（只更新值和显示状态）
-        const wikitextArea = document.getElementById('static-wikitext-area');
-        const wikitextInput = document.getElementById('static-wikitext-input');
+        // 5. 处理Wcode编辑区（始终显示）
+        const wcodeInput = document.getElementById('static-wcode-input');
         const contentDiffSection = document.getElementById('static-content-diff-container');
 
-        if (hasFieldUpdates) {
-            const newInfobox = updateInfobox(oldInfobox, fieldUpdates);
-            wikitextInput.value = newInfobox;
-            wikitextArea.style.display = 'block';
-            // 更新差异（复用固定容器）
-            updateDiffDisplay(oldInfobox, newInfobox, 'static-content-diff-container');
-            contentDiffSection.style.display = 'block';
-        } else {
-            wikitextArea.style.display = 'none';
-            contentDiffSection.style.display = 'none';
-        }
+        const newInfobox = updateInfobox(oldInfobox, fieldUpdates);
+        wcodeInput.value = newInfobox;
+        // 更新差异（复用固定容器）
+        updateDiffDisplay(oldInfobox, newInfobox, 'static-content-diff-container');
+        contentDiffSection.style.display = 'block';
 
-        // 6. 处理标签编辑区（只更新值和显示状态）
-        const tagsArea = document.getElementById('static-tags-area');
+        // 6. 处理标签编辑区（始终显示）
         const tagsInput = document.getElementById('static-tags-input');
         const tagsDiffSection = document.getElementById('static-tags-diff-container');
 
-        if (hasTagUpdates) {
-            const newTags = applyTagUpdates(oldTags, tagUpdates);
-            tagsInput.value = newTags.join(' ');
-            tagsArea.style.display = 'block';
-            updateTagsDiffDisplay(oldTags, newTags, 'static-tags-diff-container');
-            tagsDiffSection.style.display = 'block';
-        } else {
-            tagsArea.style.display = 'none';
-            tagsDiffSection.style.display = 'none';
-        }
+        const newTags = applyTagUpdates(oldTags, tagUpdates);
+        tagsInput.value = newTags.join(' ');
+        updateTagsDiffDisplay(oldTags, newTags, 'static-tags-diff-container');
+        tagsDiffSection.style.display = 'block';
 
         // 7. 处理状态提示和条目进度（只更新内容）
         const statusContainer = document.getElementById('status-container');
-
-        if (!hasUpdates) {
-            statusContainer.className = 'status-box success';
-            statusContainer.innerHTML = '没有需要更新的字段和标签';
-            statusContainer.style.display = 'block';
-        } else {
-            statusContainer.style.display = 'none';
-        }
+        statusContainer.style.display = 'none';
 
         // 8. 更新核心内容（只显示条目信息，其他内容在固定编辑区）
         coreContent.innerHTML = `
@@ -1047,17 +1072,14 @@ function createFloatButton() {
             </div>
         `;
 
-        // 9. 更新按钮组（根据是否有更新切换按钮）
-        if (hasUpdates) {
-            buttonsContainer.innerHTML = `
-                <button id="process-skip-update" class="secondary">跳过</button>
-                <button id="process-confirm-update" class="primary">确认更新</button>
-            `;
-        } else {
-            buttonsContainer.innerHTML = `
-                <button id="process-confirm-continue" class="primary">确认继续</button>
-            `;
-        }
+        // 9. 更新按钮组（始终显示更新和跳过按钮）
+        buttonsContainer.innerHTML = `
+            <button id="process-skip-update" class="secondary">跳过</button>
+            <button id="process-confirm-update" class="primary">确认更新</button>
+        `;
+
+        // 检查是否有更新，并更新按钮文本
+        updateConfirmButtonState();
     }
 
     // 3. 切换到处理错误视图（复用容器，只更新内容）
@@ -1199,22 +1221,36 @@ function createFloatButton() {
         switch (btnId) {
             case 'process-confirm-update':
                 // 确认更新
-                const hasFieldUpdates = Object.keys(state.currentFieldUpdates || {}).length > 0;
-                const hasTagUpdates = (state.currentTagUpdates?.add.length || 0) + (state.currentTagUpdates?.remove.length || 0) > 0;
                 const oldInfobox = subjectData.infobox || '';
                 const oldTags = subjectData.metaTags || [];
 
                 // 只获取必要的输入值（不重建输入框）
-                const finalWikitext = hasFieldUpdates
-                    ? document.getElementById('static-wikitext-input').value
-                    : oldInfobox;
-                const finalTags = hasTagUpdates
-                    ? document.getElementById('static-tags-input').value.split(' ').filter(t => t)
-                    : oldTags;
+                const finalWcode = document.getElementById('static-wcode-input').value;
+                const finalTags = document.getElementById('static-tags-input').value.split(' ').filter(t => t);
                 const commitMessage = document.getElementById('static-commit-input').value ||
                     generateCommitMessage(state.currentFieldUpdates, state.currentTagUpdates);
 
-                // 禁用按钮，显示加载
+                // 检查是否有实际更新
+                const hasUpdates = checkForUpdates();
+
+                if (!hasUpdates) {
+                    // 没有实质更新，不发起请求，但继续到下一条
+                    showStatusMessage('没有检测到实质修改，已跳过更新');
+
+                    // 记录当前条目作为下一条的上一条
+                    state.previousItem = {
+                        id: itemId,
+                        name: itemName
+                    };
+
+                    state.currentIndex++;
+                    resetProcessingState();
+                    saveState();
+                    processNextItem();
+                    return;
+                }
+
+                // 有更新，禁用按钮，显示加载
                 document.querySelectorAll('#static-buttons-container button').forEach(btn => {
                     btn.disabled = true;
                 });
@@ -1223,7 +1259,7 @@ function createFloatButton() {
                 // 提交更新
                 submitUpdate(
                     itemId,
-                    finalWikitext,
+                    finalWcode,
                     finalTags,
                     itemName,
                     currentItem,
@@ -1334,7 +1370,7 @@ function createFloatButton() {
     function resetProcessingState() {
         state.currentSubjectData = null;
         state.currentItemId = null;
-        state.currentWikitext = null;
+        state.currentWcode = null;
         state.currentTags = null;
         state.currentCommitMessage = null;
         state.currentFieldUpdates = null;
@@ -1601,7 +1637,7 @@ function createFloatButton() {
     }
 
     // 提交更新
-    function submitUpdate(itemId, newInfobox, newTags, itemName, currentItem, commitMessage, onSuccess, onError) {
+    function submitUpdate(itemId, newWcode, newTags, itemName, currentItem, commitMessage, onSuccess, onError) {
         state.processing = true;
 
         GM_fetch(`/p1/wiki/subjects/${itemId}`, {
@@ -1614,7 +1650,7 @@ function createFloatButton() {
             body: JSON.stringify({
                 commitMessage: commitMessage,
                 subject: {
-                    infobox: newInfobox,
+                    infobox: newWcode,
                     metaTags: newTags
                 }
             })
@@ -1693,8 +1729,7 @@ function createFloatButton() {
         const updates = {};
         // 排除ID和tags字段，其他都是要更新的字段
         Object.keys(csvItem).forEach(key => {
-            if (!['id', 'tags'].includes(key.toLowerCase())
-                && !new RegExp(`\\|${sanitizeRegExp(key)}=\\s*${sanitizeRegExp(csvItem[key])}`, 'i').test(oldInfobox)) {
+            if (!['id', 'tags'].includes(key.toLowerCase())) {
                 updates[key] = csvItem[key];
             }
         });
@@ -1710,9 +1745,9 @@ function createFloatButton() {
         const remove = [];
 
         tags.forEach(tag => {
-            if (tag.startsWith('-') && oldTags.includes(tag.slice(1))) {
+            if (tag.startsWith('-')) {
                 remove.push(tag.slice(1));
-            } else if (!oldTags.includes(tag)) {
+            } else {
                 add.push(tag);
             }
         });
