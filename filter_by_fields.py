@@ -6,7 +6,7 @@ from tqdm import tqdm
 from collections import defaultdict
 from datetime import datetime
 
-# 关系类型定义（仅包含ID和中文名）
+# 关系类型定义
 ANIME_RELATIONS = {
     1: "改编", 2: "前传", 3: "续集", 4: "总集篇", 5: "全集", 6: "番外篇", 7: "角色出演",
     8: "相同世界观", 9: "不同世界观", 10: "不同演绎", 11: "衍生", 12: "主线故事", 14: "联动", 99: "其他",
@@ -27,7 +27,7 @@ REAL_RELATIONS = {
     8: "相同世界观", 9: "不同世界观", 10: "不同演绎", 11: "衍生", 12: "主线故事", 14: "联动", 99: "其他",
 }
 
-# 整合所有关系类型，建立中文名称到数字的映射
+# 整合关系类型映射
 cn_to_relation_id = {}
 for rel_dict in [ANIME_RELATIONS, BOOK_RELATIONS, MUSIC_RELATIONS, GAME_RELATIONS, REAL_RELATIONS]:
     for rel_id, rel_cn in rel_dict.items():
@@ -50,7 +50,7 @@ def parse_number(value):
 
 
 def parse_date(value):
-    """解析日期，支持YYYY-MM-DD和X年X月X日格式"""
+    """解析日期，支持多种格式"""
     if not value:
         return None
     value = str(value).strip()
@@ -127,7 +127,7 @@ def extract_field_value(data, field_name):
 
 
 def get_relation_count(subject_id, rel_cn, relations_data, cn_to_relation_id):
-    """统计指定条目的指定关系数量（支持中文关系名）"""
+    """统计指定条目的指定关系数量"""
     rel_id = cn_to_relation_id.get(rel_cn)
     if rel_id is None:
         print(f"警告：关系名'{rel_cn}'不存在，统计数量为0")
@@ -141,11 +141,11 @@ def get_relation_count(subject_id, rel_cn, relations_data, cn_to_relation_id):
 
 
 def matches_condition(value, condition, data=None, relations_data=None, count_results=None):
-    """检查条件匹配，同时记录count统计结果（用于CSV显示）"""
+    """检查条件匹配，记录count统计结果"""
     if not condition:
         return True
 
-    # 处理{{count:中文关系名}}，记录统计结果到count_results
+    # 处理{{count:中文关系名}}
     count_pattern = re.compile(r'\{\{count:\s*([^}]+?)\s*\}\}')
     count_match = count_pattern.search(condition)
     if count_match and relations_data and data and count_results is not None:
@@ -156,10 +156,8 @@ def matches_condition(value, condition, data=None, relations_data=None, count_re
             rel_count = 0
         else:
             rel_count = get_relation_count(subject_id, rel_cn, relations_data, cn_to_relation_id)
-        # 记录count结果（键：count_关系名，值：统计数量）
         count_key = f"count_{rel_cn}"
         count_results[count_key] = rel_count
-        # 替换条件中的{{count}}为实际数量
         condition = count_pattern.sub(str(rel_count), condition)
 
     # 处理自身字段引用
@@ -226,6 +224,7 @@ def get_user_filters():
     print("请添加筛选条件（输入空行结束添加）")
     print("格式说明：")
     print("- 普通字段：字段名:条件（例：出版社:角川、发售日:re:\\d{4}）")
+    print("- 所有字段（全局匹配）：*:条件（例：*:re:完结$ 匹配任意字段值以“完结”结尾的条目）")
     print("- 数字比较：字段名:大于:值 或 字段名:小于:值（例：评分:大于:8、集数:小于:13）")
     print("- 日期比较：字段名:早于:日期 或 字段名:晚于:日期（例：发售日:晚于:2023-01-01）")
     print("- 字段引用自身：字段名:{{目标字段名}}（例：开始:{{发售日}}）")
@@ -300,9 +299,9 @@ def get_user_filters():
                 i += 1
                 continue
 
-        # 处理普通字段筛选
+        # 处理普通字段/全局字段筛选
         if ':' not in condition_str:
-            print("格式错误：条件需包含冒号（字段名:条件）")
+            print("格式错误：条件需包含冒号（字段名:条件 或 *:条件）")
             continue
         key_part, value_part = [p.strip() for p in condition_str.split(':', 1)]
         filters.append((key_part, value_part))
@@ -320,21 +319,46 @@ def group_filters_by_field(filters):
 
 
 def collect_count_fields(filters):
-    """从筛选条件中提取所有count字段（用于CSV表头）"""
+    """从筛选条件中提取所有count字段"""
     count_fields = set()
     count_pattern = re.compile(r'\{\{count:\s*([^}]+?)\s*\}\}')
     for field, cond in filters:
         match = count_pattern.search(cond)
         if match:
             rel_cn = match.group(1).strip()
-            count_field = f"count_{rel_cn}"  # 列名格式：count_关系名（如count_单行本）
+            count_field = f"count_{rel_cn}"
             count_fields.add(count_field)
-    return sorted(count_fields)  # 排序保证表头顺序固定
+    return sorted(count_fields)
 
 
-def write_csv_file(output_csv_file, results, grouped_filters, relation_filters, all_subjects, count_fields):
-    """生成CSV文件（新增count字段列）"""
-    unique_fields = list(grouped_filters.keys())
+def get_relevant_fields(filters, relation_filters):
+    """提取所有与筛选相关的字段"""
+    relevant_fields = set()
+    
+    # 添加普通筛选字段（排除全局匹配符*）
+    for field, _ in filters:
+        if field != '*':
+            relevant_fields.add(field)
+    
+    # 添加关系筛选中涉及的字段
+    for _, related_conditions, _ in relation_filters:
+        for field, _ in related_conditions:
+            relevant_fields.add(field)
+    
+    # 处理全局匹配中实际匹配的字段引用
+    for field, cond in filters:
+        if field == '*':
+            # 提取条件中引用的字段（如{{field}}）
+            ref_pattern = re.compile(r'\{\{\s*(\w+)\s*\}\}')
+            matches = ref_pattern.findall(cond)
+            for match in matches:
+                relevant_fields.add(match)
+    
+    return sorted(relevant_fields)
+
+
+def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, all_subjects, count_fields):
+    """生成CSV文件（只包含筛选相关的字段）"""
     related_fields = set()
     for rel_id, related_conditions, _ in relation_filters:
         for field, _ in related_conditions:
@@ -348,9 +372,9 @@ def write_csv_file(output_csv_file, results, grouped_filters, relation_filters, 
             rel_id = int(rel_id_str)
             max_relations[rel_id] = max(max_relations[rel_id], len(related_ids) if isinstance(related_ids, list) else 0)
 
-    # 构建表头：ID → URL → 普通字段 → count字段 → 关联字段 → 关联ID
-    headers = ['ID', 'URL'] + unique_fields
-    if count_fields:  # 新增count字段列
+    # 构建表头：ID → URL → 筛选相关字段 → count字段 → 关联字段 → 关联ID
+    headers = ['ID', 'URL'] + relevant_fields
+    if count_fields:
         headers.extend(count_fields)
     id_to_cn = {v: k for k, v in cn_to_relation_id.items()}
     for rel_id, related_conditions, negate in relation_filters:
@@ -372,13 +396,13 @@ def write_csv_file(output_csv_file, results, grouped_filters, relation_filters, 
         writer.writerow(headers)
         for result in results:
             row = [result['id'], result['url']]
-            # 普通字段值
-            for field in unique_fields:
+            # 筛选相关字段值
+            for field in relevant_fields:
                 row.append(result['fields'].get(field, ''))
-            # 新增：count字段值（从result['counts']中获取）
+            # count字段值
             if count_fields:
                 for count_field in count_fields:
-                    row.append(result['counts'].get(count_field, 0))  # 无数据时填0
+                    row.append(result['counts'].get(count_field, 0))
             # 关联字段值 + 关联ID
             for rel_id, related_conditions, negate in relation_filters:
                 rel_cn = id_to_cn.get(rel_id, f"relation_{rel_id}")
@@ -451,6 +475,9 @@ def main():
         print("未设置任何筛选条件，程序退出")
         return
 
+    # 提取所有与筛选相关的字段
+    relevant_fields = get_relevant_fields(filters, relation_filters)
+    
     # 显示筛选条件
     grouped_filters = group_filters_by_field(filters)
     unique_fields = list(grouped_filters.keys())
@@ -458,7 +485,10 @@ def main():
     print("\n===== 筛选条件 =====")
     # 普通字段条件
     for i, (field, conds) in enumerate(grouped_filters.items(), 1):
-        print(f"{i}. 字段: {field}")
+        if field == '*':
+            print(f"{i}. 所有字段:")
+        else:
+            print(f"{i}. 字段: {field}")
         for j, cond in enumerate(conds, 1):
             if cond.startswith('re:'):
                 print(f"   条件 {j}: 正则匹配 '{cond[3:]}'")
@@ -515,9 +545,8 @@ def main():
         print("错误：需关系筛选或count统计，但未找到 subject-relations.jsonlines 文件")
         return
 
-    # 预加载控制（手动+自动）
-    preload_manual = input("\n是否手动开启所有subject数据预加载？（y/n，默认n，需查看关联条目字段时选y）: ").strip().lower()
-    need_preload = needs_full_load(relation_filters) or (preload_manual == 'y')
+    # 预加载控制
+    need_preload = needs_full_load(relation_filters)
     all_subjects = {}
     if need_preload:
         original_subject_path = os.path.join(archive_dir, "subject.jsonlines")
@@ -537,10 +566,10 @@ def main():
                 except json.JSONDecodeError:
                     continue
 
-    # 提取所有count字段（用于CSV表头）
+    # 提取所有count字段
     count_fields = collect_count_fields(filters)
 
-    # 核心筛选逻辑（记录count结果）
+    # 核心筛选逻辑
     results = []
     matched_cnt = 0
     print(f"\n开始处理 {input_file} ...")
@@ -559,20 +588,54 @@ def main():
                 if not check_tag_conditions(data, tag_filters):
                     continue
 
-                # 2. 普通字段检查（记录count结果）
+                # 2. 字段条件检查
                 field_values = {}
-                count_results = {}  # 存储当前条目的所有count统计结果
+                count_results = {}
                 all_matched = True
-                for field in unique_fields:
+                
+                # 分离全局字段和普通字段
+                global_conditions = grouped_filters.get('*', [])
+                normal_fields = [f for f in unique_fields if f != '*']
+
+                # 检查普通字段并记录值
+                for field in normal_fields:
                     val = extract_field_value(data, field)
                     field_values[field] = val
-                    # 传入count_results，记录统计结果
                     for cond in grouped_filters[field]:
                         if not matches_condition(val, cond, data, relations_data, count_results):
                             all_matched = False
                             break
                     if not all_matched:
                         break
+
+                # 处理全局条件并记录匹配的字段值
+                matched_global_fields = set()
+                if all_matched and global_conditions:
+                    global_matched = False
+                    # 获取当前条目的所有字段
+                    all_fields = []
+                    exclude_fields = {'id', 'url', 'tags', 'relations', 'infobox', 'created_at', 'updated_at'}
+                    all_fields.extend([f for f in data.keys() if f not in exclude_fields and isinstance(data[f], (str, int, float, bool))])
+                    
+                    infobox = data.get('infobox', '')
+                    if infobox:
+                        infobox_field_pattern = re.compile(r'\|(\w+)\s*[:=]\s*.*?(?:\s*\||\s*}}|\r\n|\n)', re.IGNORECASE)
+                        all_fields.extend(infobox_field_pattern.findall(infobox))
+                    
+                    # 检查每个字段是否满足全局条件
+                    for field in all_fields:
+                        val = extract_field_value(data, field)
+                        for cond in global_conditions:
+                            if matches_condition(val, cond, data, relations_data, count_results):
+                                global_matched = True
+                                matched_global_fields.add(field)
+                                field_values[field] = val  # 只记录匹配全局条件的字段
+                                break
+                        if global_matched:
+                            break
+                    if not global_matched:
+                        all_matched = False
+
                 if not all_matched:
                     continue
 
@@ -607,12 +670,12 @@ def main():
                 if not all_matched:
                     continue
 
-                # 4. 保存结果（新增count_results）
+                # 4. 保存结果（只包含筛选相关的字段）
                 url = f"https://bgm.tv/subject/{sid}"
                 out_f.write(json.dumps(data, ensure_ascii=False) + "\n")
                 results.append({
                     'id': sid, 'url': url, 'fields': field_values, 
-                    'relations': relation_values, 'counts': count_results  # 新增counts字段
+                    'relations': relation_values, 'counts': count_results
                 })
                 matched_cnt += 1
 
@@ -620,10 +683,10 @@ def main():
                 print(f"\n处理条目出错: {str(e)}")
                 continue
 
-    # 生成CSV（传入count_fields）
+    # 生成CSV（只包含筛选相关的字段）
     if results:
         print("\n正在生成CSV文件...")
-        write_csv_file(output_csv, results, grouped_filters, relation_filters, all_subjects, count_fields)
+        write_csv_file(output_csv, results, relevant_fields, relation_filters, all_subjects, count_fields)
 
     print(f"\n处理完成！共找到 {matched_cnt} 个符合条件的条目")
     print(f"原始数据保存至: {output_file}")
@@ -632,3 +695,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
