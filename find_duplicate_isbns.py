@@ -6,7 +6,7 @@ from collections import defaultdict
 from datetime import datetime
 
 # 配置
-WHITE_LIST = ['9784801921436']
+WHITE_LIST = ['9784801921436', '9784150206130']
 # 从环境变量判断是否为自动化模式（默认手动模式）
 AUTO_MODE = os.getenv("AUTO_MODE", "false").lower() == "true"
 DEFAULT_INPUT = "bangumi_archive/subject.jsonlines"
