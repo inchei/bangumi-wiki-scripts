@@ -1,42 +1,16 @@
 重复ISBN检查结果
 ==================
-检查时间: 2025-09-02 21:37:14
+检查时间: 2025-09-09 21:37:20
 白名单: 9784801921436
 汇报帖链接: https://bgm.tv/group/topic/431206, https://bgm.tv/group/topic/431529, https://bgm.tv/group/topic/423940
 
 
 ===== 未汇报的重复条目 ====
 
-【疑似不同作品误填】(1组)
-----------------------------------------
-ISBN 1: 9784835545950
-https://bgm.tv/subject/114862 - みんなのトニオちゃん
-https://bgm.tv/subject/582537 - みんなのト二オちゃん
-
-【疑似重复条目】(1组)
-----------------------------------------
-ISBN 1: 9784047138896
-https://bgm.tv/subject/291968 - 機動戦士ゼータガンダム1/2
-
-【疑似系列误填】(3组)
-----------------------------------------
-ISBN 1: 9784798639550
-https://bgm.tv/subject/571425 - 愛を知らない捨てられJKを全力で甘やかしたら俺まで幸せにされた件 (1)
-https://bgm.tv/subject/582229 - 愛を知らない捨てられJKを全力で甘やかしたら俺まで幸せにされた件（系列）
-
-ISBN 2: 9784150206130
-https://bgm.tv/subject/581404 - ギデオン―第九王家の騎士―（系列）
-https://bgm.tv/subject/581406 - ギデオン―第九王家の騎士― 上
-https://bgm.tv/subject/581407 - ギデオン―第九王家の騎士― 下
-
-ISBN 3: 9784092967335
-https://bgm.tv/subject/581900 - 名探偵コナン&理科探偵団（系列）
-https://bgm.tv/subject/581901 - 名探偵コナン&理科探偵団 (1) コナンと学ぶ絶滅動物
-
 
 ===== 已汇报的重复条目 ====
 
-【疑似不同作品误填】(7组)
+【疑似不同作品误填】(4组)
 ----------------------------------------
 ISBN 1: 9784943966418
 https://bgm.tv/subject/51655 - 鎧伝サムライトルーパー vol.2 (Animate Cassette Collection 7)
@@ -54,250 +28,19 @@ ISBN 4: 9784943966289
 https://bgm.tv/subject/51659 - 鎧伝サムライトルーパー (<カセット>)
 https://bgm.tv/subject/136018 - 鎧伝サムライトルーパー それからの戦士たち
 
-ISBN 5: 9784829127964
-https://bgm.tv/subject/487679 - ドラゴンズ・ウィル
-https://bgm.tv/subject/542680 - ラゴンズ·ウィル
-
-ISBN 6: 9784901769747
-https://bgm.tv/subject/493720 - 「バンパイヤ」第二部完結編
-https://bgm.tv/subject/493722 - 「バンパイヤ」第二部完結編　手塚治虫未完作品、続きの夢を紡ぐ
-
-ISBN 7: 9784909824158
-https://bgm.tv/subject/554027 - P.A.WORKS 25周年記念書籍
-https://bgm.tv/subject/570387 - 未来を照らす、灯りをつくる。 アニメの制作会社が自立するために～アニメーション制作会社・P.A.WORKS 25年物語
-
-【疑似重复条目】(52组)
+【疑似重复条目】(1组)
 ----------------------------------------
-ISBN 1: 9784800001962
-https://bgm.tv/subject/115986 - 優等生以上、フリョー未満な俺ら。
-https://bgm.tv/subject/326198 - 優等生以上、フリョー未満な俺ら。
-
-ISBN 2: 9784860326210
-https://bgm.tv/subject/117994 - 戦姫魔導伝アスカ&シズル
-https://bgm.tv/subject/395078 - 戦姫魔導伝アスカ＆シズル
-
-ISBN 3: 9784813051794
-https://bgm.tv/subject/119637 - 君ノ手ヲ感ジテル
-https://bgm.tv/subject/154567 - 君ノ手ヲ感ジテル
-
-ISBN 4: 9784832283749
-https://bgm.tv/subject/119638 - 恋人たちが降る窓
-https://bgm.tv/subject/154568 - 恋人たちが降る窓
-
-ISBN 5: 9784813050346
-https://bgm.tv/subject/121097 - チープ・チェイス
-https://bgm.tv/subject/121098 - チープ・チェイス
-
-ISBN 6: 9784088454825
-https://bgm.tv/subject/131915 - ときめいちゃってゴメンね?
-https://bgm.tv/subject/196946 - ときめいちゃってゴメンね?
-
-ISBN 7: 9784797334463
-https://bgm.tv/subject/147976 - ハノン~君の目指す明日へ~
-https://bgm.tv/subject/327351 - ハノン ~君の目指す明日へ~
-
-ISBN 8: 9784063815016
-https://bgm.tv/subject/162311 - さすがです勇者さま!
-https://bgm.tv/subject/167403 - さすがです勇者さま!
-
-ISBN 9: 9784091348791
-https://bgm.tv/subject/164145 - 快楽協定
-https://bgm.tv/subject/200724 - 快楽協定
-
-ISBN 10: 9784063419504
-https://bgm.tv/subject/164160 - 先生と近キョリ
-https://bgm.tv/subject/200830 - 先生と近キョリ
-
-ISBN 11: 9784063417777
-https://bgm.tv/subject/164164 - ヒミツの、萌え恋。
-https://bgm.tv/subject/203595 - ヒミツの、萌え恋。
-
-ISBN 12: 9784592851288
-https://bgm.tv/subject/166346 - 桜ノ国～キルシュブリューテ～
-https://bgm.tv/subject/212073 - 桜ノ国~キルシュブリューテ~
-
-ISBN 13: 9784829663486
-https://bgm.tv/subject/167610 - おいでよ! 私立ヤリま×り学園
-https://bgm.tv/subject/234084 - おいでよ! 私立ヤリま×り学園
-
-ISBN 14: 9784829663523
-https://bgm.tv/subject/167635 - エロ勇者転生 召喚の巫女も姫騎士も淫魔族も!
-https://bgm.tv/subject/404557 - エロ勇者転生 召喚の巫女も姫騎士も淫魔族も！
-
-ISBN 15: 9784799203682
-https://bgm.tv/subject/167642 - ツンツンお嬢様は僕専用の性処理道具!
-https://bgm.tv/subject/343476 - ツンツンお嬢様は僕専用の性処理道具！
-
-ISBN 16: 9784832278813
-https://bgm.tv/subject/186538 - けいおん！超イラストレーションズ！ VOL.1
-https://bgm.tv/subject/477053 - けいおん!超イラストレーションズ! VOL.1
-
-ISBN 17: 9784862015938
-https://bgm.tv/subject/205449 - わたしたちのひりだす快楽
-https://bgm.tv/subject/304662 - わたしたちのひりだす快楽
-
-ISBN 18: 9784776990420
-https://bgm.tv/subject/205519 - 催眠妹痴態
-https://bgm.tv/subject/205520 - 催眠妹痴態
-
-ISBN 19: 9784592147169
-https://bgm.tv/subject/209828 - クソゲー・オンライン(仮) (1)
-https://bgm.tv/subject/265669 - クソゲー・オンライン(仮)  (1)
-
-ISBN 20: 9784063958805
-https://bgm.tv/subject/216011 - 男三女四(6)
-https://bgm.tv/subject/433220 - 男三女四 (6)
-
-ISBN 21: 9784041058282
-https://bgm.tv/subject/228746 - 快楽島 ~淫神の贄
-https://bgm.tv/subject/353436 - 快楽島 ~淫神の贄~
-
-ISBN 22: 9784063650006
-https://bgm.tv/subject/230126 - 獄扉絵画 江口夏実「鬼灯の冷徹」トビラ絵コレクション
-https://bgm.tv/subject/431688 - 獄扉絵画　江口夏実「鬼灯の冷徹」トビラ絵コレクション
-
-ISBN 23: 9784396784508
-https://bgm.tv/subject/243007 - 愛し
-https://bgm.tv/subject/248817 - 愛し
-
-ISBN 24: 9784040655734
-https://bgm.tv/subject/286644 - ガールズ&パンツァー リボンの武者 (11)
-https://bgm.tv/subject/291268 - ガールズ&パンツァー リボンの武者 (11)
-
-ISBN 25: 9784047138896
-https://bgm.tv/subject/460997 - 機動戦士ゼータガンダム1/2
-
-ISBN 26: 9784773089707
-https://bgm.tv/subject/292143 - オメガの恋は秘密の子を抱きしめる ～シナモンロールの記憶～
-https://bgm.tv/subject/432070 - オメガの恋は秘密の子を抱きしめる -シナモンロールの記憶-
-
-ISBN 27: 9784815604493
-https://bgm.tv/subject/302201 - お前らどれだけ俺のこと好きだったんだよ!
-https://bgm.tv/subject/318829 - お前らどれだけ俺のこと好きだったんだよ！
-
-ISBN 28: 9784199800214
-https://bgm.tv/subject/314891 - 裁判長!ぼくの弟懲役4年でどうすか
-https://bgm.tv/subject/408428 - 裁判長！ぼくの弟懲役4年でどうすか
-
-ISBN 29: 9784813709459
-https://bgm.tv/subject/317697 - ラスト・ゲーム～バスケ馬鹿の君に捧ぐ～
-https://bgm.tv/subject/364316 - ラスト・ゲーム~バスケ馬鹿の君に捧ぐ
-
-ISBN 30: 9784199608674
-https://bgm.tv/subject/333796 - SHOW TIME！
-https://bgm.tv/subject/355957 - SHOW TIME!
-
-ISBN 31: 9784040741475
-https://bgm.tv/subject/335997 - ロクでなし魔術講師と禁忌教典19
-https://bgm.tv/subject/338061 - ロクでなし魔術講師と禁忌教典 (19)
-
-ISBN 32: 9784883863419
-https://bgm.tv/subject/338313 - 弾アモウ (5)
-https://bgm.tv/subject/440420 - 弾（アモウ） 5
-
-ISBN 33: 9784815603373
-https://bgm.tv/subject/341986 - その冒険者、取り扱い注意。2
-https://bgm.tv/subject/429481 - その冒険者、取り扱い注意。 (2)
-
-ISBN 34: 9784829621462
-https://bgm.tv/subject/342469 - 異世界(エロ)チート賢者 銀髪の宮廷女魔術師とハーレムを!
-https://bgm.tv/subject/407776 - 異世界（エロ）チート賢者 銀髪の宮廷女魔術師とハーレムを！
-
-ISBN 35: 9784829684474
-https://bgm.tv/subject/343699 - 溺愛心中 仙女は褥で乱される
-https://bgm.tv/subject/364088 - 溺愛心中: 仙女は褥で乱される
-
-ISBN 36: 9784253236324
-https://bgm.tv/subject/344195 - ガンフロンティア―ハーロック&トチロー青春の旅
-https://bgm.tv/subject/344196 - ガンフロンティア―ハーロック&トチロー青春の旅
-
-ISBN 37: 9784797390896
-https://bgm.tv/subject/345499 - ギャンブル・ウィッチ・キングダム2
-https://bgm.tv/subject/573022 - ギャンブル・ウィッチ・キングダム (2)
-
-ISBN 38: 9784860323288
-https://bgm.tv/subject/391614 - バニーガール アンソロジーコミックス
-https://bgm.tv/subject/428994 - バニーガールアンソロジーコミックス
-
-ISBN 39: 9784790103240
-https://bgm.tv/subject/393141 - クライマックス・コレクション
-https://bgm.tv/subject/428996 - クライマックス・コレクション
-
-ISBN 40: 9784048680615
-https://bgm.tv/subject/413186 - Vitaminシリーズパーフェクトファンブック VitaminP
-https://bgm.tv/subject/413837 - Vitaminシリーズ パーフェクトファンブック VitaminP
-
-ISBN 41: 9784047372764
-https://bgm.tv/subject/415737 - 未実装のラスボス達が仲間になりました。5
-https://bgm.tv/subject/446082 - 未実装のラスボス達が仲間になりました。 (5)
-
-ISBN 42: 9784866576572
+ISBN 1: 9784866576572
 https://bgm.tv/subject/429463 - 甘くて熱くて息もできない (2)
 https://bgm.tv/subject/578841 - 甘くて熱くて息もできない （2）
 
-ISBN 43: 9784758021593
-https://bgm.tv/subject/474013 - ぽちゃクライム! (2)
-https://bgm.tv/subject/539168 - ぽちゃクライム！ (2)
-
-ISBN 44: 9784847049989
-https://bgm.tv/subject/479680 - 岡田奈々ファースト写真集 『 飾らない宝石 』
-https://bgm.tv/subject/567044 - 岡田奈々ファースト写真集『飾らない宝石』
-
-ISBN 45: 9784091990846
-https://bgm.tv/subject/480962 - からかい上手の高木さん 画集「卒業アルバム」 山本崇一朗カラーワークス
-https://bgm.tv/subject/493112 - からかい上手の高木さん 画集「卒業アルバム」山本崇一朗カラーワークス
-
-ISBN 46: 9784801512764
-https://bgm.tv/subject/495931 - 貞操観念が逆転した世界で美少女たちの性欲がヤバすぎる! ?
-https://bgm.tv/subject/552058 - 貞操観念が逆転した世界で美少女たちの性欲がヤバすぎる!?
-
-ISBN 47: 9784480818614
-https://bgm.tv/subject/517162 - RPGのつくりかた ――橋野桂と『メタファー：リファンタジオ』
-https://bgm.tv/subject/525250 - RPGのつくりかた――橋野桂と『メタファー: リファンタジオ』
-
-ISBN 48: 9784824203281
-https://bgm.tv/subject/523124 - 異世界転生したら愛犬ベスのほうが強かったんだが～職業街の人でも出来る宿屋経営と街の守り方～ (1)
-https://bgm.tv/subject/559225 - 異世界転生したら愛犬ベスのほうが強かったんだが ~職業街の人でも出来る宿屋経営と街の守り方~ (1)
-
-ISBN 49: 9784867781333
-https://bgm.tv/subject/531721 - STK 好きです つきましては 嗅がせてください!
-https://bgm.tv/subject/532356 - STK 好きです つきましては 嗅がせてください！
-
-ISBN 50: 9784041157350
-https://bgm.tv/subject/543364 - 終末トレインどこへいく？　公式ガイドブック　マージナル・ダイヤグラム
-https://bgm.tv/subject/558606 - 終末トレインどこへいく? 公式ガイドブック マージナル・ダイヤグラム
-
-ISBN 51: 9784041163221
-https://bgm.tv/subject/554488 - ウマ娘 プリティーダービー アニメーションガイド ROAD TO THE TOP & 新時代の扉
-https://bgm.tv/subject/560619 - ウマ娘 プリティーダービー アニメーションガイド ROAD TO THE TOP & 新時代の扉
-
-ISBN 52: 9784391165081
-https://bgm.tv/subject/574883 - TVアニメ『夏目友人帳』公式ビジュアルブック～時の面影～
-https://bgm.tv/subject/576271 - TVアニメ『夏目友人帳』公式ビジュアルブック ~時の面影~
-
-【疑似系列误填】(3组)
-----------------------------------------
-ISBN 1: 9784091308993
-https://bgm.tv/subject/129622 - ダイヤモンド・ライフ（系列）
-https://bgm.tv/subject/199781 - ダイヤモンド・ライフ (1)
-
-ISBN 2: 9784040681610
-https://bgm.tv/subject/181826 - わたしの友達が世界一かわいい (1)
-https://bgm.tv/subject/182057 - わたしの友達が世界一かわいい（系列）
-https://bgm.tv/subject/274940 - わたしの友達が世界一かわいい 1
-
-ISBN 3: 9784065107836
-https://bgm.tv/subject/234525 - にちぶっ！ (1)
-https://bgm.tv/subject/238381 - にちぶっ!(1)（系列）
-
 
 ===== 最终统计 =====
-重复ISBN: 66 个
-总重复条目: 134 个
-未汇报: 10 个
-已汇报: 124 个
+重复ISBN: 5 个
+总重复条目: 10 个
+未汇报: 0 个
+已汇报: 10 个
 
 分类统计:
-   - 疑似不同作品误填: 8 组
-   - 疑似重复条目: 52 组
-   - 疑似系列误填: 6 组
+   - 疑似不同作品误填: 4 组
+   - 疑似重复条目: 1 组
