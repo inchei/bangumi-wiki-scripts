@@ -6,6 +6,15 @@ from tqdm import tqdm
 from collections import defaultdict
 from datetime import datetime
 
+# 条目类型映射（新增：中文到数字的映射）
+TYPE_CN_TO_NUM = {
+    "书籍": 1,
+    "动画": 2,
+    "音乐": 3,
+    "游戏": 4,
+    "三次元": 6
+}
+
 # 关系类型定义
 ANIME_RELATIONS = {
     1: "改编", 2: "前传", 3: "续集", 4: "总集篇", 5: "全集", 6: "番外篇", 7: "角色出演",
@@ -27,9 +36,16 @@ REAL_RELATIONS = {
     8: "相同世界观", 9: "不同世界观", 10: "不同演绎", 11: "衍生", 12: "主线故事", 14: "联动", 99: "其他",
 }
 
-# 职位类型定义（整合所有资源类型的职位ID与中文映射）
-STAFF_POSITIONS = {
-    # anime 职位
+# 按条目类型拆分职位定义（核心修改：不再使用统一的STAFF_POSITIONS）
+# 1: 书籍
+BOOK_STAFF = {
+    2001: "作者", 2002: "作画", 2003: "插图", 2004: "出版社", 2005: "连载杂志", 2006: "译者",
+    2007: "原作", 2008: "客串", 2009: "人物原案", 2010: "脚本", 2011: "书系", 2012: "出品方",
+    2013: "图书品牌"
+}
+
+# 2: 动画
+ANIME_STAFF = {
     1: "原作", 2: "导演", 3: "脚本", 4: "分镜", 5: "演出", 6: "音乐", 7: "人物原案", 8: "人物设定",
     9: "构图", 10: "系列构成", 11: "美术监督", 13: "色彩设计", 14: "总作画监督", 15: "作画监督",
     16: "机械设定", 17: "摄影监督", 18: "监修", 19: "道具设计", 20: "原画", 21: "第二原画",
@@ -51,27 +67,41 @@ STAFF_POSITIONS = {
     116: "音乐监督", 117: "选曲", 118: "插入歌作词", 119: "插入歌作曲", 120: "插入歌编曲", 121: "创意制片人",
     122: "副制片人", 123: "制作统括", 124: "现场制片人", 125: "文艺制作", 127: "企画协力", 128: "OP・ED 演出",
     129: "Bank 分镜演出", 130: "Live 分镜演出", 131: "剧中剧分镜演出", 132: "剧中剧人设", 133: "视觉导演", 134: "创意总监",
-    135: "特摄效果", 136: "视觉效果", 137: "动作导演",
-    # game 职位
+    135: "特摄效果", 136: "视觉效果", 137: "动作导演"
+}
+
+# 3: 音乐
+MUSIC_STAFF = {
+    3001: "艺术家", 3002: "制作人", 3003: "作曲", 3004: "厂牌", 3005: "原作", 3006: "作词",
+    3007: "录音", 3008: "编曲", 3009: "插图", 3010: "脚本", 3011: "出版方", 3012: "母带制作",
+    3013: "混音", 3014: "乐器", 3015: "声乐"
+}
+
+# 4: 游戏
+GAME_STAFF = {
     1001: "开发", 1002: "发行", 1003: "游戏设计师", 1004: "剧本", 1005: "美工", 1006: "音乐",
     1007: "关卡设计", 1008: "人物设定", 1009: "主题歌作曲", 1010: "主题歌作词", 1011: "主题歌演出", 1012: "插入歌演出",
     1013: "原画", 1014: "动画制作", 1015: "原作", 1016: "导演", 1017: "动画监督", 1018: "制作总指挥",
     1019: "QC", 1020: "动画剧本", 1021: "程序", 1022: "协力", 1023: "CG 监修", 1024: "SD原画",
     1025: "背景", 1026: "监修", 1027: "系列构成", 1028: "企画", 1029: "机械设定", 1030: "音响监督",
-    1031: "作画监督", 1032: "制作人", 1033: "海报",
-    # book 职位
-    2001: "作者", 2002: "作画", 2003: "插图", 2004: "出版社", 2005: "连载杂志", 2006: "译者",
-    2007: "原作", 2008: "客串", 2009: "人物原案", 2010: "脚本", 2011: "书系", 2012: "出品方",
-    2013: "图书品牌",
-    # music 职位
-    3001: "艺术家", 3002: "制作人", 3003: "作曲", 3004: "厂牌", 3005: "原作", 3006: "作词",
-    3007: "录音", 3008: "编曲", 3009: "插图", 3010: "脚本", 3011: "出版方", 3012: "母带制作",
-    3013: "混音", 3014: "乐器", 3015: "声乐",
-    # real 职位
+    1031: "作画监督", 1032: "制作人", 1033: "海报"
+}
+
+# 6: 三次元
+REAL_STAFF = {
     4001: "原作", 4002: "导演", 4003: "编剧", 4004: "音乐", 4005: "执行制片人", 4006: "共同执行制作",
     4007: "制片人/制作人", 4008: "监制", 4009: "副制作人/制作顾问", 4010: "故事", 4011: "编审", 4012: "剪辑",
     4013: "创意总监", 4014: "摄影", 4015: "主题歌演出", 4016: "主演", 4017: "配角", 4018: "制作",
     4019: "出品", 4020: "配音导演", 4021: "录音", 4022: "海报"
+}
+
+# 按类型整合职位信息（新增：便于根据类型获取对应职位表）
+TYPE_STAFF_MAP = {
+    1: BOOK_STAFF,
+    2: ANIME_STAFF,
+    3: MUSIC_STAFF,
+    4: GAME_STAFF,
+    6: REAL_STAFF
 }
 
 # 整合关系类型映射
@@ -80,9 +110,6 @@ for rel_dict in [ANIME_RELATIONS, BOOK_RELATIONS, MUSIC_RELATIONS, GAME_RELATION
     for rel_id, rel_cn in rel_dict.items():
         if rel_cn not in cn_to_relation_id:
             cn_to_relation_id[rel_cn] = rel_id
-
-# 中文职位名到ID的映射（用于筛选匹配）
-cn_to_position_id = {v: k for k, v in STAFF_POSITIONS.items()}
 
 
 def parse_number(value):
@@ -293,60 +320,87 @@ def check_related_subject(related_data, original_data, related_conditions):
     return True
 
 
-STAFF_REQUIRE_ALL = True  # 默认：任一满足
-
-def check_staff_conditions(subject_id, staff_data, staff_filters):
-    """检查人物筛选条件（通过STAFF_REQUIRE_ALL变量切换模式）"""
-    if not staff_filters or not staff_data:
+def check_staff_conditions(subject_id, staff_data, staff_filters, subject_type):
+    """检查人物筛选条件（根据条目类型获取对应职位表）"""
+    if not staff_filters or not staff_data or subject_type not in TYPE_STAFF_MAP:
         return True
+    
+    # 根据条目类型获取对应的职位表
+    staff_positions = TYPE_STAFF_MAP[subject_type]
+    # 创建中文职位到ID的映射（仅针对当前类型）
+    cn_to_position_id = {v: k for k, v in staff_positions.items()}
     
     subject_id_str = str(subject_id)
     subject_staffs = staff_data.get(subject_id_str, [])
     if not subject_staffs:
         return False  # 无对应staff，不满足条件
     
-    # 逐个检查staff筛选条件
-    for pos_id, field, cond in staff_filters:
+    # 逐个检查staff筛选条件（每个条件含：职位名、匹配模式、字段名、条件）
+    for pos_cn, match_mode, field, cond in staff_filters:
+        # 根据当前条目类型查找职位ID
+        pos_id = cn_to_position_id.get(pos_cn)
+        if pos_id is None:
+            print(f"警告：类型{subject_type}中不存在职位'{pos_cn}'，跳过该条件")
+            continue
+            
+        # 筛选当前职位的所有staff
         matched_staffs = [staff for staff in subject_staffs if staff.get('position') == pos_id]
-        if not matched_staffs:
-            return False  # 无对应职位的staff，不满足条件
+        staff_count = len(matched_staffs)  # 统计该职位的人物数量
         
-        # 根据全局变量决定检查逻辑
-        if STAFF_REQUIRE_ALL:
-            # 全部满足模式：只要有一个不满足就返回False
-            all_matched = True
-            for staff in matched_staffs:
-                staff_value = str(staff.get(field, '')).strip()
-                if not matches_condition(staff_value, cond, staff):
-                    all_matched = False
-                    break
-            if not all_matched:
+        # 处理{{count:职位名}}语法 - 统计当前条目该职位的人物数量
+        count_pattern = re.compile(r'\{\{count:\s*([^}]+?)\s*\}\}')
+        count_match = count_pattern.search(cond)
+        processed_cond = cond
+        if count_match:
+            target_pos_cn = count_match.group(1).strip()
+            # 查找目标职位ID（基于当前条目类型）
+            target_pos_id = cn_to_position_id.get(target_pos_cn)
+            if target_pos_id is None:
+                print(f"警告：类型{subject_type}中不存在职位'{target_pos_cn}'，统计数量为0")
+                target_count = 0
+            else:
+                # 统计目标职位的人物数量
+                target_count = sum(1 for staff in subject_staffs if staff.get('position') == target_pos_id)
+            # 替换条件中的count占位符
+            processed_cond = count_pattern.sub(str(target_count), cond)
+        
+        # 如果字段是count，则直接使用统计的数量进行判断
+        if field == 'count':
+            staff_value = str(staff_count)
+            if not matches_condition(staff_value, processed_cond):
                 return False
-        else:
-            # 任一满足模式：只要有一个满足就通过
-            any_matched = False
-            for staff in matched_staffs:
-                staff_value = str(staff.get(field, '')).strip()
-                if matches_condition(staff_value, cond, staff):
-                    any_matched = True
-                    break
-            if not any_matched:
-                return False
+            continue
+        
+        # 常规字段检查
+        match_results = []
+        for staff in matched_staffs:
+            staff_value = str(staff.get(field, '')).strip()
+            is_matched = matches_condition(staff_value, processed_cond, staff)
+            match_results.append(is_matched)
+        
+        # 根据匹配模式判断结果（any：任意满足；all：全部满足）
+        if match_mode == 'any' and not any(match_results):
+            return False  # 任意满足模式：无一个满足则不通过
+        if match_mode == 'all' and not all(match_results):
+            return False  # 全部满足模式：有一个不满足则不通过
     
     return True
 
 
 def get_user_filters():
-    """获取用户筛选条件，新增staff筛选支持"""
+    """获取用户筛选条件，支持中文类型筛选和按类型的职位筛选"""
     filters = []
     relation_filters = []
-    # 分离存储两种标签筛选条件
     tag_filters = []  # 普通标签筛选，格式：(标签名, 是否排除)
     meta_tag_filters = []  # 元标签筛选，格式：(标签名, 是否排除)
-    staff_filters = []  # 人物筛选，格式：(职位ID, 字段名, 条件)
+    # staff_filters结构：(职位名, 匹配模式any/all, 字段名, 条件)
+    # 注意：这里存储的是职位名，而非ID，后续会根据条目类型动态转换
+    staff_filters = []  
     i = 1
     print("请添加筛选条件（输入空行结束添加）")
     print("格式说明：")
+    print("- 条目类型（数字）：type:数字（例：type:2 表示动画）")
+    print("- 条目类型（中文）：直接输入中文类型（例：动画 等效于 type:2）")
     print("- 普通字段：字段名:条件（例：出版社:角川、发售日:re:\\d{4}）")
     print("- 所有字段（全局匹配）：*:条件（例：*:re:完结$ 匹配任意字段值以“完结”结尾的条目）")
     print("- 数字比较：字段名:大于:值 或 字段名:小于:值（例：评分:大于:8、集数:小于:13）")
@@ -358,7 +412,9 @@ def get_user_filters():
     print("- 关系筛选（不含该关系）：relation:!中文关系名")
     print("- 普通标签筛选：tag:标签名 或 tag:!标签名（例：tag:轻小说、tag:!动画）")
     print("- 元标签筛选：meta_tag:标签名 或 meta_tag:!标签名（例：meta_tag:TV、meta_tag:!日本）")
-    print("- 人物筛选：staff:中文职位名:字段名:条件（例：staff:原画:appear_eps:re:.*、staff:导演:person_id:大于:1000）")
+    print("- 人物筛选（任意满足）：staff:中文职位名:any:字段名:条件（例：staff:原画:any:appear_eps:re:.*）")
+    print("- 人物筛选（全部满足）：staff:中文职位名:all:字段名:条件（例：staff:脚本:all:person_id:100）")
+    print("- 职位人物数量统计：staff:中文职位名:any:count:大于:3（例：staff:声优:any:count:大于:5 表示声优人数大于5）")
 
     while True:
         condition_str = input(f"\n条件 {i} (输入空行结束)：").strip()
@@ -369,19 +425,28 @@ def get_user_filters():
                 print(f"已完成筛选条件添加，共设置 {i-1} 个条件")
             break
 
-        # 处理staff筛选条件（staff:职位名:字段名:条件）
+        # 处理中文类型筛选（直接输入"动画"等效于"type:2"）
+        if condition_str in TYPE_CN_TO_NUM:
+            type_num = TYPE_CN_TO_NUM[condition_str]
+            filters.append(('type', str(type_num)))
+            print(f"已添加类型筛选：type:{type_num}（{condition_str}）")
+            i += 1
+            continue
+
+        # 处理staff筛选条件（staff:职位名:any/all:字段名:条件）
         if condition_str.startswith('staff:'):
-            parts = condition_str.split(':', 3)  # 按冒号分割为4部分：staff、职位名、字段名、条件
-            if len(parts) != 4:
-                print("格式错误：staff筛选需满足 staff:中文职位名:字段名:条件（例：staff:原画:appear_eps:re:.*）")
+            # 按冒号分割为5部分：staff、职位名、匹配模式、字段名、条件
+            parts = condition_str.split(':', 4)  
+            if len(parts) != 5:
+                print("格式错误：staff筛选需满足 staff:中文职位名:any/all:字段名:条件（例：staff:脚本:any:person_id:100）")
                 continue
-            _, pos_cn, field, cond = [p.strip() for p in parts]
-            # 匹配职位ID
-            pos_id = cn_to_position_id.get(pos_cn)
-            if pos_id is None:
-                print(f"错误：未找到职位名称 '{pos_cn}'，请检查职位名是否正确")
+            _, pos_cn, match_mode, field, cond = [p.strip() for p in parts]
+            # 验证匹配模式是否为any或all
+            if match_mode not in ['any', 'all']:
+                print("错误：匹配模式仅支持 'any'（任意满足） 或 'all'（全部满足）")
                 continue
-            staff_filters.append((pos_id, field, cond))
+            # 存储职位名（后续根据条目类型动态转换为ID）
+            staff_filters.append((pos_cn, match_mode, field, cond))
             i += 1
             continue
 
@@ -459,7 +524,7 @@ def get_user_filters():
 
         # 处理普通字段/全局字段筛选
         if ':' not in condition_str:
-            print("格式错误：条件需包含冒号（字段名:条件 或 *:条件）")
+            print(f"未识别的条件格式：'{condition_str}'，请检查是否为中文类型（支持：{', '.join(TYPE_CN_TO_NUM.keys())}）")
             continue
         key_part, value_part = [p.strip() for p in condition_str.split(':', 1)]
         filters.append((key_part, value_part))
@@ -490,7 +555,7 @@ def collect_count_fields(filters):
 
 
 def get_relevant_fields(filters, relation_filters, staff_filters):
-    """提取所有与筛选相关的字段，新增staff筛选字段"""
+    """提取所有与筛选相关的字段，包含staff字段"""
     relevant_fields = set()
     
     # 添加普通筛选字段（排除全局匹配符*）
@@ -504,7 +569,7 @@ def get_relevant_fields(filters, relation_filters, staff_filters):
             relevant_fields.add(field)
     
     # 添加staff筛选中涉及的字段
-    for _, field, _ in staff_filters:
+    for _, _, field, _ in staff_filters:
         relevant_fields.add(field)
     
     # 处理全局匹配中实际匹配的字段引用
@@ -535,19 +600,8 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
             rel_id = int(rel_id_str)
             max_relations[rel_id] = max(max_relations[rel_id], len(related_ids) if isinstance(related_ids, list) else 0)
 
-    # 统计每种职位的最大staff数
-    max_staff = defaultdict(int)
-    id_to_position_cn = {v: k for k, v in STAFF_POSITIONS.items()}
-    for result in results:
-        sid = result['id']
-        subject_staffs = staff_data.get(sid, []) if staff_data else []
-        for pos_id, _, _ in staff_filters:
-            pos_cn = id_to_position_cn.get(pos_id, f"position_{pos_id}")
-            count = sum(1 for staff in subject_staffs if staff.get('position') == pos_id)
-            max_staff[pos_id] = max(max_staff[pos_id], count)
-
-    # 构建表头：ID → URL → 筛选相关字段 → count字段 → 标签字段 → 关联字段 → 关联ID → staff字段
-    headers = ['ID', 'URL'] + relevant_fields
+    # 构建表头：ID → URL → 类型 → 筛选相关字段 → count字段 → 标签字段 → 关联字段 → 关联ID → staff字段
+    headers = ['ID', 'URL', '类型(数字)', '类型(中文)'] + relevant_fields
     if count_fields:
         headers.extend(count_fields)
     
@@ -557,7 +611,12 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
     if meta_tag_filters:
         headers.append("匹配的元标签")
 
+    # 添加职位人数统计列（使用职位名）
+    staff_count_headers = [f"staff_{pos_cn}_count" for pos_cn, _, _, _ in staff_filters]
+    headers.extend(staff_count_headers)
+
     id_to_cn = {v: k for k, v in cn_to_relation_id.items()}
+    num_to_type_cn = {v: k for k, v in TYPE_CN_TO_NUM.items()}
     for rel_id, related_conditions, negate in relation_filters:
         rel_cn = id_to_cn.get(rel_id, f"relation_{rel_id}")
         prefix = "no_" if negate else ""
@@ -572,9 +631,23 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
             headers.append(f"{rel_base}_{idx}_ID")
 
     # 添加staff相关列
-    for pos_id, field, _ in staff_filters:
-        pos_cn = id_to_position_cn.get(pos_id, f"position_{pos_id}")
-        max_cnt = max_staff[pos_id]
+    for pos_cn, _, field, _ in staff_filters:
+        # 统计该职位在所有结果中的最大出现次数
+        max_cnt = 0
+        for result in results:
+            sid = result['id']
+            subject_type = result.get('type', 0)
+            if subject_type not in TYPE_STAFF_MAP:
+                continue
+            staff_positions = TYPE_STAFF_MAP[subject_type]
+            cn_to_position_id = {v: k for k, v in staff_positions.items()}
+            pos_id = cn_to_position_id.get(pos_cn)
+            if pos_id is None:
+                continue
+            subject_staffs = staff_data.get(sid, []) if staff_data else []
+            count = sum(1 for staff in subject_staffs if staff.get('position') == pos_id)
+            max_cnt = max(max_cnt, count)
+        
         for idx in range(1, max_cnt + 1):
             headers.append(f"staff_{pos_cn}_{idx}_{field}")
             headers.append(f"staff_{pos_cn}_{idx}_person_id")
@@ -584,7 +657,11 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
         writer = csv.writer(csvfile)
         writer.writerow(headers)
         for result in results:
-            row = [result['id'], result['url']]
+            sid = result['id']
+            subject_type = result.get('type', 0)
+            type_cn = num_to_type_cn.get(subject_type, f"未知类型({subject_type})")
+            
+            row = [sid, result['url'], subject_type, type_cn]
             # 筛选相关字段值
             for field in relevant_fields:
                 row.append(result['fields'].get(field, ''))
@@ -596,7 +673,7 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
             # 添加标签信息
             if tag_filters:
                 # 获取原始数据中的普通标签
-                subject_data = all_subjects.get(result['id'], {})
+                subject_data = all_subjects.get(sid, {})
                 tag_names = [tag['name'] for tag in subject_data.get('tags', [])]
                 # 筛选出匹配的标签
                 matched_tags = [tag for tag, negate in tag_filters 
@@ -605,12 +682,30 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
             
             if meta_tag_filters:
                 # 获取原始数据中的元标签
-                subject_data = all_subjects.get(result['id'], {})
+                subject_data = all_subjects.get(sid, {})
                 meta_tags = subject_data.get('meta_tags', [])
                 # 筛选出匹配的元标签
                 matched_meta_tags = [tag for tag, negate in meta_tag_filters 
                                    if (not negate and tag in meta_tags) or (negate and tag not in meta_tags)]
                 row.append(",".join(matched_meta_tags))
+
+            # 添加职位人数统计
+            if subject_type in TYPE_STAFF_MAP:
+                staff_positions = TYPE_STAFF_MAP[subject_type]
+                cn_to_position_id = {v: k for k, v in staff_positions.items()}
+                subject_staffs = staff_data.get(sid, []) if staff_data else []
+                
+                for pos_cn, _, _, _ in staff_filters:
+                    pos_id = cn_to_position_id.get(pos_cn)
+                    if pos_id is None:
+                        row.append("N/A（职位不存在）")
+                        continue
+                    count = sum(1 for staff in subject_staffs if staff.get('position') == pos_id)
+                    row.append(count)
+            else:
+                # 未知类型填充N/A
+                for _ in staff_filters:
+                    row.append("N/A（未知类型）")
 
             # 关联字段值 + 关联ID
             for rel_id, related_conditions, negate in relation_filters:
@@ -631,20 +726,54 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
                     row.append(rid)
 
             # 添加staff相关信息
-            sid = result['id']
-            subject_staffs = staff_data.get(sid, []) if staff_data else []
-            for pos_id, field, _ in staff_filters:
-                pos_cn = id_to_position_cn.get(pos_id, f"position_{pos_id}")
-                matched_staffs = [staff for staff in subject_staffs if staff.get('position') == pos_id]
-                max_cnt = max_staff[pos_id]
-                for idx in range(1, max_cnt + 1):
-                    staff = matched_staffs[idx-1] if (idx-1) < len(matched_staffs) else None
-                    # 字段值
-                    val = str(staff.get(field, '')) if staff else ""
-                    row.append(val)
-                    # person_id
-                    pid = str(staff.get('person_id', '')) if staff else ""
-                    row.append(pid)
+            if subject_type in TYPE_STAFF_MAP:
+                staff_positions = TYPE_STAFF_MAP[subject_type]
+                cn_to_position_id = {v: k for k, v in staff_positions.items()}
+                subject_staffs = staff_data.get(sid, []) if staff_data else []
+                
+                for pos_cn, _, field, _ in staff_filters:
+                    pos_id = cn_to_position_id.get(pos_cn)
+                    if pos_id is None:
+                        # 职位不存在，填充N/A
+                        max_cnt = 0
+                        for result_item in results:
+                            st = result_item.get('type', 0)
+                            if st not in TYPE_STAFF_MAP:
+                                continue
+                            sp = TYPE_STAFF_MAP[st]
+                            cnp = {v: k for k, v in sp.items()}
+                            if cnp.get(pos_cn) is not None:
+                                max_cnt = 1  # 至少留一个位置显示N/A
+                                break
+                        for idx in range(1, max_cnt + 1):
+                            row.append("N/A（职位不存在）")
+                            row.append("")
+                        continue
+                        
+                    matched_staffs = [staff for staff in subject_staffs if staff.get('position') == pos_id]
+                    # 查找该职位在所有结果中的最大出现次数
+                    max_cnt = 0
+                    for result_item in results:
+                        st = result_item.get('type', 0)
+                        if st != subject_type:
+                            continue
+                        ss = staff_data.get(result_item['id'], []) if staff_data else []
+                        cnt = sum(1 for s in ss if s.get('position') == pos_id)
+                        max_cnt = max(max_cnt, cnt)
+                    
+                    for idx in range(1, max_cnt + 1):
+                        staff = matched_staffs[idx-1] if (idx-1) < len(matched_staffs) else None
+                        # 字段值
+                        val = str(staff.get(field, '')) if staff else ""
+                        row.append(val)
+                        # person_id
+                        pid = str(staff.get('person_id', '')) if staff else ""
+                        row.append(pid)
+            else:
+                # 未知类型，填充N/A
+                for pos_cn, _, field, _ in staff_filters:
+                    row.append("N/A（未知类型）")
+                    row.append("")
 
             writer.writerow(row)
 
@@ -722,7 +851,7 @@ def main():
         print(f"错误：文件 {input_file} 不存在")
         return
 
-    # 获取筛选条件，包含staff筛选条件
+    # 获取筛选条件，包含staff筛选条件（支持any/all模式和数量统计）
     filters, relation_filters, tag_filters, meta_tag_filters, staff_filters = get_user_filters()
     if not filters and not relation_filters and not tag_filters and not meta_tag_filters and not staff_filters:
         print("未设置任何筛选条件，程序退出")
@@ -783,12 +912,14 @@ def main():
     for i, (tag, negate) in enumerate(meta_tag_filters, meta_tag_idx):
         print(f"{i}. 元标签: {'不包含' if negate else '包含'} '{tag}'")
     
-    # 显示staff筛选条件
+    # 显示staff筛选条件（含any/all模式）
     staff_idx = meta_tag_idx + len(meta_tag_filters)
-    id_to_position_cn = {v: k for k, v in STAFF_POSITIONS.items()}
-    for i, (pos_id, field, cond) in enumerate(staff_filters, staff_idx):
-        pos_cn = id_to_position_cn.get(pos_id, f"position_{pos_id}")
-        print(f"{i}. 人物筛选: 职位 '{pos_cn}'（ID: {pos_id}）的字段 '{field}' 满足条件 '{cond}'")
+    for i, (pos_cn, match_mode, field, cond) in enumerate(staff_filters, staff_idx):
+        # 显示匹配模式（any=任意满足，all=全部满足）
+        mode_desc = "任意满足" if match_mode == 'any' else "全部满足"
+        # 特殊标记数量统计条件
+        count_flag = "（数量统计）" if field == 'count' else ""
+        print(f"{i}. 人物筛选: 职位 '{pos_cn}' {mode_desc}，字段 '{field}' {count_flag}满足条件 '{cond}'")
     
     print("====================\n")
 
@@ -811,7 +942,7 @@ def main():
         print("错误：需关系筛选或count统计，但未找到 subject-relations.jsonlines 文件")
         return
 
-    # 加载staff数据
+    # 加载staff数据（仅需subject-persons.jsonlines）
     staff_data = load_staff_data(archive_dir)
     if staff_filters and not staff_data:
         print("错误：需人物筛选，但未找到 subject-persons.jsonlines 文件")
@@ -855,6 +986,13 @@ def main():
                 sid = str(data.get('id'))
                 if not sid:
                     continue
+
+                # 获取当前条目的类型（用于后续职位筛选）
+                subject_type = data.get('type', 0)
+                try:
+                    subject_type = int(subject_type)
+                except (ValueError, TypeError):
+                    subject_type = 0  # 未知类型
 
                 # 1. 标签检查（分别处理普通标签和元标签）
                 if not check_tag_conditions(data, tag_filters):
@@ -944,17 +1082,16 @@ def main():
                 if not all_matched:
                     continue
 
-                # 4. 人物条件检查
-                if not check_staff_conditions(sid, staff_data, staff_filters):
+                # 4. 人物条件检查（根据条目类型动态获取职位表）
+                if not check_staff_conditions(sid, staff_data, staff_filters, subject_type):
                     continue
 
-                # 5. 保存结果（包含标签信息）
+                # 5. 保存结果（包含类型信息）
                 url = f"https://bgm.tv/subject/{sid}"
                 out_f.write(json.dumps(data, ensure_ascii=False) + "\n")
                 results.append({
-                    'id': sid, 'url': url, 'fields': field_values, 
-                    'relations': relation_values, 'counts': count_results,
-                    # 存储标签信息
+                    'id': sid, 'url': url, 'type': subject_type,
+                    'fields': field_values, 'relations': relation_values, 'counts': count_results,
                     'tags': [tag['name'] for tag in data.get('tags', [])],
                     'meta_tags': data.get('meta_tags', [])
                 })
