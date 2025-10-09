@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         bangumi wiki 批量更新工具
 // @namespace    http://tampermonkey.net/
-// @version      8.0
-// @description  支持两种提交方式，可在设置页面选择，支持编辑Wcode和标签
+// @version      8.1
+// @description  支持两种提交方式，可在设置页面选择，支持编辑Wcode、标签和系列状态
 // @author       You
 // @match        https://next.bgm.tv/
 // @grant        GM_addStyle
@@ -274,7 +274,6 @@ GM_addStyle(`
 .diff-container {
     margin: 15px 0;
     border-radius: 4px;
-    min-height: 100px;
 }
 
 .log-container {
@@ -511,6 +510,12 @@ GM_addStyle(`
     font-size: 14px;
 }
 
+.series-edit-area {
+    margin: 15px 0;
+    display: block;
+    padding: 10px;
+}
+
 .last-update-info {
     font-size: 14px;
     color: #666;
@@ -662,8 +667,10 @@ function createFloatButton() {
         currentSubjectData: null,
         currentFieldUpdates: null,
         currentTagUpdates: null,
+        currentSeriesUpdate: null,
         currentWcode: null,
         currentTags: null,
+        currentSeries: null,
         currentCommitMessage: null,
         isCommitMessageLocked: localStorage.getItem('bgmIsCommitMessageLocked') === 'true' || false,
         lockedCommitMessage: localStorage.getItem('bgmLockedCommitMessage') || '',
@@ -724,6 +731,12 @@ function createFloatButton() {
                             <label>标签 (空格分隔):</label>
                             <input type="text" id="static-tags-input">
                         <div id="static-tags-diff-container" class="diff-container"></div>
+                        </div>
+                        <div class="series-edit-area" id="static-series-area">
+                            <label style="display: inline-flex; align-items: center;">
+                                <input type="checkbox" id="static-series-checkbox">
+                                标记为系列
+                            </label>
                         </div>
                         <div id="diff-error" style="color: #a72e2e; font-size: 14px; margin-top: 8px; display: none;"></div>
                         <div id="status-container" class="status-box"></div>
@@ -806,7 +819,8 @@ function createFloatButton() {
                 lockCommitBtn.title = '固定编辑摘要';
                 state.currentCommitMessage = generateCommitMessage(
                     state.currentFieldUpdates,
-                    state.currentTagUpdates
+                    state.currentTagUpdates,
+                    state.currentSeriesUpdate
                 );
                 commitInput.value = state.currentCommitMessage;
             }
@@ -839,6 +853,14 @@ function createFloatButton() {
                 updateConfirmButtonState();
             }
         });
+
+        const seriesCheckbox = document.getElementById('static-series-checkbox');
+        seriesCheckbox.addEventListener('change', (e) => {
+            if (state.currentView === 'processing' && state.currentSubjectData) {
+                state.currentSeries = e.target.checked;
+                updateConfirmButtonState();
+            }
+        });
     }
 
     function updateConfirmButtonState() {
@@ -861,17 +883,20 @@ function createFloatButton() {
 
         const currentWcode = document.getElementById('static-wcode-input').value;
         const currentTags = document.getElementById('static-tags-input').value.split(' ').filter(t => t);
+        const currentSeries = document.getElementById('static-series-checkbox').checked;
 
         const originalWcode = state.currentSubjectData.infobox || '';
         const originalTags = state.currentSubjectData.metaTags || [];
+        const originalSeries = state.currentSubjectData.series || false;
 
         const normalizedCurrentWcode = currentWcode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
         const normalizedOriginalWcode = originalWcode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
         const wcodeChanged = normalizedCurrentWcode !== normalizedOriginalWcode;
 
         const tagsChanged = !arraysEqual(currentTags, originalTags);
+        const seriesChanged = currentSeries !== originalSeries;
 
-        return wcodeChanged || tagsChanged;
+        return wcodeChanged || tagsChanged || seriesChanged;
     }
 
     function arraysEqual(a, b) {
@@ -928,11 +953,12 @@ function createFloatButton() {
                 </div>
 
                 <div class="form-group">
-                    <label for="setup-csv-file">CSV文件 (包含ID、要更新的字段列或tags列)</label>
+                    <label for="setup-csv-file">CSV文件 (包含ID、要更新的字段列、tags列或series列)</label>
                     <input type="file" id="setup-csv-file" accept=".csv">
                     ${state.csvData ? `<div style="margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 14px;">已加载CSV: ${state.csvData.length} 条记录</div>` : ''}
                     <p style="font-size: 13px; color: #666; margin-top: 5px;">
-                        tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签
+                        tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签<br>
+                        series列使用true或false表示是否标记为系列
                     </p>
                 </div>
                 ${state.csvData ? `
@@ -993,6 +1019,7 @@ function createFloatButton() {
         state.currentItemId = currentItem.id;
         state.currentWcode = null;
         state.currentTags = null;
+        state.currentSeries = null;
         state.currentCommitMessage = null;
 
         const coreContent = document.getElementById('core-content');
@@ -1006,10 +1033,13 @@ function createFloatButton() {
         const itemName = subjectData.name || '未知名称';
         const oldInfobox = subjectData.infobox || '';
         const oldTags = subjectData.metaTags || [];
+        const oldSeries = subjectData.series || false;
         const fieldUpdates = getFieldUpdates(currentItem, oldInfobox);
         const tagUpdates = getTagUpdates(currentItem, oldTags);
+        const seriesUpdate = getSeriesUpdate(currentItem, oldSeries);
         state.currentFieldUpdates = fieldUpdates;
         state.currentTagUpdates = tagUpdates;
+        state.currentSeriesUpdate = seriesUpdate;
 
         const lastUpdateEl = document.getElementById('static-last-update');
         const lastUpdateTime = historyData[0]?.createdAt || 0;
@@ -1046,7 +1076,7 @@ function createFloatButton() {
         const commitInput = document.getElementById('static-commit-input');
         const lockCommitBtn = document.getElementById('static-lock-commit');
 
-        const defaultCommitMsg = generateCommitMessage(fieldUpdates, tagUpdates);
+        const defaultCommitMsg = generateCommitMessage(fieldUpdates, tagUpdates, seriesUpdate);
         commitInput.value = state.isCommitMessageLocked ? state.lockedCommitMessage : defaultCommitMsg;
         lockCommitBtn.innerHTML = `<i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>`;
         lockCommitBtn.title = state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要';
@@ -1067,8 +1097,11 @@ function createFloatButton() {
         updateTagsDiffDisplay(oldTags, newTags, 'static-tags-diff-container');
         tagsDiffSection.style.display = 'block';
 
-        const statusContainer = document.getElementById('status-container');
-        statusContainer.style.display = 'none';
+        const seriesCheckbox = document.getElementById('static-series-checkbox');
+        // 应用CSV中的series设置，如果有的话
+        const finalSeriesValue = seriesUpdate.hasUpdate ? seriesUpdate.newValue : oldSeries;
+        seriesCheckbox.checked = finalSeriesValue;
+        state.currentSeries = finalSeriesValue;
 
         coreContent.innerHTML = `
             <div>
@@ -1209,11 +1242,14 @@ function createFloatButton() {
             case 'process-confirm-update':
                 const oldInfobox = subjectData.infobox || '';
                 const oldTags = subjectData.metaTags || [];
+                const oldSeries = subjectData.series || false;
 
                 const finalWcode = document.getElementById('static-wcode-input').value;
                 const finalTags = document.getElementById('static-tags-input').value.split(' ').filter(t => t);
+                const finalSeries = document.getElementById('static-series-checkbox').checked;
+
                 const commitMessage = document.getElementById('static-commit-input').value ||
-                    generateCommitMessage(state.currentFieldUpdates, state.currentTagUpdates);
+                    generateCommitMessage(state.currentFieldUpdates, state.currentTagUpdates, state.currentSeriesUpdate);
 
                 const hasUpdates = checkForUpdates();
 
@@ -1241,6 +1277,7 @@ function createFloatButton() {
                     itemId,
                     finalWcode,
                     finalTags,
+                    finalSeries,
                     itemName,
                     currentItem,
                     commitMessage,
@@ -1336,9 +1373,11 @@ function createFloatButton() {
         state.currentItemId = null;
         state.currentWcode = null;
         state.currentTags = null;
+        state.currentSeries = null;
         state.currentCommitMessage = null;
         state.currentFieldUpdates = null;
         state.currentTagUpdates = null;
+        state.currentSeriesUpdate = null;
     }
 
     function showProgressBar() {
@@ -1593,8 +1632,8 @@ function createFloatButton() {
             });
     }
 
-    // 核心修改：支持两种提交方式
-    function submitUpdate(itemId, newWcode, newTags, itemName, currentItem, commitMessage, onSuccess, onError) {
+    // 核心修改：支持两种提交方式，series为布尔值
+    function submitUpdate(itemId, newWcode, newTags, newSeries, itemName, currentItem, commitMessage, onSuccess, onError) {
         state.processing = true;
 
         // 根据选择的提交方式处理
@@ -1611,7 +1650,8 @@ function createFloatButton() {
                     commitMessage: commitMessage,
                     subject: {
                         infobox: newWcode,
-                        metaTags: newTags
+                        metaTags: newTags,
+                        series: newSeries // series为布尔值
                     }
                 })
             })
@@ -1644,7 +1684,7 @@ function createFloatButton() {
             formData.append('subject_summary', state.currentSubjectData.summary || '');
             formData.append('subject_meta_tags', newTags.join(' '));
             formData.append('editSummary', commitMessage);
-            formData.append('series', '1'); // 默认为系列
+            formData.append('series', newSeries ? '1' : '0'); // 系列状态，1为是，0为否
             formData.append('submit', '提交');
 
             // 转换为URL编码的字符串
@@ -1687,13 +1727,18 @@ function createFloatButton() {
         }
     }
 
-    function generateCommitMessage(fieldUpdates, tagUpdates) {
+    function generateCommitMessage(fieldUpdates, tagUpdates, seriesUpdate) {
         const updatedFields = Object.keys(fieldUpdates || {});
-        return [
-            updatedFields.length ? `更新${updatedFields.join('、')}` : '',
-            tagUpdates?.add.length ? `添加标签${tagUpdates.add.join('、')}` : '',
-            tagUpdates?.remove.length ? `删除标签${tagUpdates.remove.join('、')}` : ''
-        ].filter(s => s).join('；');
+        const messages = [];
+
+        if (updatedFields.length) messages.push(`更新${updatedFields.join('、')}`);
+        if (tagUpdates?.add.length) messages.push(`添加标签${tagUpdates.add.join('、')}`);
+        if (tagUpdates?.remove.length) messages.push(`删除标签${tagUpdates.remove.join('、')}`);
+        if (seriesUpdate?.hasUpdate) {
+            messages.push(seriesUpdate.newValue ? '标记为系列' : '取消系列标记');
+        }
+
+        return messages.filter(s => s).join('；') || '更新条目信息';
     }
 
     function updateDiffDisplay(oldText, newText, containerId) {
@@ -1741,7 +1786,7 @@ function createFloatButton() {
     function getFieldUpdates(csvItem, oldInfobox) {
         const updates = {};
         Object.keys(csvItem).forEach(key => {
-            if (!['id', 'tags'].includes(key.toLowerCase())) {
+            if (!['id', 'tags', 'series'].includes(key.toLowerCase())) {
                 updates[key] = csvItem[key];
             }
         });
@@ -1764,6 +1809,22 @@ function createFloatButton() {
         });
 
         return { add, remove };
+    }
+
+    function getSeriesUpdate(csvItem, oldSeries) {
+        // 检查CSV中是否有series列
+        if (csvItem.series === undefined || csvItem.series === null || csvItem.series === '') {
+            return { hasUpdate: false };
+        }
+
+        // 解析CSV中的series值，支持true/false, 1/0, yes/no
+        const seriesValue = csvItem.series.trim().toLowerCase();
+        const newValue = seriesValue === 'true' || seriesValue === '1' || seriesValue === 'yes';
+
+        return {
+            hasUpdate: newValue !== oldSeries,
+            newValue: newValue
+        };
     }
 
     function updateInfobox(oldInfobox, fieldUpdates) {
