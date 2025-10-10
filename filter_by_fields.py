@@ -104,9 +104,6 @@ TYPE_STAFF_MAP = {
     6: REAL_STAFF
 }
 
-# 【修改1：删除全局关系名-ID映射，改为按类型动态匹配】
-# 原全局cn_to_relation_id定义已移除
-
 
 def parse_number(value):
     """从字符串中提取数字"""
@@ -226,7 +223,7 @@ def extract_field_value(data, field_name):
 
 
 def get_relation_count(subject_id, rel_cn, relations_data, subject_type):
-    """统计指定条目的指定关系数量（按条目类型过滤关系）-【修改2：移除全局cn_to_relation_id参数】"""
+    """统计指定条目的指定关系数量（按条目类型过滤关系）"""
     # 1. 根据条目类型获取对应关系表，避免跨类型统计
     type_relation_map = {
         1: BOOK_RELATIONS,    # 书籍
@@ -235,7 +232,7 @@ def get_relation_count(subject_id, rel_cn, relations_data, subject_type):
         4: GAME_RELATIONS,    # 游戏
         6: REAL_RELATIONS     # 三次元
     }
-    # 非目标类型（如动画）直接返回0，避免统计无关关系
+    # 非目标类型直接返回0
     if subject_type not in type_relation_map:
         return 0
     target_relation_map = type_relation_map[subject_type]
@@ -247,7 +244,7 @@ def get_relation_count(subject_id, rel_cn, relations_data, subject_type):
             rel_id = id
             break
     if rel_id is None:
-        return 0  # 非当前类型的关系（如给动画统计“单行本”），返回0
+        return 0  # 非当前类型的关系，返回0
     
     # 3. 统计符合条件的关系数量
     subject_rels = relations_data.get(subject_id, [])
@@ -259,7 +256,7 @@ def get_relation_count(subject_id, rel_cn, relations_data, subject_type):
 
 
 def matches_condition(value, condition, data=None, relations_data=None, count_results=None):
-    """检查条件匹配，记录count统计结果-【修改3：调用get_relation_count时移除cn_to_relation_id参数】"""
+    """检查条件匹配，记录count统计结果"""
     if not condition:
         return True
 
@@ -274,7 +271,6 @@ def matches_condition(value, condition, data=None, relations_data=None, count_re
             print("警告：当前条目无ID，无法统计关系数量")
             rel_count = 0
         else:
-            # 传递subject_type参数，按类型统计关系-【修改点：移除cn_to_relation_id参数】
             rel_count = get_relation_count(subject_id, rel_cn, relations_data, subject_type)
         count_key = f"count_{rel_cn}"
         count_results[count_key] = rel_count
@@ -309,19 +305,20 @@ def matches_condition(value, condition, data=None, relations_data=None, count_re
     if condition.startswith('re:'):
         regex_pattern = condition[3:]
         try:
-            b = re.search(regex_pattern, value)
-            a = b is not None
-            return a
+            return re.search(regex_pattern, value) is not None
         except re.error:
             print(f"警告：正则表达式 '{regex_pattern}' 无效，视为普通文本匹配")
             return condition in value
     return condition in value
 
 
-def check_related_subject(related_data, original_data, related_conditions):
-    """检查关联条目条件"""
+def check_related_subject(related_data, original_data, related_conditions, match_mode):
+    """检查关联条目条件，支持any/all模式"""
     if not related_conditions or not related_data:
         return True
+    
+    # 收集每个条件的匹配结果
+    cond_results = []
     for field, condition in related_conditions:
         related_value = extract_field_value(related_data, field)
         original_ref_pattern = re.compile(r'^\{\{\{\s*(\w+)\s*\}\}\}$')
@@ -329,17 +326,16 @@ def check_related_subject(related_data, original_data, related_conditions):
         if original_ref_match and original_data is not None:
             ref_field = original_ref_match.group(1)
             ref_value = extract_field_value(original_data, ref_field)
-            if related_value != ref_value:
-                return False
+            cond_results.append(related_value == ref_value)
             continue
-        if not matches_condition(related_value, condition, related_data):
-            return False
-    return True
+        cond_results.append(matches_condition(related_value, condition, related_data))
+    
+    # 根据模式返回结果
+    return any(cond_results) if match_mode == 'any' else all(cond_results)
 
 
 def check_staff_conditions(subject_id, staff_data, staff_filters, subject_type):
-    """检查人物筛选条件（根据条目类型获取对应职位表）"""
-    # 如果没有staff筛选条件或没有staff数据，直接返回True
+    """检查人物筛选条件，支持any/all模式"""
     if not staff_filters or not staff_data:
         return True
         
@@ -356,8 +352,8 @@ def check_staff_conditions(subject_id, staff_data, staff_filters, subject_type):
     if not subject_staffs:
         return False  # 无对应staff，不满足条件
     
-    # 逐个检查staff筛选条件（每个条件含：职位名、匹配模式、字段名、条件）
-    for pos_cn, match_mode, field, cond in staff_filters:
+    # 逐个检查staff筛选条件（每个条件含：职位名、匹配模式any/all、条件列表）
+    for pos_cn, match_mode, staff_conds in staff_filters:
         # 根据当前条目类型查找职位ID
         pos_id = cn_to_position_id.get(pos_cn)
         if pos_id is None:
@@ -368,53 +364,55 @@ def check_staff_conditions(subject_id, staff_data, staff_filters, subject_type):
         matched_staffs = [staff for staff in subject_staffs if staff.get('position') == pos_id]
         staff_count = len(matched_staffs)  # 统计该职位的人物数量
         
-        # 处理{{count:职位名}}语法 - 统计当前条目该职位的人物数量
-        count_pattern = re.compile(r'\{\{count:\s*([^}]+?)\s*\}\}')
-        count_match = count_pattern.search(cond)
-        processed_cond = cond
-        if count_match:
-            target_pos_cn = count_match.group(1).strip()
-            # 查找目标职位ID（基于当前条目类型）
-            target_pos_id = cn_to_position_id.get(target_pos_cn)
-            if target_pos_id is None:
-                print(f"警告：类型{subject_type}中不存在职位'{target_pos_cn}'，统计数量为0")
-                target_count = 0
+        # 处理数量统计条件
+        count_cond = None
+        normal_conds = []
+        for field, cond in staff_conds:
+            if field == 'count':
+                count_cond = cond
             else:
-                # 统计目标职位的人物数量
-                target_count = sum(1 for staff in subject_staffs if staff.get('position') == target_pos_id)
-            # 替换条件中的count占位符
-            processed_cond = count_pattern.sub(str(target_count), cond)
+                normal_conds.append((field, cond))
         
-        # 如果字段是count，则直接使用统计的数量进行判断
-        if field == 'count':
-            staff_value = str(staff_count)
-            if not matches_condition(staff_value, processed_cond):
+        # 数量条件判断
+        if count_cond:
+            processed_cond = count_cond
+            count_pattern = re.compile(r'\{\{count:\s*([^}]+?)\s*\}\}')
+            count_match = count_pattern.search(processed_cond)
+            if count_match:
+                target_pos_cn = count_match.group(1).strip()
+                target_pos_id = cn_to_position_id.get(target_pos_cn)
+                target_count = sum(1 for staff in subject_staffs if staff.get('position') == target_pos_id) if target_pos_id else 0
+                processed_cond = count_pattern.sub(str(target_count), processed_cond)
+            if not matches_condition(str(staff_count), processed_cond):
                 return False
-            continue
         
-        # 常规字段检查
-        match_results = []
+        # 多字段条件判断
+        staff_match_results = []
         for staff in matched_staffs:
-            staff_value = str(staff.get(field, '')).strip()
-            is_matched = matches_condition(staff_value, processed_cond, staff)
-            match_results.append(is_matched)
+            cond_match = True
+            for field, cond in normal_conds:
+                staff_value = str(staff.get(field, '')).strip()
+                if not matches_condition(staff_value, cond, staff):
+                    cond_match = False
+                    break
+            staff_match_results.append(cond_match)
         
-        # 根据匹配模式判断结果（any：任意满足；all：全部满足）
-        if match_mode == 'any' and not any(match_results):
+        # 根据匹配模式判断结果
+        if match_mode == 'any' and not any(staff_match_results):
             return False  # 任意满足模式：无一个满足则不通过
-        if match_mode == 'all' and not all(match_results):
+        if match_mode == 'all' and not all(staff_match_results):
             return False  # 全部满足模式：有一个不满足则不通过
     
     return True
 
 
 def get_user_filters():
-    """获取用户筛选条件-【修改4：暂存关系名而非直接转ID，移除全局cn_to_relation_id依赖】"""
+    """获取用户筛选条件"""
     filters = []
-    relation_filters = []
+    relation_filters = []  # 结构：(关系名, 条件列表, 是否否定, 匹配模式any/all)
     tag_filters = []  # 普通标签筛选，格式：(标签名, 是否排除)
     meta_tag_filters = []  # 元标签筛选，格式：(标签名, 是否排除)
-    staff_filters = []  # 结构：(职位名, 匹配模式any/all, 字段名, 条件)
+    staff_filters = []  # 结构：(职位名, 匹配模式any/all, 条件列表)
     i = 1
     print("请添加筛选条件（输入空行结束添加）")
     print("格式说明：")
@@ -426,14 +424,17 @@ def get_user_filters():
     print("- 日期比较：字段名:早于:日期 或 字段名:晚于:日期（例：发售日:晚于:2023-01-01）")
     print("- 字段引用自身：字段名:{{目标字段名}}（例：开始:{{发售日}}）")
     print("- 关系数量统计：字段名:比较符:{{count:中文关系名}}（例：册数:小于:{{count:单行本}}）")
-    print("- 关系筛选（单个条件）：中文关系名:字段名:条件（例：单行本:发售日:re:\\d{4}）")
-    print("- 关系筛选（多个条件）：relation:中文关系名（回车后输入条件，空行结束)")
-    print("- 关系筛选（不含该关系）：relation:!中文关系名")
+    print("- 条目关联（单行any模式）：关系名:字段名:条件（例：单行本:发售日:re:\\d{4}，'其他'关系不可用）")
+    print("- 条目关联（单行all模式）：relation:关系名:all:字段名:条件（例：relation:单行本:all:出版社:角川）")
+    print("- 条目关联（多行any模式）：直接输入关系名（例：单行本，回车后输入条件，'其他'关系不可用）")
+    print("- 条目关联（多行all模式）：relation:关系名:all（回车后输入条件，例：relation:其他:all）")
+    print("- 条目关联（不含该关系）：relation:!关系名")
     print("- 普通标签筛选：tag:标签名 或 tag:!标签名（例：tag:轻小说、tag:!动画）")
     print("- 元标签筛选：meta_tag:标签名 或 meta_tag:!标签名（例：meta_tag:TV、meta_tag:!日本）")
-    print("- 人物筛选（任意满足）：staff:中文职位名:any:字段名:条件（例：staff:原画:any:appear_eps:re:.*）")
-    print("- 人物筛选（全部满足）：staff:中文职位名:all:字段名:条件（例：staff:脚本:all:person_id:100）")
-    print("- 职位人物数量统计：staff:中文职位名:any:count:大于:3（例：staff:声优:any:count:大于:5 表示声优人数大于5）")
+    print("- 人物筛选（单行any模式）：staff:职位名:字段名:条件（例：staff:原画:appear_eps:re:.*）")
+    print("- 人物筛选（单行all模式）：staff:职位名:all:字段名:条件（例：staff:脚本:all:person_id:100）")
+    print("- 人物筛选（多行any模式）：staff:职位名（回车后输入条件）")
+    print("- 人物筛选（多行all模式）：staff:职位名:all（回车后输入条件）")
 
     while True:
         condition_str = input(f"\n条件 {i} (输入空行结束)：").strip()
@@ -452,102 +453,154 @@ def get_user_filters():
             i += 1
             continue
 
-        # 处理staff筛选条件（staff:职位名:any/all:字段名:条件）
+        # 处理staff筛选条件
         if condition_str.startswith('staff:'):
-            parts = condition_str.split(':', 4)  
-            if len(parts) != 5:
-                print("格式错误：staff筛选需满足 staff:中文职位名:any/all:字段名:条件（例：staff:脚本:any:person_id:100）")
+            parts = condition_str.split(':', 4)  # 支持 staff:职位:all:字段:条件 或 staff:职位:all
+            if len(parts) < 2:
+                print("格式错误：staff筛选需满足 staff:职位名 或 staff:职位名:all")
                 continue
-            _, pos_cn, match_mode, field, cond = [p.strip() for p in parts]
-            if match_mode not in ['any', 'all']:
-                print("错误：匹配模式仅支持 'any'（任意满足） 或 'all'（全部满足）")
+                
+            _, pos_cn = parts[0], parts[1].strip()
+            if not pos_cn:
+                print("错误：职位名不能为空")
                 continue
-            staff_filters.append((pos_cn, match_mode, field, cond))
+                
+            # 解析模式（默认any，含:all则为all）
+            match_mode = 'any'
+            remaining_parts = []
+            if len(parts) >= 3 and parts[2].strip() == 'all':
+                match_mode = 'all'
+                remaining_parts = parts[3:] if len(parts) >= 4 else []
+            else:
+                remaining_parts = parts[2:] if len(parts) >= 3 else []
+            
+            # 处理单行模式（staff:导演:all:name:新房昭之）
+            if remaining_parts and ':' in ''.join(remaining_parts):
+                if len(remaining_parts) < 2:
+                    print("格式错误：单行模式需满足 staff:职位名:字段:条件 或 staff:职位名:all:字段:条件")
+                    continue
+                field, cond = remaining_parts[0].strip(), ':'.join(remaining_parts[1:]).strip()
+                staff_filters.append((pos_cn, match_mode, [(field, cond)]))
+                print(f"已添加人物筛选：{pos_cn}（{match_mode}模式），条件：{field}:{cond}")
+                i += 1
+                continue
+            
+            # 处理多行模式（staff:导演:all 后接多行条件）
+            print(f"设置'{pos_cn}'的人物条件（格式：字段名:条件，空行结束），匹配模式：{match_mode}")
+            staff_conds = []
+            while True:
+                related_cond = input("人物条件: ").strip()
+                if not related_cond:
+                    break
+                if ':' not in related_cond:
+                    print("格式错误：条件需包含冒号（字段名:条件），跳过")
+                    continue
+                field, cond = [p.strip() for p in related_cond.split(':', 1)]
+                staff_conds.append((field, cond))
+            
+            if not staff_conds:
+                print(f"已添加人物筛选：{pos_cn}（{match_mode}模式，无附加条件）")
+            else:
+                print(f"已添加人物筛选：{pos_cn}（{match_mode}模式），共{len(staff_conds)}个条件")
+            staff_filters.append((pos_cn, match_mode, staff_conds))
             i += 1
             continue
 
-        # 处理relation:/tag:/meta_tag:前缀筛选
-        if condition_str.startswith(('relation:', 'tag:', 'meta_tag:')):
-            key_part, value_part = [p.strip() for p in condition_str.split(':', 1)]
-            if key_part == 'relation':
-                negate = False
-                rel_cn = value_part
-                if rel_cn.startswith('!'):
-                    negate = True
-                    rel_cn = rel_cn[1:].strip()
-                # 【修改点1：校验关系名是否存在于任意关系表，而非依赖全局映射】
-                is_valid_rel = False
-                for rel_dict in [ANIME_RELATIONS, BOOK_RELATIONS, MUSIC_RELATIONS, GAME_RELATIONS, REAL_RELATIONS]:
-                    if rel_cn in rel_dict.values():
-                        is_valid_rel = True
-                        break
-                if not is_valid_rel:
-                    print(f"错误：未找到关系名称 '{rel_cn}'")
-                    continue
-                # 【修改点2：暂存关系名，后续按类型动态匹配ID】
-                print(f"设置'{rel_cn}'的关联条件（格式：字段名:条件，空行结束）:")
-                related_conditions = []
-                while True:
-                    related_cond = input("关联条件: ").strip()
-                    if not related_cond:
-                        break
-                    if ':' not in related_cond:
-                        print("格式错误：关联条件需包含冒号（字段名:条件），跳过")
-                        continue
-                    field, cond = [p.strip() for p in related_cond.split(':', 1)]
-                    related_conditions.append((field, cond))
-                # 存储（关系名, 关联条件, 是否否定）
-                relation_filters.append((rel_cn, related_conditions, negate))
-                i += 1
+        # 处理无relation:前缀的关系筛选（仅允许非"其他"关系）
+        all_relations = [rel for rel_dict in [ANIME_RELATIONS, BOOK_RELATIONS, MUSIC_RELATIONS, GAME_RELATIONS, REAL_RELATIONS] for rel in rel_dict.values()]
+        if condition_str in all_relations:
+            rel_cn = condition_str
+            # 禁止"其他"关系省略relation:
+            if rel_cn == '其他':
+                print("错误：关系'其他'不可省略relation:，请使用 relation:其他 格式")
                 continue
-            elif key_part == 'tag':
-                tag_part = value_part
-                negate = False
-                if tag_part.startswith('!'):
-                    negate = True
-                    tag_name = tag_part[1:].strip()
-                else:
-                    tag_name = tag_part.strip()
-                if not tag_name:
-                    print("错误：标签名称不能为空")
+            # 默认为any模式
+            print(f"设置'{rel_cn}'的关联条件（格式：字段名:条件，空行结束），匹配模式：any")
+            rel_conds = []
+            while True:
+                related_cond = input("关联条件: ").strip()
+                if not related_cond:
+                    break
+                if ':' not in related_cond:
+                    print("格式错误：条件需包含冒号（字段名:条件），跳过")
                     continue
-                tag_filters.append((tag_name, negate))
-                i += 1
-                continue
-            elif key_part == 'meta_tag':
-                tag_part = value_part
-                negate = False
-                if tag_part.startswith('!'):
-                    negate = True
-                    tag_name = tag_part[1:].strip()
-                else:
-                    tag_name = tag_part.strip()
-                if not tag_name:
-                    print("错误：元标签名称不能为空")
-                    continue
-                meta_tag_filters.append((tag_name, negate))
-                i += 1
-                continue
+                field, cond = [p.strip() for p in related_cond.split(':', 1)]
+                rel_conds.append((field, cond))
+            relation_filters.append((rel_cn, rel_conds, False, 'any'))
+            i += 1
+            continue
 
-        # 处理关系筛选（中文关系名:字段:条件）
-        parts = condition_str.split(':', 2)
-        rel_cn_candidate = parts[0].strip()
-        # 【修改点3：校验关系名合法性，暂存关系名】
-        is_valid_rel = False
-        for rel_dict in [ANIME_RELATIONS, BOOK_RELATIONS, MUSIC_RELATIONS, GAME_RELATIONS, REAL_RELATIONS]:
-            if rel_cn_candidate in rel_dict.values():
-                is_valid_rel = True
-                break
-        if is_valid_rel:
-            if len(parts) == 1 or (len(parts) >= 2 and not parts[1].strip()):
-                relation_filters.append((rel_cn_candidate, [], False))
+        # 处理带relation:前缀的筛选
+        if condition_str.startswith('relation:'):
+            parts = condition_str.split(':', 4)  # 拆分 relation:关系:all:字段:条件
+            if len(parts) < 2:
+                print("格式错误：relation筛选需满足 relation:关系名 或 relation:关系名:all 或 relation:!关系名")
+                continue
+                
+            _, rel_part = parts[0], parts[1].strip()
+            negate = False
+            rel_cn = rel_part
+            
+            # 处理否定关系（relation:!关系名）
+            if rel_part.startswith('!'):
+                negate = True
+                rel_cn = rel_part[1:].strip()
+                if not rel_cn:
+                    print("错误：关系名不能为空")
+                    continue
+                # 默认为any模式（否定模式下模式不影响结果）
+                relation_filters.append((rel_cn, [], negate, 'any'))
+                print(f"已添加关系筛选：不包含'{rel_cn}'")
                 i += 1
                 continue
-            if len(parts) == 3:
-                field, cond = [p.strip() for p in parts[1:]]
-                relation_filters.append((rel_cn_candidate, [(field, cond)], False))
+            
+            # 校验关系名合法性
+            is_valid_rel = any(rel_cn in rel_dict.values() for rel_dict in [ANIME_RELATIONS, BOOK_RELATIONS, MUSIC_RELATIONS, GAME_RELATIONS, REAL_RELATIONS])
+            if not is_valid_rel:
+                print(f"错误：未找到关系名称 '{rel_cn}'")
+                continue
+            
+            # 解析模式（默认any，含:all则为all）
+            match_mode = 'any'
+            remaining_parts = []
+            if len(parts) >= 3 and parts[2].strip() == 'all':
+                match_mode = 'all'
+                remaining_parts = parts[3:] if len(parts) >= 4 else []
+            else:
+                remaining_parts = parts[2:] if len(parts) >= 3 else []
+            
+            # 处理单行模式（relation:单行本:all:发售日:re:\d{4}）
+            rel_conds = []
+            if remaining_parts and ':' in ''.join(remaining_parts):
+                if len(remaining_parts) < 2:
+                    print("格式错误：单行模式需满足 relation:关系名:字段:条件 或 relation:关系名:all:字段:条件")
+                    continue
+                field, cond = remaining_parts[0].strip(), ':'.join(remaining_parts[1:]).strip()
+                rel_conds.append((field, cond))
+                relation_filters.append((rel_cn, rel_conds, False, match_mode))
+                print(f"已添加关系筛选：{rel_cn}（{match_mode}模式），条件：{field}:{cond}")
                 i += 1
                 continue
+            
+            # 处理多行模式（relation:单行本:all 后接多行条件）
+            print(f"设置'{rel_cn}'的关联条件（格式：字段名:条件，空行结束），匹配模式：{match_mode}")
+            while True:
+                related_cond = input("关联条件: ").strip()
+                if not related_cond:
+                    break
+                if ':' not in related_cond:
+                    print("格式错误：条件需包含冒号（字段名:条件），跳过")
+                    continue
+                field, cond = [p.strip() for p in related_cond.split(':', 1)]
+                rel_conds.append((field, cond))
+            
+            if not rel_conds:
+                print(f"已添加关系筛选：{rel_cn}（{match_mode}模式，无附加条件）")
+            else:
+                print(f"已添加关系筛选：{rel_cn}（{match_mode}模式），共{len(rel_conds)}个条件")
+            relation_filters.append((rel_cn, rel_conds, False, match_mode))
+            i += 1
+            continue
 
         # 处理普通字段/全局字段筛选
         if ':' not in condition_str:
@@ -591,13 +644,14 @@ def get_relevant_fields(filters, relation_filters, staff_filters):
             relevant_fields.add(field)
     
     # 添加关系筛选中涉及的字段
-    for _, related_conditions, _ in relation_filters:
+    for _, related_conditions, _, _ in relation_filters:
         for field, _ in related_conditions:
             relevant_fields.add(field)
     
     # 添加staff筛选中涉及的字段
-    for _, _, field, _ in staff_filters:
-        relevant_fields.add(field)
+    for _, _, staff_conds in staff_filters:
+        for field, _ in staff_conds:
+            relevant_fields.add(field)
     
     # 处理全局匹配中实际匹配的字段引用
     for field, cond in filters:
@@ -612,14 +666,14 @@ def get_relevant_fields(filters, relation_filters, staff_filters):
 
 def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, all_subjects, count_fields, 
                   tag_filters, meta_tag_filters, staff_filters, staff_data):
-    """生成CSV文件-【修改5：适配关系名作为键，而非ID】"""
+    """生成CSV文件"""
     related_fields = set()
-    for rel_cn, related_conditions, _ in relation_filters:
+    for rel_cn, related_conditions, _, _ in relation_filters:
         for field, _ in related_conditions:
             related_fields.add(field)
     related_fields = list(related_fields)
 
-    # 【修改点1：按关系名统计最大关联条目数】
+    # 按关系名统计最大关联条目数
     max_relations = defaultdict(int)
     for result in results:
         for rel_cn, related_ids in result['relations'].items():
@@ -637,12 +691,18 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
         headers.append("匹配的元标签")
 
     # 添加职位人数统计列
-    staff_count_headers = [f"staff_{pos_cn}_count" for pos_cn, _, _, _ in staff_filters]
+    staff_count_headers = [f"staff_{pos_cn}_count" for pos_cn, _, _ in staff_filters]
     headers.extend(staff_count_headers)
 
+    # 添加模式说明列
+    if relation_filters:
+        headers.append("关系匹配模式说明")
+    if staff_filters:
+        headers.append("人物匹配模式说明")
+
     num_to_type_cn = {v: k for k, v in TYPE_CN_TO_NUM.items()}
-    # 【修改点2：按关系名生成关联字段表头】
-    for rel_cn, related_conditions, negate in relation_filters:
+    # 按关系名生成关联字段表头
+    for rel_cn, related_conditions, negate, _ in relation_filters:
         prefix = "no_" if negate else ""
         rel_base = f"{prefix}{rel_cn}"
         max_cnt = max_relations[rel_cn]
@@ -654,7 +714,11 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
 
     # 添加staff相关列
     if staff_filters and staff_data:
-        for pos_cn, _, field, _ in staff_filters:
+        for pos_cn, _, staff_conds in staff_filters:
+            fields = {field for field, _ in staff_conds if field != 'count'}
+            if not fields:
+                continue
+                
             max_cnt = 0
             for result in results:
                 sid = result['id']
@@ -670,9 +734,10 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
                 count = sum(1 for staff in subject_staffs if staff.get('position') == pos_id)
                 max_cnt = max(max_cnt, count)
             
-            for idx in range(1, max_cnt + 1):
-                headers.append(f"staff_{pos_cn}_{idx}_{field}")
-                headers.append(f"staff_{pos_cn}_{idx}_person_id")
+            for field in fields:
+                for idx in range(1, max_cnt + 1):
+                    headers.append(f"staff_{pos_cn}_{idx}_{field}")
+                    headers.append(f"staff_{pos_cn}_{idx}_person_id")
 
     # 写入CSV行数据
     with open(output_csv_file, 'w', encoding='utf-8-sig', newline='') as csvfile:
@@ -713,7 +778,7 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
                 cn_to_position_id = {v: k for k, v in staff_positions.items()}
                 subject_staffs = staff_data.get(sid, []) if staff_data else []
                 
-                for pos_cn, _, _, _ in staff_filters:
+                for pos_cn, _, _ in staff_filters:
                     pos_id = cn_to_position_id.get(pos_cn)
                     if pos_id is None:
                         row.append("N/A（职位不存在）")
@@ -724,8 +789,16 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
                 for _ in staff_filters:
                     row.append("N/A（无数据）")
 
-            # 【修改点3：按关系名写入关联数据】
-            for rel_cn, related_conditions, negate in relation_filters:
+            # 添加模式说明
+            if relation_filters:
+                rel_mode_desc = "; ".join([f"{rel_cn}:{mode}" for rel_cn, _, _, mode in relation_filters])
+                row.append(rel_mode_desc)
+            if staff_filters:
+                staff_mode_desc = "; ".join([f"{pos_cn}:{mode}" for pos_cn, mode, _ in staff_filters])
+                row.append(staff_mode_desc)
+
+            # 按关系名写入关联数据
+            for rel_cn, related_conditions, negate, _ in relation_filters:
                 prefix = "no_" if negate else ""
                 rel_base = f"{prefix}{rel_cn}"
                 related_ids = result['relations'].get(rel_cn, [])
@@ -747,7 +820,11 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
                 cn_to_position_id = {v: k for k, v in staff_positions.items()}
                 subject_staffs = staff_data.get(sid, []) if staff_data else []
                 
-                for pos_cn, _, field, _ in staff_filters:
+                for pos_cn, _, staff_conds in staff_filters:
+                    fields = {field for field, _ in staff_conds if field != 'count'}
+                    if not fields:
+                        continue
+                        
                     pos_id = cn_to_position_id.get(pos_cn)
                     if pos_id is None:
                         max_cnt = 0
@@ -760,9 +837,10 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
                             if cnp.get(pos_cn) is not None:
                                 max_cnt = 1
                                 break
-                        for idx in range(1, max_cnt + 1):
-                            row.append("N/A（职位不存在）")
-                            row.append("")
+                        for field in fields:
+                            for idx in range(1, max_cnt + 1):
+                                row.append("N/A（职位不存在）")
+                                row.append("")
                         continue
                         
                     matched_staffs = [staff for staff in subject_staffs if staff.get('position') == pos_id]
@@ -775,12 +853,13 @@ def write_csv_file(output_csv_file, results, relevant_fields, relation_filters, 
                         cnt = sum(1 for s in ss if s.get('position') == pos_id)
                         max_cnt = max(max_cnt, cnt)
                     
-                    for idx in range(1, max_cnt + 1):
-                        staff = matched_staffs[idx-1] if (idx-1) < len(matched_staffs) else None
-                        val = str(staff.get(field, '')) if staff else ""
-                        row.append(val)
-                        pid = str(staff.get('person_id', '')) if staff else ""
-                        row.append(pid)
+                    for field in fields:
+                        for idx in range(1, max_cnt + 1):
+                            staff = matched_staffs[idx-1] if (idx-1) < len(matched_staffs) else None
+                            val = str(staff.get(field, '')) if staff else ""
+                            row.append(val)
+                            pid = str(staff.get('person_id', '')) if staff else ""
+                            row.append(pid)
 
             writer.writerow(row)
 
@@ -800,7 +879,7 @@ def check_files_overwrite(output_file, output_csv_file):
 
 def needs_full_load(relation_filters):
     """检查是否需要预加载所有subject数据"""
-    for rel_cn, related_conditions, negate in relation_filters:
+    for rel_cn, related_conditions, negate, _ in relation_filters:
         if not negate and related_conditions:
             return True
     return False
@@ -881,10 +960,10 @@ def main():
                 print(f"   条件 {j}: 关联数量比较 '{cond}'")
             else:
                 print(f"   条件 {j}: 包含文本 '{cond}'")
-    # 关系条件-【修改：显示关系名而非ID】
+    # 关系条件
     rel_idx = len(unique_fields) + 1
-    for i, (rel_cn, rel_conds, negate) in enumerate(relation_filters, rel_idx):
-        print(f"{i}. 关系: {'不包含' if negate else '包含'} {rel_cn}")
+    for i, (rel_cn, rel_conds, negate, rel_mode) in enumerate(relation_filters, rel_idx):
+        print(f"{i}. 关系: {'不包含' if negate else '包含'} {rel_cn}（{rel_mode}模式）")
         if rel_conds:
             print("   关联条目条件:")
             for j, (field, cond) in enumerate(rel_conds, 1):
@@ -911,10 +990,20 @@ def main():
     
     # staff条件
     staff_idx = meta_tag_idx + len(meta_tag_filters)
-    for i, (pos_cn, match_mode, field, cond) in enumerate(staff_filters, staff_idx):
+    for i, (pos_cn, match_mode, staff_conds) in enumerate(staff_filters, staff_idx):
         mode_desc = "任意满足" if match_mode == 'any' else "全部满足"
-        count_flag = "（数量统计）" if field == 'count' else ""
-        print(f"{i}. 人物筛选: 职位 '{pos_cn}' {mode_desc}，字段 '{field}' {count_flag}满足条件 '{cond}'")
+        print(f"{i}. 人物筛选: 职位 '{pos_cn}'（{mode_desc}模式）")
+        if staff_conds:
+            print("   人物条件:")
+            for j, (field, cond) in enumerate(staff_conds, 1):
+                count_flag = "（数量统计）" if field == 'count' else ""
+                if cond.startswith('re:'):
+                    print(f"     条件 {j}: 字段 '{field}'{count_flag} 正则匹配 '{cond[3:]}'")
+                elif cond.startswith(('大于:', '小于:', '早于:', '晚于:')):
+                    op, val = cond.split(':', 1)
+                    print(f"     条件 {j}: 字段 '{field}'{count_flag} {op} '{val.strip()}'")
+                else:
+                    print(f"     条件 {j}: 字段 '{field}'{count_flag} 包含文本 '{cond}'")
     
     print("====================\n")
 
@@ -1045,7 +1134,7 @@ def main():
                 if not all_matched:
                     continue
 
-                # 3. 关系条件检查-【修改6：按主条目类型动态匹配关系ID】
+                # 3. 关系条件检查
                 relation_values = {}
                 if relation_filters and all_matched:
                     subject_rels = relations_data.get(int(sid), []) if relations_data else []
@@ -1062,7 +1151,7 @@ def main():
                         all_matched = False
                         continue
                     
-                    for rel_cn, rel_conds, negate in relation_filters:
+                    for rel_cn, rel_conds, negate, rel_mode in relation_filters:
                         # 从当前类型关系表中匹配关系ID
                         rel_id = None
                         for id, name in current_rel_map.items():
@@ -1078,29 +1167,29 @@ def main():
                             break
                         
                         # 检查关联条目
-                        matched = False
                         related_ids = []
+                        total_rel = len([r for r in subject_rels if r['relation_type'] == rel_id])
                         for rel in subject_rels:
                             if rel['relation_type'] != rel_id:
                                 continue
-                            if negate:
-                                matched = True
-                                break
                             related_sid = str(rel['related_subject_id'])
                             related_data = all_subjects.get(related_sid) if all_subjects else None
-                            if related_data and check_related_subject(related_data, data, rel_conds):
+                            if related_data and check_related_subject(related_data, data, rel_conds, rel_mode):
                                 related_ids.append(related_sid)
-                                matched = True
+                        
+                        # 按模式和否定逻辑判断
                         if negate:
-                            if matched:
+                            if len(related_ids) > 0:
                                 all_matched = False
                                 break
-                            relation_values[rel_cn] = []
                         else:
-                            if not matched:
+                            if rel_mode == 'any' and len(related_ids) == 0:
                                 all_matched = False
                                 break
-                            relation_values[rel_cn] = related_ids
+                            if rel_mode == 'all' and len(related_ids) != total_rel:
+                                all_matched = False
+                                break
+                        relation_values[rel_cn] = related_ids
                 if not all_matched:
                     continue
 
