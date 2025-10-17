@@ -35,7 +35,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests tqdm beautifulsoup4 bgm-tv-wiki
 
-      # 关键步骤：用Shell命令生成日期（20251017格式），存入TAG_NAME
       - name: 生成日期Tag
         run: |
           echo "TAG_NAME=$(date -u +'%Y%m%d')" >> $GITHUB_ENV
@@ -46,8 +45,8 @@ jobs:
       - name: 检查重复条目
         run: python find_duplicate_isbns.py
 
-      - name: 生成Alias JSON
-        run: python parse_bangumi_person_jsonlines.py
+      - name: 生成别名JSON
+        run: python person_alias.py
 
       - name: gzip压缩
         run: gzip -9 -c ${{ env.ALIAS_JSON }} > ${{ env.ALIAS_GZ }}
