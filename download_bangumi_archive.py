@@ -5,7 +5,7 @@ import zipfile
 from tqdm import tqdm
 from datetime import datetime
 
-# 固定解压目标文件夹
+# 固定解压目标文件夹（自动/手动模式均解压至此）
 TARGET_FOLDER = "bangumi_archive"
 # 从环境变量判断是否为自动化模式（默认手动模式）
 AUTO_MODE = os.getenv("AUTO_MODE", "false").lower() == "true"
@@ -13,7 +13,7 @@ AUTO_MODE = os.getenv("AUTO_MODE", "false").lower() == "true"
 def get_latest_info():
     """从aux/latest.json获取最新导出文件信息"""
     latest_json_url = "https://raw.githubusercontent.com/bangumi/Archive/master/aux/latest.json"
-    
+
     try:
         response = requests.get(latest_json_url)
         response.raise_for_status()
@@ -42,28 +42,36 @@ def format_date(date_str):
         return date_str
 
 def download_file(url, save_path):
-    """下载文件并显示进度条"""
+    """下载文件，自动模式无进度条，手动模式显示进度条"""
     try:
         response_head = requests.head(url)
         file_size = int(response_head.headers.get('content-length', 0))
-        
+
         with requests.get(url, stream=True) as response:
             response.raise_for_status()
-            
-            with open(save_path, 'wb') as file, tqdm(
-                desc=os.path.basename(save_path),
-                total=file_size,
-                unit='iB',
-                unit_scale=True,
-                unit_divisor=1024,
-            ) as progress_bar:
+
+            with open(save_path, 'wb') as file:
+                # 手动模式显示进度条，自动模式直接下载
+                if not AUTO_MODE:
+                    progress_bar = tqdm(
+                        desc=os.path.basename(save_path),
+                        total=file_size,
+                        unit='iB',
+                        unit_scale=True,
+                        unit_divisor=1024,
+                    )
+
                 for data in response.iter_content(chunk_size=1024*16):
                     size = file.write(data)
-                    progress_bar.update(size)
-        
+                    if not AUTO_MODE:
+                        progress_bar.update(size)
+
+                if not AUTO_MODE:
+                    progress_bar.close()
+
         print(f"文件已成功下载至: {save_path}")
         return True
-        
+
     except Exception as e:
         print(f"下载文件时出错: {str(e)}")
         if os.path.exists(save_path):
@@ -71,10 +79,10 @@ def download_file(url, save_path):
         return False
 
 def extract_zip(zip_path):
-    """解压ZIP文件到目标文件夹，完全覆盖原有内容"""
+    """解压ZIP文件到目标文件夹，自动模式无进度条，手动模式显示进度条"""
     try:
         os.makedirs(TARGET_FOLDER, exist_ok=True)
-        
+
         # 清空目标文件夹
         if os.listdir(TARGET_FOLDER):
             print(f"清空目标文件夹: {TARGET_FOLDER}")
@@ -84,21 +92,28 @@ def extract_zip(zip_path):
                     os.unlink(item_path)
                 else:
                     shutil.rmtree(item_path)
-        
+
         # 解压文件
         print(f"正在解压到 {TARGET_FOLDER}...")
         with zipfile.ZipFile(zip_path, 'r') as zip_ref:
             file_list = zip_ref.namelist()
             total_files = len(file_list)
-            
-            with tqdm(total=total_files, desc="解压进度") as pbar:
-                for file in file_list:
-                    zip_ref.extract(file, TARGET_FOLDER)
+
+            # 手动模式显示进度条，自动模式直接解压
+            if not AUTO_MODE:
+                pbar = tqdm(total=total_files, desc="解压进度")
+
+            for file in file_list:
+                zip_ref.extract(file, TARGET_FOLDER)
+                if not AUTO_MODE:
                     pbar.update(1)
-        
+
+            if not AUTO_MODE:
+                pbar.close()
+
         print(f"文件已成功解压至: {os.path.abspath(TARGET_FOLDER)}")
         return True
-        
+
     except zipfile.BadZipFile:
         print("错误: 下载的文件不是有效的ZIP压缩包")
         return False
@@ -109,36 +124,36 @@ def extract_zip(zip_path):
 def main():
     print("Bangumi Archive 下载器")
     print("======================")
-    
+
     latest_info = get_latest_info()
     if not latest_info:
         print("无法获取最新文件信息，程序退出")
         return
-    
+
     file_name = latest_info.get('name', '未知文件名')
     file_size = latest_info.get('size', 0)
     created_at = format_date(latest_info.get('created_at', '未知时间'))
     download_url = latest_info.get('browser_download_url')
-    
+
     print(f"最新文件: {file_name}")
     print(f"文件大小: {format_size(file_size)}")
     print(f"创建时间: {created_at}")
-    
+
     if not download_url:
         print("未找到下载链接")
         return
-    
+
     save_path = os.path.join(os.getcwd(), file_name)
     file_exists = os.path.exists(save_path)
-    
-    # 自动化模式处理（无交互）
+
+    # 自动化模式处理（无交互、无进度条）
     if AUTO_MODE:
         print("\n自动化模式: 开始下载文件...")
         # 无论文件是否存在，都下载最新版本
         if not download_file(download_url, save_path):
             return
     else:
-        # 手动模式处理（有交互）
+        # 手动模式处理（有交互、有进度条）
         if file_exists:
             overwrite = input(f"\n文件 {file_name} 已存在，是否覆盖? (y/n): ").lower()
             if overwrite != 'y':
@@ -153,11 +168,11 @@ def main():
                 return
             if not download_file(download_url, save_path):
                 return
-    
+
     # 检查是否为ZIP文件并解压
     if file_name.endswith('.zip'):
         extract_zip(save_path)
-        
+
         # 自动化模式下自动删除压缩包
         if AUTO_MODE:
             os.remove(save_path)
@@ -171,4 +186,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
