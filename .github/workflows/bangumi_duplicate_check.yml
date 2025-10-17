@@ -1,4 +1,4 @@
-name: 重复条目检查与别名表生成
+name: Bangumi 重复条目检查与 Alias 生成
 
 on:
   schedule:
@@ -15,7 +15,6 @@ env:
   ALIAS_JSON: "person_alias.json"
   ALIAS_GZ: "person_alias.json.gz"
   RELEASE_NAME: "Person alias"
-  TAG_NAME: ${{ github.event_name == 'schedule' ? format('{0:YYYYMMDD}', github.event.schedule.event_time) : format('{0:YYYYMMDD}', github.event.head_commit.timestamp) }}
 
 jobs:
   check_and_generate:
@@ -36,6 +35,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests tqdm beautifulsoup4 bgm_tv_wiki
 
+      # 关键步骤：用Shell命令生成日期（20251017格式），存入TAG_NAME
+      - name: 生成日期Tag
+        run: |
+          echo "TAG_NAME=$(date -u +'%Y%m%d')" >> $GITHUB_ENV
+
       - name: 下载Bangumi归档
         run: python download_bangumi_archive.py
 
@@ -43,10 +47,10 @@ jobs:
         run: python find_duplicate_isbns.py
 
       - name: 生成Alias JSON
-        run: python parse_bangumi_person_jsonlines.py  # 替换为你的实际脚本名
+        run: python parse_bangumi_person_jsonlines.py
 
-      - name: gzip压缩（直接指定输出）
-        run: gzip -9 -c ${{ env.ALIAS_JSON }} > ${{ env.ALIAS_GZ }}  # 直接生成压缩文件
+      - name: gzip压缩
+        run: gzip -9 -c ${{ env.ALIAS_JSON }} > ${{ env.ALIAS_GZ }}
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
@@ -64,7 +68,7 @@ jobs:
           git commit -m "更新重复检查结果 ${{ env.TAG_NAME }}"
           git push
 
-      - name: 删旧Tag建新塘（日期格式）
+      - name: 删旧Tag建新塘
         run: |
           git fetch --tags
           git tag -d ${{ env.TAG_NAME }} 2>/dev/null || true
