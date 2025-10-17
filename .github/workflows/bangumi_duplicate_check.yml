@@ -75,13 +75,13 @@ jobs:
           git tag ${{ env.TAG_NAME }}
           git push origin ${{ env.TAG_NAME }}
 
-      - name: 发布/覆盖Release
+      - name: 发布Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.TAG_NAME }}
           name: ${{ env.RELEASE_NAME }}
           body: "生成日期：${{ env.TAG_NAME }}"
           files: ${{ env.ALIAS_GZ }}
-          overwrite: true
+          draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
