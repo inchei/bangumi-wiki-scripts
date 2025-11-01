@@ -31,7 +31,7 @@ def process_brackets(text, is_primary_name):
     return text, brackets
 
 def split_aliases(alias, is_exception_name):
-    parts = [p.strip() for p in alias.split("、") if p.strip()]
+    parts = [p.strip() for p in alias.replace(' / ', '、').split("、") if p.strip()]
     if not parts:
         return []
     if is_exception_name:
@@ -126,7 +126,18 @@ def parse_bangumi_person_jsonlines(file_path):
                                                 qn.append(bc)
 
                 # 过滤空值和与原名相同的别名
-                qn = [n for n in qn if n and n != en]
+                # 合并：窄假名→平假名、全角字母→半角、全角片假名→平假名
+                trans = str.maketrans({
+                    # 1. 窄假名（ｶﾈｼ等，Unicode：0xFF66-0xFF9D）→ 平假名
+                    **{chr(c): chr(c - 0xFBE0) for c in range(0xFF66, 0xFF9E)},
+                    # 2. 全角字母（０xFF21-0xFF5A）→ 半角
+                    **{chr(c): chr(c - 0xFEE0) for c in range(0xFF21, 0xFF5B)},
+                    # 3. 全角片假名（0x30A1-0x30F6）→ 平假名
+                    **{chr(c): chr(c - 0x60) for c in range(0x30A1, 0x30F7)}
+                })
+
+                # 最终归一化列表推导
+                qn = [re.sub(r'[\s-]', '', n).translate(trans).lower() for n in qn if n and n != en]
 
                 # 将别名映射到人物索引
                 for alias in qn:
