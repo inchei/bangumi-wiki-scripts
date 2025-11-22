@@ -154,11 +154,11 @@ def load_staff_data(archive_dir):
     staff_file = os.path.join(archive_dir, "subject-persons.jsonlines")
     if not os.path.exists(staff_file):
         return None
-    
+
     staff_data = defaultdict(list)
     with open(staff_file, 'r', encoding='utf-8') as f:
         total_lines = sum(1 for _ in f)
-    
+
     print("正在加载人物关联数据...")
     with open(staff_file, 'r', encoding='utf-8') as f:
         for line in tqdm(f, total=total_lines, desc="加载进度"):
@@ -178,11 +178,11 @@ def load_episode_data(archive_dir):
     episode_file = os.path.join(archive_dir, "episode.jsonlines")
     if not os.path.exists(episode_file):
         return None
-    
+
     episode_data = defaultdict(list)
     with open(episode_file, 'r', encoding='utf-8') as f:
         total_lines = sum(1 for _ in f)
-    
+
     print("正在加载剧集数据...")
     with open(episode_file, 'r', encoding='utf-8') as f:
         for line in tqdm(f, total=total_lines, desc="剧集加载进度"):
@@ -222,7 +222,7 @@ def get_relation_count(subject_id, rel_cn, relations_data, subject_type):
     """统计指定条目的指定关系数量"""
     if not relations_data:
         return 0
-        
+
     try:
         subject_id = int(subject_id)
     except (ValueError, TypeError):
@@ -234,7 +234,7 @@ def get_relation_count(subject_id, rel_cn, relations_data, subject_type):
     if subject_type not in type_relation_map:
         return 0
     target_relation_map = type_relation_map[subject_type]
-    
+
     rel_id = None
     for id, name in target_relation_map.items():
         if name == rel_cn:
@@ -242,7 +242,7 @@ def get_relation_count(subject_id, rel_cn, relations_data, subject_type):
             break
     if rel_id is None:
         return 0
-    
+
     subject_rels = relations_data.get(subject_id, [])
     return sum(1 for rel in subject_rels if rel.get('relation_type') == rel_id)
 
@@ -251,7 +251,7 @@ def get_episode_count(subject_id, episode_data):
     """获取指定条目的剧集数量"""
     if not episode_data:
         return 0
-        
+
     subject_id_str = str(subject_id)
     return len(episode_data.get(subject_id_str, []))
 
@@ -267,7 +267,7 @@ def matches_condition(value, condition, data=None, relations_data=None, episode_
     if count_match and count_results is not None:
         count_type = count_match.group(1).strip()
         current_count = 0
-        
+
         # 处理剧集数量统计
         if count_type == 'ep':
             if data:
@@ -276,7 +276,7 @@ def matches_condition(value, condition, data=None, relations_data=None, episode_
             count_key = "count_ep"
             count_results[count_key] = current_count
             condition = count_pattern.sub(str(current_count), condition)
-        
+
         # 处理关系数量统计
         elif relations_data and data:
             subject_id = data.get('id')
@@ -285,7 +285,7 @@ def matches_condition(value, condition, data=None, relations_data=None, episode_
                 subject_type = int(subject_type)
             except (ValueError, TypeError):
                 subject_type = 0
-                
+
             current_count = get_relation_count(subject_id, count_type, relations_data, subject_type)
             count_key = f"count_{count_type}"
             count_results[count_key] = current_count
@@ -330,7 +330,7 @@ def check_related_subject(related_data, original_data, related_conditions, match
     """检查关联条目条件"""
     if not related_conditions or not related_data:
         return True
-    
+
     cond_results = []
     for field, condition in related_conditions:
         related_value = extract_field_value(related_data, field)
@@ -342,7 +342,7 @@ def check_related_subject(related_data, original_data, related_conditions, match
             cond_results.append(related_value == ref_value)
             continue
         cond_results.append(matches_condition(related_value, condition, related_data))
-    
+
     return any(cond_results) if match_mode == 'any' else all(cond_results)
 
 
@@ -350,26 +350,26 @@ def check_staff_conditions(subject_id, staff_data, staff_filters, subject_type):
     """检查人物筛选条件"""
     if not staff_filters or not staff_data:
         return True
-        
+
     if subject_type not in TYPE_STAFF_MAP:
         return False
-    
+
     staff_positions = TYPE_STAFF_MAP[subject_type]
     cn_to_position_id = {v: k for k, v in staff_positions.items()}
-    
+
     subject_id_str = str(subject_id)
     subject_staffs = staff_data.get(subject_id_str, [])
     if not subject_staffs:
         return False
-    
+
     for pos_cn, match_mode, staff_conds in staff_filters:
         pos_id = cn_to_position_id.get(pos_cn)
         if pos_id is None:
             continue
-            
+
         matched_staffs = [staff for staff in subject_staffs if staff.get('position') == pos_id]
         staff_count = len(matched_staffs)
-        
+
         count_cond = None
         normal_conds = []
         for field, cond in staff_conds:
@@ -377,7 +377,7 @@ def check_staff_conditions(subject_id, staff_data, staff_filters, subject_type):
                 count_cond = cond
             else:
                 normal_conds.append((field, cond))
-        
+
         if count_cond:
             processed_cond = count_cond
             count_pattern = re.compile(r'\{\{count:\s*([^}]+?)\s*\}\}')
@@ -389,7 +389,7 @@ def check_staff_conditions(subject_id, staff_data, staff_filters, subject_type):
                 processed_cond = count_pattern.sub(str(target_count), processed_cond)
             if not matches_condition(str(staff_count), processed_cond):
                 return False
-        
+
         staff_match_results = []
         for staff in matched_staffs:
             cond_match = True
@@ -399,12 +399,12 @@ def check_staff_conditions(subject_id, staff_data, staff_filters, subject_type):
                     cond_match = False
                     break
             staff_match_results.append(cond_match)
-        
+
         if match_mode == 'any' and not any(staff_match_results):
             return False
         if match_mode == 'all' and not all(staff_match_results):
             return False
-    
+
     return True
 
 
@@ -412,12 +412,12 @@ def check_episode_conditions(subject_id, episode_data, ep_filters):
     """检查剧集筛选条件"""
     if not ep_filters or not episode_data:
         return True
-    
+
     subject_id_str = str(subject_id)
     subject_eps = episode_data.get(subject_id_str, [])
     if not subject_eps:
         return False
-    
+
     for match_mode, ep_conds in ep_filters:
         count_cond = None
         normal_conds = []
@@ -426,11 +426,11 @@ def check_episode_conditions(subject_id, episode_data, ep_filters):
                 count_cond = cond
             else:
                 normal_conds.append((field, cond))
-        
+
         ep_count = len(subject_eps)
         if count_cond and not matches_condition(str(ep_count), count_cond):
             return False
-        
+
         ep_match_results = []
         for ep in subject_eps:
             cond_match = True
@@ -440,12 +440,12 @@ def check_episode_conditions(subject_id, episode_data, ep_filters):
                     cond_match = False
                     break
             ep_match_results.append(cond_match)
-        
+
         if match_mode == 'any' and not any(ep_match_results):
             return False
         if match_mode == 'all' and not all(ep_match_results):
             return False
-    
+
     return True
 
 
@@ -491,42 +491,32 @@ def get_user_filters():
 
         # 处理ep筛选条件
         if condition_str.startswith('ep:'):
-            parts = condition_str.split(':', 3)
-            if len(parts) < 2:
-                print("格式错误：剧集筛选需满足 ep:字段名:条件 或 ep:all:字段名:条件")
+            parts = condition_str.split(':', 3)  # 最多分割为3次，确保字段名和条件正确拆分
+            if len(parts) < 3:  # 至少需要 ep:字段名:条件（3个部分）
+                print("格式错误：剧集筛选单行模式需满足 ep:字段名:条件 或 ep:all:字段名:条件")
                 continue
-            
-            match_mode = 'any'
-            remaining_parts = []
-            if len(parts) >= 3 and parts[2].strip() == 'all':
+
+            # 解析匹配模式（默认any，指定all则为all模式）
+            if parts[1].strip() == 'all':
                 match_mode = 'all'
-                remaining_parts = parts[3:] if len(parts) >= 4 else []
+                if len(parts) < 4:  # ep:all:字段名:条件 需4个部分
+                    print("格式错误：ep:all模式需满足 ep:all:字段名:条件")
+                    continue
+                field = parts[2].strip()
+                cond = parts[3].strip()
             else:
-                remaining_parts = parts[2:] if len(parts) >= 3 else []
-            
-            if remaining_parts and ':' in ''.join(remaining_parts):
-                if len(remaining_parts) < 2:
-                    print("格式错误：单行模式需满足 ep:字段名:条件 或 ep:all:字段名:条件")
-                    continue
-                field, cond = remaining_parts[0].strip(), ':'.join(remaining_parts[1:]).strip()
-                ep_filters.append((match_mode, [(field, cond)]))
-                print(f"已添加剧集筛选：{match_mode}模式，条件：{field}:{cond}")
-                i += 1
+                match_mode = 'any'
+                field = parts[1].strip()
+                cond = parts[2].strip()
+
+            # 验证字段名和条件不为空
+            if not field or not cond:
+                print("格式错误：字段名和条件不能为空")
                 continue
-            
-            print(f"设置剧集条件（格式：字段名:条件，空行结束），匹配模式：{match_mode}")
-            ep_conds = []
-            while True:
-                ep_cond = input("剧集条件: ").strip()
-                if not ep_cond:
-                    break
-                if ':' not in ep_cond:
-                    print("格式错误：条件需包含冒号（字段名:条件），跳过")
-                    continue
-                field, cond = [p.strip() for p in ep_cond.split(':', 1)]
-                ep_conds.append((field, cond))
-            
-            ep_filters.append((match_mode, ep_conds))
+
+            # 添加单行筛选条件
+            ep_filters.append((match_mode, [(field, cond)]))
+            print(f"已添加剧集单行筛选：{match_mode}模式，条件：{field}:{cond}")
             i += 1
             continue
 
@@ -536,12 +526,12 @@ def get_user_filters():
             if len(parts) < 2:
                 print("格式错误：staff筛选需满足 staff:职位名 或 staff:职位名:all")
                 continue
-                
+
             _, pos_cn = parts[0], parts[1].strip()
             if not pos_cn:
                 print("错误：职位名不能为空")
                 continue
-                
+
             match_mode = 'any'
             remaining_parts = []
             if len(parts) >= 3 and parts[2].strip() == 'all':
@@ -549,7 +539,7 @@ def get_user_filters():
                 remaining_parts = parts[3:] if len(parts) >= 4 else []
             else:
                 remaining_parts = parts[2:] if len(parts) >= 3 else []
-            
+
             if remaining_parts and ':' in ''.join(remaining_parts):
                 if len(remaining_parts) < 2:
                     print("格式错误：单行模式需满足 staff:职位名:字段:条件 或 staff:职位名:all:字段:条件")
@@ -559,7 +549,7 @@ def get_user_filters():
                 print(f"已添加人物筛选：{pos_cn}（{match_mode}模式），条件：{field}:{cond}")
                 i += 1
                 continue
-            
+
             print(f"设置'{pos_cn}'的人物条件（格式：字段名:条件，空行结束），匹配模式：{match_mode}")
             staff_conds = []
             while True:
@@ -571,7 +561,7 @@ def get_user_filters():
                     continue
                 field, cond = [p.strip() for p in related_cond.split(':', 1)]
                 staff_conds.append((field, cond))
-            
+
             staff_filters.append((pos_cn, match_mode, staff_conds))
             i += 1
             continue
@@ -604,11 +594,11 @@ def get_user_filters():
             if len(parts) < 2:
                 print("格式错误：relation筛选需满足 relation:关系名 或 relation:关系名:all 或 relation:!关系名")
                 continue
-                
+
             _, rel_part = parts[0], parts[1].strip()
             negate = False
             rel_cn = rel_part
-            
+
             if rel_part.startswith('!'):
                 negate = True
                 rel_cn = rel_part[1:].strip()
@@ -619,12 +609,12 @@ def get_user_filters():
                 print(f"已添加关系筛选：不包含'{rel_cn}'")
                 i += 1
                 continue
-            
+
             is_valid_rel = any(rel_cn in rel_dict.values() for rel_dict in [ANIME_RELATIONS, BOOK_RELATIONS, MUSIC_RELATIONS, GAME_RELATIONS, REAL_RELATIONS])
             if not is_valid_rel:
                 print(f"错误：未找到关系名称 '{rel_cn}'")
                 continue
-            
+
             match_mode = 'any'
             remaining_parts = []
             if len(parts) >= 3 and parts[2].strip() == 'all':
@@ -632,7 +622,7 @@ def get_user_filters():
                 remaining_parts = parts[3:] if len(parts) >= 4 else []
             else:
                 remaining_parts = parts[2:] if len(parts) >= 3 else []
-            
+
             if remaining_parts and ':' in ''.join(remaining_parts):
                 if len(remaining_parts) < 2:
                     print("格式错误：单行模式需满足 relation:关系名:字段:条件 或 relation:关系名:all:字段:条件")
@@ -643,7 +633,7 @@ def get_user_filters():
                 print(f"已添加关系筛选：{rel_cn}（{match_mode}模式），条件：{field}:{cond}")
                 i += 1
                 continue
-            
+
             print(f"设置'{rel_cn}'的关联条件（格式：字段名:条件，空行结束），匹配模式：{match_mode}")
             rel_conds = []
             while True:
@@ -655,7 +645,7 @@ def get_user_filters():
                     continue
                 field, cond = [p.strip() for p in related_cond.split(':', 1)]
                 rel_conds.append((field, cond))
-            
+
             relation_filters.append((rel_cn, rel_conds, False, match_mode))
             i += 1
             continue
@@ -711,28 +701,28 @@ def collect_count_fields(filters):
 def get_relevant_fields(filters, relation_filters, staff_filters, ep_filters):
     """提取所有与筛选相关的字段"""
     relevant_fields = set()
-    
+
     # 添加普通筛选字段（排除全局匹配符*）
     for field, _ in filters:
         if field != '*':
             relevant_fields.add(field)
-    
+
     # 添加关系筛选中涉及的字段
     for _, related_conditions, _, _ in relation_filters:
         for field, _ in related_conditions:
             relevant_fields.add(field)
-    
+
     # 添加staff筛选中涉及的字段
     for _, _, staff_conds in staff_filters:
         for field, _ in staff_conds:
             relevant_fields.add(field)
-    
+
     # 添加剧集筛选中涉及的字段
     for _, ep_conds in ep_filters:
         for field, _ in ep_conds:
             if field != 'count':
                 relevant_fields.add(field)
-    
+
     # 处理全局匹配中实际匹配的字段引用
     for field, cond in filters:
         if field == '*':
@@ -740,7 +730,7 @@ def get_relevant_fields(filters, relation_filters, staff_filters, ep_filters):
             matches = ref_pattern.findall(cond)
             for match in matches:
                 relevant_fields.add(match)
-    
+
     return sorted(relevant_fields)
 
 
@@ -750,7 +740,7 @@ def write_main_csv(output_csv_file, results, relevant_fields, count_fields, rela
     headers = ['ID', 'URL'] + relevant_fields
     if count_fields:
         headers.extend(count_fields)
-    
+
     # 添加关系外键列
     for rel_cn, _, _, _ in relation_filters:
         headers.append(f"relation_{rel_cn}_ids")  # 存储该关系的所有关联条目ID，用逗号分隔
@@ -758,24 +748,24 @@ def write_main_csv(output_csv_file, results, relevant_fields, count_fields, rela
     with open(output_csv_file, 'w', encoding='utf-8-sig', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(headers)
-        
+
         for result in results:
             row = [result['id'], result['url']]
-            
+
             # 添加筛选相关字段值
             for field in relevant_fields:
                 row.append(result['fields'].get(field, ''))
-            
+
             # 添加count结果
             if count_fields:
                 for count_field in count_fields:
                     row.append(result['counts'].get(count_field, 0))
-            
+
             # 添加关系外键（用逗号分隔多个ID）
             for rel_cn, _, _, _ in relation_filters:
                 related_ids = result['relations'].get(rel_cn, [])
                 row.append(','.join(related_ids))
-            
+
             writer.writerow(row)
 
 
@@ -783,46 +773,46 @@ def write_relation_csv(base_output_name, results, relation_filters, all_subjects
     """生成关系数据CSV，包含满足条件的关联条目的筛选字段"""
     if not relation_filters or not all_subjects:
         return
-        
+
     # 收集所有关系筛选中使用的字段
     relation_fields = defaultdict(set)
     for rel_cn, related_conditions, _, _ in relation_filters:
         for field, _ in related_conditions:
             relation_fields[rel_cn].add(field)
-    
+
     # 为每种关系生成独立的CSV
     for rel_cn, related_conditions, _, _ in relation_filters:
         rel_fields = list(relation_fields[rel_cn])
         if not rel_fields:
             continue
-            
+
         # 输出文件名：基础名 + _relation_关系名.csv
         rel_output = f"{base_output_name}_relation_{rel_cn}.csv"
-        
+
         # 表头：源条目ID, 关联条目ID, 关联条目的筛选字段
         headers = ['source_id', 'related_id'] + rel_fields
-        
+
         with open(rel_output, 'w', encoding='utf-8-sig', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(headers)
-            
+
             # 收集数据
             for result in results:
                 source_id = result['id']
                 related_ids = result['relations'].get(rel_cn, [])
-                
+
                 for rid in related_ids:
                     related_data = all_subjects.get(rid)
                     if not related_data:
                         continue
-                        
+
                     row = [source_id, rid]
                     # 添加关联条目的筛选字段值
                     for field in rel_fields:
                         row.append(extract_field_value(related_data, field))
-                    
+
                     writer.writerow(row)
-        
+
         print(f"关系数据保存至: {rel_output}")
 
 
@@ -830,48 +820,48 @@ def write_staff_csv(base_output_name, results, staff_filters, staff_data):
     """生成人物数据CSV"""
     if not staff_filters or not staff_data:
         return
-        
+
     # 为每种职位生成独立的CSV
     for pos_cn, match_mode, staff_conds in staff_filters:
         staff_fields = [field for field, _ in staff_conds if field != 'count']
         if not staff_fields:
             continue
-            
+
         # 输出文件名：基础名 + _staff_职位名.csv
         staff_output = f"{base_output_name}_staff_{pos_cn}.csv"
-        
+
         # 表头：源条目ID, 人物ID, 人物的筛选字段
         headers = ['source_id', 'person_id'] + staff_fields
-        
+
         with open(staff_output, 'w', encoding='utf-8-sig', newline='') as csvfile:
             writer = csv.writer(csvfile)
             writer.writerow(headers)
-            
+
             # 收集数据
             for result in results:
                 source_id = result['id']
                 subject_type = result.get('type', 0)
-                
+
                 if subject_type not in TYPE_STAFF_MAP:
                     continue
-                    
+
                 staff_positions = TYPE_STAFF_MAP[subject_type]
                 cn_to_position_id = {v: k for k, v in staff_positions.items()}
                 pos_id = cn_to_position_id.get(pos_cn)
                 if pos_id is None:
                     continue
-                    
+
                 subject_staffs = staff_data.get(source_id, [])
                 matched_staffs = [staff for staff in subject_staffs if staff.get('position') == pos_id]
-                
+
                 for staff in matched_staffs:
                     row = [source_id, staff.get('person_id', '')]
                     # 添加人物的筛选字段值
                     for field in staff_fields:
                         row.append(str(staff.get(field, '')).strip())
-                    
+
                     writer.writerow(row)
-        
+
         print(f"人物数据保存至: {staff_output}")
 
 
@@ -879,7 +869,7 @@ def write_episode_csv(base_output_name, results, ep_filters, episode_data):
     """生成剧集数据CSV"""
     if not ep_filters or not episode_data:
         return
-        
+
     # 收集所有剧集筛选中使用的字段
     ep_fields = set()
     for _, ep_conds in ep_filters:
@@ -889,30 +879,30 @@ def write_episode_csv(base_output_name, results, ep_filters, episode_data):
     ep_fields = list(ep_fields)
     if not ep_fields:
         return
-        
+
     # 输出文件名：基础名 + _ep.csv
     ep_output = f"{base_output_name}_ep.csv"
-    
+
     # 表头：源条目ID, 剧集ID, 剧集的筛选字段
     headers = ['source_id', 'episode_id'] + ep_fields
-    
+
     with open(ep_output, 'w', encoding='utf-8-sig', newline='') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(headers)
-        
+
         # 收集数据
         for result in results:
             source_id = result['id']
             subject_eps = episode_data.get(source_id, [])
-            
+
             for ep in subject_eps:
                 row = [source_id, ep.get('id', '')]
                 # 添加剧集的筛选字段值
                 for field in ep_fields:
                     row.append(str(ep.get(field, '')).strip())
-                
+
                 writer.writerow(row)
-    
+
     print(f"剧集数据保存至: {ep_output}")
 
 
@@ -941,14 +931,14 @@ def check_tag_conditions(data, tag_filters):
     """检查普通标签条件"""
     if not tag_filters:
         return True
-    
+
     tag_names = [tag['name'] for tag in data.get('tags', [])]
-    
+
     for tag_name, negate in tag_filters:
         tag_exists = tag_name in tag_names
         if (negate and tag_exists) or (not negate and not tag_exists):
             return False
-    
+
     return True
 
 
@@ -956,14 +946,14 @@ def check_meta_tag_conditions(data, meta_tag_filters):
     """检查元标签条件"""
     if not meta_tag_filters:
         return True
-    
+
     meta_tags = data.get('meta_tags', [])
-    
+
     for tag_name, negate in meta_tag_filters:
         tag_exists = tag_name in meta_tags
         if (negate and tag_exists) or (not negate and not tag_exists):
             return False
-    
+
     return True
 
 
@@ -989,7 +979,7 @@ def main():
 
     # 提取相关字段
     relevant_fields = get_relevant_fields(filters, relation_filters, staff_filters, ep_filters)
-    
+
     # 显示筛选条件
     grouped_filters = group_filters_by_field(filters)
     unique_fields = list(grouped_filters.keys())
@@ -1062,14 +1052,14 @@ def main():
                     print(f"     条件 {j}: 字段 '{field}'{count_flag} {op} '{val.strip()}'")
                 else:
                     print(f"     条件 {j}: 字段 '{field}'{count_flag} 包含文本 '{cond}'")
-    
+
     print("====================\n")
 
     # 输出文件配置
     default_output = "filtered_results"
     output_name = input(f"请输入结果输出文件名（默认: {default_output}）: ").strip() or default_output
     main_csv = f"{output_name}.csv"
-    
+
     # 检查要生成的所有文件
     output_files = [main_csv]
     # 添加关系CSV
@@ -1081,14 +1071,14 @@ def main():
     # 添加episode CSV
     if ep_filters:
         output_files.append(f"{output_name}_ep.csv")
-    
+
     if not check_files_overwrite(output_files):
         return
 
     # 检查是否需要关系数据
     has_relation_conditions = any(
-        re.search(r'\{\{count:\s*[^ep}]+\s*\}\}', cond) 
-        for field_conds in grouped_filters.values() 
+        re.search(r'\{\{count:\s*[^ep}]+\s*\}\}', cond)
+        for field_conds in grouped_filters.values()
         for cond in field_conds
     ) if grouped_filters else False
     has_relation_conditions = has_relation_conditions or bool(relation_filters)
@@ -1103,8 +1093,8 @@ def main():
 
     # 检查是否需要剧集数据
     has_episode_conditions = any(
-        re.search(r'\{\{count:ep\s*\}\}', cond) 
-        for field_conds in grouped_filters.values() 
+        re.search(r'\{\{count:ep\s*\}\}', cond)
+        for field_conds in grouped_filters.values()
         for cond in field_conds
     ) if grouped_filters else False
     has_episode_conditions = has_episode_conditions or bool(ep_filters)
@@ -1181,7 +1171,7 @@ def main():
                 field_values = {}
                 count_results = {}
                 all_matched = True
-                
+
                 global_conditions = grouped_filters.get('*', [])
                 normal_fields = [f for f in unique_fields if f != '*']
 
@@ -1202,12 +1192,12 @@ def main():
                     all_fields = []
                     exclude_fields = {'id', 'url', 'tags', 'meta_tags', 'relations', 'infobox', 'created_at', 'updated_at'}
                     all_fields.extend([f for f in data.keys() if f not in exclude_fields and isinstance(data[f], (str, int, float, bool))])
-                    
+
                     infobox = data.get('infobox', '')
                     if infobox:
                         infobox_field_pattern = re.compile(r'\|(\w+)\s*[:=]\s*.*?(?:\s*\||\s*}}|\r\n|\n)', re.IGNORECASE)
                         all_fields.extend(infobox_field_pattern.findall(infobox))
-                    
+
                     for field in all_fields:
                         val = extract_field_value(data, field)
                         for cond in global_conditions:
@@ -1234,7 +1224,7 @@ def main():
                     if not current_rel_map:
                         all_matched = False
                         continue
-                    
+
                     for rel_cn, rel_conds, negate, rel_mode in relation_filters:
                         rel_id = None
                         for id, name in current_rel_map.items():
@@ -1247,7 +1237,7 @@ def main():
                             else:
                                 relation_values[rel_cn] = []
                             break
-                        
+
                         related_ids = []
                         total_rel = len([r for r in subject_rels if r['relation_type'] == rel_id])
                         for rel in subject_rels:
@@ -1257,7 +1247,7 @@ def main():
                             related_data = all_subjects.get(related_sid) if all_subjects else None
                             if related_data and check_related_subject(related_data, data, rel_conds, rel_mode):
                                 related_ids.append(related_sid)
-                        
+
                         if negate:
                             if len(related_ids) > 0:
                                 all_matched = False
@@ -1299,13 +1289,13 @@ def main():
     if results:
         print("\n正在生成主CSV文件...")
         write_main_csv(main_csv, results, relevant_fields, count_fields, relation_filters)
-        
+
         # 生成关系数据CSV
         write_relation_csv(output_name, results, relation_filters, all_subjects)
-        
+
         # 生成人物数据CSV
         write_staff_csv(output_name, results, staff_filters, staff_data)
-        
+
         # 生成剧集数据CSV
         write_episode_csv(output_name, results, ep_filters, episode_data)
 
@@ -1315,4 +1305,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-    
