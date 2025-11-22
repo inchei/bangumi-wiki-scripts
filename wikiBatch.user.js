@@ -1831,18 +1831,14 @@ function createFloatButton() {
         let newInfobox = oldInfobox;
 
         Object.entries(fieldUpdates).forEach(([field, value]) => {
+            value = value.replaceAll('\\n', '\n');
             const regex = new RegExp(`\\|${sanitizeRegExp(field)}\\s*=.*`, 'i');
             if (regex.test(newInfobox)) {
                 newInfobox = newInfobox.replace(regex, `|${field}= ${value}`);
             } else {
-                const emptyLineIndex = newInfobox.indexOf('\n\n');
-                if (emptyLineIndex !== -1) {
-                    newInfobox = newInfobox.substring(0, emptyLineIndex) +
-                        `|${field}= ${value}\n` +
-                        newInfobox.substring(emptyLineIndex);
-                } else {
-                    newInfobox += `\n|${field}= ${value}`;
-                }
+                const lines = newInfobox.split('\n');
+                lines.splice(-1, 0, `|${field}= ${value}`);
+                newInfobox = lines.join('\n');
             }
         });
 
