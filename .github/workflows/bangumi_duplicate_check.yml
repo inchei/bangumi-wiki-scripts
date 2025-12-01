@@ -11,6 +11,7 @@ permissions:
 env:
   REPORT_PAGES: >-
     https://bgm.tv/group/topic/431206
+    https://bgm.tv/group/topic/442366
   AUTO_MODE: "true"
   ALIAS_JSON: "person_alias.json"
   ALIAS_GZ: "person_alias.json.gz"
