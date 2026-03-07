@@ -31,7 +31,7 @@ def process_brackets(text, is_primary_name):
     return text, brackets
 
 def split_aliases(alias, is_exception_name):
-    parts = [p.strip() for p in alias.replace(' / ', '、').split("、") if p.strip()]
+    parts = [p.strip() for p in re.split(r'\s*[／/]\s*', alias) if p.strip()]
     if not parts:
         return []
     if is_exception_name:
