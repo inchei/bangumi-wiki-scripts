@@ -19,3 +19,12 @@
 ## GitHub Actions
 当前执行的自动任务：
 - 每周二 UTC 21:30 （官方 Archive 更新后约半小时），拉取最新 Archive，查找重复 ISBN 条目，上传最新结果：[duplicate_check_results.txt](https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/refs/heads/main/duplicate_check_results.txt)
+- 待完善：
+  - 小说/漫画系列与单行本类型不一致
+  - 有序号的单行本未关联系列
+  - 书籍只关联而未填写作者
+  - 书籍的小说/漫画标签
+  - 书籍已填写连载结束而没有已完结标签
+  - 写了 ISBN 的系列
+  - 过于便宜/昂贵的书籍（可能是亚马逊抓取未检查/ISBN填写到错误栏目）
+  - 发售日比连载开始还早
