@@ -1,7 +1,1468 @@
 重复ISBN检查结果
 ==================
-检查时间: 2026-03-31 21:59:02
+检查时间: 2026-04-02 12:39:21
 白名单: 9784801921436, 9784150206130
 汇报帖链接: https://bgm.tv/group/topic/454229, https://bgm.tv/group/topic/442366
 
-未发现符合条件的重复ISBN
+
+===== 未汇报的重复条目 ====
+
+【疑似同系列单行本误填】(146组)
+----------------------------------------
+ISBN 1: 9787531817871
+https://bgm.tv/subject/6318 - 超合金社团 (02)
+https://bgm.tv/subject/6319 - 超合金社团 (01)
+
+ISBN 2: 9787540537333
+https://bgm.tv/subject/6320 - 超合金社团 (03)
+https://bgm.tv/subject/6321 - 超合金社团 (04)
+
+ISBN 3: 9787531827276
+https://bgm.tv/subject/6742 - 千茗列传（1）
+https://bgm.tv/subject/27387 - 千茗列传（2）
+
+ISBN 4: 9787540541903
+https://bgm.tv/subject/8515 - 子不语1
+https://bgm.tv/subject/8516 - 子不语2
+
+ISBN 5: 9787540533045
+https://bgm.tv/subject/14044 - 黑白无双01
+https://bgm.tv/subject/591261 - 黑白无双02
+
+ISBN 6: 9787540535865
+https://bgm.tv/subject/14045 - 黑白无双03
+https://bgm.tv/subject/591264 - 黑白无双04
+
+ISBN 7: 9787540538330
+https://bgm.tv/subject/14046 - 黑白无双05
+https://bgm.tv/subject/591267 - 黑白无双06
+
+ISBN 8: 9787540541026
+https://bgm.tv/subject/14047 - 黑白无双07
+https://bgm.tv/subject/591272 - 黑白无双08
+
+ISBN 9: 9787540544300
+https://bgm.tv/subject/14048 - 黑白无双09
+https://bgm.tv/subject/591276 - 黑白无双10
+
+ISBN 10: 9787540545284
+https://bgm.tv/subject/14333 - 超合金社团 (06)
+https://bgm.tv/subject/14334 - 超合金社团 (07)
+
+ISBN 11: 9787540540418
+https://bgm.tv/subject/16115 - 血族BLOODLINE[空想白昼篇]·1
+https://bgm.tv/subject/16117 - 血族BLOODLINE[空想白昼篇]·2
+
+ISBN 12: 9789861186382
+https://bgm.tv/subject/29819 - 卓球Dash!! (3)（版本）
+https://bgm.tv/subject/29820 - 卓球Dash!! (4)（版本）
+
+ISBN 13: 9789865396886
+https://bgm.tv/subject/63644 - 会長はメイド様! (10)（版本）
+https://bgm.tv/subject/63645 - 会長はメイド様! (11)（版本）
+
+ISBN 14: 9789861123691
+https://bgm.tv/subject/93558 - ラーメン発見伝 (8)（版本）
+https://bgm.tv/subject/93559 - ラーメン発見伝 (9)（版本）
+
+ISBN 15: 9789864317134
+https://bgm.tv/subject/148448 - まちがい英雄の異世界召喚 (1)（版本）
+https://bgm.tv/subject/168988 - まちがい英雄の異世界召喚 (3)（版本）
+
+ISBN 16: 9787531833390
+https://bgm.tv/subject/156781 - 天使图书馆 (1)
+https://bgm.tv/subject/156782 - 天使图书馆 (2)
+
+ISBN 17: 9787531815631
+https://bgm.tv/subject/156786 - Minor未成年 (1)
+https://bgm.tv/subject/156787 - Minor未成年 (2)
+https://bgm.tv/subject/156793 - Minor未成年 (3)
+
+ISBN 18: 9787531822981
+https://bgm.tv/subject/156796 - Minor未成年 (6)
+https://bgm.tv/subject/156797 - Minor未成年 (7)
+
+ISBN 19: 9787540545550
+https://bgm.tv/subject/176042 - 一夕一夏 2
+https://bgm.tv/subject/176043 - 一夕一夏 3
+
+ISBN 20: 9787540546472
+https://bgm.tv/subject/184610 - 血族 2
+https://bgm.tv/subject/184611 - 血族 1
+
+ISBN 21: 9787201043203
+https://bgm.tv/subject/188153 - 校园无限 (1)
+https://bgm.tv/subject/188154 - 校园无限 (2)
+
+ISBN 22: 9787201048321
+https://bgm.tv/subject/188155 - 校园无限 (3)
+https://bgm.tv/subject/188156 - 校园无限 (4)
+
+ISBN 23: 9787514509649
+https://bgm.tv/subject/207957 - 浪漫传说 (17)
+https://bgm.tv/subject/207958 - 浪漫传说 (18)
+
+ISBN 24: 9787531825258
+https://bgm.tv/subject/211585 - 4.9x4.9 (1)
+https://bgm.tv/subject/211586 - 4.9x4.9 (2)
+https://bgm.tv/subject/211587 - 4.9x4.9 (3)
+
+ISBN 25: 9787531820307
+https://bgm.tv/subject/211591 - 4.9X4.9 NEW BATTLE (1)
+https://bgm.tv/subject/211592 - 4.9X4.9 NEW BATTLE (2)
+
+ISBN 26: 9787531832478
+https://bgm.tv/subject/211593 - 4.9X4.9 NEW BATTLE (3)
+https://bgm.tv/subject/211594 - 4.9X4.9 NEW BATTLE (4)
+
+ISBN 27: 9787531833215
+https://bgm.tv/subject/211595 - 4.9X4.9 NEW BATTLE (5)
+https://bgm.tv/subject/211596 - 4.9X4.9 NEW BATTLE (6)
+
+ISBN 28: 9789888821174
+https://bgm.tv/subject/212191 - アオアシ (3)（版本）
+https://bgm.tv/subject/212195 - アオアシ (2)（版本）
+
+ISBN 29: 9789864864775
+https://bgm.tv/subject/300663 - VRMMOをカネの力で無双する5（版本）
+https://bgm.tv/subject/300664 - VRMMOをカネの力で無双する6（版本）
+
+ISBN 30: 9789865241421
+https://bgm.tv/subject/303640 - カノジョに浮気されていた俺が、小悪魔な後輩に懐かれています (1)（版本）
+https://bgm.tv/subject/303641 - カノジョに浮気されていた俺が、小悪魔な後輩に懐かれています (2)（版本）
+
+ISBN 31: 9788973817412
+https://bgm.tv/subject/333037 - 알게뭐야 1
+https://bgm.tv/subject/333038 - 알게뭐야 2
+
+ISBN 32: 9789571045436
+https://bgm.tv/subject/363910 - 龍騎兵的防禦工事(01)
+https://bgm.tv/subject/363911 - 龍騎兵的防禦工事(02)
+
+ISBN 33: 9787540552862
+https://bgm.tv/subject/364792 - 泡面超人 22
+https://bgm.tv/subject/364793 - 泡面超人 21
+
+ISBN 34: 9788926308233
+https://bgm.tv/subject/387574 - 하이힐을 신은 소녀 (10)
+https://bgm.tv/subject/387575 - 하이힐을 신은 소녀 (11)
+
+ISBN 35: 9787540545512
+https://bgm.tv/subject/389123 - 扳手少年 01
+https://bgm.tv/subject/389124 - 扳手少年 02
+
+ISBN 36: 9787540546557
+https://bgm.tv/subject/389125 - 扳手少年 03
+https://bgm.tv/subject/389126 - 扳手少年 04
+
+ISBN 37: 9787540547899
+https://bgm.tv/subject/389128 - 扳手少年 05
+https://bgm.tv/subject/389129 - 扳手少年 06
+
+ISBN 38: 9787540552152
+https://bgm.tv/subject/389130 - 扳手少年 07
+https://bgm.tv/subject/389131 - 扳手少年 08
+
+ISBN 39: 9787540552008
+https://bgm.tv/subject/392314 - 惊爆校园 (1)
+https://bgm.tv/subject/392316 - 惊爆校园 (2)
+
+ISBN 40: 9787540547042
+https://bgm.tv/subject/392420 - 长安督武司 (1)
+https://bgm.tv/subject/392422 - 长安督武司 (2)
+
+ISBN 41: 9787540549954
+https://bgm.tv/subject/392423 - 长安督武司 (3)
+https://bgm.tv/subject/392424 - 长安督武司 (4)
+
+ISBN 42: 9787540546984
+https://bgm.tv/subject/392509 - 将 (1)
+https://bgm.tv/subject/392511 - 将 (2)
+
+ISBN 43: 9787540541590
+https://bgm.tv/subject/392512 - 将 (3)
+https://bgm.tv/subject/392514 - 将 (4)
+
+ISBN 44: 9787540547059
+https://bgm.tv/subject/392516 - 花非花 (1)
+https://bgm.tv/subject/392517 - 花非花 (2)
+
+ISBN 45: 9787540548858
+https://bgm.tv/subject/392534 - 真红游侠 (1)
+https://bgm.tv/subject/392537 - 真红游侠 (2)
+
+ISBN 46: 9787540552756
+https://bgm.tv/subject/392540 - 真红游侠 (3)
+https://bgm.tv/subject/392541 - 真红游侠 (4)
+
+ISBN 47: 9787531832027
+https://bgm.tv/subject/392547 - 魂音 (1)
+https://bgm.tv/subject/392548 - 魂音 (2)
+
+ISBN 48: 9787531824800
+https://bgm.tv/subject/392557 - 无尽游戏 Infinity Game (1)
+https://bgm.tv/subject/392558 - 无尽游戏 Infinity Game (2)
+
+ISBN 49: 9786267176887
+https://bgm.tv/subject/422091 - 死亡萬花筒 (3)
+https://bgm.tv/subject/422092 - 死亡萬花筒 (4)
+
+ISBN 50: 9787565719929
+https://bgm.tv/subject/439495 - 童话往事1：中国译制动画片（1979—1987）
+https://bgm.tv/subject/439498 - 童话往事2：中国译制动画片（1988—1992）
+
+ISBN 51: 9787540228071
+https://bgm.tv/subject/442312 - S.M.S舍子花 01
+https://bgm.tv/subject/442313 - S.M.S舍子花 02
+
+ISBN 52: 9787540542726
+https://bgm.tv/subject/473475 - 手机少年1
+https://bgm.tv/subject/473476 - 手机少年2
+
+ISBN 53: 9787540543457
+https://bgm.tv/subject/473477 - 手机少年3
+https://bgm.tv/subject/473478 - 手机少年4
+
+ISBN 54: 9787540544157
+https://bgm.tv/subject/473479 - 手机少年5
+https://bgm.tv/subject/473480 - 手机少年6
+
+ISBN 55: 9787540544645
+https://bgm.tv/subject/473481 - 手机少年7
+https://bgm.tv/subject/473483 - 手机少年8
+
+ISBN 56: 9787540545451
+https://bgm.tv/subject/473484 - 手机少年9
+https://bgm.tv/subject/473485 - 手机少年10
+
+ISBN 57: 9787540542436
+https://bgm.tv/subject/473696 - 花样梁祝1
+https://bgm.tv/subject/473697 - 花样梁祝2
+
+ISBN 58: 9787540543075
+https://bgm.tv/subject/473698 - 花样梁祝3
+https://bgm.tv/subject/473699 - 花样梁祝4
+
+ISBN 59: 9787540543891
+https://bgm.tv/subject/473700 - 花样梁祝5
+https://bgm.tv/subject/473701 - 花样梁祝6
+
+ISBN 60: 9787540544430
+https://bgm.tv/subject/473702 - 花样梁祝7
+https://bgm.tv/subject/473703 - 花样梁祝8
+
+ISBN 61: 9787540545413
+https://bgm.tv/subject/473704 - 花样梁祝9
+https://bgm.tv/subject/473705 - 花样梁祝10
+
+ISBN 62: 9787512706774
+https://bgm.tv/subject/494707 - 新漫画版福尔摩斯探案集：血字研究 (1)
+https://bgm.tv/subject/494708 - 新漫画版福尔摩斯探案集：血字研究 (2)
+https://bgm.tv/subject/494709 - 新漫画版福尔摩斯探案集：血字研究 (3)
+https://bgm.tv/subject/494710 - 新漫画版福尔摩斯探案集：血字研究 (4)
+
+ISBN 63: 9787512706576
+https://bgm.tv/subject/494711 - 新漫画版福尔摩斯探案集：四签名 (1)
+https://bgm.tv/subject/494712 - 新漫画版福尔摩斯探案集：四签名 (2)
+https://bgm.tv/subject/494713 - 新漫画版福尔摩斯探案集：四签名 (3)
+
+ISBN 64: 9787512706767
+https://bgm.tv/subject/494714 - 新漫画版福尔摩斯探案集：巴斯克维尔的猎犬 (1)
+https://bgm.tv/subject/494715 - 新漫画版福尔摩斯探案集：巴斯克维尔的猎犬 (2)
+https://bgm.tv/subject/494716 - 新漫画版福尔摩斯探案集：巴斯克维尔的猎犬 (3)
+
+ISBN 65: 9788982739323
+https://bgm.tv/subject/503884 - 피를 마시는 새 (1)
+https://bgm.tv/subject/503886 - 피를 마시는 새 (2)
+
+ISBN 66: 9787537127936
+https://bgm.tv/subject/505305 - 第十三个月 (1)
+https://bgm.tv/subject/505306 - 第十三个月 (2)
+https://bgm.tv/subject/505307 - 第十三个月 (3)
+https://bgm.tv/subject/505309 - 第十三个月 (4)
+
+ISBN 67: 9787561810729
+https://bgm.tv/subject/505318 - 三国演义 最新漫画版 (1)
+https://bgm.tv/subject/505319 - 三国演义 最新漫画版 (2)
+https://bgm.tv/subject/505320 - 三国演义 最新漫画版 (3)
+https://bgm.tv/subject/505321 - 三国演义 最新漫画版 (4)
+
+ISBN 68: 9787536676299
+https://bgm.tv/subject/506689 - 小鸡索卡 (1)
+https://bgm.tv/subject/506690 - 小鸡索卡 (2)
+
+ISBN 69: 9787543056619
+https://bgm.tv/subject/506740 - 穿时空运 (1)
+https://bgm.tv/subject/506741 - 穿时空运 (2)
+
+ISBN 70: 9787540545086
+https://bgm.tv/subject/507680 - 少年保镖 (1)
+https://bgm.tv/subject/507681 - 少年保镖 (2)
+
+ISBN 71: 9787540548292
+https://bgm.tv/subject/507682 - 少年保镖：原石 (1)
+https://bgm.tv/subject/507683 - 少年保镖：原石 (2)
+
+ISBN 72: 9787540540692
+https://bgm.tv/subject/511659 - 泡面超人 1
+https://bgm.tv/subject/511661 - 泡面超人 2
+
+ISBN 73: 9787540541781
+https://bgm.tv/subject/511663 - 泡面超人 3
+https://bgm.tv/subject/511664 - 泡面超人 4
+
+ISBN 74: 9787540542207
+https://bgm.tv/subject/511666 - 泡面超人 5
+https://bgm.tv/subject/511671 - 泡面超人 6
+
+ISBN 75: 9787540543099
+https://bgm.tv/subject/511674 - 泡面超人 7
+https://bgm.tv/subject/511676 - 泡面超人 8
+
+ISBN 76: 9787540543907
+https://bgm.tv/subject/511679 - 泡面超人 9
+https://bgm.tv/subject/511680 - 泡面超人 10
+
+ISBN 77: 9787540544478
+https://bgm.tv/subject/511682 - 泡面超人 11
+https://bgm.tv/subject/511683 - 泡面超人 12
+
+ISBN 78: 9787540545123
+https://bgm.tv/subject/511685 - 泡面超人 13
+https://bgm.tv/subject/511687 - 泡面超人 14
+
+ISBN 79: 9787540545505
+https://bgm.tv/subject/511688 - 泡面超人 15
+https://bgm.tv/subject/511689 - 泡面超人 16
+
+ISBN 80: 9787540546946
+https://bgm.tv/subject/511690 - 泡面超人 17
+https://bgm.tv/subject/511691 - 泡面超人 18
+
+ISBN 81: 9787540548605
+https://bgm.tv/subject/511692 - 泡面超人 19
+https://bgm.tv/subject/511694 - 泡面超人 20
+
+ISBN 82: 9787540544843
+https://bgm.tv/subject/511723 - 抽筋神探（1）
+https://bgm.tv/subject/511724 - 抽筋神探（2）
+
+ISBN 83: 9787540546205
+https://bgm.tv/subject/511725 - 抽筋神探（3）
+https://bgm.tv/subject/511726 - 抽筋神探（4）
+
+ISBN 84: 9787540547516
+https://bgm.tv/subject/511727 - 抽筋神探（5）
+https://bgm.tv/subject/511728 - 抽筋神探（6）
+
+ISBN 85: 9787540552961
+https://bgm.tv/subject/511729 - 抽筋神探（7）
+https://bgm.tv/subject/511730 - 抽筋神探（8）
+
+ISBN 86: 9787540549923
+https://bgm.tv/subject/514801 - 灵魂攻略 1
+https://bgm.tv/subject/514802 - 灵魂攻略 2
+
+ISBN 87: 9787540552763
+https://bgm.tv/subject/514803 - 灵魂攻略 3
+https://bgm.tv/subject/514804 - 灵魂攻略 4
+
+ISBN 88: 9789865366940
+https://bgm.tv/subject/523674 - ゆりまぐねてぃっくす 1
+https://bgm.tv/subject/523675 - ゆりまぐねてぃっくす 2
+https://bgm.tv/subject/523677 - ゆりまぐねてぃっくす 3
+
+ISBN 89: 9786264346504
+https://bgm.tv/subject/527911 - じゃあ、あんたが作ってみろよ (1)（版本）
+https://bgm.tv/subject/527912 - じゃあ、あんたが作ってみろよ (2)（版本）
+
+ISBN 90: 9787531852964
+https://bgm.tv/subject/538541 - 风起苍岚 (1)
+https://bgm.tv/subject/538542 - 风起苍岚 (2)
+https://bgm.tv/subject/538543 - 风起苍岚 (3)
+https://bgm.tv/subject/538544 - 风起苍岚 (4)
+
+ISBN 91: 9787531858997
+https://bgm.tv/subject/538545 - 风起苍岚 (5)
+https://bgm.tv/subject/538546 - 风起苍岚 (6)
+https://bgm.tv/subject/538547 - 风起苍岚 (7)
+https://bgm.tv/subject/538548 - 风起苍岚 (8)
+
+ISBN 92: 9787531864080
+https://bgm.tv/subject/538552 - 风起苍岚 (9)
+https://bgm.tv/subject/538553 - 风起苍岚 (10)
+https://bgm.tv/subject/538554 - 风起苍岚 (11)
+https://bgm.tv/subject/538555 - 风起苍岚 (12)
+https://bgm.tv/subject/538556 - 风起苍岚 (13)
+https://bgm.tv/subject/538557 - 风起苍岚 (14)
+
+ISBN 93: 9787531891314
+https://bgm.tv/subject/538582 - 风起苍岚 (15)
+https://bgm.tv/subject/538583 - 风起苍岚 (16)
+https://bgm.tv/subject/538584 - 风起苍岚 (17)
+https://bgm.tv/subject/538585 - 风起苍岚 (18)
+
+ISBN 94: 9787559303547
+https://bgm.tv/subject/538586 - 风起苍岚 (19)
+https://bgm.tv/subject/538589 - 风起苍岚 (20)
+https://bgm.tv/subject/538590 - 风起苍岚 (21)
+https://bgm.tv/subject/538591 - 风起苍岚 (22)
+
+ISBN 95: 9787559313393
+https://bgm.tv/subject/538592 - 风起苍岚 (23)
+https://bgm.tv/subject/538593 - 风起苍岚 (24)
+https://bgm.tv/subject/538594 - 风起苍岚 (25)
+https://bgm.tv/subject/538595 - 风起苍岚 (26)
+
+ISBN 96: 9787559341143
+https://bgm.tv/subject/538596 - 风起苍岚 (27)
+https://bgm.tv/subject/538597 - 风起苍岚 (28)
+https://bgm.tv/subject/538598 - 风起苍岚 (29)
+https://bgm.tv/subject/538599 - 风起苍岚 (30)
+https://bgm.tv/subject/538600 - 风起苍岚 (31)
+https://bgm.tv/subject/538601 - 风起苍岚 (32)
+
+ISBN 97: 9787531852445
+https://bgm.tv/subject/538707 - 血族禁域 (1)
+https://bgm.tv/subject/538708 - 血族禁域 (2)
+https://bgm.tv/subject/538709 - 血族禁域 (3)
+https://bgm.tv/subject/538710 - 血族禁域 (4)
+
+ISBN 98: 9787531840183
+https://bgm.tv/subject/538715 - 血族禁域 (5)
+https://bgm.tv/subject/538716 - 血族禁域 (6)
+https://bgm.tv/subject/538717 - 血族禁域 (7)
+https://bgm.tv/subject/538718 - 血族禁域 (8)
+
+ISBN 99: 9787531859536
+https://bgm.tv/subject/538720 - 血族禁域 (9)
+https://bgm.tv/subject/538721 - 血族禁域 (10)
+https://bgm.tv/subject/538722 - 血族禁域 (11)
+https://bgm.tv/subject/538723 - 血族禁域 (12)
+https://bgm.tv/subject/538724 - 血族禁域 (13)
+https://bgm.tv/subject/538725 - 血族禁域 (14)
+
+ISBN 100: 9787531890102
+https://bgm.tv/subject/538729 - 血族禁域 (15)
+https://bgm.tv/subject/538730 - 血族禁域 (16)
+https://bgm.tv/subject/538731 - 血族禁域 (17)
+https://bgm.tv/subject/538732 - 血族禁域 (18)
+https://bgm.tv/subject/538733 - 血族禁域 (19)
+https://bgm.tv/subject/538734 - 血族禁域 (20)
+
+ISBN 101: 9787559307545
+https://bgm.tv/subject/538735 - 血族禁域 (21)
+https://bgm.tv/subject/538736 - 血族禁域 (22)
+https://bgm.tv/subject/538737 - 血族禁域 (23)
+https://bgm.tv/subject/538738 - 血族禁域 (24)
+
+ISBN 102: 9787559313362
+https://bgm.tv/subject/538746 - 血族禁域 (25)
+https://bgm.tv/subject/538747 - 血族禁域 (26)
+https://bgm.tv/subject/538748 - 血族禁域 (27)
+https://bgm.tv/subject/538749 - 血族禁域 (28)
+
+ISBN 103: 9787559333872
+https://bgm.tv/subject/538751 - 血族禁域 (29)
+https://bgm.tv/subject/538752 - 血族禁域 (30)
+https://bgm.tv/subject/538753 - 血族禁域 (31)
+https://bgm.tv/subject/538754 - 血族禁域 (32)
+https://bgm.tv/subject/538755 - 血族禁域 (33)
+https://bgm.tv/subject/538756 - 血族禁域 (34)
+
+ISBN 104: 9787505614444
+https://bgm.tv/subject/551375 - 雷速登闪电冲线2：方程式赛车（6）
+https://bgm.tv/subject/551376 - 雷速登闪电冲线2：方程式赛车（7）
+https://bgm.tv/subject/551377 - 雷速登闪电冲线2：方程式赛车（8）
+https://bgm.tv/subject/551378 - 雷速登闪电冲线2：方程式赛车（9）
+https://bgm.tv/subject/551379 - 雷速登闪电冲线2：方程式赛车（10）
+
+ISBN 105: 9789861052564
+https://bgm.tv/subject/553941 - やおよろっ! (2)（版本）
+https://bgm.tv/subject/553942 - やおよろっ! (3)（版本）
+
+ISBN 106: 9787531841838
+https://bgm.tv/subject/556927 - 妃·夕妍雪 (1)
+https://bgm.tv/subject/556928 - 妃·夕妍雪 (2)
+https://bgm.tv/subject/556929 - 妃·夕妍雪 (3)
+https://bgm.tv/subject/556930 - 妃·夕妍雪 (4)
+https://bgm.tv/subject/556931 - 妃·夕妍雪 (5)
+https://bgm.tv/subject/556932 - 妃·夕妍雪 (6)
+
+ISBN 107: 9787531848271
+https://bgm.tv/subject/556933 - 妃·夕妍雪 (7)
+https://bgm.tv/subject/556934 - 妃·夕妍雪 (8)
+https://bgm.tv/subject/556935 - 妃·夕妍雪 (9)
+https://bgm.tv/subject/556936 - 妃·夕妍雪 (10)
+
+ISBN 108: 9787531854999
+https://bgm.tv/subject/557361 - 妃·夕妍雪 (11)
+https://bgm.tv/subject/557362 - 妃·夕妍雪 (12)
+https://bgm.tv/subject/557363 - 妃·夕妍雪 (13)
+https://bgm.tv/subject/557364 - 妃·夕妍雪 (14)
+
+ISBN 109: 9787531865384
+https://bgm.tv/subject/557365 - 妃·夕妍雪 (15)
+https://bgm.tv/subject/557366 - 妃·夕妍雪 (16)
+
+ISBN 110: 9787559303554
+https://bgm.tv/subject/557378 - 妃·夕妍雪 (25)
+https://bgm.tv/subject/557379 - 妃·夕妍雪 (26)
+https://bgm.tv/subject/557380 - 妃·夕妍雪 (27)
+https://bgm.tv/subject/557381 - 妃·夕妍雪 (28)
+https://bgm.tv/subject/557382 - 妃·夕妍雪 (29)
+https://bgm.tv/subject/557383 - 妃·夕妍雪 (30)
+
+ISBN 111: 9787559313348
+https://bgm.tv/subject/557385 - 妃·夕妍雪 (31)
+https://bgm.tv/subject/557386 - 妃·夕妍雪 (32)
+https://bgm.tv/subject/557387 - 妃·夕妍雪 (33)
+
+ISBN 112: 9787559341501
+https://bgm.tv/subject/557390 - 妃·夕妍雪 (34)
+https://bgm.tv/subject/557391 - 妃·夕妍雪 (35)
+https://bgm.tv/subject/557392 - 妃·夕妍雪 (36)
+https://bgm.tv/subject/557393 - 妃·夕妍雪 (37)
+https://bgm.tv/subject/557394 - 妃·夕妍雪 (38)
+https://bgm.tv/subject/557395 - 妃·夕妍雪 (39)
+
+ISBN 113: 9787540537593
+https://bgm.tv/subject/560063 - 兔子帮1
+https://bgm.tv/subject/560065 - 兔子帮2
+
+ISBN 114: 9787540539467
+https://bgm.tv/subject/560066 - 兔子帮3
+https://bgm.tv/subject/560067 - 兔子帮4
+
+ISBN 115: 9787540537180
+https://bgm.tv/subject/560068 - 兔子帮5
+https://bgm.tv/subject/560069 - 兔子帮6
+
+ISBN 116: 9787540541385
+https://bgm.tv/subject/560070 - 兔子帮7
+https://bgm.tv/subject/560071 - 兔子帮8
+
+ISBN 117: 9787540542214
+https://bgm.tv/subject/560073 - 兔子帮9
+https://bgm.tv/subject/560074 - 兔子帮10
+
+ISBN 118: 9787540542795
+https://bgm.tv/subject/560075 - 兔子帮11
+https://bgm.tv/subject/560076 - 兔子帮12
+
+ISBN 119: 9787540543525
+https://bgm.tv/subject/560077 - 兔子帮13
+https://bgm.tv/subject/560078 - 兔子帮14
+
+ISBN 120: 9787540544461
+https://bgm.tv/subject/560079 - 兔子帮15
+https://bgm.tv/subject/560080 - 兔子帮16
+
+ISBN 121: 9787540545338
+https://bgm.tv/subject/560082 - 兔子帮17
+https://bgm.tv/subject/560083 - 兔子帮18
+
+ISBN 122: 9787540546502
+https://bgm.tv/subject/560084 - 兔子帮19
+https://bgm.tv/subject/560085 - 兔子帮20
+
+ISBN 123: 9787532282401
+https://bgm.tv/subject/560109 - 斗龙战士 1
+https://bgm.tv/subject/560110 - 斗龙战士 2
+
+ISBN 124: 9787532282388
+https://bgm.tv/subject/560111 - 斗龙战士 3
+https://bgm.tv/subject/560112 - 斗龙战士 4
+
+ISBN 125: 9787532282395
+https://bgm.tv/subject/560113 - 斗龙战士 5
+https://bgm.tv/subject/560114 - 斗龙战士 6
+
+ISBN 126: 9787532282845
+https://bgm.tv/subject/560115 - 斗龙战士 7
+https://bgm.tv/subject/560116 - 斗龙战士 8
+
+ISBN 127: 9787532282869
+https://bgm.tv/subject/560117 - 斗龙战士 9
+https://bgm.tv/subject/560118 - 斗龙战士 10
+
+ISBN 128: 9787532282876
+https://bgm.tv/subject/560119 - 斗龙战士 11
+https://bgm.tv/subject/560120 - 斗龙战士 12
+
+ISBN 129: 9787531857013
+https://bgm.tv/subject/563703 - 花千骨 1
+https://bgm.tv/subject/563723 - 花千骨 12
+
+ISBN 130: 9787540552626
+https://bgm.tv/subject/566055 - 秤砣殺手 (1)
+https://bgm.tv/subject/566056 - 秤砣殺手 (2)
+https://bgm.tv/subject/566057 - 秤砣殺手 (3)
+
+ISBN 131: 9789867426321
+https://bgm.tv/subject/584672 - 레드블러드 Revision (4)（版本）
+https://bgm.tv/subject/584674 - 레드블러드 Revision (6)（版本）
+
+ISBN 132: 9787540541187
+https://bgm.tv/subject/591759 - 破妖小呆龙 (1)
+https://bgm.tv/subject/591760 - 破妖小呆龙 (2)
+
+ISBN 133: 9787540542610
+https://bgm.tv/subject/591775 - 破妖小呆龙 (3)
+https://bgm.tv/subject/591776 - 破妖小呆龙 (4)
+
+ISBN 134: 9787540543464
+https://bgm.tv/subject/591791 - 破妖小呆龙 (5)
+https://bgm.tv/subject/591792 - 破妖小呆龙 (6)
+
+ISBN 135: 9787540544287
+https://bgm.tv/subject/592094 - 破妖小呆龙 (7)
+https://bgm.tv/subject/592095 - 破妖小呆龙 (8)
+
+ISBN 136: 9787540544546
+https://bgm.tv/subject/592191 - 破妖小呆龙 (9)
+https://bgm.tv/subject/592192 - 破妖小呆龙 (10)
+
+ISBN 137: 9787540545048
+https://bgm.tv/subject/593111 - 破妖小呆龙 (11)
+https://bgm.tv/subject/593112 - 破妖小呆龙 (12)
+
+ISBN 138: 9787540545475
+https://bgm.tv/subject/593114 - 破妖小呆龙 (13)
+https://bgm.tv/subject/593115 - 破妖小呆龙 (14)
+
+ISBN 139: 9787540547424
+https://bgm.tv/subject/593116 - 破妖小呆龙 (15)
+https://bgm.tv/subject/593117 - 破妖小呆龙 (16)
+
+ISBN 140: 9789572629406
+https://bgm.tv/subject/596653 - 新装版 ああっ女神さまっ (12)（版本）
+https://bgm.tv/subject/596654 - 新装版 ああっ女神さまっ (14)（版本）
+
+ISBN 141: 9789572629413
+https://bgm.tv/subject/596655 - 新装版 ああっ女神さまっ (13)（版本）
+https://bgm.tv/subject/596656 - 新装版 ああっ女神さまっ (15)（版本）
+
+ISBN 142: 9787229045333
+https://bgm.tv/subject/605089 - 李小猫传奇 (1)
+https://bgm.tv/subject/605090 - 李小猫传奇 (2)
+
+ISBN 143: 9787229051389
+https://bgm.tv/subject/605091 - 李小猫传奇 (3)
+https://bgm.tv/subject/605092 - 李小猫传奇 (4)
+
+ISBN 144: 9789865051259
+https://bgm.tv/subject/617578 - 裝乖 1
+https://bgm.tv/subject/617579 - 裝乖 2
+
+ISBN 145: 9787559688996
+https://bgm.tv/subject/620482 - 镖人 (12)
+https://bgm.tv/subject/620483 - 镖人 (13)
+
+ISBN 146: 9780785157595
+https://bgm.tv/subject/635643 - Spider-Man: The Next Chapter Vol. 1
+https://bgm.tv/subject/635645 - Spider-Man: The Next Chapter Vol. 3
+
+【疑似不同作品误填】(66组)
+----------------------------------------
+ISBN 1: 9789862069028
+https://bgm.tv/subject/20739 - 禁忌之子02 牆
+https://bgm.tv/subject/20751 - 禁忌之子03 心劫
+
+ISBN 2: 9787523217801
+https://bgm.tv/subject/22867 - ネムルバカ（版本）
+https://bgm.tv/subject/56358 - 響子と父さん（版本）
+
+ISBN 3: 9780785141617
+https://bgm.tv/subject/24349 - Amazing Spider-Man Presents: Anti-Venom
+https://bgm.tv/subject/24350 - Spider-Man: Anti-Venom
+
+ISBN 4: 9787531832522
+https://bgm.tv/subject/35611 - 艳势番 壹
+https://bgm.tv/subject/35613 - 艳势番 贰
+
+ISBN 5: 9787540537395
+https://bgm.tv/subject/46254 - 夏达短篇漫画集1:同类
+https://bgm.tv/subject/46255 - 夏达短篇漫画集2:米特兰的晨星
+
+ISBN 6: 9787523221013
+https://bgm.tv/subject/56364 - 探偵綺譚 ~石黒正数短編集~（版本）
+https://bgm.tv/subject/56365 - 石黒正数短編集2 ポジティブ先生（版本）
+
+ISBN 7: 9787514502503
+https://bgm.tv/subject/59159 - 偷星九月天 (26)
+https://bgm.tv/subject/215825 - 斗罗大陆 (8)
+
+ISBN 8: 9782203001145
+https://bgm.tv/subject/105728 - Tintin au pays de l'or noir
+https://bgm.tv/subject/105732 - Coke en stock
+
+ISBN 9: 9787535371027
+https://bgm.tv/subject/107031 - 全职高手2：千机初芒
+https://bgm.tv/subject/107032 - 全职高手3：副本风云
+
+ISBN 10: 9787540540326
+https://bgm.tv/subject/156816 - 天使 (上)
+https://bgm.tv/subject/156817 - 天使 (下)
+
+ISBN 11: 9787540545062
+https://bgm.tv/subject/187006 - 血族·迷失乐园篇 Ⅱ
+https://bgm.tv/subject/187007 - 血族·迷失乐园篇 Ⅰ
+
+ISBN 12: 9789572624081
+https://bgm.tv/subject/233446 - 君は夏のなか（版本）
+https://bgm.tv/subject/335572 - 君と夏のなか 限定版（版本）
+
+ISBN 13: 9787559670557
+https://bgm.tv/subject/244277 - アリス殺し（版本）
+https://bgm.tv/subject/248613 - クララ殺し（版本）
+https://bgm.tv/subject/248788 - ドロシイ殺し（版本）
+https://bgm.tv/subject/550628 - ティンカー・ベル殺し（版本）
+
+ISBN 14: 9789572609255
+https://bgm.tv/subject/247865 - 電影少女 愛藏版(01)
+https://bgm.tv/subject/524971 - 電影少女 (1)（版本）
+
+ISBN 15: 9787513342964
+https://bgm.tv/subject/265361 - 我有一座冒险屋 捌
+https://bgm.tv/subject/265362 - 我有一座冒险屋 玖
+https://bgm.tv/subject/483806 - 我有一座冒险屋 柒
+
+ISBN 16: 9787513345958
+https://bgm.tv/subject/265363 - 我有一座冒险屋 拾壹
+https://bgm.tv/subject/265366 - 我有一座冒险屋 拾贰
+https://bgm.tv/subject/483807 - 我有一座冒险屋 拾
+
+ISBN 17: 9787513347228
+https://bgm.tv/subject/265367 - 我有一座冒险屋 拾肆
+https://bgm.tv/subject/330433 - 我有一座冒险屋 拾叁
+https://bgm.tv/subject/483809 - 我有一座冒险屋 拾伍
+
+ISBN 18: 9789572640654
+https://bgm.tv/subject/279928 - 僕らの恋と青春のすべて 同級生の僕ら（版本）
+https://bgm.tv/subject/336692 - 僕らの恋と青春のすべて 保健室の僕ら（版本）
+
+ISBN 19: 9789865050023
+https://bgm.tv/subject/294308 - 偽裝學渣 (上)（版本）
+https://bgm.tv/subject/294309 - 偽裝學渣 (下)（版本）
+
+ISBN 20: 9788960869486
+https://bgm.tv/subject/304896 - 마음의 소리 레전드 100 1 깨어난 재미
+https://bgm.tv/subject/304903 - 마음의 소리. 1
+
+ISBN 21: 9788995579725
+https://bgm.tv/subject/327219 - 판타지 수학대전. 1: 진리의 열쇠
+https://bgm.tv/subject/327220 - 판타지 수학대전. 2: 수학의 신전
+
+ISBN 22: 9781770462250
+https://bgm.tv/subject/330445 - Beverly
+https://bgm.tv/subject/418274 - Sabrina
+
+ISBN 23: 9787554302316
+https://bgm.tv/subject/337820 - 千王2（上）
+https://bgm.tv/subject/337821 - 千王2（下）
+
+ISBN 24: 9789866688713
+https://bgm.tv/subject/361550 - 風動鳴(02)雲蔽（下部）
+https://bgm.tv/subject/361551 - 風動鳴(03)葉凋（上部）
+
+ISBN 25: 9789573288411
+https://bgm.tv/subject/382456 - 檳榔美少女（上）
+https://bgm.tv/subject/382457 - 檳榔美少女（下）
+
+ISBN 26: 9789865050771
+https://bgm.tv/subject/427150 - 刺骨
+https://bgm.tv/subject/484697 - 心安
+
+ISBN 27: 9789867238153
+https://bgm.tv/subject/430264 - 印加末裔
+https://bgm.tv/subject/598856 - 傾世佳人周小史 (下)
+
+ISBN 28: 9789866349263
+https://bgm.tv/subject/434721 - 地府公務員
+https://bgm.tv/subject/436033 - 九重月明
+
+ISBN 29: 9787549817948
+https://bgm.tv/subject/444898 - 凤九卿（一）
+https://bgm.tv/subject/444899 - 凤九卿（二）
+
+ISBN 30: 9789887479222
+https://bgm.tv/subject/448183 - 无尽诡事
+https://bgm.tv/subject/485770 - 善解人衣
+
+ISBN 31: 9786263527294
+https://bgm.tv/subject/453419 - 靈魂的羽毛：拉比的女兒（上）
+https://bgm.tv/subject/453420 - 靈魂的羽毛：拉比的女兒（下）
+
+ISBN 32: 9787513344036
+https://bgm.tv/subject/478282 - 吃谜少女 (1) 上
+https://bgm.tv/subject/478283 - 吃谜少女 (1) 下
+
+ISBN 33: 9787513343985
+https://bgm.tv/subject/478285 - 吃谜少女 (2) 上
+https://bgm.tv/subject/478286 - 吃谜少女 (2) 下
+
+ISBN 34: 9787513343992
+https://bgm.tv/subject/478287 - 吃谜少女 (3) 上
+https://bgm.tv/subject/478288 - 吃谜少女 (3) 下
+
+ISBN 35: 9787513338622
+https://bgm.tv/subject/483803 - 我有一座冒险屋 肆
+https://bgm.tv/subject/483804 - 我有一座冒险屋 伍
+https://bgm.tv/subject/483805 - 我有一座冒险屋 陆
+
+ISBN 36: 9789865604943
+https://bgm.tv/subject/488927 - 我的妹妹怎麼可能是問題少女？(03) 我與青梅竹馬不會止步
+https://bgm.tv/subject/488928 - 我的妹妹怎麼可能是問題少女？(04) 開始吧，屬於兄妹二人的故事
+
+ISBN 37: 9787532961184
+https://bgm.tv/subject/489088 - 刘慈欣科幻绘本系列：流浪地球 上
+https://bgm.tv/subject/489089 - 刘慈欣科幻绘本系列：流浪地球 下
+
+ISBN 38: 9787501517039
+https://bgm.tv/subject/505324 - 漫画水浒 上
+https://bgm.tv/subject/505325 - 漫画水浒 下
+
+ISBN 39: 9787540545703
+https://bgm.tv/subject/511735 - 抽筋神探：泰坦尼克号婴灵（上）
+https://bgm.tv/subject/511740 - 抽筋神探：泰坦尼克号婴灵（下）
+
+ISBN 40: 9787121488108
+https://bgm.tv/subject/557760 - 战双帕弥什：间章 VOL.1 红莲
+https://bgm.tv/subject/557763 - 战双帕弥什：间章 VOL.1 蚀暗
+https://bgm.tv/subject/557764 - 战双帕弥什：间章 VOL.1 异火
+
+ISBN 41: 9787547030226
+https://bgm.tv/subject/559872 - 斗龙战士2星龙圣域 2星龙圣域寻刀
+https://bgm.tv/subject/559873 - 斗龙战士2星龙圣域 3友谊的危机
+https://bgm.tv/subject/559874 - 斗龙战士2星龙圣域 4御星园守护战
+
+ISBN 42: 9787519050214
+https://bgm.tv/subject/561606 - 深渊星芒
+https://bgm.tv/subject/561609 - 离婚后顾少成了偏执狂
+
+ISBN 43: 9787574903142
+https://bgm.tv/subject/561790 - 火旺 1（上）
+https://bgm.tv/subject/564950 - 火旺 1（下）
+
+ISBN 44: 9787574905573
+https://bgm.tv/subject/561792 - 火旺 2（上）
+https://bgm.tv/subject/564951 - 火旺 2（下）
+
+ISBN 45: 9787531815518
+https://bgm.tv/subject/565944 - 乌龙院大长篇漫画系列 卷一
+https://bgm.tv/subject/565945 - 乌龙院大长篇漫画系列 卷二
+
+ISBN 46: 9780785199434
+https://bgm.tv/subject/584621 - The Amazing Spider-Man Worldwide 2
+https://bgm.tv/subject/584637 - Amazing Spider-Man: Worldwide Vol. 3
+
+ISBN 47: 9780439691451
+https://bgm.tv/subject/586431 - Il segreto della famiglia Tenebrax
+https://bgm.tv/subject/586432 - La vita è un rodeo!
+
+ISBN 48: 9789867079916
+https://bgm.tv/subject/598472 - 離恨天之雪慕晴 (上)
+https://bgm.tv/subject/600089 - 暄染琴音
+
+ISBN 49: 9789867093646
+https://bgm.tv/subject/598934 - 窗外的風景 上
+https://bgm.tv/subject/598937 - 窗外的風景 下
+
+ISBN 50: 9789867093684
+https://bgm.tv/subject/598941 - 今生只為你 上
+https://bgm.tv/subject/598942 - 今生只為你 下
+
+ISBN 51: 9789867073297
+https://bgm.tv/subject/599731 - 嘿！今夜哪裡有鬼！ (四)
+https://bgm.tv/subject/599732 - 哈！今夜哪裡有鬼！ (五)
+
+ISBN 52: 9780785189749
+https://bgm.tv/subject/607565 - Marvel Universe Ultimate Spider-Man Volume 7
+https://bgm.tv/subject/607566 - Marvel Universe: Ultimate Spider-Man & the Avengers
+
+ISBN 53: 9789869394130
+https://bgm.tv/subject/610321 - Remix混音人生 Ⅰ
+https://bgm.tv/subject/610322 - Remix混音人生 Ⅱ
+
+ISBN 54: 9789865848989
+https://bgm.tv/subject/611291 - 人間世 上
+https://bgm.tv/subject/611296 - 人間世 番外篇 Ⅱ
+
+ISBN 55: 9780785115540
+https://bgm.tv/subject/612114 - Venom Vol. 3: Twist
+https://bgm.tv/subject/612116 - Venom by Al Ewing & Ram V Vol. 1: Recursion
+
+ISBN 56: 9787545590401
+https://bgm.tv/subject/615837 - 汉化日记（上）
+https://bgm.tv/subject/615838 - 汉化日记（下）
+
+ISBN 57: 9789865051242
+https://bgm.tv/subject/617576 - 橄欖 上
+https://bgm.tv/subject/617577 - 橄欖 下
+
+ISBN 58: 9787521784886
+https://bgm.tv/subject/626415 - 天官赐福·捌 上册
+https://bgm.tv/subject/626416 - 天官赐福·捌 下册
+
+ISBN 59: 9787500793830
+https://bgm.tv/subject/635212 - 萝铃的魔力 第一部 巫术族的预言 下
+https://bgm.tv/subject/635276 - 萝铃的魔力 第二部 墨夷家族 下（版本）
+
+ISBN 60: 9787500797098
+https://bgm.tv/subject/635275 - 萝铃的魔力 第二部 墨夷家族 上
+https://bgm.tv/subject/635276 - 萝铃的魔力 第二部 墨夷家族 下
+
+ISBN 61: 9787500799627
+https://bgm.tv/subject/635278 - 萝铃的魔力 第三部 不存在的秘方 上
+https://bgm.tv/subject/635279 - 萝铃的魔力 第三部 不存在的秘方 下
+
+ISBN 62: 9787514803662
+https://bgm.tv/subject/635281 - 萝铃的魔力 第四部 信徒，生命的余响 上
+https://bgm.tv/subject/635282 - 萝铃的魔力 第四部 信徒，生命的余响 下
+
+ISBN 63: 9787514809237
+https://bgm.tv/subject/635283 - 萝铃的魔力 第五部 默者的警示 上
+https://bgm.tv/subject/635284 - 萝铃的魔力 第五部 默者的警示 下
+
+ISBN 64: 9787514820188
+https://bgm.tv/subject/635285 - 萝铃的魔力 第六部 异血人的宿命 上
+https://bgm.tv/subject/635286 - 萝铃的魔力 第六部 异血人的宿命 下
+
+ISBN 65: 9787514839197
+https://bgm.tv/subject/635287 - 萝铃的魔力 第七部 黑齿先生俱乐部 上
+https://bgm.tv/subject/635289 - 萝铃的魔力 第七部 黑齿先生俱乐部 下
+
+ISBN 66: 9787514852868
+https://bgm.tv/subject/635291 - 萝铃的魔力 第八部 信使的归途 上
+https://bgm.tv/subject/635292 - 萝铃的魔力 第八部 信使的归途 下
+
+【疑似重复条目】(1组)
+----------------------------------------
+ISBN 1: 9780785143802
+https://bgm.tv/subject/26640 - X-Babies: Stars Reborn
+
+【疑似系列误填】(94组)
+----------------------------------------
+ISBN 1: 9787539149042
+https://bgm.tv/subject/59138 - 偷星九月天 (5)
+https://bgm.tv/subject/348269 - 酷头哈妹（版本）（系列）
+
+ISBN 2: 9789862511961
+https://bgm.tv/subject/78186 - Dの魔王 〜ジョーカー・ゲーム〜（版本）（系列）
+https://bgm.tv/subject/83747 - Dの魔王 (1)（版本）
+
+ISBN 3: 9789573468783
+https://bgm.tv/subject/117839 - メイプル戦記（版本）（系列）
+https://bgm.tv/subject/117840 - メイプル戦記 (1)（版本）
+
+ISBN 4: 9780743471190
+https://bgm.tv/subject/234814 - WarCraft: War of The Ancients Book（系列）
+https://bgm.tv/subject/234815 - Warcraft: War of the Ancients #1: The Well of Eternity
+
+ISBN 5: 9787540336301
+https://bgm.tv/subject/336891 - 千王Ⅰ（系列）
+https://bgm.tv/subject/337818 - 千王（上）
+https://bgm.tv/subject/337819 - 千王（下）
+
+ISBN 6: 9786263793637
+https://bgm.tv/subject/418115 - 胚培養士ミズイロ（版本）（系列）
+https://bgm.tv/subject/418116 - 胚培養士ミズイロ (1)（版本）
+
+ISBN 7: 9789869732802
+https://bgm.tv/subject/422022 - 凶神（系列）
+https://bgm.tv/subject/422461 - 凶神 上
+https://bgm.tv/subject/422462 - 凶神 中
+https://bgm.tv/subject/422463 - 凶神 下
+
+ISBN 8: 9789869394123
+https://bgm.tv/subject/422526 - 格格不入（系列）
+https://bgm.tv/subject/422551 - 格格不入 Ⅰ
+https://bgm.tv/subject/422552 - 格格不入 Ⅱ
+https://bgm.tv/subject/422553 - 格格不入 Ⅲ
+
+ISBN 9: 9786267646144
+https://bgm.tv/subject/422595 - 不要在垃圾桶裡撿男朋友（系列）
+https://bgm.tv/subject/619077 - 不要在垃圾桶裡撿男朋友 番外冊
+
+ISBN 10: 9789887603085
+https://bgm.tv/subject/422663 - BE狂魔求生系統（系列）
+https://bgm.tv/subject/446136 - BE狂魔求生系統 壹
+https://bgm.tv/subject/446137 - BE狂魔求生系統 貳
+https://bgm.tv/subject/446138 - BE狂魔求生系統 叁
+
+ISBN 11: 9789998155039
+https://bgm.tv/subject/423178 - 嫁魔（系列）
+https://bgm.tv/subject/423181 - 嫁魔 下
+https://bgm.tv/subject/423182 - 嫁魔 中
+https://bgm.tv/subject/423183 - 嫁魔 上
+
+ISBN 12: 9789860614244
+https://bgm.tv/subject/423200 - 兩隻老虎（系列）
+https://bgm.tv/subject/423291 - 兩隻老虎 下
+https://bgm.tv/subject/423292 - 兩隻老虎 上
+
+ISBN 13: 9789869732864
+https://bgm.tv/subject/423204 - 小笨蛋（系列）
+https://bgm.tv/subject/423286 - 小笨蛋 Ⅰ
+https://bgm.tv/subject/423287 - 小笨蛋 Ⅱ
+
+ISBN 14: 9789887434887
+https://bgm.tv/subject/423407 - 營業悖論（系列）
+https://bgm.tv/subject/423484 - 營業悖論 1
+https://bgm.tv/subject/423485 - 營業悖論 2
+https://bgm.tv/subject/423486 - 營業悖論 3
+https://bgm.tv/subject/423487 - 營業悖論 4
+
+ISBN 15: 9789863670629
+https://bgm.tv/subject/424083 - 異世之飼獸 下
+https://bgm.tv/subject/429708 - 異世之飼獸（系列）
+https://bgm.tv/subject/610443 - 異世之飼獸 上
+
+ISBN 16: 9789865052591
+https://bgm.tv/subject/424424 - 幻想農場（系列）
+https://bgm.tv/subject/616448 - 幻想農場 01
+https://bgm.tv/subject/616450 - 幻想農場 02
+https://bgm.tv/subject/616454 - 幻想農場 03
+
+ISBN 17: 9789865051181
+https://bgm.tv/subject/424481 - 飛來橫犬（系列）
+https://bgm.tv/subject/617610 - 飛來橫犬 壹
+https://bgm.tv/subject/617611 - 飛來橫犬 貳
+https://bgm.tv/subject/617612 - 飛來橫犬 叁
+
+ISBN 18: 9789865050184
+https://bgm.tv/subject/424635 - 命不久矣（系列）
+https://bgm.tv/subject/614849 - 命不久矣 壹
+https://bgm.tv/subject/614850 - 命不久矣 贰
+https://bgm.tv/subject/614851 - 命不久矣 叁
+
+ISBN 19: 9789865051655
+https://bgm.tv/subject/424673 - 江山許你（系列）
+https://bgm.tv/subject/617424 - 江山許你 壹
+https://bgm.tv/subject/617426 - 江山許你 貳
+
+ISBN 20: 9789865051648
+https://bgm.tv/subject/424675 - 天驕（系列）
+https://bgm.tv/subject/617437 - 天驕 上
+https://bgm.tv/subject/617438 - 天驕 下
+
+ISBN 21: 9789865052256
+https://bgm.tv/subject/424731 - 楚囚（系列）
+https://bgm.tv/subject/616439 - 楚囚 01
+https://bgm.tv/subject/616440 - 楚囚 02
+
+ISBN 22: 9789865051945
+https://bgm.tv/subject/424765 - 了不起的簡寧川（系列）
+https://bgm.tv/subject/615925 - 了不起的簡寧川 上
+https://bgm.tv/subject/615926 - 了不起的簡寧川 下
+
+ISBN 23: 9789869732895
+https://bgm.tv/subject/424847 - 跨界演員（系列）
+https://bgm.tv/subject/611235 - 跨界演員 1
+https://bgm.tv/subject/611236 - 跨界演員 2
+
+ISBN 24: 9789869732857
+https://bgm.tv/subject/424849 - 明日星程（系列）
+https://bgm.tv/subject/611103 - 明日星程 上
+https://bgm.tv/subject/611104 - 明日星程 下
+
+ISBN 25: 9789865050689
+https://bgm.tv/subject/424906 - 雙殺（系列）
+https://bgm.tv/subject/617602 - 雙殺 Part.1
+https://bgm.tv/subject/617603 - 雙殺 Part.2
+
+ISBN 26: 9789865050887
+https://bgm.tv/subject/424918 - 不准跟我說話（系列）
+https://bgm.tv/subject/617448 - 不准跟我說話 上
+https://bgm.tv/subject/617449 - 不准跟我說話 中
+https://bgm.tv/subject/617451 - 不准跟我說話 下
+
+ISBN 27: 9789865051235
+https://bgm.tv/subject/424996 - 鬼知道我經歷了什麼（系列）
+https://bgm.tv/subject/617565 - 鬼知道我經歷了什麼 壹
+https://bgm.tv/subject/617566 - 鬼知道我經歷了什麼 貳
+https://bgm.tv/subject/617567 - 鬼知道我經歷了什麼 叁
+
+ISBN 28: 9789865050979
+https://bgm.tv/subject/424999 - 爆了（系列）
+https://bgm.tv/subject/617571 - 爆了 上
+https://bgm.tv/subject/617572 - 爆了 下
+
+ISBN 29: 9789887434801
+https://bgm.tv/subject/424999 - 爆了（版本）（系列）
+https://bgm.tv/subject/617571 - 爆了 上（版本）
+https://bgm.tv/subject/617572 - 爆了 下（版本）
+
+ISBN 30: 9789865051495
+https://bgm.tv/subject/425102 - 精打細算（系列）
+https://bgm.tv/subject/617580 - 精打細算 上
+https://bgm.tv/subject/617581 - 精打細算 中
+https://bgm.tv/subject/617582 - 精打細算 下
+
+ISBN 31: 9789865051624
+https://bgm.tv/subject/425108 - 獵光（系列）
+https://bgm.tv/subject/617587 - 獵光 1
+https://bgm.tv/subject/617588 - 獵光 2
+https://bgm.tv/subject/617589 - 獵光 3
+https://bgm.tv/subject/617590 - 獵光 4
+https://bgm.tv/subject/617591 - 獵光 番外
+
+ISBN 32: 9789865051501
+https://bgm.tv/subject/425114 - 熱搜預定（系列）
+https://bgm.tv/subject/614619 - 熱搜預定 VOL. ONE
+https://bgm.tv/subject/614620 - 熱搜預定 VOL. TWO
+
+ISBN 33: 9789865051754
+https://bgm.tv/subject/425116 - 有隻海豚想撩我（系列）
+https://bgm.tv/subject/614865 - 有隻海豚想撩我 01
+https://bgm.tv/subject/614866 - 有隻海豚想撩我 02
+https://bgm.tv/subject/614867 - 有隻海豚想撩我 03
+
+ISBN 34: 9789865051716
+https://bgm.tv/subject/425122 - 2084（系列）
+https://bgm.tv/subject/614871 - 2084 上冊
+https://bgm.tv/subject/614872 - 2084 下冊
+
+ISBN 35: 9789865051921
+https://bgm.tv/subject/425147 - 三少爺的劍（系列）
+https://bgm.tv/subject/615903 - 三少爺的劍 壹
+https://bgm.tv/subject/615904 - 三少爺的劍 贰
+https://bgm.tv/subject/615906 - 三少爺的劍 叁
+
+ISBN 36: 9789865052447
+https://bgm.tv/subject/425149 - 閉嘴，你這假粉（系列）
+https://bgm.tv/subject/615915 - 閉嘴，你這假粉 01
+https://bgm.tv/subject/615916 - 閉嘴，你這假粉 02
+
+ISBN 37: 9789865050986
+https://bgm.tv/subject/427027 - 影帝們的公寓（系列）
+https://bgm.tv/subject/614627 - 影帝們的公寓 1
+https://bgm.tv/subject/614628 - 影帝們的公寓 2
+https://bgm.tv/subject/614629 - 影帝們的公寓 3
+
+ISBN 38: 9789865051518
+https://bgm.tv/subject/427163 - 特別觀星（系列）
+https://bgm.tv/subject/615078 - 特別觀星 上
+https://bgm.tv/subject/615079 - 特別觀星 下
+
+ISBN 39: 9789887623533
+https://bgm.tv/subject/427163 - 特別觀星（版本）（系列）
+https://bgm.tv/subject/615078 - 特別觀星 上（版本）
+https://bgm.tv/subject/615079 - 特別觀星 下（版本）
+
+ISBN 40: 9789865051853
+https://bgm.tv/subject/427166 - 不正常博物圖鑑（系列）
+https://bgm.tv/subject/617596 - 不正常博物圖鑑 01
+https://bgm.tv/subject/617597 - 不正常博物圖鑑 02
+https://bgm.tv/subject/617598 - 不正常博物圖鑑 03
+
+ISBN 41: 9789865052461
+https://bgm.tv/subject/427214 - 沒錢（系列）
+https://bgm.tv/subject/616432 - 沒錢 01
+https://bgm.tv/subject/616433 - 沒錢 02
+
+ISBN 42: 9789887535454
+https://bgm.tv/subject/427246 - 大璫（版本）（系列）
+https://bgm.tv/subject/535073 - 卖饼
+
+ISBN 43: 9789861961200
+https://bgm.tv/subject/430520 - 只是為你（系列）
+https://bgm.tv/subject/604914 - 只是為你 (上)
+
+ISBN 44: 9789867005885
+https://bgm.tv/subject/430705 - 戲說竹佳人（系列）
+https://bgm.tv/subject/605173 - 戲說竹佳人 (上)
+
+ISBN 45: 9789862866610
+https://bgm.tv/subject/435460 - 重生之名流巨星（系列）
+https://bgm.tv/subject/597525 - 重生之名流巨星 上
+https://bgm.tv/subject/597549 - 重生之名流巨星 下
+
+ISBN 46: 9789869007795
+https://bgm.tv/subject/436572 - 來自星川彼岸（系列）
+https://bgm.tv/subject/610274 - 來自星川彼岸 上
+https://bgm.tv/subject/610275 - 來自星川彼岸 下
+
+ISBN 47: 9789869157964
+https://bgm.tv/subject/436574 - 最終流放（系列）
+https://bgm.tv/subject/610272 - 最終流放 第一季 永遠忠誠
+https://bgm.tv/subject/610273 - 最終流放 第二季 絕對零度
+
+ISBN 48: 9789869394116
+https://bgm.tv/subject/436576 - 驚鴻（系列）
+https://bgm.tv/subject/596385 - 驚鴻 上
+https://bgm.tv/subject/596386 - 驚鴻 下
+
+ISBN 49: 9789869394109
+https://bgm.tv/subject/436577 - 死來死去（系列）
+https://bgm.tv/subject/596378 - 死來死去 I
+https://bgm.tv/subject/596379 - 死來死去 II
+
+ISBN 50: 9789869157926
+https://bgm.tv/subject/436584 - 紅塵有幸識丹青（系列）
+https://bgm.tv/subject/610276 - 紅塵有幸識丹青 上冊
+https://bgm.tv/subject/610277 - 紅塵有幸識丹青 下冊
+
+ISBN 51: 9789869157988
+https://bgm.tv/subject/436586 - 一生孤注擲溫柔（系列）
+https://bgm.tv/subject/610278 - 一生孤注擲溫柔 卷一 相見歡·少年遊
+https://bgm.tv/subject/610279 - 一生孤注擲溫柔 卷二 謁進門·長相思
+https://bgm.tv/subject/610280 - 一生孤注擲溫柔 卷三 永遇樂·望江南
+
+ISBN 52: 9789869394161
+https://bgm.tv/subject/436591 - 承平遺事（系列）
+https://bgm.tv/subject/611587 - 承平遺事 上冊
+https://bgm.tv/subject/611588 - 承平遺事 下冊
+
+ISBN 53: 9789869585873
+https://bgm.tv/subject/436603 - 勝者為王（系列）
+https://bgm.tv/subject/596174 - 勝者為王
+https://bgm.tv/subject/596175 - 勝者為王 PLUS+
+
+ISBN 54: 9789869736213
+https://bgm.tv/subject/436608 - 白日事故（系列）
+https://bgm.tv/subject/610283 - 白日事故 上冊 漫長歲月
+https://bgm.tv/subject/610284 - 白日事故 下冊 向你告白
+
+ISBN 55: 9789869736275
+https://bgm.tv/subject/436611 - 三平米房間（系列）
+https://bgm.tv/subject/596168 - 三平米房間 上
+https://bgm.tv/subject/596169 - 三平米房間 下
+
+ISBN 56: 9789869585835
+https://bgm.tv/subject/436612 - 花近江國 第一部（系列）
+https://bgm.tv/subject/610259 - 花近江國 第一部 上冊
+https://bgm.tv/subject/610261 - 花近江國 第一部 中冊
+https://bgm.tv/subject/610263 - 花近江國 第一部 下冊
+
+ISBN 57: 9789869736268
+https://bgm.tv/subject/436625 - Who are you?（系列）
+https://bgm.tv/subject/611573 - Who are you? Ⅰ
+https://bgm.tv/subject/611574 - Who are you? Ⅱ
+
+ISBN 58: 9789869585842
+https://bgm.tv/subject/436627 - 白日夢之家（系列）
+https://bgm.tv/subject/596177 - 白日夢之家 Ⅰ
+https://bgm.tv/subject/596178 - 白日夢之家 Ⅱ
+
+ISBN 59: 9789869736220
+https://bgm.tv/subject/436632 - 廢土與安息（系列）
+https://bgm.tv/subject/610285 - 廢土與安息 上
+https://bgm.tv/subject/610286 - 廢土與安息 下
+
+ISBN 60: 9789869707817
+https://bgm.tv/subject/436702 - 好生開車（系列）
+https://bgm.tv/subject/622562 - 好生開車 1
+https://bgm.tv/subject/622563 - 好生開車 2
+
+ISBN 61: 9789869707831
+https://bgm.tv/subject/436726 - 流浪行星（系列）
+https://bgm.tv/subject/622568 - 流浪行星 1
+https://bgm.tv/subject/622569 - 流浪行星 2
+https://bgm.tv/subject/622570 - 流浪行星 3
+
+ISBN 62: 9789869732888
+https://bgm.tv/subject/439043 - 完美無缺（系列）
+https://bgm.tv/subject/611106 - 完美無缺 VOL.1
+https://bgm.tv/subject/611107 - 完美無缺 VOL.2
+
+ISBN 63: 9789860614213
+https://bgm.tv/subject/439054 - 玉石非玉（系列）
+https://bgm.tv/subject/611241 - 玉石非玉 上
+https://bgm.tv/subject/611242 - 玉石非玉 下
+
+ISBN 64: 9789860614206
+https://bgm.tv/subject/439055 - 小龍女不女（系列）
+https://bgm.tv/subject/611243 - 小龍女不女 上
+https://bgm.tv/subject/611245 - 小龍女不女 下
+
+ISBN 65: 9789860614237
+https://bgm.tv/subject/439056 - 心眼（系列）
+https://bgm.tv/subject/611257 - 心眼 上
+https://bgm.tv/subject/611258 - 心眼 下
+
+ISBN 66: 9789860614251
+https://bgm.tv/subject/439058 - 哨兵不乖（系列）
+https://bgm.tv/subject/611260 - 哨兵不乖 Ⅰ
+https://bgm.tv/subject/611261 - 哨兵不乖 Ⅱ
+https://bgm.tv/subject/611262 - 哨兵不乖 Ⅲ
+
+ISBN 67: 9787557028626
+https://bgm.tv/subject/441319 - 飛鷗不下（版本）（系列）
+https://bgm.tv/subject/614219 - 飛鷗不下 Ⅰ（版本）
+https://bgm.tv/subject/614220 - 飛鷗不下 Ⅱ（版本）
+
+ISBN 68: 9786260226572
+https://bgm.tv/subject/443107 - のあ先輩はともだち。（版本）（系列）
+https://bgm.tv/subject/457599 - のあ先輩はともだち。 (1)（版本）
+
+ISBN 69: 9787521754186
+https://bgm.tv/subject/446617 - 中国奇谭：绘本版（系列）
+https://bgm.tv/subject/446629 - 中国奇谭绘本版：小妖怪的夏天
+
+ISBN 70: 9789865053178
+https://bgm.tv/subject/448752 - 明人不說暗戀（系列）
+https://bgm.tv/subject/616151 - 明人不說暗戀 I
+https://bgm.tv/subject/616152 - 明人不說暗戀 II
+
+ISBN 71: 9789574362608
+https://bgm.tv/subject/449486 - 山色有無（系列）
+https://bgm.tv/subject/610631 - 山色有無 上
+https://bgm.tv/subject/610632 - 山色有無 下
+
+ISBN 72: 9789887623502
+https://bgm.tv/subject/449486 - 山色有無（版本）（系列）
+https://bgm.tv/subject/610631 - 山色有無 上（版本）
+https://bgm.tv/subject/610632 - 山色有無 下（版本）
+
+ISBN 73: 9787557029807
+https://bgm.tv/subject/456109 - 天官赐福（全新修订版）（系列）
+https://bgm.tv/subject/456110 - 天官赐福 上
+https://bgm.tv/subject/456111 - 天官赐福 中
+https://bgm.tv/subject/456112 - 天官赐福 下
+
+ISBN 74: 9786267152959
+https://bgm.tv/subject/456365 - 喵，有鬼差出沒（系列）
+https://bgm.tv/subject/595998 - 喵，有鬼差出沒 上
+https://bgm.tv/subject/595999 - 喵，有鬼差出沒 下
+
+ISBN 75: 9789865052287
+https://bgm.tv/subject/458399 - 全世界都在等我們分手（系列）
+https://bgm.tv/subject/616130 - 全世界都在等我們分手 Ⅰ
+https://bgm.tv/subject/616132 - 全世界都在等我們分手 Ⅱ
+https://bgm.tv/subject/616134 - 全世界都在等我們分手 Ⅲ
+
+ISBN 76: 9789860614268
+https://bgm.tv/subject/458659 - 偷風不偷月（系列）
+https://bgm.tv/subject/611264 - 偷風不偷月 01
+https://bgm.tv/subject/611265 - 偷風不偷月 02
+
+ISBN 77: 9789865051938
+https://bgm.tv/subject/465278 - 險道神（系列）
+https://bgm.tv/subject/616468 - 險道神 01
+https://bgm.tv/subject/616469 - 險道神 02
+https://bgm.tv/subject/616470 - 險道神 03
+https://bgm.tv/subject/616471 - 險道神 04
+
+ISBN 78: 9786269882960
+https://bgm.tv/subject/466188 - 魔尊也想知道（系列）
+https://bgm.tv/subject/623372 - 魔尊也想知道 下冊
+
+ISBN 79: 9786269778751
+https://bgm.tv/subject/472753 - 骷髏幻戲圖（系列）
+https://bgm.tv/subject/596083 - 骷髏幻戲圖 一
+https://bgm.tv/subject/596084 - 骷髏幻戲圖 二
+https://bgm.tv/subject/596085 - 骷髏幻戲圖 三
+
+ISBN 80: 9786269778737
+https://bgm.tv/subject/472758 - 北斗（系列）
+https://bgm.tv/subject/596079 - 北斗 上
+https://bgm.tv/subject/596080 - 北斗 中
+https://bgm.tv/subject/596081 - 北斗 下
+
+ISBN 81: 9781735035215
+https://bgm.tv/subject/476506 - 猎狮（系列）
+https://bgm.tv/subject/552881 - 猎狮 正册
+https://bgm.tv/subject/552882 - 猎狮 BONUS STORY
+
+ISBN 82: 9789869775915
+https://bgm.tv/subject/483568 - 音樂家們的手指（系列）
+https://bgm.tv/subject/611267 - 音樂家們的手指 上
+https://bgm.tv/subject/611268 - 音樂家們的手指 下
+
+ISBN 83: 9789865052263
+https://bgm.tv/subject/485778 - 斬尾（系列）
+https://bgm.tv/subject/515127 - 斬尾 上
+https://bgm.tv/subject/515128 - 斬尾 下
+
+ISBN 84: 9789574367801
+https://bgm.tv/subject/485789 - 朕的史官每天都在作死（系列）
+https://bgm.tv/subject/610638 - 朕的史官每天都在作死 壹
+https://bgm.tv/subject/610639 - 朕的史官每天都在作死 貳
+https://bgm.tv/subject/610640 - 朕的史官每天都在作死 叁
+
+ISBN 85: 9789865051662
+https://bgm.tv/subject/486697 - 無路可退（系列）
+https://bgm.tv/subject/616475 - 無路可退 Ⅰ
+https://bgm.tv/subject/616479 - 無路可退 Ⅱ
+https://bgm.tv/subject/616480 - 無路可退 Ⅲ
+
+ISBN 86: 9787559660695
+https://bgm.tv/subject/496801 - 王蓝莓的幸福生活
+https://bgm.tv/subject/496803 - 王蓝莓的幸福生活（系列）
+
+ISBN 87: 9787530569894
+https://bgm.tv/subject/507866 - 红楼梦（系列）
+https://bgm.tv/subject/507888 - 红楼梦20：查抄宁国府
+
+ISBN 88: 9789865054526
+https://bgm.tv/subject/517474 - 此生長（系列）
+https://bgm.tv/subject/615928 - 此生長 四卷其一
+https://bgm.tv/subject/615929 - 此生長 四卷其二
+https://bgm.tv/subject/615930 - 此生長 四卷其三
+https://bgm.tv/subject/615931 - 此生長 四卷其四
+
+ISBN 89: 9787807104001
+https://bgm.tv/subject/541902 - 环保剑（系列）
+https://bgm.tv/subject/541905 - 环保剑 (1)
+https://bgm.tv/subject/541906 - 环保剑 (2)
+https://bgm.tv/subject/541907 - 环保剑 (3)
+https://bgm.tv/subject/541908 - 环保剑 (4)
+https://bgm.tv/subject/541909 - 环保剑 (5)
+https://bgm.tv/subject/541910 - 环保剑 (6)
+https://bgm.tv/subject/541911 - 环保剑 (7)
+https://bgm.tv/subject/541912 - 环保剑 (8)
+https://bgm.tv/subject/541913 - 环保剑 (9)
+https://bgm.tv/subject/541914 - 环保剑 (10)
+
+ISBN 90: 9788984428294
+https://bgm.tv/subject/582105 - 디스 (3)
+https://bgm.tv/subject/582107 - 디스（系列）
+
+ISBN 91: 9789881770448
+https://bgm.tv/subject/597819 - 唇诺（系列）
+https://bgm.tv/subject/597821 - 唇诺 第一卷 浮云出岫
+https://bgm.tv/subject/597823 - 唇诺 第二卷 直挂云帆
+
+ISBN 92: 9789867049773
+https://bgm.tv/subject/613482 - 惡魔養殖者（系列）
+https://bgm.tv/subject/613492 - 惡魔養殖者 (1)
+
+ISBN 93: 9789862071304
+https://bgm.tv/subject/613600 - 博康舒大冒險（系列）
+https://bgm.tv/subject/613601 - 博康舒大冒險 (1)
+
+ISBN 94: 9789887055969
+https://bgm.tv/subject/625118 - 直言怪话（系列）
+https://bgm.tv/subject/625123 - 直言怪话 烟火集
+
+
+===== 已汇报的重复条目 ====
+
+【疑似重复条目】(1组)
+----------------------------------------
+ISBN 1: 9780785143802
+https://bgm.tv/subject/94017 - X-Babies: Stars Reborn
+
+【疑似不同作品误填】(2组)
+----------------------------------------
+ISBN 1: 9781401207687
+https://bgm.tv/subject/79177 - Kingdom Come（版本）
+https://bgm.tv/subject/90036 - Absolute Kingdom Come
+
+ISBN 2: 9787500793830
+https://bgm.tv/subject/635206 - 萝铃的魔力 第一部 巫术族的预言 上
+
+
+===== 最终统计 =====
+重复ISBN: 308 个
+总重复条目: 812 个
+未汇报: 808 个
+已汇报: 4 个
+
+分类统计:
+   - 疑似同系列单行本误填: 146 组
+   - 疑似不同作品误填: 67 组
+   - 疑似重复条目: 1 组
+   - 疑似系列误填: 94 组
