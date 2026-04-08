@@ -54,7 +54,7 @@ def get_report_page_links() -> list:
 
 
 def extract_japanese_isbns(infobox: str) -> list:
-    """提取ISBN-13（978开头），记录是否来自版本信息"""
+    """提取ISBN-13（9784开头），记录是否来自版本信息"""
     isbns = []
     patterns = [
         (r'ISBN\s*[:=]\s*(\d[\d-]*\d)', False),
@@ -64,7 +64,7 @@ def extract_japanese_isbns(infobox: str) -> list:
     for pattern, is_version in patterns:
         for match in re.findall(pattern, infobox, re.IGNORECASE):
             isbn = match.replace('-', '').replace(' ', '').strip()
-            if isbn.startswith('978') and len(isbn) == 13:
+            if isbn.startswith('9784') and len(isbn) == 13:
                 if not any(item['isbn'] == isbn for item in isbns):
                     isbns.append({'isbn': isbn, 'is_version': is_version})
     
