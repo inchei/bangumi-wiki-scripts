@@ -1,0 +1,15 @@
+data_dir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive"
+filters:
+  - type:
+      value: 1
+  - field:
+      field: 价格
+      operator: gt
+      value: 500
+output:
+  format: table
+  columns:
+    - id
+    - name
+    - 价格
+limit: 10

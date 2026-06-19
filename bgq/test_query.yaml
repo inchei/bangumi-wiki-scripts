@@ -1,0 +1,19 @@
+data_dir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive"
+filters:
+  - type:
+      value: 2
+  - field:
+      field: score
+      operator: gt
+      value: 8.5
+output:
+  format: table
+  columns:
+    - id
+    - name
+    - name_cn
+    - score
+sort:
+  - field: score
+    direction: desc
+limit: 10

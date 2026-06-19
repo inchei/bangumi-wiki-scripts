@@ -1,0 +1,105 @@
+package model
+
+// Subject represents a Bangumi subject entry.
+type Subject struct {
+	ID           int     `json:"id"`
+	Type         int     `json:"type"`
+	Name         string  `json:"name"`
+	NameCN       string  `json:"name_cn"`
+	Infobox      string  `json:"infobox"`
+	Platform     int     `json:"platform"`
+	Summary      string  `json:"summary"`
+	NFSW         bool    `json:"nsfw"`
+	Score        float64 `json:"score"`
+	Rank         int     `json:"rank"`
+	Date         string  `json:"date"`
+	Series       bool    `json:"series"`
+	Tags         []Tag   `json:"tags"`
+	MetaTags     []string `json:"meta_tags"`
+	ScoreDetails map[string]int `json:"score_details"`
+	Favorite     Favorite `json:"favorite"`
+}
+
+// Tag represents a subject tag.
+type Tag struct {
+	Name  string `json:"name"`
+	Count int    `json:"count"`
+}
+
+// Favorite represents user collection stats.
+type Favorite struct {
+	Wish    int `json:"wish"`
+	Done    int `json:"done"`
+	Doing   int `json:"doing"`
+	OnHold  int `json:"on_hold"`
+	Dropped int `json:"dropped"`
+}
+
+// SubjectRelation represents a relation between two subjects.
+type SubjectRelation struct {
+	SubjectID        int `json:"subject_id"`
+	RelationType     int `json:"relation_type"`
+	RelatedSubjectID int `json:"related_subject_id"`
+	Order            int `json:"order"`
+}
+
+// SubjectPerson represents a person's role in a subject.
+type SubjectPerson struct {
+	PersonID   int    `json:"person_id"`
+	SubjectID  int    `json:"subject_id"`
+	Position   int    `json:"position"`
+	AppearEps  string `json:"appear_eps"`
+}
+
+// Episode represents an episode/chapter of a subject.
+type Episode struct {
+	ID          int    `json:"id"`
+	Name        string `json:"name"`
+	NameCN      string `json:"name_cn"`
+	Description string `json:"description"`
+	Airdate     string `json:"airdate"`
+	Disc        int    `json:"disc"`
+	Duration    string `json:"duration"`
+	SubjectID   int    `json:"subject_id"`
+	Sort        int    `json:"sort"`
+	Type        int    `json:"type"`
+}
+
+// Person represents a person in the database.
+type Person struct {
+	ID      int    `json:"id"`
+	Name    string `json:"name"`
+	Type    int    `json:"type"`
+	Career  []string `json:"career"`
+	Infobox string `json:"infobox"`
+	Summary string `json:"summary"`
+}
+
+// SubjectType represents a Bangumi subject type.
+type SubjectType int
+
+const (
+	TypeBook  SubjectType = 1
+	TypeAnime SubjectType = 2
+	TypeMusic SubjectType = 3
+	TypeGame  SubjectType = 4
+	TypeReal  SubjectType = 6
+)
+
+// TypeCNToNum maps Chinese type names to numeric codes.
+var TypeCNToNum = map[string]int{
+	"书籍":  1,
+	"动画":  2,
+	"音乐":  3,
+	"游戏":  4,
+	"三次元": 6,
+}
+
+// TypeNumToCN maps numeric codes to Chinese type names.
+var TypeNumToCN = map[int]string{
+	1: "书籍",
+	2: "动画",
+	3: "音乐",
+	4: "游戏",
+	6: "三次元",
+}
