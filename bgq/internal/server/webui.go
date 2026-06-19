@@ -171,9 +171,11 @@ a:hover{color:var(--link-hover);text-decoration:underline}
 
 /* ===== Responsive ===== */
 @media(max-width:900px){
-  .container{flex-direction:column}
-  .panel-left{width:100%;min-width:100%;max-height:50vh}
-  .panel-right{flex:none}
+  .container{flex-direction:column;height:auto;min-height:calc(100vh - 56px)}
+  .panel-left{width:100%;min-width:100%;max-height:none;overflow-y:visible}
+  .panel-right{flex:none;overflow-y:visible}
+  .results-table th{position:relative;top:auto;z-index:auto}
+  .results-table-wrap{overflow-x:auto;max-height:none}
 }
 
 /* ===== Section divider ===== */
