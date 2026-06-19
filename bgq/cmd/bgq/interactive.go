@@ -183,7 +183,7 @@ func parseStaffCondition(input string) (config.Filter, error) {
 	if len(parts) >= 4 {
 		field := strings.TrimSpace(parts[2])
 		op, val := parseOperatorValue(strings.TrimSpace(parts[3]))
-		f.Conditions = []config.FieldFilter{{Field: field, Operator: op, Value: val}}
+		f.Conditions = []config.Filter{{Field: &config.FieldFilter{Field: field, Operator: op, Value: val}}}
 	}
 
 	return config.Filter{Staff: f}, nil

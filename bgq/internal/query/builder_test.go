@@ -68,3 +68,120 @@ func TestBuildRelationSQL(t *testing.T) {
 	}
 	t.Logf("Generated SQL:\n%s", sql)
 }
+
+func TestBuildStaffSQL_SubjectTarget(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		Limit:   10,
+		Output:  config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{Type: &config.TypeFilter{Value: 2}},
+			{Staff: &config.StaffFilter{
+				Position: "原作",
+				Mode:     "any",
+				Conditions: []config.Filter{
+					{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "虚渊"}},
+				},
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+}
+
+func TestBuildStaffSQL_SubjectTarget_MultiCond(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		Limit:   10,
+		Output:  config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{Staff: &config.StaffFilter{
+				Position: "原作",
+				Mode:     "any",
+				Conditions: []config.Filter{
+					{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "虚渊"}},
+					{Global: &config.GlobalFilter{Operator: "contains", Value: "1980"}},
+				},
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+}
+
+func TestBuildStaffSQL_SubjectTarget_None(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		Limit:   10,
+		Output:  config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{Staff: &config.StaffFilter{
+				Position: "导演",
+				Mode:     "none",
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+}
+
+func TestBuildStaffSQL_PersonTarget(t *testing.T) {
+	cfg := &config.Config{
+		DataDir:   "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		Limit:     10,
+		Output:    config.Output{Format: "table", Columns: []string{"person_id", "name"}},
+		Target:    "person",
+		Filters: []config.Filter{
+			{Staff: &config.StaffFilter{
+				Position: "原作",
+				Mode:     "any",
+				Conditions: []config.Filter{
+					{Type: &config.TypeFilter{Value: 2}},
+				},
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+}
+
+func TestBuildStaffSQL_PersonTarget_MultiCond(t *testing.T) {
+	cfg := &config.Config{
+		DataDir:   "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		Limit:     10,
+		Output:    config.Output{Format: "table", Columns: []string{"person_id", "name"}},
+		Target:    "person",
+		Filters: []config.Filter{
+			{Staff: &config.StaffFilter{
+				Position: "原作",
+				Mode:     "any",
+				Conditions: []config.Filter{
+					{Type: &config.TypeFilter{Value: 1}},
+					{Field: &config.FieldFilter{Field: "score", Operator: "gt", Value: "8"}},
+				},
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+}

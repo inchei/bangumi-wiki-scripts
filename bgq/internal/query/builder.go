@@ -469,58 +469,68 @@ func (b *SQLBuilder) countFilterForAlias(f *config.CountFilter, alias string) (s
 
 // staffFilter handles staff/person-based filtering.
 func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
-	var subClauses []string
-
-	// For person target: reverse the join (find persons linked to subjects)
-	if b.target == "person" {
-		posIDs := b.getPositionIDsForName(f.Position)
-		if len(posIDs) == 0 {
-			return "", fmt.Errorf("未找到职位类型: %s", f.Position)
-		}
-		return fmt.Sprintf(
-			"EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s))",
-			intListToSQL(posIDs)), nil
-	}
-
-	// Filter by position
 	posIDs := b.getPositionIDsForName(f.Position)
 	if len(posIDs) == 0 {
 		return "", fmt.Errorf("未找到职位类型: %s", f.Position)
 	}
-	subClauses = append(subClauses, fmt.Sprintf("sp.position IN (%s)", intListToSQL(posIDs)))
+	posIDList := intListToSQL(posIDs)
 
-	// Normal conditions on persons
-	var normalConds []string
-	for _, cond := range f.Conditions {
-		if cond.Field == "count" {
-			continue // handled separately
+	// For person target: conditions on associated subjects (like relation filter)
+	if b.target == "person" {
+		// none mode: exclude persons with this position
+		if f.Mode == "none" {
+			return fmt.Sprintf(
+				"NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s))",
+				posIDList), nil
 		}
-		condSQL, err := b.personFieldFilter(&cond)
-		if err != nil {
-			return "", fmt.Errorf("staff condition: %w", err)
+
+		// Build conditions on associated subjects using buildWhereForAlias (same as relation filter)
+		subClauses := []string{fmt.Sprintf("sp.position IN (%s)", posIDList)}
+		if len(f.Conditions) > 0 {
+			relatedWhere, err := b.buildWhereForAlias(f.Conditions, "rs")
+			if err != nil {
+				return "", fmt.Errorf("staff condition: %w", err)
+			}
+			if relatedWhere != "TRUE" {
+				subClauses = append(subClauses, relatedWhere)
+			}
 		}
-		normalConds = append(normalConds, condSQL)
+		subWhere := strings.Join(subClauses, " AND ")
+
+		if f.Mode == "all" {
+			condWhere := "TRUE"
+			if len(f.Conditions) > 0 {
+				condWhere, _ = b.buildWhereForAlias(f.Conditions, "rs")
+			}
+			return fmt.Sprintf(
+				`(SELECT COUNT(*) FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND sp.position IN (%s) AND %s) =
+				 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s))`,
+				posIDList, condWhere, posIDList), nil
+		}
+
+		return fmt.Sprintf(
+			"EXISTS (SELECT 1 FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND %s)",
+			subWhere), nil
 	}
 
-	if len(normalConds) > 0 {
-		subClauses = append(subClauses, strings.Join(normalConds, " AND "))
+	// Subject target: conditions on persons
+
+	// none mode: exclude subjects with this position
+	if f.Mode == "none" {
+		return fmt.Sprintf(
+			"NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id AND sp.position IN (%s))",
+			posIDList), nil
 	}
 
-	subWhere := strings.Join(subClauses, " AND ")
-
-	// JOIN persons table if any condition references person data (not just subject_persons columns)
-	needsPersonJoin := false
-	for _, cond := range f.Conditions {
-		switch cond.Field {
-		case "person_id", "id", "appear_eps", "count":
-			// These only need subject_persons, no persons join needed
-		default:
-			needsPersonJoin = true
-		}
+	// Build person-specific conditions
+	personWhere, err := b.buildPersonWhereForAlias(f.Conditions)
+	if err != nil {
+		return "", fmt.Errorf("staff condition: %w", err)
 	}
 
+	// Always join persons table when there are conditions
 	fromClause := "subject_persons sp"
-	if needsPersonJoin {
+	if len(f.Conditions) > 0 {
 		fromClause = "subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id"
 	}
 
@@ -528,16 +538,53 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 		return fmt.Sprintf(
 			`(SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND sp.position IN (%s) AND %s) =
 			 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.subject_id = s.id AND sp.position IN (%s))`,
-			fromClause, intListToSQL(posIDs), strings.Join(normalConds, " AND "), intListToSQL(posIDs)), nil
+			fromClause, posIDList, personWhere, posIDList), nil
 	}
 
 	return fmt.Sprintf(
-		"EXISTS (SELECT 1 FROM %s WHERE sp.subject_id = s.id AND %s)",
-		fromClause, subWhere), nil
+		"EXISTS (SELECT 1 FROM %s WHERE sp.subject_id = s.id AND sp.position IN (%s) AND %s)",
+		fromClause, posIDList, personWhere), nil
 }
 
-// personFieldFilter builds a field filter on person data.
-func (b *SQLBuilder) personFieldFilter(f *config.FieldFilter) (string, error) {
+// buildPersonWhereForAlias generates WHERE clauses for person-level nested conditions.
+func (b *SQLBuilder) buildPersonWhereForAlias(filters []config.Filter) (string, error) {
+	if len(filters) == 0 {
+		return "TRUE", nil
+	}
+	var clauses []string
+	for i, f := range filters {
+		clause, err := b.personFilterForAlias(f, i)
+		if err != nil {
+			return "", err
+		}
+		if clause != "" {
+			clauses = append(clauses, clause)
+		}
+	}
+	if len(clauses) == 0 {
+		return "TRUE", nil
+	}
+	return strings.Join(clauses, " AND "), nil
+}
+
+// personFilterForAlias dispatches a single filter for person-level conditions.
+func (b *SQLBuilder) personFilterForAlias(f config.Filter, idx int) (string, error) {
+	switch {
+	case f.Field != nil:
+		return b.personFieldFilterForAlias(f.Field)
+	case f.Global != nil:
+		return b.personGlobalFilterForAlias(f.Global)
+	case f.Type != nil:
+		return b.personTypeFilterForAlias(f.Type)
+	case f.Count != nil:
+		return b.personCountFilterForAlias(f.Count)
+	default:
+		return "", fmt.Errorf("人物筛选不支持此条件类型 (index %d)", idx)
+	}
+}
+
+// personFieldFilterForAlias builds a field filter on person data (supports all operators).
+func (b *SQLBuilder) personFieldFilterForAlias(f *config.FieldFilter) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
 	switch f.Field {
 	case "name":
@@ -547,7 +594,6 @@ func (b *SQLBuilder) personFieldFilter(f *config.FieldFilter) (string, error) {
 	case "type":
 		return b.buildCondition("p.person_type", f.Operator, valueStr)
 	case "career":
-		// career is VARCHAR[] — use LIST_CONTAINS for contains/eq, or regexp_matches for regex
 		if f.Operator == "regex" {
 			return fmt.Sprintf("regexp_matches(p.career::VARCHAR, '%s')", escapeRegex(valueStr)), nil
 		}
@@ -555,13 +601,48 @@ func (b *SQLBuilder) personFieldFilter(f *config.FieldFilter) (string, error) {
 	case "appear_eps":
 		return b.buildCondition("sp.appear_eps", f.Operator, valueStr)
 	default:
-		// Try person infobox field (e.g., 简体中文名, 别名, 性别, 生日, etc.)
+		// Try person infobox field
 		fieldExpr := b.infoboxExtractExpr(f.Field, "p")
 		if isNumericOp(f.Operator) {
 			fieldExpr = extractNum(fieldExpr)
 		}
 		return b.buildCondition(fieldExpr, f.Operator, valueStr)
 	}
+}
+
+// personGlobalFilterForAlias builds a global search on person infobox.
+func (b *SQLBuilder) personGlobalFilterForAlias(f *config.GlobalFilter) (string, error) {
+	valueStr := fmt.Sprintf("%v", f.Value)
+	switch f.Operator {
+	case "regex":
+		return fmt.Sprintf("regexp_matches(p.infobox, '%s')", escapeRegex(valueStr)), nil
+	case "contains":
+		return fmt.Sprintf("p.infobox LIKE '%%%s%%'", escapeLike(valueStr)), nil
+	default:
+		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
+	}
+}
+
+// personTypeFilterForAlias builds a person type filter.
+func (b *SQLBuilder) personTypeFilterForAlias(f *config.TypeFilter) (string, error) {
+	return fmt.Sprintf("p.person_type = '%s'", escapeSQLString(fmt.Sprintf("%v", f.Value))), nil
+}
+
+// personCountFilterForAlias builds a count filter on person appearances.
+func (b *SQLBuilder) personCountFilterForAlias(f *config.CountFilter) (string, error) {
+	var countExpr string
+	if f.What == "ep" {
+		countExpr = "(SELECT COUNT(*) FROM subject_persons sp2 WHERE sp2.person_id = p.person_id)"
+	} else {
+		posIDs := b.getPositionIDsForName(f.What)
+		if len(posIDs) == 0 {
+			return "", fmt.Errorf("未找到职位类型用于计数: %s", f.What)
+		}
+		countExpr = fmt.Sprintf(
+			"(SELECT COUNT(*) FROM subject_persons sp2 WHERE sp2.person_id = p.person_id AND sp2.position IN (%s))",
+			intListToSQL(posIDs))
+	}
+	return b.buildCondition(countExpr, f.Operator, fmt.Sprintf("%v", f.Value))
 }
 
 // episodeFilter handles episode-based filtering.
