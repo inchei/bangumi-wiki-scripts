@@ -267,27 +267,136 @@ a:hover{color:var(--link-hover);text-decoration:underline}
 </div>
 
 <script>
+/* ===== WASM config ==== */
+const DIRECT_FIELDS=['id','type','name','name_cn','platform','nsfw','score','rank','date','series','infobox','person_id','person_type','career','summary'];
+
 /* ===== State ===== */
 let schema = {direct_fields:[],subject_types:{},relation_types:{},staff_positions:{}};
 let filters = [];
 let lastResult = null;
+let backendMode = 'api';
+let duckDB = null, duckConn = null;
 
 /* ===== Init ===== */
-loadSchema();
-checkHealth();
-
-async function loadSchema(){
-  try{const r=await fetch('/api/schema/fields');schema=await r.json();renderAddForm()}catch(e){console.error(e)}
-}
-async function checkHealth(){
+detectBackend();
+async function detectBackend(){
   try{
     const r=await fetch('/api/health');const d=await r.json();
-    const dot=document.getElementById('statusDot');
-    const txt=document.getElementById('statusText');
-    if(d.status==='ok'){dot.style.background='#67c23a';txt.textContent='已连接'}
-    else{dot.style.background='#f56c6c';txt.textContent='异常'}
-  }catch(e){document.getElementById('statusDot').style.background='#f56c6c';document.getElementById('statusText').textContent='离线'}
+    if(d.status==='ok'){backendMode='api';setStatus('ready','已连接');loadSchema();return}
+  }catch(e){}
+  // API unavailable — use DuckDB-WASM
+  backendMode='wasm';
+  setStatus('loading-bg','WASM...');
+  await initWasm();
+  loadSchemaOffline();
 }
+async function initWasm(){
+  const duckdb=await import('https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/+esm');
+  const base=new URL('.',location.href).href;
+  const bundle=await duckdb.selectBundle({
+    mvp:{mainModule:base+'duckdb-mvp.wasm',mainWorker:base+'duckdb-browser-mvp.worker.js'},
+    eh:{mainModule:base+'duckdb-eh.wasm',mainWorker:base+'duckdb-browser-eh.worker.js'}
+  });
+  const worker=new Worker(bundle.mainWorker);
+  duckDB=new duckdb.AsyncDuckDB(new duckdb.ConsoleLogger(),worker);
+  await duckDB.instantiate(bundle.mainModule);
+
+  // Try to load DB from cache, then ask user to upload
+  const cached=await loadCachedDB();
+  if(cached){duckConn=await duckDB.connect();setStatus('ready','WASM');return}
+
+  showDBUpload();
+}
+
+const DB_KEY='bangumi_web.db';
+
+async function loadCachedDB(){
+  // OPFS — Origin Private File System, designed for large files in browser
+  try{
+    const root=await navigator.storage.getDirectory();
+    const fh=await root.getFileHandle(DB_KEY);
+    const file=await fh.getFile();
+    if(file.size>1000000){
+      const buf=await file.arrayBuffer();
+      await duckDB.registerFileBuffer(DB_KEY,new Uint8Array(buf.slice(0)));
+      await duckDB.open({path:DB_KEY,query:{mode:'ro'}});
+      console.log('OPFS loaded:',file.size,'bytes');
+      return true;
+    }
+  }catch(e){console.log('OPFS load:',e.message)}
+
+  // Fallback: Cache API
+  try{
+    const cache=await caches.open('bgq-db');
+    const resp=await cache.match('https://bgq/'+DB_KEY);
+    if(resp){const buf=await resp.arrayBuffer();if(buf.byteLength>1000000){
+      await duckDB.registerFileBuffer(DB_KEY,new Uint8Array(buf.slice(0)));
+      await duckDB.open({path:DB_KEY,query:{mode:'ro'}});
+      console.log('CacheAPI loaded');
+      return true;
+    }}
+  }catch(e){console.log('CacheAPI load:',e.message)}
+  return false;
+}
+
+async function cacheDB(buf){const buffer=buf.slice(0);
+  console.log('caching',buffer.byteLength,'bytes...');
+  try{
+    const root=await navigator.storage.getDirectory();
+    const fh=await root.getFileHandle(DB_KEY,{create:true});
+    const w=await fh.createWritable();
+    await w.write(buffer);await w.close();
+    console.log('OPFS cached:',buffer.byteLength,'bytes');
+    return;
+  }catch(e){console.log('OPFS cache:',e.message)}
+  try{
+    const cache=await caches.open('bgq-db');
+    await cache.put('https://bgq/'+DB_KEY,new Response(buffer));
+    console.log('CacheAPI cached');
+  }catch(e){console.log('CacheAPI cache:',e.message)}
+}
+
+function showDBUpload(){
+  const el=document.getElementById('resultsPanel');
+  if(!el){console.error('resultsPanel not found');return}
+  el.innerHTML='<div class="card" style="text-align:center;padding:40px;max-width:500px;margin:40px auto">'+
+    '<div style="font-size:48px;margin-bottom:16px">📦</div>'+
+    '<h3 style="margin-bottom:8px">加载数据库</h3>'+
+    '<p style="color:var(--text-secondary);margin-bottom:12px;font-size:13px">选择 bangumi_web.db 文件（约 500MB）<br>首次加载后自动缓存，后续无需重复操作</p>'+
+    '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap">'+
+    '<input type="file" id="dbFileInput" accept=".db" style="display:none" onchange="onDBFileSelected(event)">'+
+    '<button class="btn btn-primary" onclick="document.getElementById(\'dbFileInput\').click()">📁 选择本地文件</button>'+
+    '<a href="https://github.com/inchei/bangumi-wiki-scripts/releases/latest/download/bangumi_web.db" class="btn btn-outline" target="_blank">📥 下载数据库</a>'+
+    '</div>'+
+    '<p id="dbUploadStatus" style="margin-top:12px;font-size:12px;color:var(--text-secondary)"></p>'+
+    '</div>';
+}
+async function onDBFileSelected(e){
+  const file=e.target.files[0];
+  if(!file)return;
+  const status=document.getElementById('dbUploadStatus');
+  status.textContent='加载中...';
+  try{
+    const buffer=await file.arrayBuffer();
+    const uint8=new Uint8Array(buffer.slice(0));
+    await duckDB.registerFileBuffer('bangumi_web.db',uint8);
+    await duckDB.open({path:'bangumi_web.db',query:{mode:'ro'}});
+    duckConn=await duckDB.connect();
+    cacheDB(buffer.slice(0));
+    setStatus('ready','WASM');
+    document.getElementById('resultsPanel').innerHTML='<div id="resultsPlaceholder" class="results-empty"><div class="icon">📋</div><div>点击 <b>"执行查询"</b> 开始筛选</div></div><div id="resultsInfo"></div><div id="resultsTable"></div>';
+  }catch(err){
+    status.textContent='加载失败: '+err.message;
+  }
+}
+function loadSchemaOffline(){
+  renderAddForm();
+}
+async function loadSchema(){
+  if(backendMode==='wasm'){renderAddForm();return}
+  try{const r=await fetch('/api/schema/fields');schema=await r.json();renderAddForm()}catch(e){console.error(e)}
+}
+function setStatus(cls,text){document.getElementById('statusDot').style.background=cls==='ready'?'#67c23a':cls==='loading-bg'?'#e6a23c':'#f56c6c';document.getElementById('statusText').textContent=text}
 
 /* ===== Render Filter Tags ===== */
 function renderFilterTags(){
@@ -494,6 +603,11 @@ function addBaseFilters(){
 }
 
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function ensureResultElements(){
+  const panel=document.getElementById('resultsPanel');
+  if(!document.getElementById('resultsInfo')){const d=document.createElement('div');d.id='resultsInfo';panel.appendChild(d)}
+  if(!document.getElementById('resultsTable')){const d=document.createElement('div');d.id='resultsTable';panel.appendChild(d)}
+}
 
 /* ===== Filter Actions ===== */
 function getVal(id){return document.getElementById(id)?.value?.trim()||''}
@@ -675,14 +789,124 @@ async function applyYAML(){
   }catch(e){alert('请求失败: '+e.message)}
 }
 
+/* ===== WASM SQL Builder ===== */
+function isDirect(f){return DIRECT_FIELDS.includes(f)}
+function infoboxExpr(f,alias){const a=alias||'s';const n=f.replace(/'/g,"''");return "regexp_extract("+a+".infobox,'(?i)\\|"+n+"\\\\s*[:=]\\\\s*([^|}\\\\n]*)',1)"}
+function numExpr(e){return "TRY_CAST(NULLIF(REPLACE(regexp_extract("+e+",'(\\\\d[\\\\d,]*(?:\\\\.\\\\d+)?)',1),',',''),'') AS DOUBLE)"}
+function dateExpr(e){const n="regexp_replace(regexp_replace(TRIM("+e+"),'[年月]','-'),'日','')";const p="CASE WHEN regexp_matches("+n+",'^\\\\d{4}$') THEN "+n+"||'-01-01' WHEN regexp_matches("+n+",'^\\\\d{4}-\\\\d{1,2}$') THEN "+n+"||'-01' ELSE "+n+" END";return "TRY_CAST("+p+" AS DATE)"}
+function escSql(s){return (s||'').replace(/'/g,"''")}
+function buildCond(expr,op,val){
+  switch(op){
+    case 'eq':return "CAST("+expr+" AS VARCHAR) = '"+escSql(val)+"'";
+    case 'contains':return "CAST("+expr+" AS VARCHAR) LIKE '%"+escSql(val).replace(/%/g,'\\%').replace(/_/g,'\\_')+"%'";
+    case 'regex':return "regexp_matches("+expr+",'"+val.replace(/'/g,"''")+"')";
+    case 'empty':return "COALESCE(CAST("+expr+" AS VARCHAR),'') = ''";
+    case 'gt':case 'gte':case 'lt':case 'lte':return "CAST("+expr+" AS DOUBLE) "+({gt:'>',gte:'>=',lt:'<',lte:'<='})[op]+" "+val;
+    case 'before':return dateExpr(expr)+" < CAST('"+escSql(val)+"' AS DATE)";
+    case 'after':return dateExpr(expr)+" > CAST('"+escSql(val)+"' AS DATE)";
+    default:return expr+" LIKE '%"+escSql(val)+"%'";
+  }
+}
+function buildFieldWhere(f,alias){
+  const a=alias||'s';let expr;
+  if(isDirect(f.field))expr=a+"."+f.field;
+  else{expr=infoboxExpr(f.field,a);if(['gt','gte','lt','lte'].includes(f.operator))expr=numExpr(expr)}
+  return buildCond(expr,f.operator,String(f.value||''));
+}
+function buildWasmSQL(filters,cols,target,limit,sortBy){
+  const alias=target==='person'?'p':'s';
+  const fromTbl=target==='person'?'persons':'subjects';
+  let selectExprs=[];
+  for(const col of cols){
+    if(col==='id'){selectExprs.push(alias+(target==='person'?'.person_id as id':'.id'));continue}
+    if(isDirect(col)){selectExprs.push(alias+'.'+col);continue}
+    if(col==='name_cn'&&target==='person'){selectExprs.push(alias+'.name AS name_cn');continue}
+    selectExprs.push(infoboxExpr(col,alias)+' AS "'+col.replace(/"/g,'""')+'"');
+  }
+  let whereParts=[];
+  for(const f of filters){
+    if(f.type){
+      const col=target==='person'?alias+'.person_type':alias+'.type';
+      whereParts.push(col+' = '+f.type.value);
+    }else if(f.field){
+      whereParts.push(buildFieldWhere(f.field,alias));
+    }else if(f.global){
+      whereParts.push(buildCond(alias+'.infobox',f.global.operator,String(f.global.value||'')));
+    }else if(f.tag){
+      const c="EXISTS (SELECT 1 FROM (SELECT UNNEST("+alias+".tags) AS t) WHERE t.name = '"+escSql(f.tag.value)+"')";
+      whereParts.push(f.tag.negate?'NOT '+c:c);
+    }else if(f.meta_tag){
+      whereParts.push("LIST_CONTAINS(COALESCE("+alias+".meta_tags, []), '"+escSql(f.meta_tag.value)+"')");
+    }else if(f.relation){
+      const rids=f.relation.type||'';
+      const mode=f.relation.mode||'any';
+      let sub="EXISTS (SELECT 1 FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id=rs.id WHERE r.subject_id="+alias+".id";
+      sub+=" AND r.relation_type IN (/*TODO:resolve*/"+rids+"))";
+      whereParts.push(sub);
+    }else if(f.staff){
+      const pos=f.staff.position||'';
+      if(target==='person'){
+        whereParts.push("EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id=p.person_id AND sp.position IN (/*pos*/"+pos+"))");
+      }else{
+        let sub="EXISTS (SELECT 1 FROM subject_persons sp";
+        if(f.staff.conditions&&f.staff.conditions.some(c=>c.field==='name'||c.field==='type'||c.field==='career'))sub+=" LEFT JOIN persons p2 ON sp.person_id=p2.person_id";
+        sub+=" WHERE sp.subject_id=s.id AND sp.position IN (/*pos*/"+pos+")";
+        if(f.staff.conditions&&f.staff.conditions.length>0){
+          for(const c of f.staff.conditions){
+            if(c.field==='count')continue;
+            if(c.field==='name')sub+=" AND "+buildCond('p2.name',c.operator||'contains',String(c.value||''));
+            else if(c.field==='id'||c.field==='person_id')sub+=" AND "+buildCond('sp.person_id',c.operator||'contains',String(c.value||''));
+          }
+        }
+        sub+=")";
+        whereParts.push(sub);
+      }
+    }else if(f.episode){
+      whereParts.push("EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id=s.id)");
+    }else if(f.count){
+      let cnt="(SELECT COUNT(*) FROM subject_relations r WHERE r.subject_id="+alias+".id)";
+      whereParts.push(buildCond(cnt,f.count.operator||'gt',String(f.count.value||'0')));
+    }
+  }
+  let sql="SELECT "+selectExprs.join(', ')+" FROM "+fromTbl+" "+alias;
+  if(whereParts.length>0)sql+=" WHERE "+whereParts.join(' AND ');
+  if(sortBy)sql+=" ORDER BY "+sortBy;
+  sql+=" LIMIT "+(limit||500);
+  return sql;
+}
+
 /* ===== Run Query ===== */
 async function runQuery(){
   const cols=document.getElementById('outputColumns').value.split(',').map(s=>s.trim()).filter(Boolean);
   const limit=parseInt(document.getElementById('resultLimit').value)||500;
-  const body=JSON.stringify({target:queryTarget,filters,columns:cols,limit});
-  document.getElementById('resultsPlaceholder').style.display='none';
+  const sortBy=document.getElementById('sortBy')?.value||'';
+  const placeholder=document.getElementById('resultsPlaceholder');
+  if(placeholder)placeholder.remove();
+  ensureResultElements();
   document.getElementById('resultsInfo').innerHTML='<div class="loading-spinner"><div class="spinner"></div>查询中...</div>';
   document.getElementById('resultsTable').innerHTML='';
+
+  if(backendMode==='wasm'){
+    // DuckDB-WASM mode
+    try{
+      if(!duckDB||!duckConn){await detectBackend()}
+      const sql=buildWasmSQL(filters,cols,queryTarget,limit,sortBy);
+      const t0=performance.now();
+      const result=await duckConn.query(sql);
+      const elapsed=((performance.now()-t0)/1000).toFixed(2);
+      const rcols=result.schema.fields.map(f=>f.name);
+      const rows=[];
+      for(let i=0;i<result.numRows;i++){const row=[];for(const c of rcols)row.push(String(result.getChild(c)?.get(i)??''));rows.push(row)}
+      lastResult={columns:rcols,rows,total_rows:rows.length,duration:elapsed+'s'};
+      renderResults(lastResult);
+    }catch(e){
+      document.getElementById('resultsInfo').innerHTML='<div class="error-card"><div class="error-title">查询失败</div><pre>'+escapeHtml(e.message)+'</pre></div>';
+    }
+    return;
+  }
+
+  // API mode
+  const body=JSON.stringify({target:queryTarget,filters,columns:cols,limit});
   try{
     const r=await fetch('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},body});
     const data=await r.json();
