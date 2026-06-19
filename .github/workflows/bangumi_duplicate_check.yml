@@ -146,8 +146,6 @@ jobs:
 
           "${DUCKDB}" "${DB_FILE}" -f /tmp/build_web_db.sql
           echo "数据库大小: $(du -h ${DB_FILE} | cut -f1)"
-          # Copy to workspace for release upload
-          cp "${DB_FILE}" "${GITHUB_WORKSPACE}/bangumi_web.db"
 
       # ===== 上传产物 =====
       - name: 上传产物
@@ -188,10 +186,19 @@ jobs:
           body: "生成日期：${{ env.TAG_NAME }}"
           files: |
             ${{ env.ALIAS_GZ }}
-            bangumi_web.db
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 导出并准备网页版
+        run: |
+          ${GITHUB_WORKSPACE}/bgq/bin/bgq export-deploy --output bgq/deploy/index.html
+          # Download DuckDB-WASM worker/wasm files (same-origin required)
+          CDN="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/dist"
+          for f in duckdb-mvp.wasm duckdb-eh.wasm duckdb-browser-mvp.worker.js duckdb-browser-eh.worker.js; do
+            curl -fsSL "${CDN}/${f}" -o bgq/deploy/"${f}"
+          done
+          ls -lh bgq/deploy/
 
       - name: 部署网页版
         uses: peaceiris/actions-gh-pages@v4
