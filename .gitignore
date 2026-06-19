@@ -1,5 +1,4 @@
 bangumi_archive
-*.csv
 *.jsonlines
 *.xlsx
 diff.py
