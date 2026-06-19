@@ -1,0 +1,22 @@
+filters:
+  - {
+      "type": {
+        "value": "书籍"
+      }
+    }
+  - {
+      "relation": {
+        "type": "单行本",
+        "mode": "any",
+        "conditions": []
+      }
+    }
+  - {
+      "field": {
+        "field": "series",
+        "operator": "eq",
+        "value": "false"
+      }
+    }
+output:
+  columns: [id,name,name_cn,作者]

@@ -1,0 +1,20 @@
+data_dir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive"
+filters:
+  - type:
+      value: 2
+  - field:
+      field: score
+      operator: gt
+      value: 9
+output:
+  format: csv
+  path: "/tmp/bgq_test_results.csv"
+  columns:
+    - id
+    - name
+    - name_cn
+    - score
+sort:
+  - field: score
+    direction: desc
+limit: 20

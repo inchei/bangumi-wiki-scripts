@@ -1,0 +1,22 @@
+filters:
+  - {
+      "type": {
+        "value": "书籍"
+      }
+    }
+  - {
+      "field": {
+        "field": "series",
+        "operator": "eq",
+        "value": "true"
+      }
+    }
+  - {
+      "field": {
+        "field": "name",
+        "operator": "regex",
+        "value": "\\(\\d{1,2}\\)"
+      }
+    }
+output:
+  columns: [id,name,name_cn]

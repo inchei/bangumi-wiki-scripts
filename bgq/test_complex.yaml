@@ -1,0 +1,25 @@
+data_dir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive"
+filters:
+  - type:
+      value: 1
+  - field:
+      field: 出版社
+      operator: contains
+      value: "角川"
+  - field:
+      field: score
+      operator: gt
+      value: 7.5
+output:
+  format: table
+  columns:
+    - id
+    - name
+    - name_cn
+    - score
+    - 出版社
+    - 作者
+sort:
+  - field: score
+    direction: desc
+limit: 10

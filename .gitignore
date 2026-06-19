@@ -3,3 +3,4 @@ bangumi_archive
 *.jsonlines
 *.xlsx
 diff.py
+*.db

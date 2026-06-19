@@ -1,0 +1,15 @@
+data_dir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive"
+filters:
+  - type:
+      value: 2
+  - meta_tag:
+      value: "TV"
+      operator: contains
+output:
+  format: table
+  columns:
+    - id
+    - name
+    - name_cn
+    - score
+limit: 5
