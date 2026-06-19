@@ -63,7 +63,7 @@ func printUsage() {
 	fmt.Println(`用法:
   bgq query --config <yaml文件> [--data-dir <数据目录>] [--output <输出文件>]
   bgq query --interactive [--data-dir <数据目录>]
-  bgq serve [--data-dir <数据目录>] [--listen <地址:端口>]
+  bgq serve [--data-dir <数据目录>] [--listen <地址:端口>] [--dev]
   bgq ingest --data-dir <数据目录> --db <数据库路径>
   bgq version
   bgq help
@@ -79,6 +79,7 @@ func printUsage() {
 示例:
   bgq query --config query.yaml
   bgq serve --listen :8080
+  bgq serve --dev
   bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
   bgq query --interactive`)
 }
@@ -217,6 +218,7 @@ func cmdInteractive(args []string) {
 func cmdServe(args []string) {
 	dataDir := "bangumi_archive"
 	listen := ":8080"
+	dev := false
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -230,7 +232,20 @@ func cmdServe(args []string) {
 				listen = args[i+1]
 				i++
 			}
+		case "--dev":
+			dev = true
 		}
+	}
+
+	// If --dev is set and we're not already running under air, start air
+	if dev && os.Getenv("BGQ_AIR") == "" {
+		bgqDir, err := os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "cwd: %v\n", err)
+			os.Exit(1)
+		}
+		startDevMode(bgqDir, dataDir, listen)
+		return
 	}
 
 	fmt.Printf("启动Web服务器 http://localhost%s ...\n", listen)
