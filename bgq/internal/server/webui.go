@@ -417,7 +417,12 @@ function renderFilterTags(){
       label=modeLabel+'关系['+f.relation.type+']';
       if(c>0){label+=' ('+f.relation.conditions.map(relCondLabel).join(', ')+')';}
     }
-    else if(f.staff){const c=f.staff.conditions?.length||0;label=(queryTarget==='person'?'关联':'人员')+'['+f.staff.position+'] '+(f.staff.mode||'any')+(c?' +'+c+'条件':'')}
+    else if(f.staff){
+      const c=f.staff.conditions?.length||0;
+      const modeLabel={any:'任意',all:'全部',none:'排除'}[f.staff.mode]||f.staff.mode;
+      label=(queryTarget==='person'?'关联':'人员')+'['+f.staff.position+'] '+modeLabel;
+      if(c>0){label+=' ('+f.staff.conditions.map(staffCondLabel).join(', ')+')';}
+    }
     else if(f.episode){const c=f.episode.conditions?.length||0;label='剧集 '+(f.episode.mode||'any')+(c?' +'+c+'条件':'')}
     else if(f.count) label='数量['+f.count.what+'] '+opLabel(f.count.operator)+' '+f.count.value;
     else label=JSON.stringify(f);
@@ -425,7 +430,7 @@ function renderFilterTags(){
   }).join('');
 }
 function opLabel(op){const m={eq:'=',contains:'包含',regex:'~=',gt:'>',gte:'>=',lt:'<',lte:'<=',before:'早于',after:'晚于',empty:'为空'};return m[op]||op}
-function clearFilters(){filters=[];selectedBaseType=0;selectedMetaTags=[];resetRelationBuilder();renderFilterTags();updateYAMLEditor();renderAddForm()}
+function clearFilters(){filters=[];selectedBaseType=0;selectedMetaTags=[];resetRelationBuilder();resetStaffBuilder();renderFilterTags();updateYAMLEditor();renderAddForm()}
 function removeFilter(i){filters.splice(i,1);renderFilterTags()}
 
 /* ===== Filter Builder ===== */
@@ -434,6 +439,7 @@ function setTarget(t){queryTarget=t;if(t==='person'){selectedBaseType=0;addFilte
 function onModeChange(mode){
   addFilterMode = mode;
   if(mode === 'relation') resetRelationBuilder();
+  if(mode === 'staff') resetStaffBuilder();
   if(mode === 'base') loadSchemaOptionsForType(selectedBaseType);
   renderAddForm();
 }
@@ -476,14 +482,7 @@ function getFilterFormHTML(){
     case 'relation':
       return renderRelationBuilder();
     case 'staff':
-      if(queryTarget==='person'){
-        return '<input class="input" id="staffPos" placeholder="职位名" style="width:100px"><select class="select select-sm" id="staffMode"><option value="any">任意</option></select>'+
-          '<button class="btn btn-primary btn-sm" onclick="addStaffFilter()">添加</button>';
-      }
-      return '<input class="input" id="staffPos" placeholder="职位名" style="width:100px"><select class="select select-sm" id="staffMode"><option value="any">任意</option><option value="all">全部</option></select>'+
-        '<input class="input" id="staffField2" placeholder="人物字段" value="name" list="staffFieldList" style="width:80px"><datalist id="staffFieldList"><option value="name"><option value="id"><option value="type"><option value="career"><option value="appear_eps"><option value="简体中文名"><option value="别名"><option value="性别"><option value="生日"></datalist>'+
-        '<select class="select select-sm" id="staffOp2" style="width:70px"><option value="contains">包含</option><option value="eq">等于</option></select>'+
-        '<input class="input" id="staffVal" placeholder="值" style="width:80px"><button class="btn btn-primary btn-sm" onclick="addStaffFilter()">添加</button>';
+      return renderStaffBuilder();
     case 'episode':
       return '<input class="input" id="epField2" placeholder="剧集字段" value="name" style="width:80px"><select class="select select-sm" id="epOp2"><option value="contains">包含</option><option value="regex">正则</option><option value="gt">&gt;</option><option value="lt">&lt;</option></select>'+
         '<input class="input" id="epVal" placeholder="值" style="flex:1"><select class="select select-sm" id="epMode"><option value="any">任意</option><option value="all">全部</option></select><button class="btn btn-primary btn-sm" onclick="addEpisodeFilter()">添加</button>';
@@ -763,7 +762,166 @@ function addRelationFilter(){
   renderFilterTags();
   renderAddForm();
 }
-function addStaffFilter(){const p=getVal('staffPos'),m=getVal('staffMode'),f=getVal('staffField2'),o=getVal('staffOp2'),v=getVal('staffVal');if(!p)return;const r={staff:{position:p,mode:m}};if(f&&v)r.staff.conditions=[{field:f,operator:o,value:v}];filters.push(r);renderFilterTags()}
+// ===== Staff builder with nested conditions =====
+let pendingStaff = null;
+let staffNestMode = 'field';
+
+function resetStaffBuilder(){
+  pendingStaff = {position:'',mode:'any',conditions:[]};
+  staffNestMode = 'field';
+}
+
+function renderStaffBuilder(){
+  if(!pendingStaff) resetStaffBuilder();
+  const posOpts = (schemaOptions.positions||[]).map(p=>'<option value="'+escHtml(p)+'">').join('');
+  let html = '';
+
+  // Row 1: Position + mode
+  html += '<div class="filter-builder" style="margin-bottom:4px">'+
+    '<input class="input" id="staffPos" placeholder="职位名 (如: 原作)" list="staffPosList" style="flex:1;min-width:100px" value="'+escapeHtml(pendingStaff.position)+'">'+
+    '<datalist id="staffPosList">'+posOpts+'</datalist>'+
+    '<select class="select select-sm" id="staffMode" onchange="pendingStaff.mode=this.value">'+
+      '<option value="any" '+(pendingStaff.mode==='any'?'selected':'')+'>任意满足</option>'+
+      '<option value="all" '+(pendingStaff.mode==='all'?'selected':'')+'>全部满足</option>'+
+      '<option value="none" '+(pendingStaff.mode==='none'?'selected':'')+'>排除</option>'+
+    '</select>'+
+  '</div>';
+
+  // Row 2: Show existing conditions
+  if(pendingStaff.conditions.length > 0){
+    html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">';
+    for(let i=0;i<pendingStaff.conditions.length;i++){
+      html += '<span class="filter-tag" style="font-size:11px">'+staffCondLabel(pendingStaff.conditions[i])+
+        '<span class="tag-remove" onclick="removeStaffCond('+i+')">&times;</span></span>';
+    }
+    html += '</div>';
+  }
+
+  // Row 3: Nested condition builder (modes depend on query target)
+  const nestOpts = queryTarget==='person'
+    ? '<option value="field" '+(staffNestMode==='field'?'selected':'')+'>字段</option>'+
+      '<option value="type" '+(staffNestMode==='type'?'selected':'')+'>类型</option>'+
+      '<option value="global" '+(staffNestMode==='global'?'selected':'')+'>全局</option>'+
+      '<option value="tag" '+(staffNestMode==='tag'?'selected':'')+'>标签</option>'+
+      '<option value="meta_tag" '+(staffNestMode==='meta_tag'?'selected':'')+'>公共标签</option>'+
+      '<option value="count" '+(staffNestMode==='count'?'selected':'')+'>数量</option>'
+    : '<option value="field" '+(staffNestMode==='field'?'selected':'')+'>字段</option>'+
+      '<option value="global" '+(staffNestMode==='global'?'selected':'')+'>全局</option>'+
+      '<option value="count" '+(staffNestMode==='count'?'selected':'')+'>数量</option>';
+
+  html += '<div class="filter-builder" style="margin-bottom:4px">'+
+    '<select class="select select-sm" onchange="staffNestMode=this.value;renderAddForm()">'+nestOpts+'</select>';
+  html += staffNestFormHTML();
+  html += '</div>';
+
+  // Row 4: Finalize button
+  html += '<button class="btn btn-primary btn-sm" onclick="addStaffFilter()" style="margin-top:4px">'+
+    '✅ 添加'+(queryTarget==='person'?'关联':'人员')+' ('+pendingStaff.conditions.length+'个条件)</button>';
+  if(pendingStaff.conditions.length > 0){
+    html += '<button class="btn btn-default btn-sm" onclick="resetStaffBuilder();renderAddForm()" style="margin-left:4px">清空</button>';
+  }
+  return html;
+}
+
+function staffCondLabel(f){
+  if(f.field) return f.field.field+' '+opLabel(f.field.operator)+' "'+f.field.value+'"';
+  if(f.global) return '全局: '+opLabel(f.global.operator)+' "'+f.global.value+'"';
+  if(f.type) return '类型: '+(Object.entries(schema.subject_types).find(([k,v])=>v==f.type.value)?.[0]||f.type.value);
+  if(f.tag) return (f.tag.negate?'排除':'包含')+'标签: '+f.tag.value;
+  if(f.meta_tag) return (f.meta_tag.negate?'排除':'包含')+'公共标签: '+f.meta_tag.value;
+  if(f.count) return '数量['+f.count.what+'] '+opLabel(f.count.operator)+' '+f.count.value;
+  return JSON.stringify(f);
+}
+
+function staffNestFormHTML(){
+  const isPerson = queryTarget==='person';
+  // For person target: conditions on subjects, use subject field datalist
+  // For subject target: conditions on persons, use person field datalist
+  const personFields = ['name','id','type','career','appear_eps','简体中文名','别名','性别','生日'];
+  const subjectDl = (schema.direct_fields||[]).map(f=>'<option value="'+f+'">').join('');
+  const personDl = personFields.map(f=>'<option value="'+f+'">').join('');
+  const fieldDl = isPerson ? subjectDl : personDl;
+
+  switch(staffNestMode){
+    case 'field':
+      return '<input class="input" id="snField" placeholder="字段名" list="snFieldList" style="width:80px"><datalist id="snFieldList">'+fieldDl+'</datalist>'+
+        '<select class="select select-sm" id="snOp"><option value="contains">包含</option><option value="eq">等于</option><option value="regex">正则</option><option value="gt">&gt;</option><option value="lt">&lt;</option><option value="gte">&gt;=</option><option value="lte">&lt;=</option><option value="before">早于</option><option value="after">晚于</option><option value="empty">为空</option></select>'+
+        '<input class="input" id="snVal" placeholder="值" style="flex:1"><button class="btn btn-primary btn-sm" onclick="addStaffNestField()">+</button>';
+    case 'type':
+      return '<select class="select select-sm" id="snType"><option>书籍</option><option>动画</option><option>音乐</option><option>游戏</option><option>三次元</option></select><button class="btn btn-primary btn-sm" onclick="addStaffNestType()">+</button>';
+    case 'global':
+      return '<select class="select select-sm" id="snGlobalOp"><option value="contains">包含</option><option value="regex">正则</option></select><input class="input" id="snGlobalVal" placeholder="搜索文本" style="flex:1"><button class="btn btn-primary btn-sm" onclick="addStaffNestGlobal()">+</button>';
+    case 'tag':
+      return '<input class="input" id="snTag" placeholder="标签名" style="flex:1"><select class="select select-sm" id="snTagNeg"><option value="0">包含</option><option value="1">排除</option></select><button class="btn btn-primary btn-sm" onclick="addStaffNestTag()">+</button>';
+    case 'meta_tag':
+      const mts = schemaOptions.meta_tags||[];
+      let mtOpts = mts.map(t=>'<option value="'+escHtml(t)+'">').join('');
+      return '<input class="input" id="snMetaTag" placeholder="公共标签名" list="snMetaTagList" style="flex:1"><datalist id="snMetaTagList">'+mtOpts+'</datalist><select class="select select-sm" id="snMetaNeg"><option value="0">包含</option><option value="1">排除</option></select><button class="btn btn-primary btn-sm" onclick="addStaffNestMeta()">+</button>';
+    case 'count':
+      const whatPh = isPerson ? '关系名或ep' : '职位名';
+      return '<input class="input" id="snCountWhat" placeholder="'+whatPh+'" style="width:80px"><select class="select select-sm" id="snCountOp"><option value="gt">&gt;</option><option value="gte">&gt;=</option><option value="lt">&lt;</option><option value="lte">&lt;=</option><option value="eq">=</option></select><input class="input" id="snCountVal" placeholder="数量" style="width:50px"><button class="btn btn-primary btn-sm" onclick="addStaffNestCount()">+</button>';
+    default: return '';
+  }
+}
+
+function syncPendingStaff(){
+  if(!pendingStaff) return;
+  const pEl=document.getElementById('staffPos');
+  const mEl=document.getElementById('staffMode');
+  if(pEl) pendingStaff.position = pEl.value.trim();
+  if(mEl) pendingStaff.mode = mEl.value;
+}
+function addStaffNestField(){
+  syncPendingStaff();
+  const f=rv('snField'),o=rv('snOp'),v=rv('snVal');if(!f||(!v&&o!=='empty'))return;
+  pendingStaff.conditions.push({field:{field:f,operator:o,value:v}});
+  renderAddForm();
+}
+function addStaffNestType(){
+  syncPendingStaff();
+  pendingStaff.conditions.push({type:{value:rv('snType')}});
+  renderAddForm();
+}
+function addStaffNestGlobal(){
+  syncPendingStaff();
+  const o=rv('snGlobalOp'),v=rv('snGlobalVal');if(!v)return;
+  pendingStaff.conditions.push({global:{operator:o,value:v}});
+  renderAddForm();
+}
+function addStaffNestTag(){
+  syncPendingStaff();
+  const v=rv('snTag'),n=document.getElementById('snTagNeg')?.value==='1';
+  if(!v)return;
+  pendingStaff.conditions.push({tag:{operator:'contains',value:v,negate:n}});
+  renderAddForm();
+}
+function addStaffNestMeta(){
+  syncPendingStaff();
+  const v=rv('snMetaTag'),n=document.getElementById('snMetaNeg')?.value==='1';
+  if(!v)return;
+  pendingStaff.conditions.push({meta_tag:{operator:'contains',value:v,negate:n}});
+  renderAddForm();
+}
+function addStaffNestCount(){
+  syncPendingStaff();
+  const w=rv('snCountWhat'),o=rv('snCountOp'),v=rv('snCountVal');if(!w||!v)return;
+  pendingStaff.conditions.push({count:{what:w,operator:o,value:v}});
+  renderAddForm();
+}
+function removeStaffCond(i){pendingStaff.conditions.splice(i,1);renderAddForm()}
+
+function addStaffFilter(){
+  syncPendingStaff();
+  if(!pendingStaff||!pendingStaff.position) return;
+  filters.push({staff:{
+    position: pendingStaff.position,
+    mode: pendingStaff.mode,
+    conditions: pendingStaff.conditions
+  }});
+  resetStaffBuilder();
+  renderFilterTags();
+  renderAddForm();
+}
 function addEpisodeFilter(){const f=getVal('epField2'),o=getVal('epOp2'),v=getVal('epVal'),m=getVal('epMode');if(!f||!v)return;filters.push({episode:{mode:m,conditions:[{field:f,operator:o,value:v}]}});renderFilterTags()}
 function addCountFilter(){const w=getVal('countWhat'),o=getVal('countOp'),v=getVal('countVal');if(!w||!v)return;filters.push({count:{what:w,operator:o,value:v}});renderFilterTags()}
 
@@ -785,7 +943,7 @@ async function applyYAML(){
     const r=await fetch('/api/config/parse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({yaml:raw})});
     const data=await r.json();
     if(data.error){alert('解析失败: '+data.error+(data.message?'\n'+data.message:''));return}
-    if(data.filters&&data.filters.length>0){filters=data.filters;renderFilterTags();resetRelationBuilder();renderAddForm()}
+    if(data.filters&&data.filters.length>0){filters=data.filters;renderFilterTags();resetRelationBuilder();resetStaffBuilder();renderAddForm()}
     if(data.output?.columns)document.getElementById('outputColumns').value=data.output.columns.join(',');
     if(data.limit)document.getElementById('resultLimit').value=data.limit;
   }catch(e){alert('请求失败: '+e.message)}
@@ -847,21 +1005,45 @@ function buildWasmSQL(filters,cols,target,limit,sortBy){
       whereParts.push(sub);
     }else if(f.staff){
       const pos=f.staff.position||'';
+      const mode=f.staff.mode||'any';
+      const conds=f.staff.conditions||[];
       if(target==='person'){
-        whereParts.push("EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id=p.person_id AND sp.position IN (/*pos*/"+pos+"))");
-      }else{
-        let sub="EXISTS (SELECT 1 FROM subject_persons sp";
-        if(f.staff.conditions&&f.staff.conditions.some(c=>c.field==='name'||c.field==='type'||c.field==='career'))sub+=" LEFT JOIN persons p2 ON sp.person_id=p2.person_id";
-        sub+=" WHERE sp.subject_id=s.id AND sp.position IN (/*pos*/"+pos+")";
-        if(f.staff.conditions&&f.staff.conditions.length>0){
-          for(const c of f.staff.conditions){
-            if(c.field==='count')continue;
-            if(c.field==='name')sub+=" AND "+buildCond('p2.name',c.operator||'contains',String(c.value||''));
-            else if(c.field==='id'||c.field==='person_id')sub+=" AND "+buildCond('sp.person_id',c.operator||'contains',String(c.value||''));
+        if(mode==='none'){
+          whereParts.push("NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id=p.person_id AND sp.position IN (/*pos*/"+pos+"))");
+        }else{
+          let sub="EXISTS (SELECT 1 FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id=rs.id WHERE sp.person_id=p.person_id AND sp.position IN (/*pos*/"+pos+")";
+          for(const c of conds){
+            if(c.field)sub+=" AND "+buildCond('rs.'+escSql(c.field.field),c.field.operator||'contains',String(c.field.value||''));
+            else if(c.type)sub+=" AND rs.type="+Number(c.type.value);
+            else if(c.global)sub+=" AND "+buildCond('rs.infobox',c.global.operator||'contains',String(c.global.value||''));
+            else if(c.tag){
+              const tc="EXISTS (SELECT 1 FROM (SELECT UNNEST(rs.tags) AS t) WHERE t.name = '"+escSql(c.tag.value)+"')";
+              sub+=c.tag.negate?' AND NOT '+tc:' AND '+tc;
+            }else if(c.meta_tag)sub+=" AND LIST_CONTAINS(COALESCE(rs.meta_tags, []), '"+escSql(c.meta_tag.value)+"')";
           }
+          sub+=")";
+          whereParts.push(sub);
         }
-        sub+=")";
-        whereParts.push(sub);
+      }else{
+        if(mode==='none'){
+          whereParts.push("NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id=s.id AND sp.position IN (/*pos*/"+pos+"))");
+        }else{
+          let sub="EXISTS (SELECT 1 FROM subject_persons sp LEFT JOIN persons p2 ON sp.person_id=p2.person_id";
+          sub+=" WHERE sp.subject_id=s.id AND sp.position IN (/*pos*/"+pos+")";
+          for(const c of conds){
+            if(c.field){
+              const fname=c.field.field;
+              if(fname==='name'||fname==='person_name')sub+=" AND "+buildCond('p2.name',c.field.operator||'contains',String(c.field.value||''));
+              else if(fname==='id'||fname==='person_id')sub+=" AND "+buildCond('sp.person_id',c.field.operator||'contains',String(c.field.value||''));
+              else if(fname==='type')sub+=" AND "+buildCond('p2.person_type',c.field.operator||'contains',String(c.field.value||''));
+              else if(fname==='career')sub+=" AND LIST_CONTAINS(COALESCE(p2.career, []), '"+escSql(String(c.field.value||''))+"')";
+              else if(fname==='appear_eps')sub+=" AND "+buildCond('sp.appear_eps',c.field.operator||'contains',String(c.field.value||''));
+              else sub+=" AND "+buildCond('p2.infobox',c.field.operator||'contains',String(c.field.value||''));
+            }else if(c.global)sub+=" AND "+buildCond('p2.infobox',c.global.operator||'contains',String(c.global.value||''));
+          }
+          sub+=")";
+          whereParts.push(sub);
+        }
       }
     }else if(f.episode){
       whereParts.push("EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id=s.id)");
