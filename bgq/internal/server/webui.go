@@ -184,7 +184,7 @@ a:hover{color:var(--link-hover);text-decoration:underline}
 .yaml-editor{
   width:100%;min-height:200px;font-family:var(--font-mono);font-size:12px;
   padding:12px;border:1px solid var(--border);border-radius:var(--radius-xs);
-  resize:vertical;outline:none;background:var(--bg-alt);line-height:1.6;tab-size:2
+  resize:vertical;outline:none;background:var(--bg-alt);color:var(--text);line-height:1.6;tab-size:2
 }
 .yaml-editor:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(240,145,153,.15);background:var(--white)}
 
@@ -1102,12 +1102,16 @@ function toggleYAML(){
   if(s.style.display==='none'){s.style.display='block';updateYAMLEditor()}
   else{s.style.display='none'}
 }
-function updateYAMLEditor(){
+async function updateYAMLEditor(){
   syncAllConditions();
   const cols=document.getElementById('outputColumns').value;
   const apiFilters=getFiltersForAPI();
-  const y='filters:\n'+apiFilters.map(f=>'  - '+JSON.stringify(f,null,2).replace(/\n/g,'\n    ')).join('\n')+'\noutput:\n  columns: ['+cols+']';
-  document.getElementById('yamlEditor').value=y;
+  const limit=parseInt(document.getElementById('resultLimit').value)||0;
+  try{
+    const r=await fetch('/api/config/export',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({filters:apiFilters,output:{columns:cols.split(',').map(s=>s.trim()).filter(Boolean)},limit})});
+    if(r.ok)document.getElementById('yamlEditor').value=await r.text();
+    else document.getElementById('yamlEditor').value='# 导出失败: '+(await r.text());
+  }catch(e){document.getElementById('yamlEditor').value='# 导出失败: '+e.message}
 }
 async function applyYAML(){
   const raw=document.getElementById('yamlEditor').value;
