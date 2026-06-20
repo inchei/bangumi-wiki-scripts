@@ -4,6 +4,7 @@ package server
 const WebUIHTML = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
+<link rel="stylesheet" href="/static/awesomplete.min.css">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Bangumi Query</title>
@@ -107,6 +108,19 @@ a:hover{color:var(--link-hover);text-decoration:underline}
 .filter-builder{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .filter-builder .input,.filter-builder .select{width:auto;min-width:80px}
 .filter-builder .input{flex:1;min-width:100px}
+.logic-group{border:1px solid var(--border);border-radius:6px;padding:8px;margin:2px 0;cursor:default;transition:border-color .15s;display:flex;flex-direction:column;gap:2px}
+.logic-group .btn,.logic-group select,.logic-group .op-btn,.logic-group .tag-remove,.logic-group .radio-pill{cursor:pointer}
+.logic-group .btn:focus-visible,.logic-group .op-btn:focus-visible,.logic-group .tag-remove:focus-visible{outline:2px solid var(--accent);outline-offset:1px;border-radius:3px}
+.logic-group input{cursor:text}
+.cond-type{font-size:13px;color:var(--accent);font-weight:600}
+.logic-group.root{cursor:default}
+.logic-group.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.logic-op-toggle{display:inline-flex;border:1px solid var(--border);border-radius:4px;overflow:hidden}
+.logic-op-toggle .op-btn{padding:1px 8px;font-size:11px;font-weight:600;cursor:pointer;background:var(--bg);color:var(--text-secondary);transition:all .15s}
+.logic-op-toggle .op-btn.active{background:var(--accent);color:#fff}
+.logic-item-leaf{display:flex;align-items:center;gap:4px;padding:3px 8px;background:var(--bg-secondary);border-radius:4px}
+.logic-group select,.logic-group input.input{field-sizing:content;width:auto;min-width:40px;height:36px;font-size:13px;padding:0 12px}
+.logic-group select{padding-right:30px!important}
 
 /* ===== Results ===== */
 .results-empty{text-align:center;padding:60px 20px;color:var(--text-placeholder)}
@@ -190,6 +204,32 @@ a:hover{color:var(--link-hover);text-decoration:underline}
 .radio-pill{cursor:pointer;font-size:12px;padding:3px 10px;border:1px solid var(--border);border-radius:20px;background:var(--white);color:var(--text);transition:var(--transition);user-select:none;display:inline-block}
 .radio-pill:hover{border-color:var(--accent)}
 .radio-pill.active{background:var(--accent);color:var(--white);border-color:var(--accent)}
+/* Awesomplete theme override — loads after CDN so wins */
+.awesomplete{position:relative!important;display:inline-block!important}
+.awesomplete>ul{
+  position:absolute!important;left:0!important;z-index:100!important;
+  min-width:140px!important;max-height:200px!important;overflow-y:auto!important;
+  background:rgba(254,254,254,.82)!important;
+  backdrop-filter:blur(10px)!important;-webkit-backdrop-filter:blur(10px)!important;
+  border:1px solid rgba(255,255,255,.3)!important;
+  border-radius:12px!important;
+  box-shadow:0 4px 24px rgba(80,80,80,.12)!important;
+  list-style:none!important;padding:4px 0!important;margin:2px 0 0!important;
+  font-size:12px!important;
+  transition:none!important;animation:none!important;
+}
+.awesomplete>ul>li{
+  padding:5px 10px!important;cursor:pointer!important;white-space:nowrap!important;
+  color:var(--text)!important;background:transparent!important;
+  transition:none!important;
+}
+.awesomplete>ul>li:hover{background:var(--accent-light)!important;color:var(--text)!important}
+.awesomplete>ul>li[aria-selected="true"]{background:var(--accent)!important;color:#fff!important}
+.awesomplete>ul>li:hover mark{background:transparent!important;color:var(--accent)!important;font-weight:600!important}
+.awesomplete>ul>li[aria-selected="true"] mark{background:transparent!important;color:#fff!important;font-weight:600!important}
+.awesomplete>ul>li mark{background:transparent!important;color:var(--accent)!important;font-weight:600!important;padding:0!important}
+.awesomplete>ul:empty{display:none!important}
+.awesomplete .visually-hidden{position:absolute!important;clip:rect(0,0,0,0)!important}
 </style>
 </head>
 <body>
@@ -212,21 +252,15 @@ a:hover{color:var(--link-hover);text-decoration:underline}
 <!-- Left Panel: Query Builder -->
 <div class="panel panel-left">
 
-  <!-- Active Filters -->
+  <!-- Filters -->
   <div class="card">
-    <div class="card-header"><span class="dot-indicator"></span>筛选条件</div>
-    <div class="filter-tags" id="filterTags">
-      <span class="filter-empty">暂无筛选条件</span>
+    <div class="card-header"><span class="dot-indicator"></span>筛选条件
+      <span class="spacer"></span>
+      <label class="radio-pill active" id="targetSubject" onclick="setTarget('subject')" style="cursor:pointer;padding:2px 8px">📚 条目</label>
+      <label class="radio-pill" id="targetPerson" onclick="setTarget('person')" style="cursor:pointer;padding:2px 8px">👤 人物</label>
+      <button class="btn btn-outline btn-xs" onclick="clearFilters()" style="margin-left:8px">清除全部</button>
     </div>
-    <div style="margin-top:12px">
-      <button class="btn btn-outline btn-xs" onclick="clearFilters()">清除全部</button>
-    </div>
-  </div>
-
-  <!-- Add Filter -->
-  <div class="card">
-    <div class="card-header"><span class="dot-indicator"></span>添加条件</div>
-    <div id="addFilterForm"></div>
+    <div id="filterTree"></div>
   </div>
 
   <!-- YAML Editor (hidden by default) -->
@@ -268,13 +302,13 @@ a:hover{color:var(--link-hover);text-decoration:underline}
 
 </div>
 
+<script src="/static/awesomplete.min.js"></script>
 <script>
 /* ===== WASM config ==== */
 const DIRECT_FIELDS=['id','type','name','name_cn','platform','nsfw','score','rank','date','series','infobox','person_id','person_type','career','summary'];
 
 /* ===== State ===== */
 let schema = {direct_fields:[],subject_types:{},relation_types:{},staff_positions:{}};
-let filters = [];
 let lastResult = null;
 let backendMode = 'api';
 let duckDB = null, duckConn = null;
@@ -392,105 +426,377 @@ async function onDBFileSelected(e){
   }
 }
 function loadSchemaOffline(){
-  renderAddForm();
+  renderFilterTags();
 }
 async function loadSchema(){
-  if(backendMode==='wasm'){renderAddForm();return}
-  try{const r=await fetch('/api/schema/fields');schema=await r.json();renderAddForm()}catch(e){console.error(e)}
+  if(backendMode==='wasm'){renderFilterTags();return}
+  try{const r=await fetch('/api/schema/fields');schema=await r.json();renderFilterTags()}catch(e){console.error(e)}
 }
 function setStatus(cls,text){document.getElementById('statusDot').style.background=cls==='ready'?'#67c23a':cls==='loading-bg'?'#e6a23c':'#f56c6c';document.getElementById('statusText').textContent=text}
 
 /* ===== Render Filter Tags ===== */
-function renderFilterTags(){
-  const el=document.getElementById('filterTags');
-  if(filters.length===0){el.innerHTML='<span class="filter-empty">暂无筛选条件</span>';return}
-  el.innerHTML=filters.map((f,i)=>{
-    let label='';
-    if(f.type) label='类型: '+(Object.entries(schema.subject_types).find(([k,v])=>v==f.type.value)?.[0]||f.type.value);
-    else if(f.field) label=f.field.field+' '+opLabel(f.field.operator)+' "'+f.field.value+'"';
-    else if(f.global) label='全局: '+opLabel(f.global.operator)+' "'+f.global.value+'"';
-    else if(f.tag) label=(f.tag.negate?'排除':'包含')+'标签: '+f.tag.value;
-    else if(f.meta_tag) label=(f.meta_tag.negate?'排除':'包含')+'公共标签: '+f.meta_tag.value;
-    else if(f.relation){
-      const c=f.relation.conditions?.length||0;
-      const modeLabel={any:'任意',all:'全部',none:'排除'}[f.relation.mode]||f.relation.mode;
-      label=modeLabel+'关系['+f.relation.type+']';
-      if(c>0){label+=' ('+f.relation.conditions.map(relCondLabel).join(', ')+')';}
-    }
-    else if(f.staff){
-      const c=f.staff.conditions?.length||0;
-      const modeLabel={any:'任意',all:'全部',none:'排除'}[f.staff.mode]||f.staff.mode;
-      label=(queryTarget==='person'?'关联':'人员')+'['+f.staff.position+'] '+modeLabel;
-      if(c>0){label+=' ('+f.staff.conditions.map(staffCondLabel).join(', ')+')';}
-    }
-    else if(f.episode){const c=f.episode.conditions?.length||0;label='剧集 '+(f.episode.mode||'any')+(c?' +'+c+'条件':'')}
-    else if(f.count) label='数量['+f.count.what+'] '+opLabel(f.count.operator)+' '+f.count.value;
-    else label=JSON.stringify(f);
-    return '<span class="filter-tag"><span class="tag-text">'+escapeHtml(label)+'</span><span class="tag-remove" onclick="removeFilter('+i+')">&times;</span></span>';
-  }).join('');
-}
-function opLabel(op){const m={eq:'=',contains:'包含',regex:'~=',gt:'>',gte:'>=',lt:'<',lte:'<=',before:'早于',after:'晚于',empty:'为空'};return m[op]||op}
-function clearFilters(){filters=[];selectedBaseType=0;selectedMetaTags=[];resetRelationBuilder();resetStaffBuilder();renderFilterTags();updateYAMLEditor();renderAddForm()}
-function removeFilter(i){filters.splice(i,1);renderFilterTags()}
+let _acLater=[];
 
-/* ===== Filter Builder ===== */
-let addFilterMode='field';
-function setTarget(t){queryTarget=t;if(t==='person'){selectedBaseType=0;addFilterMode='field';document.getElementById('outputColumns').value='person_id,name,career'}else{document.getElementById('outputColumns').value='id,name,name_cn,type,score'};renderAddForm();loadSchemaOptions()}
-function onModeChange(mode){
-  addFilterMode = mode;
-  if(mode === 'relation') resetRelationBuilder();
-  if(mode === 'staff') resetStaffBuilder();
-  if(mode === 'base') loadSchemaOptionsForType(selectedBaseType);
-  renderAddForm();
+/* ===== Condition context constants ===== */
+const CTX_SUBJECT='subject',CTX_PERSON='person',CTX_EPISODE='episode';
+const EPISODE_FIELDS=['name','name_cn','description','airdate','duration','sort','type','disc','id'];
+const EPISODE_FIELD_LABELS={name:'名称',name_cn:'中文名',description:'简介',airdate:'播出日期',duration:'时长',sort:'排序',type:'类型',disc:'碟片',id:'ID'};
+const EPISODE_FIELD_OPS={
+  name:['contains','not_contains','eq','regex'],name_cn:['contains','not_contains','eq','regex'],
+  description:['contains','not_contains','eq','regex'],airdate:['before','after'],
+  duration:['contains','not_contains','eq','regex'],
+  sort:['gt','gte','lt','lte','eq'],type:['gt','gte','lt','lte','eq'],
+  disc:['gt','gte','lt','lte','eq'],id:['gt','gte','lt','lte','eq']
+};
+const PERSON_FIELDS=['name','id','type','career','appear_eps','简体中文名','别名','性别','生日'];
+function getTypeOptions(){
+  const types=schema.subject_types||{};
+  return Object.entries(types).map(([name,val])=>[String(val),name]);
 }
-let queryTarget='subject';
-function renderAddForm(){
-  const el=document.getElementById('addFilterForm');
-  el.innerHTML='<div style="margin-bottom:8px;display:flex;align-items:center;gap:8px">'+
-    '<span style="font-size:12px;color:var(--text-secondary)">查询:</span>'+
-    '<label class="radio-pill'+(queryTarget==='subject'?' active':'')+'" onclick="setTarget(\'subject\')" style="cursor:pointer;font-size:11px;padding:2px 8px">📚 条目</label>'+
-    '<label class="radio-pill'+(queryTarget==='person'?' active':'')+'" onclick="setTarget(\'person\')" style="cursor:pointer;font-size:11px;padding:2px 8px">👤 人物</label>'+
-    '</div>'+
-    '<div class="filter-builder">'+
-    '<select class="select select-sm" onchange="onModeChange(this.value)">'+
-      (queryTarget==='subject'?'<option value="base" '+(addFilterMode==='base'?'selected':'')+'>基础筛选</option>':'')+
-      '<option value="field" '+(addFilterMode==='field'?'selected':'')+'>字段筛选</option>'+
-      (queryTarget==='subject'?'<option value="tag" '+(addFilterMode==='tag'?'selected':'')+'>标签筛选</option><option value="meta_tag" '+(addFilterMode==='meta_tag'?'selected':'')+'>公共标签</option><option value="global" '+(addFilterMode==='global'?'selected':'')+'>全局搜索</option><option value="relation" '+(addFilterMode==='relation'?'selected':'')+'>关系筛选</option>':'')+
-      '<option value="staff" '+(addFilterMode==='staff'?'selected':'')+'>'+(queryTarget==='person'?'条目关联':'人物筛选')+'</option>'+
-      (queryTarget==='subject'?'<option value="episode" '+(addFilterMode==='episode'?'selected':'')+'>剧集筛选</option><option value="count" '+(addFilterMode==='count'?'selected':'')+'>数量筛选</option>':'')+
-    '</select>'+
-    getFilterFormHTML()+
-  '</div>';
+function getPlatformOptions(){
+  return (schemaOptions.platforms||[]).map(p=>[String(p.code),p.name]);
 }
-function getFilterFormHTML(){
-  const dl=schema.direct_fields.map(f=>'<option value="'+f+'">').join('');
-  switch(addFilterMode){
-    case 'base':
-      return renderBaseFilter();
-    case 'field':
-      return '<input class="input" id="fieldName" placeholder="字段名" list="fieldList" style="flex:1;min-width:120px"><datalist id="fieldList">'+dl+'</datalist>'+
-        '<select class="select select-sm" id="fieldOp"><option value="contains">包含</option><option value="eq">等于</option><option value="regex">正则</option><option value="gt">&gt;</option><option value="lt">&lt;</option><option value="gte">&gt;=</option><option value="lte">&lt;=</option><option value="before">早于</option><option value="after">晚于</option><option value="empty">为空</option></select>'+
-        '<input class="input" id="fieldVal" placeholder="值" style="flex:1;min-width:80px"><button class="btn btn-primary btn-sm" onclick="addFieldFilter()">添加</button>';
-    case 'tag':
-      return '<input class="input" id="tagVal" placeholder="标签名" style="flex:1"><select class="select select-sm" id="tagNegate"><option value="0">包含</option><option value="1">排除</option></select><button class="btn btn-primary btn-sm" onclick="addTagFilter()">添加</button>';
-    case 'meta_tag':
-      const mts = schemaOptions.meta_tags||[];
-      let mtOpts = mts.map(t=>'<option value="'+escHtml(t)+'">').join('');
-      return '<input class="input" id="metaTagVal" placeholder="公共标签名" list="metaTagList" style="flex:1"><datalist id="metaTagList">'+mtOpts+'</datalist><select class="select select-sm" id="metaTagNegate"><option value="0">包含</option><option value="1">排除</option></select><button class="btn btn-primary btn-sm" onclick="addMetaTagFilter()">添加</button>';
-    case 'global':
-      return '<select class="select select-sm" id="globalOp"><option value="contains">包含</option><option value="regex">正则</option></select><input class="input" id="globalVal" placeholder="搜索文本" style="flex:1"><button class="btn btn-primary btn-sm" onclick="addGlobalFilter()">添加</button>';
-    case 'relation':
-      return renderRelationBuilder();
-    case 'staff':
-      return renderStaffBuilder();
-    case 'episode':
-      return '<input class="input" id="epField2" placeholder="剧集字段" value="name" style="width:80px"><select class="select select-sm" id="epOp2"><option value="contains">包含</option><option value="regex">正则</option><option value="gt">&gt;</option><option value="lt">&lt;</option></select>'+
-        '<input class="input" id="epVal" placeholder="值" style="flex:1"><select class="select select-sm" id="epMode"><option value="any">任意</option><option value="all">全部</option></select><button class="btn btn-primary btn-sm" onclick="addEpisodeFilter()">添加</button>';
-    case 'count':
-      return '<input class="input" id="countWhat" placeholder="关系名或ep" style="width:110px"><select class="select select-sm" id="countOp"><option value="gt">&gt;</option><option value="gte">&gt;=</option><option value="lt">&lt;</option><option value="lte">&lt;=</option><option value="eq">=</option></select>'+
-        '<input class="input" id="countVal" placeholder="数量" style="width:60px"><button class="btn btn-primary btn-sm" onclick="addCountFilter()">添加</button>';
-    default:return'';
+function fieldSelectOptions(fc){
+  if(fc.dynamic==='type') return getTypeOptions();
+  if(fc.dynamic==='platform') return getPlatformOptions();
+  return fc.options||[];
+}
+const SUBJECT_FIELD_CONFIGS={
+  type:{label:'类型',ops:['eq'],type:'select',dynamic:'type'},
+  platform:{label:'子类型',ops:['eq'],type:'select',dynamic:'platform'},
+  nsfw:{label:'NSFW',ops:['eq'],type:'select',options:[['true','是'],['false','否']]},
+  score:{label:'评分',ops:['gt','gte','lt','lte','eq','empty'],type:'number',step:'0.1'},
+  rank:{label:'排名',ops:['gt','gte','lt','lte','eq','empty'],type:'number',step:'1'},
+  date:{label:'日期',ops:['before','after','empty'],type:'date'},
+  series:{label:'系列',ops:['eq'],type:'select',options:[['true','是'],['false','否']]}
+};
+const PERSON_FIELD_CONFIGS={
+  type:{label:'类型',ops:['eq'],type:'select',options:[['1','个人'],['2','公司'],['3','组合']]},
+  性别:{label:'性别',ops:['contains'],type:'select',options:[['男','男'],['女','女'],['其他','其他']]},
+  生日:{label:'生日',ops:['before','after','empty'],type:'date'},
+  career:{label:'职业',ops:['contains','not_contains','empty'],type:'text',ac:'career'}
+};
+function ctxFieldConfigs(ctx){return ctx===CTX_PERSON?PERSON_FIELD_CONFIGS:SUBJECT_FIELD_CONFIGS}
+function isSpecialField(f,ctx){return f in ctxFieldConfigs(ctx||CTX_SUBJECT)}
+function epFieldPlaceholder(f){return f==='duration'?'如: 24m / 00:23:30':''}
+function opInputType(op){
+  if(['gt','gte','lt','lte'].includes(op)) return 'number';
+  if(['before','after'].includes(op)) return 'date';
+  return 'text';
+}
+function switchOpInputType(sel,valId){
+  const valEl=document.getElementById(valId);
+  if(valEl) valEl.type=opInputType(sel.value);
+}
+function ctxFields(ctx){
+  if(ctx===CTX_EPISODE) return EPISODE_FIELDS;
+  if(ctx===CTX_PERSON) return PERSON_FIELDS;
+  return schema.direct_fields||[];
+}
+function ctxTypeOpts(ctx){
+  if(ctx===CTX_PERSON) return [['','全部'],['1','个人'],['2','公司'],['3','组合']];
+  if(ctx===CTX_EPISODE) return [];
+  return [['','全部'],['1','书籍'],['2','动画'],['3','音乐'],['4','游戏'],['6','三次元']];
+}
+
+function renderFilterTags(){
+  assignGroupNumbers(rootLogic);
+  _acLater=[];
+  const el=document.getElementById('filterTree');
+  if(el) el.innerHTML=renderLogicTree(rootLogic,true,queryTarget==='person'?CTX_PERSON:CTX_SUBJECT);
+  for(const[id,items] of _acLater)autoComplete(id,items);
+  _acLater=[];
+}
+
+function renderLogicTree(lg,isRoot,ctx){
+  lg._ctx=ctx;
+  if(!lg._id) lg._id=++_logicIdCounter;
+  const gid=lg._id;
+  let html='<div class="logic-group'+(isRoot?' root':'')+'">';
+
+  // Header
+  html+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
+  html+='<div class="logic-op-toggle">';
+  html+='<span class="op-btn'+(lg.op==='and'?' active':'')+'" onclick="event.stopPropagation();toggleLogicOp('+gid+',\'and\')">AND</span>';
+  html+='<span class="op-btn'+(lg.op==='or'?' active':'')+'" onclick="event.stopPropagation();toggleLogicOp('+gid+',\'or\')">OR</span>';
+  html+='</div>';
+  if(!isRoot){
+    html+='<span class="tag-remove" tabindex="0" role="button" style="margin-left:auto" onclick="event.stopPropagation();removeLogicGroup('+gid+')" onkeydown="if(event.key===\'Enter\')this.click()" title="删除此组">&times;</span>';
   }
+  html+='</div>';
+
+  // Items
+  for(let i=0;i<lg.items.length;i++){
+    const item=lg.items[i];
+    if(item.logic){
+      html+=renderLogicTree(item.logic,false,ctx);
+    }else{
+      html+=renderEditableCondition(gid,i,item,ctx);
+    }
+  }
+
+  // Add new condition button
+  html+=renderAddConditionBtn(gid,ctx);
+
+  html+='</div>';
+  return html;
+}
+
+function renderEditableCondition(gid,idx,item,ctx){
+  const uid=gid+'_'+idx;
+  const fields=ctxFields(ctx);
+  let html='<div style="display:flex;gap:3px;align-items:center;flex-wrap:wrap;margin:2px 0;width:100%">';
+  if(item.field){
+    const fc=ctxFieldConfigs(ctx)[item.field.field];
+    const isEpCtx=ctx===CTX_EPISODE;
+    const epOps=EPISODE_FIELD_OPS[item.field.field];
+    // Label
+    if(fc){
+      html+='<span class="cond-type">'+fc.label+'</span>';
+    }else if(isEpCtx){
+      html+='<span class="cond-type">'+(EPISODE_FIELD_LABELS[item.field.field]||item.field.field)+'</span>';
+    }else{
+      html+='<span class="cond-type">字段</span>';
+      html+='<input class="input" id="efn_'+uid+'" value="'+escHtml(item.field.field)+'" onchange="updateCondition('+gid+','+idx+',\'field\')" placeholder="字段名">';
+      _acLater.push(['efn_'+uid,fields]);
+    }
+    // Operator select (hidden if only one option)
+    const availOps=fc?fc.ops:(isEpCtx&&epOps)?epOps:['contains','not_contains','eq','regex','gt','lt','gte','lte','before','after','empty'];
+    if(!availOps.includes(item.field.operator)) item.field.operator=availOps[0];
+    if(availOps.length>1){
+      html+='<select class="select select-sm" id="efo_'+uid+'" onchange="switchOpInputType(this,\'efv_'+uid+'\');updateCondition('+gid+','+idx+',\'field\')">';
+      availOps.forEach(o=>{html+='<option value="'+o+'"'+(o===item.field.operator?' selected':'')+'>'+opLabel(o)+'</option>'});
+      html+='</select>';
+    }
+    // Value input
+    if(fc&&fc.type==='select'){
+      const opts=fieldSelectOptions(fc);
+      opts.forEach(([v,l])=>{
+        html+='<span class="radio-pill'+(v===String(item.field.value)?' active':'')+'" onclick="this.parentElement.querySelectorAll(\'.radio-pill\').forEach(e=>e.classList.remove(\'active\'));this.classList.add(\'active\');document.getElementById(\'efv_'+uid+'\').value=this.dataset.v;document.getElementById(\'efv_'+uid+'\').dispatchEvent(new Event(\'change\'))" data-v="'+v+'">'+escHtml(l)+'</span>';
+      });
+      html+='<input type="hidden" id="efv_'+uid+'" value="'+escHtml(String(item.field.value||''))+'" onchange="updateCondition('+gid+','+idx+',\'field\')">';
+    }else{
+      const vType=fc?(fc.type||'text'):opInputType(item.field.operator);
+      const step=fc?fc.step:'';
+      const ph=isEpCtx?epFieldPlaceholder(item.field.field):'';
+      html+='<input class="input" type="'+vType+'" id="efv_'+uid+'" value="'+escHtml(String(item.field.value||''))+'" onchange="updateCondition('+gid+','+idx+',\'field\')" placeholder="'+ph+'"'+(step?' step="'+step+'"':'')+'>';
+      if(fc&&fc.ac){
+        const acList=fc.ac==='career'?['actor','artist','illustrator','mangaka','producer','seiyu','writer']:(schemaOptions.platforms?.map(p=>p.name)||[]);
+        _acLater.push(['efv_'+uid,acList]);
+      }
+    }
+  }else if(item.tag){
+    html+='<span class="cond-type">标签</span>';
+    html+='<input class="input" id="efn_'+uid+'" value="'+escHtml(item.tag.value)+'" onchange="updateCondition('+gid+','+idx+',\'tag\')">';
+    html+='<select class="select select-sm" id="efo_'+uid+'" onchange="updateCondition('+gid+','+idx+',\'tag\')"><option value="contains"'+(!item.tag.negate?' selected':'')+'>包含</option><option value="negate"'+(item.tag.negate?' selected':'')+'>排除</option></select>';
+  }else if(item.meta_tag){
+    html+='<span class="cond-type">公共标签</span>';
+    html+='<input class="input" id="efn_'+uid+'" value="'+escHtml(item.meta_tag.value)+'" onchange="updateCondition('+gid+','+idx+',\'meta_tag\')" placeholder="公共标签">';
+    _acLater.push(['efn_'+uid,schemaOptions.meta_tags||[]]);
+    html+='<select class="select select-sm" id="efo_'+uid+'" onchange="updateCondition('+gid+','+idx+',\'meta_tag\')"><option value="contains"'+(!item.meta_tag.negate?' selected':'')+'>包含</option><option value="negate"'+(item.meta_tag.negate?' selected':'')+'>排除</option></select>';
+  }else if(item.global){
+    html+='<span class="cond-type">全局</span>';
+    html+='<select class="select select-sm" id="efo_'+uid+'" onchange="updateCondition('+gid+','+idx+',\'global\')"><option value="contains"'+(item.global.operator==='contains'?' selected':'')+'>包含</option><option value="not_contains"'+(item.global.operator==='not_contains'?' selected':'')+'>不包含</option><option value="regex"'+(item.global.operator==='regex'?' selected':'')+'>正则</option></select>';
+    html+='<input class="input" id="efn_'+uid+'" value="'+escHtml(String(item.global.value||''))+'" onchange="updateCondition('+gid+','+idx+',\'global\')">';
+  }else if(item.count){
+    html+='<span class="cond-type">数量</span>';
+    html+='<input class="input" id="efn_'+uid+'" value="'+escHtml(item.count.what)+'" onchange="updateCondition('+gid+','+idx+',\'count\')" placeholder="关联/ep">';
+    _acLater.push(['efn_'+uid,['ep'].concat(schemaOptions.relations||[])]);
+    html+='<select class="select select-sm" id="efo_'+uid+'" onchange="updateCondition('+gid+','+idx+',\'count\')">';
+    ['gt','gte','lt','lte','eq'].forEach(o=>{html+='<option value="'+o+'"'+(o===item.count.operator?' selected':'')+'>'+opLabel(o)+'</option>'});
+    html+='</select>';
+    html+='<input class="input" type="number" id="efv_'+uid+'" value="'+escHtml(String(item.count.value||''))+'" onchange="updateCondition('+gid+','+idx+',\'count\')">';
+  }else if(item.type){
+    const typeOpts=ctxTypeOpts(ctx);
+    html+='<span class="cond-type">分类</span>';
+    html+='<select class="select select-sm" id="efv_'+uid+'" onchange="updateCondition('+gid+','+idx+',\'type\')">';
+    typeOpts.forEach(([v,l])=>{
+      html+='<option value="'+v+'"'+(String(item.type.value)===v?' selected':'')+'>'+l+'</option>';
+    });
+    html+='</select>';
+  }else if(item.relation){
+    const r=item.relation;
+    html+='<div style="display:flex;gap:3px;align-items:center;flex-wrap:wrap;width:100%">';
+    html+='<span class="cond-type">关系</span>';
+    html+='<input class="input" id="efn_'+uid+'" value="'+escHtml(r.type)+'" onchange="updateCondition('+gid+','+idx+',\'relation\')" placeholder="关系名">';
+    _acLater.push(['efn_'+uid,schemaOptions.relations||[]]);
+    html+='<select class="select select-sm" id="efo_'+uid+'" onchange="updateCondition('+gid+','+idx+',\'relation\')"><option value="any"'+(r.mode==='any'?' selected':'')+'>任意</option><option value="all"'+(r.mode==='all'?' selected':'')+'>全部</option><option value="none"'+(r.mode==='none'?' selected':'')+'>排除</option></select>';
+    html+='<span class="tag-remove" tabindex="0" role="button" onclick="event.stopPropagation();removeLogicLeaf('+gid+','+idx+')" onkeydown="if(event.key===\'Enter\')this.click()" title="删除">×</span>';
+    html+='</div>';
+    // Nested conditions as logic tree (conditions apply to related subject)
+    if(r.conditions&&r.conditions.length>0&&r.conditions[0].logic){
+      html+='<div style="margin-left:12px;margin-top:2px">'+renderLogicTree(r.conditions[0].logic,false,CTX_SUBJECT)+'</div>';
+    }
+    return html;
+  }else if(item.staff){
+    const s=item.staff;
+    html+='<div style="display:flex;gap:3px;align-items:center;flex-wrap:wrap;width:100%">';
+    html+='<span class="cond-type">'+(queryTarget==='person'?'关联':'人物')+'</span>';
+    html+='<input class="input" id="efn_'+uid+'" value="'+escHtml(s.position)+'" onchange="updateCondition('+gid+','+idx+',\'staff\')" placeholder="职位名">';
+    _acLater.push(['efn_'+uid,schemaOptions.positions||[]]);
+    html+='<select class="select select-sm" id="efo_'+uid+'" onchange="updateCondition('+gid+','+idx+',\'staff\')"><option value="any"'+(s.mode==='any'?' selected':'')+'>任意</option><option value="all"'+(s.mode==='all'?' selected':'')+'>全部</option><option value="none"'+(s.mode==='none'?' selected':'')+'>排除</option></select>';
+    html+='<span class="tag-remove" tabindex="0" role="button" onclick="event.stopPropagation();removeLogicLeaf('+gid+','+idx+')" onkeydown="if(event.key===\'Enter\')this.click()" title="删除">×</span>';
+    html+='</div>';
+    if(s.conditions&&s.conditions.length>0&&s.conditions[0].logic){
+      const staffCtx=queryTarget==='person'?CTX_SUBJECT:CTX_PERSON;
+      html+='<div style="margin-left:12px;margin-top:2px">'+renderLogicTree(s.conditions[0].logic,false,staffCtx)+'</div>';
+    }
+    return html;
+  }else if(item.episode){
+    const ep=item.episode;
+    html+='<div style="display:flex;gap:3px;align-items:center;flex-wrap:wrap;width:100%">';
+    html+='<span class="cond-type">剧集</span>';
+    html+='<select class="select select-sm" id="efo_'+uid+'" onchange="updateCondition('+gid+','+idx+',\'episode\')"><option value="any"'+(ep.mode==='any'?' selected':'')+'>任意</option><option value="all"'+(ep.mode==='all'?' selected':'')+'>全部</option></select>';
+    html+='<span class="tag-remove" tabindex="0" role="button" onclick="event.stopPropagation();removeLogicLeaf('+gid+','+idx+')" onkeydown="if(event.key===\'Enter\')this.click()" title="删除">×</span>';
+    html+='</div>';
+    // Nested logic tree (conditions apply to episodes)
+    if(ep.logic){
+      html+='<div style="margin-left:12px;margin-top:2px">'+renderLogicTree(ep.logic,false,CTX_EPISODE)+'</div>';
+    }else if(ep.conditions&&ep.conditions.length>0){
+      ep.logic={op:'and',items:ep.conditions.map(c=>({field:c})),_id:++_logicIdCounter};
+      delete ep.conditions;
+      html+='<div style="margin-left:12px;margin-top:2px">'+renderLogicTree(ep.logic,false,CTX_EPISODE)+'</div>';
+    }
+    return html;
+  }else{
+    html+='<span style="font-size:12px;flex:1">'+escHtml(filterToLabel(item))+'</span>';
+  }
+  html+='<span class="tag-remove" tabindex="0" role="button" onclick="event.stopPropagation();removeLogicLeaf('+gid+','+idx+')" onkeydown="if(event.key===\'Enter\')this.click()" title="删除">×</span>';
+  html+='</div>';
+  return html;
+}
+
+function updateCondition(gid,idx,kind){
+  const g=findLogicGroup(rootLogic,gid);if(!g||!g.items[idx])return;
+  const uid=gid+'_'+idx;
+  const typeEl=document.getElementById('eft_'+uid);
+  const newType=typeEl?typeEl.value:null;
+  if(newType&&newType!==kind){
+    // Type changed — replace with new empty condition
+    g.items[idx]=createEmptyCondition(newType);
+    renderFilterTags();updateYAMLEditor();return;
+  }
+  const item=g.items[idx];
+  if(item.field){
+    const fEl=document.getElementById('efn_'+uid);
+    if(fEl) item.field.field=fEl.value.trim();
+    item.field.operator=document.getElementById('efo_'+uid)?.value||'contains';
+    item.field.value=(document.getElementById('efv_'+uid)?.value||'').trim();
+  }else if(item.tag){
+    item.tag.value=(document.getElementById('efn_'+uid)?.value||'').trim();
+    item.tag.negate=document.getElementById('efo_'+uid)?.value==='negate';
+  }else if(item.meta_tag){
+    item.meta_tag.value=(document.getElementById('efn_'+uid)?.value||'').trim();
+    item.meta_tag.negate=document.getElementById('efo_'+uid)?.value==='negate';
+  }else if(item.global){
+    item.global.operator=document.getElementById('efo_'+uid)?.value||'contains';
+    item.global.value=(document.getElementById('efn_'+uid)?.value||'').trim();
+  }else if(item.count){
+    item.count.what=(document.getElementById('efn_'+uid)?.value||'').trim();
+    item.count.operator=document.getElementById('efo_'+uid)?.value||'gt';
+    item.count.value=(document.getElementById('efv_'+uid)?.value||'').trim();
+  }else if(item.type){
+    item.type.value=document.getElementById('efv_'+uid)?.value||'';
+  }else if(item.relation){
+    item.relation.type=(document.getElementById('efn_'+uid)?.value||'').trim();
+    item.relation.mode=document.getElementById('efo_'+uid)?.value||'any';
+  }else if(item.staff){
+    item.staff.position=(document.getElementById('efn_'+uid)?.value||'').trim();
+    item.staff.mode=document.getElementById('efo_'+uid)?.value||'any';
+  }else if(item.episode){
+    item.episode.mode=document.getElementById('efo_'+uid)?.value||'any';
+  }
+  updateYAMLEditor();
+}
+
+function createEmptyCondition(type){
+  switch(type){
+    case 'field':return{field:{field:'',operator:'contains',value:''}};
+    case 'tag':return{tag:{operator:'contains',value:'',negate:false}};
+    case 'meta_tag':return{meta_tag:{operator:'contains',value:'',negate:false}};
+    case 'global':return{global:{operator:'contains',value:''}};
+    case 'count':return{count:{what:'',operator:'gt',value:''}};
+    case 'type':return{type:{value:''}};
+    case 'relation':return{relation:{type:'',mode:'any',conditions:[{logic:{op:'and',items:[]}}]}};
+    case 'staff':return{staff:{position:'',mode:'any',conditions:[{logic:{op:'and',items:[]}}]}};
+    case 'episode':return{episode:{mode:'any',logic:{op:'and',items:[]}}};
+    default:return{field:{field:'',operator:'contains',value:''}};
+  }
+}
+
+function renderAddConditionBtn(gid,ctx){
+  let html='<div style="display:flex;gap:4px;align-items:center;margin-top:4px;flex-wrap:wrap">';
+  html+='<select class="select select-sm" id="newType_'+gid+'">';
+  if(ctx===CTX_EPISODE){
+    for(const f of EPISODE_FIELDS){html+='<option value="ep_'+f+'">'+EPISODE_FIELD_LABELS[f]+'</option>';}
+  }else if(ctx===CTX_PERSON){
+    html+='<option value="field">字段</option><option value="global">全局</option>';
+    const pfc=ctxFieldConfigs(CTX_PERSON);
+    for(const k in pfc){html+='<option value="'+k+'">'+pfc[k].label+'</option>';}
+    html+='<option value="staff">关联</option>';
+  }else{
+    html+='<option value="field">字段</option>';
+    const fc=ctxFieldConfigs(ctx);
+    for(const k in fc){html+='<option value="'+k+'">'+fc[k].label+'</option>';}
+    html+='<option value="tag">标签</option><option value="meta_tag">公共标签</option><option value="global">全局</option>';
+    if(queryTarget==='subject'){
+      html+='<option value="relation">关系</option><option value="episode">剧集</option><option value="count">数量</option>';
+    }
+    html+='<option value="staff">'+(queryTarget==='person'?'关联':'人物')+'</option>';
+  }
+  html+='</select>';
+  html+='<button class="btn btn-outline btn-xs" onclick="event.stopPropagation();addCondition('+gid+')">+ 添加条件</button>';
+  html+='<button class="btn btn-outline btn-xs" onclick="event.stopPropagation();addLogicGroupTo('+gid+')">+ 嵌套组</button>';
+  html+='</div>';
+  return html;
+}
+
+function addCondition(gid){
+  const type=document.getElementById('newType_'+gid)?.value||'field';
+  if(type.startsWith('ep_')){
+    addToGroup(gid,{field:{field:type.slice(3),operator:'contains',value:''}});
+  }else{
+    const g=findLogicGroup(rootLogic,gid);
+    const ctx=g?g._ctx:CTX_SUBJECT;
+    const fc=ctxFieldConfigs(ctx)[type];
+    if(fc){
+      const val=fc.type==='select'?(fc.options?.[0]?.[0]||''):'';
+      addToGroup(gid,{field:{field:type,operator:fc.ops[0],value:val}});
+    }else{
+      addToGroup(gid,createEmptyCondition(type));
+    }
+  }
+}
+
+function removeLogicGroup(groupId){
+  removeLogicItemById(rootLogic,groupId);
+  renderFilterTags();updateYAMLEditor();
+}
+
+function removeLogicLeaf(lgId,idx){
+  const g=findLogicGroup(rootLogic,lgId);if(!g)return;
+  g.items.splice(idx,1);renderFilterTags();updateYAMLEditor();
+}
+
+function addLogicGroupTo(gid){
+  const g=findLogicGroup(rootLogic,gid);if(!g)return;
+  const ng=newLogicGroup(g.op==='and'?'or':'and');
+  g.items.push({logic:ng});
+  renderFilterTags();updateYAMLEditor();
+}
+function opLabel(op){const m={eq:'=',contains:'包含',not_contains:'不包含',regex:'~=',gt:'>',gte:'>=',lt:'<',lte:'<=',before:'早于',after:'晚于',empty:'为空'};return m[op]||op}
+function clearFilters(){resetLogicBuilder();renderFilterTags();updateYAMLEditor()}
+
+/* ===== Query Target ===== */
+let queryTarget='subject';
+function setTarget(t){
+  queryTarget=t;
+  rootLogic = t==='person' ? personRootLogic : subjectRootLogic;
+  document.getElementById('targetSubject').className='radio-pill'+(t==='subject'?' active':'');
+  document.getElementById('targetPerson').className='radio-pill'+(t==='person'?' active':'');
+  if(t==='person'){document.getElementById('outputColumns').value='person_id,name,career'}
+  else{document.getElementById('outputColumns').value='id,name,name_cn,type,score'}
+  renderFilterTags();loadSchemaOptions();
 }
 
 /* ===== 基础筛选 ===== */
@@ -530,7 +836,7 @@ function renderBaseFilter(){
   h+='<div class="form-group"><label class="form-label">公共标签</label>';
   h+='<div style="display:flex;flex-wrap:wrap;gap:4px" id="baseMetaTags">';
   for(const mt of metaTags){
-    h+='<label class="radio-pill" style="cursor:pointer;font-size:11px;padding:2px 8px" onclick="toggleBaseMetaTag(this,\''+escHtml(mt)+'\')">'+escHtml(mt)+'</label>';
+    h+='<label class="radio-pill" style="cursor:pointer;padding:2px 8px" onclick="toggleBaseMetaTag(this,\''+escHtml(mt)+'\')">'+escHtml(mt)+'</label>';
   }
   h+='</div></div>';
 
@@ -559,7 +865,7 @@ function renderBaseFilter(){
 async function onBaseTypeChange(v){
   selectedBaseType = Number(v);
   await loadSchemaOptionsForType(selectedBaseType);
-  renderAddForm();
+  renderFilterTags();
 }
 
 let selectedMetaTags = [];
@@ -572,38 +878,61 @@ function toggleBaseMetaTag(el, tag){
 }
 
 function addBaseFilters(){
+  const g=getSelectedGroup();
   let count=0;
   const t=selectedBaseType;
-  if(t&&t>0){filters.push({type:{value:t}});count++}
+  if(t&&t>0){g.items.push({type:{value:t}});count++}
 
   const plat=document.getElementById('basePlatform')?.value;
-  if(plat){filters.push({field:{field:'platform',operator:'eq',value:plat}});count++}
+  if(plat){g.items.push({field:{field:'platform',operator:'eq',value:plat}});count++}
 
   for(const mt of selectedMetaTags){
-    filters.push({meta_tag:{operator:'contains',value:mt}});count++;
+    g.items.push({meta_tag:{operator:'contains',value:mt}});count++;
   }
 
   const smin=document.getElementById('baseScoreMin')?.value;
-  if(smin){filters.push({field:{field:'score',operator:'gte',value:smin}});count++}
+  if(smin){g.items.push({field:{field:'score',operator:'gte',value:smin}});count++}
   const smax=document.getElementById('baseScoreMax')?.value;
-  if(smax){filters.push({field:{field:'score',operator:'lte',value:smax}});count++}
+  if(smax){g.items.push({field:{field:'score',operator:'lte',value:smax}});count++}
 
   const dmin=document.getElementById('baseDateMin')?.value;
-  if(dmin){filters.push({field:{field:'date',operator:'after',value:dmin}});count++}
+  if(dmin){g.items.push({field:{field:'date',operator:'after',value:dmin}});count++}
   const dmax=document.getElementById('baseDateMax')?.value;
-  if(dmax){filters.push({field:{field:'date',operator:'before',value:dmax}});count++}
+  if(dmax){g.items.push({field:{field:'date',operator:'before',value:dmax}});count++}
 
   const rank=document.getElementById('baseRank')?.value;
-  if(rank){filters.push({field:{field:'rank',operator:'lte',value:rank}});count++}
+  if(rank){g.items.push({field:{field:'rank',operator:'lte',value:rank}});count++}
 
-  if(document.getElementById('baseSeries')?.checked){filters.push({field:{field:'series',operator:'eq',value:'true'}});count++}
-  if(document.getElementById('baseNsfw')?.checked){filters.push({field:{field:'nsfw',operator:'eq',value:'true'}});count++}
+  if(document.getElementById('baseSeries')?.checked){g.items.push({field:{field:'series',operator:'eq',value:'true'}});count++}
+  if(document.getElementById('baseNsfw')?.checked){g.items.push({field:{field:'nsfw',operator:'eq',value:'true'}});count++}
 
   selectedMetaTags = [];
-  if(count>0){renderFilterTags()}
+  if(count>0){renderFilterTags();updateYAMLEditor()}
 }
 
 function escHtml(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+/* ===== Autocomplete (Awesomplete wrapper) ===== */
+function autoComplete(inputId,suggestions){
+  const inp=document.getElementById(inputId);
+  if(!inp||typeof Awesomplete==='undefined')return;
+  const aw=new Awesomplete(inp,{
+    list:suggestions,
+    minChars:0,
+    maxItems:20,
+    autoFirst:true,
+    filter:function(text,input){
+      return Awesomplete.FILTER_CONTAINS(text,input.match(/^\s*/)[0]+input.trim());
+    }
+  });
+  // Open on focus even when empty
+  inp.addEventListener('focus',function(){
+    aw.evaluate();
+    if(this.value.trim()===''){aw.ul.innerHTML='';suggestions.forEach(function(s){const li=document.createElement('li');li.textContent=s;aw.ul.appendChild(li)});aw.open()}
+  });
+  // Close on blur
+  inp.addEventListener('blur',function(){setTimeout(function(){aw.close()},150)});
+}
 function ensureResultElements(){
   const panel=document.getElementById('resultsPanel');
   if(!document.getElementById('resultsInfo')){const d=document.createElement('div');d.id='resultsInfo';panel.appendChild(d)}
@@ -612,318 +941,123 @@ function ensureResultElements(){
 
 /* ===== Filter Actions ===== */
 function getVal(id){return document.getElementById(id)?.value?.trim()||''}
-function addFieldFilter(){const f=getVal('fieldName'),o=getVal('fieldOp'),v=getVal('fieldVal');if(!f)return;if(o!=='empty'&&!v)return;filters.push({field:{field:f,operator:o,value:v}});renderFilterTags()}
-function addTagFilter(){const v=getVal('tagVal'),n=document.getElementById('tagNegate').value==='1';if(v){filters.push({tag:{operator:'contains',value:v,negate:n}});renderFilterTags()}}
-function addMetaTagFilter(){const v=getVal('metaTagVal'),n=document.getElementById('metaTagNegate').value==='1';if(v){filters.push({meta_tag:{operator:'contains',value:v,negate:n}});renderFilterTags()}}
-function addGlobalFilter(){const o=getVal('globalOp'),v=getVal('globalVal');if(v){filters.push({global:{operator:o,value:v}});renderFilterTags()}}
-// ===== Relation builder with nested conditions =====
-let pendingRelation = null;
-let relNestMode = 'field';
-
-function resetRelationBuilder(){
-  pendingRelation = {type:'',mode:'any',conditions:[]};
-  relNestMode = 'field';
+/* ===== Inline add functions ===== */
+function addToGroup(gid,filter){
+  const g=findLogicGroup(rootLogic,gid);if(!g)return;
+  g.items.push(filter);renderFilterTags();updateYAMLEditor();
 }
-
-function renderRelationBuilder(){
-  if(!pendingRelation) resetRelationBuilder();
-  let html = '';
-
-  // Row 1: Relation type + mode
-  html += '<div class="filter-builder" style="margin-bottom:4px">'+
-    '<input class="input" id="relType" placeholder="关系名 (如: 单行本)" style="flex:1;min-width:100px" value="'+escapeHtml(pendingRelation.type)+'">'+
-    '<select class="select select-sm" id="relMode" onchange="pendingRelation.mode=this.value">'+
-      '<option value="any" '+(pendingRelation.mode==='any'?'selected':'')+'>任意满足</option>'+
-      '<option value="all" '+(pendingRelation.mode==='all'?'selected':'')+'>全部满足</option>'+
-      '<option value="none" '+(pendingRelation.mode==='none'?'selected':'')+'>排除</option>'+
-    '</select>'+
-  '</div>';
-
-  // Row 2: Show existing conditions
-  if(pendingRelation.conditions.length > 0){
-    html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">';
-    for(let i=0;i<pendingRelation.conditions.length;i++){
-      html += '<span class="filter-tag" style="font-size:11px">'+relCondLabel(pendingRelation.conditions[i])+
-        '<span class="tag-remove" onclick="removeRelCond('+i+')">&times;</span></span>';
-    }
-    html += '</div>';
-  }
-
-  // Row 3: Nested condition builder
-  html += '<div class="filter-builder" style="margin-bottom:4px">'+
-    '<select class="select select-sm" onchange="relNestMode=this.value;renderAddForm()">'+
-      '<option value="field" '+(relNestMode==='field'?'selected':'')+'>字段</option>'+
-      '<option value="type" '+(relNestMode==='type'?'selected':'')+'>类型</option>'+
-      '<option value="global" '+(relNestMode==='global'?'selected':'')+'>全局</option>'+
-      '<option value="tag" '+(relNestMode==='tag'?'selected':'')+'>标签</option>'+
-      '<option value="meta_tag" '+(relNestMode==='meta_tag'?'selected':'')+'>公共标签</option>'+
-      '<option value="count" '+(relNestMode==='count'?'selected':'')+'>数量</option>'+
-    '</select>';
-  html += relNestFormHTML();
-  html += '</div>';
-
-  // Row 4: Finalize button
-  html += '<button class="btn btn-primary btn-sm" onclick="addRelationFilter()" style="margin-top:4px">'+
-    '✅ 添加关系 ('+pendingRelation.conditions.length+'个条件)</button>';
-  if(pendingRelation.conditions.length > 0){
-    html += '<button class="btn btn-default btn-sm" onclick="resetRelationBuilder();renderAddForm()" style="margin-left:4px">清空</button>';
-  }
-  return html;
-}
-
-function relCondLabel(f){
-  if(f.type) return '类型: '+(Object.entries(schema.subject_types).find(([k,v])=>v==f.type.value)?.[0]||f.type.value);
-  if(f.field) return f.field.field+' '+opLabel(f.field.operator)+' "'+f.field.value+'"';
-  if(f.global) return '全局: '+opLabel(f.global.operator)+' "'+f.global.value+'"';
-  if(f.tag) return (f.tag.negate?'排除':'包含')+'标签: '+f.tag.value;
-  if(f.meta_tag) return (f.meta_tag.negate?'排除':'包含')+'公共标签: '+f.meta_tag.value;
-  if(f.count) return '数量['+f.count.what+'] '+opLabel(f.count.operator)+' '+f.count.value;
-  return JSON.stringify(f);
-}
-
-function relNestFormHTML(){
-  const dl=schema.direct_fields.map(f=>'<option value="'+f+'">').join('');
-  switch(relNestMode){
-    case 'field':
-      return '<input class="input" id="rnField" placeholder="字段名" style="width:80px"><select class="select select-sm" id="rnOp"><option value="contains">包含</option><option value="eq">等于</option><option value="regex">正则</option><option value="gt">&gt;</option><option value="lt">&lt;</option><option value="gte">&gt;=</option><option value="lte">&lt;=</option><option value="before">早于</option><option value="after">晚于</option><option value="empty">为空</option></select>'+
-        '<input class="input" id="rnVal" placeholder="值" style="flex:1"><button class="btn btn-primary btn-sm" onclick="addRelNestField()">+</button>';
-    case 'type':
-      return '<select class="select select-sm" id="rnType"><option>书籍</option><option>动画</option><option>音乐</option><option>游戏</option><option>三次元</option></select><button class="btn btn-primary btn-sm" onclick="addRelNestType()">+</button>';
-    case 'global':
-      return '<select class="select select-sm" id="rnGlobalOp"><option value="contains">包含</option><option value="regex">正则</option></select><input class="input" id="rnGlobalVal" placeholder="搜索文本" style="flex:1"><button class="btn btn-primary btn-sm" onclick="addRelNestGlobal()">+</button>';
-    case 'tag':
-      return '<input class="input" id="rnTag" placeholder="标签名" style="flex:1"><select class="select select-sm" id="rnTagNeg"><option value="0">包含</option><option value="1">排除</option></select><button class="btn btn-primary btn-sm" onclick="addRelNestTag()">+</button>';
-    case 'meta_tag':
-      return '<input class="input" id="rnMetaTag" placeholder="公共标签名" style="flex:1"><select class="select select-sm" id="rnMetaNeg"><option value="0">包含</option><option value="1">排除</option></select><button class="btn btn-primary btn-sm" onclick="addRelNestMeta()">+</button>';
-    case 'count':
-      return '<input class="input" id="rnCountWhat" placeholder="关系名或ep" style="width:80px"><select class="select select-sm" id="rnCountOp"><option value="gt">&gt;</option><option value="gte">&gt;=</option><option value="lt">&lt;</option><option value="lte">&lt;=</option><option value="eq">=</option></select><input class="input" id="rnCountVal" placeholder="数量" style="width:50px"><button class="btn btn-primary btn-sm" onclick="addRelNestCount()">+</button>';
-    default: return '';
-  }
-}
-
+// ===== Unified condition helpers =====
 function rv(id){return document.getElementById(id)?.value?.trim()||''}
-function syncPendingRelation(){
-  if(!pendingRelation) return;
-  const tEl=document.getElementById('relType');
-  const mEl=document.getElementById('relMode');
-  if(tEl) pendingRelation.type = tEl.value.trim();
-  if(mEl) pendingRelation.mode = mEl.value;
-}
-function addRelNestField(){
-  syncPendingRelation();
-  const f=rv('rnField'),o=rv('rnOp'),v=rv('rnVal');if(!f||!v)return;
-  pendingRelation.conditions.push({field:{field:f,operator:o,value:v}});
-  renderAddForm();
-}
-function addRelNestType(){
-  syncPendingRelation();
-  pendingRelation.conditions.push({type:{value:rv('rnType')}});
-  renderAddForm();
-}
-function addRelNestGlobal(){
-  syncPendingRelation();
-  const o=rv('rnGlobalOp'),v=rv('rnGlobalVal');if(!v)return;
-  pendingRelation.conditions.push({global:{operator:o,value:v}});
-  renderAddForm();
-}
-function addRelNestTag(){
-  syncPendingRelation();
-  const v=rv('rnTag'),n=document.getElementById('rnTagNeg')?.value==='1';
-  if(!v)return;
-  pendingRelation.conditions.push({tag:{operator:'contains',value:v,negate:n}});
-  renderAddForm();
-}
-function addRelNestMeta(){
-  syncPendingRelation();
-  const v=rv('rnMetaTag'),n=document.getElementById('rnMetaNeg')?.value==='1';
-  if(!v)return;
-  pendingRelation.conditions.push({meta_tag:{operator:'contains',value:v,negate:n}});
-  renderAddForm();
-}
-function addRelNestCount(){
-  syncPendingRelation();
-  const w=rv('rnCountWhat'),o=rv('rnCountOp'),v=rv('rnCountVal');if(!w||!v)return;
-  pendingRelation.conditions.push({count:{what:w,operator:o,value:v}});
-  renderAddForm();
-}
-function removeRelCond(i){pendingRelation.conditions.splice(i,1);renderAddForm()}
 
-function addRelationFilter(){
-  const t=document.getElementById('relType')?.value?.trim()||'';
-  if(!t) return;
-  pendingRelation.type = t;
-  pendingRelation.mode = document.getElementById('relMode')?.value||'any';
-  filters.push({relation:{
-    type: pendingRelation.type,
-    mode: pendingRelation.mode,
-    conditions: pendingRelation.conditions
-  }});
-  resetRelationBuilder();
-  renderFilterTags();
-  renderAddForm();
-}
-// ===== Staff builder with nested conditions =====
-let pendingStaff = null;
-let staffNestMode = 'field';
+/* ===== Logic Tree (base for all filters) ===== */
+let _logicIdCounter=0;
+function newLogicGroup(op){return {op:op||'and',items:[],_id:++_logicIdCounter}}
 
-function resetStaffBuilder(){
-  pendingStaff = {position:'',mode:'any',conditions:[]};
-  staffNestMode = 'field';
+let subjectRootLogic = newLogicGroup('and');
+let personRootLogic = newLogicGroup('and');
+let rootLogic = subjectRootLogic;
+
+function resetLogicBuilder(){
+  _logicIdCounter=0;
+  subjectRootLogic = newLogicGroup('and');
+  personRootLogic = newLogicGroup('and');
+  rootLogic = queryTarget==='person' ? personRootLogic : subjectRootLogic;
 }
 
-function renderStaffBuilder(){
-  if(!pendingStaff) resetStaffBuilder();
-  const posOpts = (schemaOptions.positions||[]).map(p=>'<option value="'+escHtml(p)+'">').join('');
-  let html = '';
+function findLogicGroup(node,id){
+  if(node._id===id) return node;
+  for(const item of node.items){
+    if(item.logic){const r=findLogicGroup(item.logic,id);if(r) return r}
+    if(item.relation&&item.relation.conditions){for(const c of item.relation.conditions){if(c.logic){const r=findLogicGroup(c.logic,id);if(r) return r}}}
+    if(item.staff&&item.staff.conditions){for(const c of item.staff.conditions){if(c.logic){const r=findLogicGroup(c.logic,id);if(r) return r}}}
+    if(item.episode&&item.episode.logic){const r=findLogicGroup(item.episode.logic,id);if(r) return r}
+  }
+  return null;
+}
 
-  // Row 1: Position + mode
-  html += '<div class="filter-builder" style="margin-bottom:4px">'+
-    '<input class="input" id="staffPos" placeholder="职位名 (如: 原作)" list="staffPosList" style="flex:1;min-width:100px" value="'+escapeHtml(pendingStaff.position)+'">'+
-    '<datalist id="staffPosList">'+posOpts+'</datalist>'+
-    '<select class="select select-sm" id="staffMode" onchange="pendingStaff.mode=this.value">'+
-      '<option value="any" '+(pendingStaff.mode==='any'?'selected':'')+'>任意满足</option>'+
-      '<option value="all" '+(pendingStaff.mode==='all'?'selected':'')+'>全部满足</option>'+
-      '<option value="none" '+(pendingStaff.mode==='none'?'selected':'')+'>排除</option>'+
-    '</select>'+
-  '</div>';
-
-  // Row 2: Show existing conditions
-  if(pendingStaff.conditions.length > 0){
-    html += '<div style="display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px">';
-    for(let i=0;i<pendingStaff.conditions.length;i++){
-      html += '<span class="filter-tag" style="font-size:11px">'+staffCondLabel(pendingStaff.conditions[i])+
-        '<span class="tag-remove" onclick="removeStaffCond('+i+')">&times;</span></span>';
+let _groupNumMap={};
+function assignGroupNumbers(node){
+  _groupNumMap={};
+  let n=0;
+  (function walk(lg){
+    _groupNumMap[lg._id]=++n;
+    for(const item of lg.items){
+      if(item.logic) walk(item.logic);
+      if(item.relation&&item.relation.conditions){for(const c of item.relation.conditions){if(c.logic) walk(c.logic)}}
+      if(item.staff&&item.staff.conditions){for(const c of item.staff.conditions){if(c.logic) walk(c.logic)}}
+      if(item.episode&&item.episode.logic) walk(item.episode.logic);
     }
-    html += '</div>';
+  })(node);
+}
+function groupNum(id){return _groupNumMap[id]||'?'}
+
+function removeLogicItemById(node,id){
+  for(let i=0;i<node.items.length;i++){
+    const item=node.items[i];
+    if(item.logic){
+      if(item.logic._id===id){node.items.splice(i,1);return true}
+      if(removeLogicItemById(item.logic,id)) return true;
+    }
+    if(item.relation&&item.relation.conditions){for(const c of item.relation.conditions){if(c.logic&&removeLogicItemById(c.logic,id)) return true}}
+    if(item.staff&&item.staff.conditions){for(const c of item.staff.conditions){if(c.logic&&removeLogicItemById(c.logic,id)) return true}}
+    if(item.episode&&item.episode.logic&&removeLogicItemById(item.episode.logic,id)) return true;
   }
-
-  // Row 3: Nested condition builder (modes depend on query target)
-  const nestOpts = queryTarget==='person'
-    ? '<option value="field" '+(staffNestMode==='field'?'selected':'')+'>字段</option>'+
-      '<option value="type" '+(staffNestMode==='type'?'selected':'')+'>类型</option>'+
-      '<option value="global" '+(staffNestMode==='global'?'selected':'')+'>全局</option>'+
-      '<option value="tag" '+(staffNestMode==='tag'?'selected':'')+'>标签</option>'+
-      '<option value="meta_tag" '+(staffNestMode==='meta_tag'?'selected':'')+'>公共标签</option>'+
-      '<option value="count" '+(staffNestMode==='count'?'selected':'')+'>数量</option>'
-    : '<option value="field" '+(staffNestMode==='field'?'selected':'')+'>字段</option>'+
-      '<option value="global" '+(staffNestMode==='global'?'selected':'')+'>全局</option>'+
-      '<option value="count" '+(staffNestMode==='count'?'selected':'')+'>数量</option>';
-
-  html += '<div class="filter-builder" style="margin-bottom:4px">'+
-    '<select class="select select-sm" onchange="staffNestMode=this.value;renderAddForm()">'+nestOpts+'</select>';
-  html += staffNestFormHTML();
-  html += '</div>';
-
-  // Row 4: Finalize button
-  html += '<button class="btn btn-primary btn-sm" onclick="addStaffFilter()" style="margin-top:4px">'+
-    '✅ 添加'+(queryTarget==='person'?'关联':'人员')+' ('+pendingStaff.conditions.length+'个条件)</button>';
-  if(pendingStaff.conditions.length > 0){
-    html += '<button class="btn btn-default btn-sm" onclick="resetStaffBuilder();renderAddForm()" style="margin-left:4px">清空</button>';
-  }
-  return html;
+  return false;
 }
 
-function staffCondLabel(f){
-  if(f.field) return f.field.field+' '+opLabel(f.field.operator)+' "'+f.field.value+'"';
+function filterToLabel(f){
+  if(f.type) return '分类: '+(Object.entries(schema.subject_types).find(([k,v])=>v==f.type.value)?.[0]||f.type.value);
+  if(f.field){
+    const fc=SUBJECT_FIELD_CONFIGS[f.field.field]||PERSON_FIELD_CONFIGS[f.field.field];
+    const label=fc?fc.label:f.field.field;
+    const op=fc&&fc.ops.length===1?'':opLabel(f.field.operator)+' ';
+    const val=fc&&fc.type==='select'?(fc.options?.find(o=>o[0]===String(f.field.value))?.[1]||f.field.value):f.field.value;
+    return label+' '+op+'"'+val+'"';
+  }
   if(f.global) return '全局: '+opLabel(f.global.operator)+' "'+f.global.value+'"';
-  if(f.type) return '类型: '+(Object.entries(schema.subject_types).find(([k,v])=>v==f.type.value)?.[0]||f.type.value);
   if(f.tag) return (f.tag.negate?'排除':'包含')+'标签: '+f.tag.value;
   if(f.meta_tag) return (f.meta_tag.negate?'排除':'包含')+'公共标签: '+f.meta_tag.value;
   if(f.count) return '数量['+f.count.what+'] '+opLabel(f.count.operator)+' '+f.count.value;
+  if(f.relation){
+    const modeLabel={any:'任意',all:'全部',none:'排除'}[f.relation.mode]||f.relation.mode;
+    let l=modeLabel+'关系['+f.relation.type+']';
+    if(f.relation.conditions?.length) l+=' ('+f.relation.conditions.map(relCondLabel).join(', ')+')';
+    return l;
+  }
+  if(f.staff){
+    const modeLabel={any:'任意',all:'全部',none:'排除'}[f.staff.mode]||f.staff.mode;
+    let l=(queryTarget==='person'?'关联':'人员')+'['+f.staff.position+'] '+modeLabel;
+    if(f.staff.conditions?.length) l+=' ('+f.staff.conditions.map(staffCondLabel).join(', ')+')';
+    return l;
+  }
+  if(f.episode){const c=f.episode.logic?f.episode.logic.items.length:(f.episode.conditions?.length||0);return '剧集 '+(f.episode.mode||'any')+(c?' +'+c+'条件':'')}
+  if(f.logic) return logicLabel(f.logic);
   return JSON.stringify(f);
 }
 
-function staffNestFormHTML(){
-  const isPerson = queryTarget==='person';
-  // For person target: conditions on subjects, use subject field datalist
-  // For subject target: conditions on persons, use person field datalist
-  const personFields = ['name','id','type','career','appear_eps','简体中文名','别名','性别','生日'];
-  const subjectDl = (schema.direct_fields||[]).map(f=>'<option value="'+f+'">').join('');
-  const personDl = personFields.map(f=>'<option value="'+f+'">').join('');
-  const fieldDl = isPerson ? subjectDl : personDl;
-
-  switch(staffNestMode){
-    case 'field':
-      return '<input class="input" id="snField" placeholder="字段名" list="snFieldList" style="width:80px"><datalist id="snFieldList">'+fieldDl+'</datalist>'+
-        '<select class="select select-sm" id="snOp"><option value="contains">包含</option><option value="eq">等于</option><option value="regex">正则</option><option value="gt">&gt;</option><option value="lt">&lt;</option><option value="gte">&gt;=</option><option value="lte">&lt;=</option><option value="before">早于</option><option value="after">晚于</option><option value="empty">为空</option></select>'+
-        '<input class="input" id="snVal" placeholder="值" style="flex:1"><button class="btn btn-primary btn-sm" onclick="addStaffNestField()">+</button>';
-    case 'type':
-      return '<select class="select select-sm" id="snType"><option>书籍</option><option>动画</option><option>音乐</option><option>游戏</option><option>三次元</option></select><button class="btn btn-primary btn-sm" onclick="addStaffNestType()">+</button>';
-    case 'global':
-      return '<select class="select select-sm" id="snGlobalOp"><option value="contains">包含</option><option value="regex">正则</option></select><input class="input" id="snGlobalVal" placeholder="搜索文本" style="flex:1"><button class="btn btn-primary btn-sm" onclick="addStaffNestGlobal()">+</button>';
-    case 'tag':
-      return '<input class="input" id="snTag" placeholder="标签名" style="flex:1"><select class="select select-sm" id="snTagNeg"><option value="0">包含</option><option value="1">排除</option></select><button class="btn btn-primary btn-sm" onclick="addStaffNestTag()">+</button>';
-    case 'meta_tag':
-      const mts = schemaOptions.meta_tags||[];
-      let mtOpts = mts.map(t=>'<option value="'+escHtml(t)+'">').join('');
-      return '<input class="input" id="snMetaTag" placeholder="公共标签名" list="snMetaTagList" style="flex:1"><datalist id="snMetaTagList">'+mtOpts+'</datalist><select class="select select-sm" id="snMetaNeg"><option value="0">包含</option><option value="1">排除</option></select><button class="btn btn-primary btn-sm" onclick="addStaffNestMeta()">+</button>';
-    case 'count':
-      const whatPh = isPerson ? '关系名或ep' : '职位名';
-      return '<input class="input" id="snCountWhat" placeholder="'+whatPh+'" style="width:80px"><select class="select select-sm" id="snCountOp"><option value="gt">&gt;</option><option value="gte">&gt;=</option><option value="lt">&lt;</option><option value="lte">&lt;=</option><option value="eq">=</option></select><input class="input" id="snCountVal" placeholder="数量" style="width:50px"><button class="btn btn-primary btn-sm" onclick="addStaffNestCount()">+</button>';
-    default: return '';
-  }
+function logicLabel(lg){
+  const opLabel=lg.op==='or'?'OR':'AND';
+  if(lg.items.length===0) return opLabel+' (空)';
+  return opLabel+' ('+lg.items.map(filterToLabel).join(', ')+')';
 }
 
-function syncPendingStaff(){
-  if(!pendingStaff) return;
-  const pEl=document.getElementById('staffPos');
-  const mEl=document.getElementById('staffMode');
-  if(pEl) pendingStaff.position = pEl.value.trim();
-  if(mEl) pendingStaff.mode = mEl.value;
+function toggleLogicOp(lgId,val){
+  const g=findLogicGroup(rootLogic,lgId);if(!g)return;
+  g.op=val;renderFilterTags();updateYAMLEditor();
 }
-function addStaffNestField(){
-  syncPendingStaff();
-  const f=rv('snField'),o=rv('snOp'),v=rv('snVal');if(!f||(!v&&o!=='empty'))return;
-  pendingStaff.conditions.push({field:{field:f,operator:o,value:v}});
-  renderAddForm();
-}
-function addStaffNestType(){
-  syncPendingStaff();
-  pendingStaff.conditions.push({type:{value:rv('snType')}});
-  renderAddForm();
-}
-function addStaffNestGlobal(){
-  syncPendingStaff();
-  const o=rv('snGlobalOp'),v=rv('snGlobalVal');if(!v)return;
-  pendingStaff.conditions.push({global:{operator:o,value:v}});
-  renderAddForm();
-}
-function addStaffNestTag(){
-  syncPendingStaff();
-  const v=rv('snTag'),n=document.getElementById('snTagNeg')?.value==='1';
-  if(!v)return;
-  pendingStaff.conditions.push({tag:{operator:'contains',value:v,negate:n}});
-  renderAddForm();
-}
-function addStaffNestMeta(){
-  syncPendingStaff();
-  const v=rv('snMetaTag'),n=document.getElementById('snMetaNeg')?.value==='1';
-  if(!v)return;
-  pendingStaff.conditions.push({meta_tag:{operator:'contains',value:v,negate:n}});
-  renderAddForm();
-}
-function addStaffNestCount(){
-  syncPendingStaff();
-  const w=rv('snCountWhat'),o=rv('snCountOp'),v=rv('snCountVal');if(!w||!v)return;
-  pendingStaff.conditions.push({count:{what:w,operator:o,value:v}});
-  renderAddForm();
-}
-function removeStaffCond(i){pendingStaff.conditions.splice(i,1);renderAddForm()}
 
-function addStaffFilter(){
-  syncPendingStaff();
-  if(!pendingStaff||!pendingStaff.position) return;
-  filters.push({staff:{
-    position: pendingStaff.position,
-    mode: pendingStaff.mode,
-    conditions: pendingStaff.conditions
-  }});
-  resetStaffBuilder();
-  renderFilterTags();
-  renderAddForm();
+function logicToFilter(lg){
+  return {logic:{op:lg.op,items:lg.items.map(item=>{
+    if(item.logic) return logicToFilter(item.logic);
+    return item;
+  })}};
 }
-function addEpisodeFilter(){const f=getVal('epField2'),o=getVal('epOp2'),v=getVal('epVal'),m=getVal('epMode');if(!f||!v)return;filters.push({episode:{mode:m,conditions:[{field:f,operator:o,value:v}]}});renderFilterTags()}
-function addCountFilter(){const w=getVal('countWhat'),o=getVal('countOp'),v=getVal('countVal');if(!w||!v)return;filters.push({count:{what:w,operator:o,value:v}});renderFilterTags()}
+
+function getFiltersForAPI(){
+  if(rootLogic.items.length===0) return [];
+  // Strip internal _id before sending
+  return [logicToFilter(rootLogic)];
+}
 
 /* ===== YAML ===== */
 function toggleYAML(){
@@ -932,8 +1066,10 @@ function toggleYAML(){
   else{s.style.display='none'}
 }
 function updateYAMLEditor(){
+  syncAllConditions();
   const cols=document.getElementById('outputColumns').value;
-  const y='filters:\n'+filters.map(f=>'  - '+JSON.stringify(f,null,2).replace(/\n/g,'\n    ')).join('\n')+'\noutput:\n  columns: ['+cols+']';
+  const apiFilters=getFiltersForAPI();
+  const y='filters:\n'+apiFilters.map(f=>'  - '+JSON.stringify(f,null,2).replace(/\n/g,'\n    ')).join('\n')+'\noutput:\n  columns: ['+cols+']';
   document.getElementById('yamlEditor').value=y;
 }
 async function applyYAML(){
@@ -943,10 +1079,33 @@ async function applyYAML(){
     const r=await fetch('/api/config/parse',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({yaml:raw})});
     const data=await r.json();
     if(data.error){alert('解析失败: '+data.error+(data.message?'\n'+data.message:''));return}
-    if(data.filters&&data.filters.length>0){filters=data.filters;renderFilterTags();resetRelationBuilder();resetStaffBuilder();renderAddForm()}
+    if(data.filters&&data.filters.length>0){
+      applyFiltersFromAPI(data.filters);
+      renderFilterTags()
+    }
     if(data.output?.columns)document.getElementById('outputColumns').value=data.output.columns.join(',');
     if(data.limit)document.getElementById('resultLimit').value=data.limit;
   }catch(e){alert('请求失败: '+e.message)}
+}
+
+function applyFiltersFromAPI(apiFilters){
+  _logicIdCounter=0;
+  let newRoot;
+  if(apiFilters.length===1&&apiFilters[0].logic){
+    newRoot=assignLogicIds(apiFilters[0].logic);
+  }else{
+    newRoot={op:'and',items:apiFilters,_id:++_logicIdCounter};
+  }
+  if(queryTarget==='person'){personRootLogic=newRoot}else{subjectRootLogic=newRoot}
+  rootLogic=newRoot;
+}
+
+function assignLogicIds(lg){
+  if(!lg._id) lg._id=++_logicIdCounter;
+  for(const item of lg.items){
+    if(item.logic) assignLogicIds(item.logic);
+  }
+  return lg;
 }
 
 /* ===== WASM SQL Builder ===== */
@@ -959,6 +1118,7 @@ function buildCond(expr,op,val){
   switch(op){
     case 'eq':return "CAST("+expr+" AS VARCHAR) = '"+escSql(val)+"'";
     case 'contains':return "CAST("+expr+" AS VARCHAR) LIKE '%"+escSql(val).replace(/%/g,'\\%').replace(/_/g,'\\_')+"%'";
+    case 'not_contains':return "CAST("+expr+" AS VARCHAR) NOT LIKE '%"+escSql(val).replace(/%/g,'\\%').replace(/_/g,'\\_')+"%'";
     case 'regex':return "regexp_matches("+expr+",'"+val.replace(/'/g,"''")+"')";
     case 'empty':return "COALESCE(CAST("+expr+" AS VARCHAR),'') = ''";
     case 'gt':case 'gte':case 'lt':case 'lte':return "CAST("+expr+" AS DOUBLE) "+({gt:'>',gte:'>=',lt:'<',lte:'<='})[op]+" "+val;
@@ -973,6 +1133,35 @@ function buildFieldWhere(f,alias){
   else{expr=infoboxExpr(f.field,a);if(['gt','gte','lt','lte'].includes(f.operator))expr=numExpr(expr)}
   return buildCond(expr,f.operator,String(f.value||''));
 }
+function buildWasmClauses(filters,alias,op){
+  const parts=[];
+  for(const f of filters){
+    if(f.logic){
+      const c=buildWasmClauses(f.logic.items,alias,f.logic.op);
+      if(c) parts.push(c);
+    }else if(f.field){
+      parts.push(buildFieldWhere(f.field,alias));
+    }else if(f.type){
+      const col=queryTarget==='person'?alias+'.person_type':alias+'.type';
+      parts.push(col+' = '+f.type.value);
+    }else if(f.global){
+      parts.push(buildCond(alias+'.infobox',f.global.operator,String(f.global.value||'')));
+    }else if(f.tag){
+      const c="EXISTS (SELECT 1 FROM (SELECT UNNEST("+alias+".tags) AS t) WHERE t.name = '"+escSql(f.tag.value)+"')";
+      parts.push(f.tag.negate?'NOT '+c:c);
+    }else if(f.meta_tag){
+      parts.push("LIST_CONTAINS(COALESCE("+alias+".meta_tags, []), '"+escSql(f.meta_tag.value)+"')");
+    }else if(f.count){
+      let cnt="(SELECT COUNT(*) FROM subject_relations r WHERE r.subject_id="+alias+".id)";
+      parts.push(buildCond(cnt,f.count.operator||'gt',String(f.count.value||'0')));
+    }
+  }
+  if(parts.length===0) return '';
+  const sep=op==='or'?' OR ':' AND ';
+  const joined=parts.join(sep);
+  return (op==='or'&&parts.length>1)?'('+joined+')':joined;
+}
+
 function buildWasmSQL(filters,cols,target,limit,sortBy){
   const alias=target==='person'?'p':'s';
   const fromTbl=target==='person'?'persons':'subjects';
@@ -1050,6 +1239,9 @@ function buildWasmSQL(filters,cols,target,limit,sortBy){
     }else if(f.count){
       let cnt="(SELECT COUNT(*) FROM subject_relations r WHERE r.subject_id="+alias+".id)";
       whereParts.push(buildCond(cnt,f.count.operator||'gt',String(f.count.value||'0')));
+    }else if(f.logic){
+      const c=buildWasmClauses(f.logic.items,alias,f.logic.op);
+      if(c) whereParts.push(c);
     }
   }
   let sql="SELECT "+selectExprs.join(', ')+" FROM "+fromTbl+" "+alias;
@@ -1060,7 +1252,42 @@ function buildWasmSQL(filters,cols,target,limit,sortBy){
 }
 
 /* ===== Run Query ===== */
+function syncAllConditions(){
+  (function walk(lg){
+    for(let i=0;i<lg.items.length;i++){
+      const item=lg.items[i];
+      if(item.logic){walk(item.logic);continue}
+      const uid=lg._id+'_'+i;
+      if(item.field){
+        const fEl=document.getElementById('efn_'+uid);
+        if(fEl) item.field.field=fEl.value.trim();
+        const oEl=document.getElementById('efo_'+uid);
+        if(oEl) item.field.operator=oEl.value;
+        const vEl=document.getElementById('efv_'+uid);
+        if(vEl) item.field.value=vEl.value.trim();
+      }else if(item.tag){
+        const vEl=document.getElementById('efn_'+uid);
+        if(vEl) item.tag.value=vEl.value.trim();
+      }else if(item.meta_tag){
+        const vEl=document.getElementById('efn_'+uid);
+        if(vEl) item.meta_tag.value=vEl.value.trim();
+      }else if(item.global){
+        const vEl=document.getElementById('efn_'+uid);
+        if(vEl) item.global.value=vEl.value.trim();
+      }else if(item.count){
+        const vEl=document.getElementById('efv_'+uid);
+        if(vEl) item.count.value=vEl.value.trim();
+      }else if(item.episode&&item.episode.logic){
+        walk(item.episode.logic);
+      }
+      if(item.relation&&item.relation.conditions){for(const c of item.relation.conditions){if(c.logic)walk(c.logic)}}
+      if(item.staff&&item.staff.conditions){for(const c of item.staff.conditions){if(c.logic)walk(c.logic)}}
+    }
+  })(rootLogic);
+}
+
 async function runQuery(){
+  syncAllConditions();
   const cols=document.getElementById('outputColumns').value.split(',').map(s=>s.trim()).filter(Boolean);
   const limit=parseInt(document.getElementById('resultLimit').value)||500;
   const sortBy=document.getElementById('sortBy')?.value||'';
@@ -1074,7 +1301,7 @@ async function runQuery(){
     // DuckDB-WASM mode
     try{
       if(!duckDB||!duckConn){await detectBackend()}
-      const sql=buildWasmSQL(filters,cols,queryTarget,limit,sortBy);
+      const sql=buildWasmSQL(getFiltersForAPI(),cols,queryTarget,limit,sortBy);
       const t0=performance.now();
       const result=await duckConn.query(sql);
       const elapsed=((performance.now()-t0)/1000).toFixed(2);
@@ -1090,7 +1317,7 @@ async function runQuery(){
   }
 
   // API mode
-  const body=JSON.stringify({target:queryTarget,filters,columns:cols,limit});
+  const body=JSON.stringify({target:queryTarget,filters:getFiltersForAPI(),columns:cols,limit});
   try{
     const r=await fetch('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},body});
     const data=await r.json();
@@ -1191,7 +1418,7 @@ function exportCSV(){
   const cols=document.getElementById('outputColumns').value.split(',').map(s=>s.trim()).filter(Boolean);
   const limit=parseInt(document.getElementById('resultLimit').value)||500;
   fetch('/api/query',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({target:queryTarget,filters,columns:cols,format:'csv',limit:Math.min(limit*10,10000)})
+    body:JSON.stringify({target:queryTarget,filters:getFiltersForAPI(),columns:cols,format:'csv',limit:Math.min(limit*10,10000)})
   }).then(r=>r.blob()).then(blob=>{
     const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='bangumi_results.csv';a.click();
   });

@@ -11,12 +11,19 @@ import (
 
 // SQLBuilder generates DuckDB SQL from a Config.
 type SQLBuilder struct {
-	cfg      *config.Config
-	dataDir  string
-	useDB    bool   // if true, reference tables directly instead of JSON CTEs
-	target   string // "subject" or "person"
+	cfg       *config.Config
+	dataDir   string
+	useDB     bool   // if true, reference tables directly instead of JSON CTEs
+	target    string // "subject" or "person"
 	mainAlias string // "s" or "p"
-	paramIdx int
+	paramIdx  int
+}
+
+// clauseContext controls how filters are generated in different SQL contexts.
+type clauseContext struct {
+	alias        string // table alias: "s" (main subject), "rs" (related subject), "p" (person)
+	isPersonCtx  bool   // true when filtering person-level conditions (uses personFilterForAlias)
+	isEpisodeCtx bool   // true when filtering episode conditions (direct fields only, no infobox)
 }
 
 // NewSQLBuilder creates a new SQL builder.
@@ -169,25 +176,99 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 }
 
 func (b *SQLBuilder) buildWhere() (string, error) {
-	var clauses []string
+	return b.buildClauses(b.cfg.Filters, clauseContext{alias: b.mainAlias})
+}
 
-	for i, f := range b.cfg.Filters {
-		clause, err := b.filterToSQL(f, i)
+// buildClauses recursively builds WHERE clauses from a list of filters.
+// Logic filters are handled recursively, with OR groups wrapped in parentheses.
+func (b *SQLBuilder) buildClauses(filters []config.Filter, ctx clauseContext) (string, error) {
+	var clauses []string
+	for i, f := range filters {
+		clause, err := b.filterToCtx(f, ctx, i)
 		if err != nil {
-			return "", fmt.Errorf("筛选条件 %d: %w", i+1, err)
+			return "", err
 		}
 		if clause != "" {
 			clauses = append(clauses, clause)
 		}
 	}
-
 	if len(clauses) == 0 {
 		return "TRUE", nil
 	}
 	return strings.Join(clauses, " AND "), nil
 }
 
+// buildClausesWithOp recursively builds clauses and joins with the given op ("and" or "or").
+// OR groups are wrapped in parentheses for correct precedence.
+func (b *SQLBuilder) buildClausesWithOp(filters []config.Filter, ctx clauseContext, op string) (string, error) {
+	var clauses []string
+	sep := " AND "
+	if op == "or" {
+		sep = " OR "
+	}
+	for i, f := range filters {
+		clause, err := b.filterToCtx(f, ctx, i)
+		if err != nil {
+			return "", err
+		}
+		if clause != "" {
+			clauses = append(clauses, clause)
+		}
+	}
+	if len(clauses) == 0 {
+		return "TRUE", nil
+	}
+	joined := strings.Join(clauses, sep)
+	if op == "or" && len(clauses) > 1 {
+		joined = "(" + joined + ")"
+	}
+	return joined, nil
+}
+
 func (b *SQLBuilder) filterToSQL(f config.Filter, idx int) (string, error) {
+	return b.filterToCtx(f, clauseContext{alias: b.mainAlias}, idx)
+}
+
+// filterToCtx dispatches a single filter to the appropriate handler based on context.
+func (b *SQLBuilder) filterToCtx(f config.Filter, ctx clauseContext, idx int) (string, error) {
+	// Logic filter: recursively build clauses with the specified op
+	if f.Logic != nil {
+		return b.buildClausesWithOp(f.Logic.Items, ctx, f.Logic.Op)
+	}
+
+	// Episode context: only field and count filters, direct fields only
+	if ctx.isEpisodeCtx {
+		return b.episodeFilterForCtx(f, idx)
+	}
+
+	// Person context: use person-specific handlers
+	if ctx.isPersonCtx {
+		return b.personFilterForAlias(f, idx)
+	}
+
+	// Main alias context (top-level): use main handlers
+	if ctx.alias == b.mainAlias {
+		return b.filterToSQLMain(f, idx)
+	}
+
+	// Nested alias context (rs, etc.): use alias handlers
+	return b.filterForAlias(f, ctx.alias, idx)
+}
+
+// episodeFilterForCtx handles filters in episode context (no infobox).
+func (b *SQLBuilder) episodeFilterForCtx(f config.Filter, idx int) (string, error) {
+	switch {
+	case f.Field != nil:
+		return b.episodeFieldFilter(f.Field)
+	case f.Count != nil:
+		return b.countFilter(f.Count)
+	default:
+		return "", fmt.Errorf("剧集筛选不支持此条件类型 (index %d)", idx)
+	}
+}
+
+// filterToSQLMain dispatches a single filter using main-table handlers.
+func (b *SQLBuilder) filterToSQLMain(f config.Filter, idx int) (string, error) {
 	switch {
 	case f.Type != nil:
 		return b.typeFilter(f.Type)
@@ -208,7 +289,7 @@ func (b *SQLBuilder) filterToSQL(f config.Filter, idx int) (string, error) {
 	case f.Count != nil:
 		return b.countFilter(f.Count)
 	default:
-		return "", fmt.Errorf("unknown filter type")
+		return "", fmt.Errorf("unknown filter type at index %d", idx)
 	}
 }
 
@@ -241,10 +322,48 @@ func (b *SQLBuilder) typeFilter(f *config.TypeFilter) (string, error) {
 // fieldFilter handles field-based filtering (JSON field or infobox field).
 func (b *SQLBuilder) fieldFilter(f *config.FieldFilter, tableAlias string) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
+	fieldName := f.Field
+
+	// Map "type" to "person_type" for person target
+	if b.target == "person" && fieldName == "type" {
+		fieldName = "person_type"
+	}
+
+	// Handle career as LIST_CONTAINS for person target
+	if b.target == "person" && fieldName == "career" {
+		switch f.Operator {
+		case "regex":
+			return fmt.Sprintf("regexp_matches(%s.career::VARCHAR, '%s')", tableAlias, escapeRegex(valueStr)), nil
+		case "not_contains":
+			return fmt.Sprintf("NOT LIST_CONTAINS(COALESCE(%s.career, []), '%s')", tableAlias, escapeSQLString(valueStr)), nil
+		case "empty":
+			return fmt.Sprintf("LEN(COALESCE(%s.career, [])) = 0", tableAlias), nil
+		default:
+			return fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.career, []), '%s')", tableAlias, escapeSQLString(valueStr)), nil
+		}
+	}
+
+	// Special case: rank 0 means no ranking
+	if fieldName == "rank" {
+		col := tableAlias + "." + quoteIdent(fieldName)
+		switch f.Operator {
+		case "empty":
+			return fmt.Sprintf("(%s = 0 OR %s IS NULL)", col, col), nil
+		case "gt", "gte", "lt", "lte":
+			cond, _ := b.buildCondition(col, f.Operator, valueStr)
+			return fmt.Sprintf("%s != 0 AND %s", col, cond), nil
+		}
+	}
 
 	// Determine if this is a direct JSON field or infobox field
-	if isDirectField(f.Field) {
-		return b.buildCondition(tableAlias+"."+quoteIdent(f.Field), f.Operator, valueStr)
+	if isDirectField(fieldName) {
+		return b.buildCondition(tableAlias+"."+quoteIdent(fieldName), f.Operator, valueStr)
+	}
+
+	// Special case: 性别=其他 means gender exists and is not 男/♀
+	if f.Field == "性别" && valueStr == "其他" && f.Operator == "contains" {
+		expr := b.infoboxExtractExpr("性别", tableAlias)
+		return fmt.Sprintf("COALESCE(%s, '') != '' AND %s NOT LIKE '%%男%%' AND %s NOT LIKE '%%♂%%' AND %s NOT LIKE '%%女%%' AND %s NOT LIKE '%%♀%%'", expr, expr, expr, expr, expr), nil
 	}
 
 	// Infobox field — extract with regex, and apply numeric extraction for comparison ops
@@ -258,14 +377,15 @@ func (b *SQLBuilder) fieldFilter(f *config.FieldFilter, tableAlias string) (stri
 // globalFilter searches across all infobox fields.
 func (b *SQLBuilder) globalFilter(f *config.GlobalFilter) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
+	infobox := b.mainAlias + ".infobox"
 
 	switch f.Operator {
 	case "regex":
-		return fmt.Sprintf("regexp_matches(s.infobox, '%s')", escapeRegex(valueStr)), nil
+		return fmt.Sprintf("regexp_matches(%s, '%s')", infobox, escapeRegex(valueStr)), nil
 	case "contains":
-		return fmt.Sprintf("s.infobox LIKE '%%%s%%'", escapeLike(valueStr)), nil
+		return fmt.Sprintf("%s LIKE '%%%s%%'", infobox, escapeLike(valueStr)), nil
 	case "eq":
-		return fmt.Sprintf("s.infobox = '%s'", escapeSQLString(valueStr)), nil
+		return fmt.Sprintf("%s = '%s'", infobox, escapeSQLString(valueStr)), nil
 	default:
 		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
 	}
@@ -275,8 +395,8 @@ func (b *SQLBuilder) globalFilter(f *config.GlobalFilter) (string, error) {
 func (b *SQLBuilder) tagFilter(f *config.TagFilter) (string, error) {
 	switch f.Operator {
 	case "contains", "eq":
-		cond := fmt.Sprintf("EXISTS (SELECT 1 FROM (SELECT UNNEST(s.tags) AS t) WHERE t.name = '%s')",
-			escapeSQLString(f.Value))
+		cond := fmt.Sprintf("EXISTS (SELECT 1 FROM (SELECT UNNEST(%s.tags) AS t) WHERE t.name = '%s')",
+			b.mainAlias, escapeSQLString(f.Value))
 		if f.Negate {
 			return "NOT " + cond, nil
 		}
@@ -294,7 +414,7 @@ func (b *SQLBuilder) metaTagFilter(f *config.TagFilter) (string, error) {
 	case "contains", "eq":
 		// DuckDB: LIST_CONTAINS for simple arrays
 		// COALESCE to handle NULL meta_tags (some entries don't have meta tags)
-		cond := fmt.Sprintf("LIST_CONTAINS(COALESCE(s.meta_tags, []), '%s')", escapeSQLString(f.Value))
+		cond := fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.meta_tags, []), '%s')", b.mainAlias, escapeSQLString(f.Value))
 		if f.Negate {
 			return "NOT " + cond, nil
 		}
@@ -339,9 +459,10 @@ func (b *SQLBuilder) relationFilter(f *config.RelationFilter) (string, error) {
 	if f.Mode == "all" {
 		nestedWhere, _ := b.buildWhereForAlias(f.Conditions, "rs")
 		return fmt.Sprintf(
-			`(SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (%s) AND %s) =
+			`EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (%s)) AND
+			 (SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (%s) AND %s) =
 			 (SELECT COUNT(*) FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (%s))`,
-			relIDList, nestedWhere, relIDList), nil
+			relIDList, relIDList, nestedWhere, relIDList), nil
 	}
 
 	// For "any" mode: at least one matching relation
@@ -353,20 +474,7 @@ func (b *SQLBuilder) relationFilter(f *config.RelationFilter) (string, error) {
 // buildWhereForAlias generates WHERE clauses for a given table alias, supporting all filter types.
 // Used for nested filtering on related subjects (rs), persons (sp), or episodes (e).
 func (b *SQLBuilder) buildWhereForAlias(filters []config.Filter, alias string) (string, error) {
-	var clauses []string
-	for i, f := range filters {
-		clause, err := b.filterForAlias(f, alias, i)
-		if err != nil {
-			return "", err
-		}
-		if clause != "" {
-			clauses = append(clauses, clause)
-		}
-	}
-	if len(clauses) == 0 {
-		return "TRUE", nil
-	}
-	return strings.Join(clauses, " AND "), nil
+	return b.buildClauses(filters, clauseContext{alias: alias})
 }
 
 // filterForAlias generates SQL for a single filter on a given alias.
@@ -503,9 +611,10 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 				condWhere, _ = b.buildWhereForAlias(f.Conditions, "rs")
 			}
 			return fmt.Sprintf(
-				`(SELECT COUNT(*) FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND sp.position IN (%s) AND %s) =
+				`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s)) AND
+				 (SELECT COUNT(*) FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND sp.position IN (%s) AND %s) =
 				 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s))`,
-				posIDList, condWhere, posIDList), nil
+				posIDList, posIDList, condWhere, posIDList), nil
 		}
 
 		return fmt.Sprintf(
@@ -536,9 +645,10 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 
 	if f.Mode == "all" {
 		return fmt.Sprintf(
-			`(SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND sp.position IN (%s) AND %s) =
+			`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id AND sp.position IN (%s)) AND
+			 (SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND sp.position IN (%s) AND %s) =
 			 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.subject_id = s.id AND sp.position IN (%s))`,
-			fromClause, posIDList, personWhere, posIDList), nil
+			posIDList, fromClause, posIDList, personWhere, posIDList), nil
 	}
 
 	return fmt.Sprintf(
@@ -548,23 +658,7 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 
 // buildPersonWhereForAlias generates WHERE clauses for person-level nested conditions.
 func (b *SQLBuilder) buildPersonWhereForAlias(filters []config.Filter) (string, error) {
-	if len(filters) == 0 {
-		return "TRUE", nil
-	}
-	var clauses []string
-	for i, f := range filters {
-		clause, err := b.personFilterForAlias(f, i)
-		if err != nil {
-			return "", err
-		}
-		if clause != "" {
-			clauses = append(clauses, clause)
-		}
-	}
-	if len(clauses) == 0 {
-		return "TRUE", nil
-	}
-	return strings.Join(clauses, " AND "), nil
+	return b.buildClauses(filters, clauseContext{alias: "p", isPersonCtx: true})
 }
 
 // personFilterForAlias dispatches a single filter for person-level conditions.
@@ -647,6 +741,25 @@ func (b *SQLBuilder) personCountFilterForAlias(f *config.CountFilter) (string, e
 
 // episodeFilter handles episode-based filtering.
 func (b *SQLBuilder) episodeFilter(f *config.EpisodeFilter) (string, error) {
+	// New: logic tree mode
+	if f.Logic != nil {
+		episodeWhere, err := b.buildClausesWithOp(f.Logic.Items, clauseContext{alias: "e", isEpisodeCtx: true}, f.Logic.Op)
+		if err != nil {
+			return "", fmt.Errorf("episode logic: %w", err)
+		}
+		if f.Mode == "all" {
+			return fmt.Sprintf(
+				`EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id) AND
+				 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND %s) =
+				 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id)`,
+				episodeWhere), nil
+		}
+		return fmt.Sprintf(
+			"EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND %s)",
+			episodeWhere), nil
+	}
+
+	// Legacy: flat field conditions
 	var subClauses []string
 
 	var normalConds []string
@@ -686,9 +799,9 @@ func (b *SQLBuilder) episodeFilter(f *config.EpisodeFilter) (string, error) {
 	}
 
 	if f.Mode == "all" {
-		// Every episode must match
 		return fmt.Sprintf(
-			`(SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND %s) =
+			`EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id) AND
+			 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND %s) =
 			 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id)`,
 			strings.Join(normalConds, " AND ")), nil
 	}
@@ -735,6 +848,8 @@ func (b *SQLBuilder) buildCondition(expr, op, value string) (string, error) {
 		return fmt.Sprintf("CAST(%s AS VARCHAR) = '%s'", expr, escapeSQLString(value)), nil
 	case "contains":
 		return fmt.Sprintf("CAST(%s AS VARCHAR) LIKE '%%%s%%'", expr, escapeLike(value)), nil
+	case "not_contains":
+		return fmt.Sprintf("CAST(%s AS VARCHAR) NOT LIKE '%%%s%%'", expr, escapeLike(value)), nil
 	case "regex":
 		// regexp_matches auto-casts first arg to VARCHAR
 		return fmt.Sprintf("regexp_matches(%s, '%s')", expr, sqlEscapeRegexString(value)), nil
