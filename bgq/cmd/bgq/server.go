@@ -13,6 +13,7 @@ import (
 
 	"github.com/inchei/bangumi-query/internal/config"
 	"github.com/inchei/bangumi-query/internal/model"
+	srv "github.com/inchei/bangumi-query/internal/server"
 	"github.com/inchei/bangumi-query/internal/query"
 	webui "github.com/inchei/bangumi-query/internal/server"
 )
@@ -83,6 +84,7 @@ func startServer(dataDir, listenAddr string) {
 	mux.HandleFunc("/api/debug", s.handleDebug)
 
 	// Static files (frontend or placeholder)
+	mux.Handle("/static/", srv.StaticHandler())
 	mux.HandleFunc("/", s.handleStatic)
 
 	// CORS middleware wrapper

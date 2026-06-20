@@ -30,6 +30,13 @@ type Filter struct {
 	Staff    *StaffFilter    `yaml:"staff,omitempty" json:"staff,omitempty"`
 	Episode  *EpisodeFilter  `yaml:"episode,omitempty" json:"episode,omitempty"`
 	Count    *CountFilter    `yaml:"count,omitempty" json:"count,omitempty"`
+	Logic    *LogicFilter    `yaml:"logic,omitempty" json:"logic,omitempty"`
+}
+
+// LogicFilter combines child filters with AND or OR logic.
+type LogicFilter struct {
+	Op    string   `yaml:"op" json:"op"`       // "and" or "or"
+	Items []Filter `yaml:"items" json:"items"` // child filters
 }
 
 // UnmarshalJSON implements custom JSON unmarshaling for Filter.
@@ -68,9 +75,12 @@ func (f *Filter) UnmarshalJSON(data []byte) error {
 		case "count":
 			f.Count = &CountFilter{}
 			return json.Unmarshal(val, f.Count)
+		case "logic":
+			f.Logic = &LogicFilter{}
+			return json.Unmarshal(val, f.Logic)
 		}
 	}
-	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, staff, episode, count")
+	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, staff, episode, count, logic")
 }
 
 // UnmarshalYAML implements custom YAML unmarshaling for Filter.
@@ -163,6 +173,38 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 			if err := val.Decode(f.Count); err != nil {
 				return err
 			}
+		case "logic":
+			f.Logic = &LogicFilter{}
+			if val.Kind == yaml.MappingNode {
+				// Check for shorthand: logic: {or: [...]} or logic: {and: [...]}
+				shorthand := false
+				for j := 0; j < len(val.Content); j += 2 {
+					subKey := val.Content[j].Value
+					if subKey == "and" || subKey == "or" {
+						f.Logic.Op = subKey
+						if err := val.Content[j+1].Decode(&f.Logic.Items); err != nil {
+							return err
+						}
+						shorthand = true
+						break
+					}
+				}
+				if !shorthand {
+					if err := val.Decode(f.Logic); err != nil {
+						return err
+					}
+				}
+			}
+		case "and":
+			f.Logic = &LogicFilter{Op: "and"}
+			if err := val.Decode(&f.Logic.Items); err != nil {
+				return err
+			}
+		case "or":
+			f.Logic = &LogicFilter{Op: "or"}
+			if err := val.Decode(&f.Logic.Items); err != nil {
+				return err
+			}
 		default:
 			// Unknown key — treat as field filter shorthand
 			f.Field = &FieldFilter{
@@ -244,8 +286,9 @@ type StaffFilter struct {
 
 // EpisodeFilter filters by episode.
 type EpisodeFilter struct {
-	Mode       string        `yaml:"mode" json:"mode"`             // any, all
-	Conditions []FieldFilter `yaml:"conditions" json:"conditions"` // conditions on the episodes
+	Mode       string        `yaml:"mode" json:"mode"`                       // any, all
+	Conditions []FieldFilter `yaml:"conditions" json:"conditions"`           // legacy: flat field conditions
+	Logic      *LogicFilter  `yaml:"logic,omitempty" json:"logic,omitempty"` // logic tree (new)
 }
 
 // CountFilter filters by count of relations or episodes.
@@ -330,6 +373,9 @@ func (c *Config) Validate() error {
 		if f.Count != nil {
 			set++
 		}
+		if f.Logic != nil {
+			set++
+		}
 		if set == 0 {
 			return fmt.Errorf("筛选条件 %d: 至少需要指定一个过滤类型", i+1)
 		}
@@ -364,6 +410,13 @@ func (c *Config) Validate() error {
 			if f.Episode.Mode == "" {
 				f.Episode.Mode = "any"
 			}
+		case f.Logic != nil:
+			if f.Logic.Op != "and" && f.Logic.Op != "or" {
+				return fmt.Errorf("筛选条件 %d: logic op 必须为 and 或 or", i+1)
+			}
+			if len(f.Logic.Items) == 0 {
+				return fmt.Errorf("筛选条件 %d: logic items 不能为空", i+1)
+			}
 		}
 	}
 
@@ -384,8 +437,15 @@ func (c *Config) HasDatabase() bool {
 
 // NeedsRelations returns true if any filter requires relations data.
 func (c *Config) NeedsRelations() bool {
-	for _, f := range c.Filters {
+	return filtersNeedRelations(c.Filters)
+}
+
+func filtersNeedRelations(filters []Filter) bool {
+	for _, f := range filters {
 		if f.Relation != nil || f.Count != nil && f.Count.What != "ep" {
+			return true
+		}
+		if f.Logic != nil && filtersNeedRelations(f.Logic.Items) {
 			return true
 		}
 	}
@@ -394,8 +454,15 @@ func (c *Config) NeedsRelations() bool {
 
 // NeedsPersons returns true if any filter requires persons data.
 func (c *Config) NeedsPersons() bool {
-	for _, f := range c.Filters {
+	return filtersNeedPersons(c.Filters)
+}
+
+func filtersNeedPersons(filters []Filter) bool {
+	for _, f := range filters {
 		if f.Staff != nil {
+			return true
+		}
+		if f.Logic != nil && filtersNeedPersons(f.Logic.Items) {
 			return true
 		}
 	}
@@ -404,11 +471,22 @@ func (c *Config) NeedsPersons() bool {
 
 // NeedsEpisodes returns true if any filter requires episode data.
 func (c *Config) NeedsEpisodes() bool {
-	for _, f := range c.Filters {
+	return filtersNeedEpisodes(c.Filters)
+}
+
+func filtersNeedEpisodes(filters []Filter) bool {
+	for _, f := range filters {
 		if f.Episode != nil {
 			return true
 		}
 		if f.Count != nil && f.Count.What == "ep" {
+			return true
+		}
+		if f.Logic != nil && filtersNeedEpisodes(f.Logic.Items) {
+			return true
+		}
+		// Check episode logic tree
+		if f.Episode != nil && f.Episode.Logic != nil && filtersNeedEpisodes(f.Episode.Logic.Items) {
 			return true
 		}
 	}
