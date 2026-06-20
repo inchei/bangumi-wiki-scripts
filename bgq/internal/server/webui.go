@@ -153,6 +153,11 @@ a:hover{color:var(--link-hover);text-decoration:underline}
   position:sticky;top:0;z-index:2;border-bottom:2px solid var(--border);
   white-space:nowrap
 }
+.results-table th.sortable{cursor:pointer;user-select:none;transition:background .15s}
+.results-table th.sortable:hover{background:var(--accent-light);color:var(--text)}
+.results-table th.sortable::after{content:'⇅';font-size:10px;margin-left:4px;opacity:.35}
+.results-table th.sort-asc::after{content:'▲';opacity:.7}
+.results-table th.sort-desc::after{content:'▼';opacity:.7}
 .results-table td{padding:8px 14px;border-bottom:1px solid var(--bg-alt);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .results-table tbody tr{transition:var(--transition)}
 .results-table tbody tr:hover{background:var(--accent-light)}
@@ -327,6 +332,7 @@ const DIRECT_FIELDS=['id','type','name','name_cn','platform','nsfw','score','ran
 /* ===== State ===== */
 let schema = {direct_fields:[],subject_types:{},relation_types:{},staff_positions:{}};
 let lastResult = null;
+let sortState = {col: -1, asc: true};
 let backendMode = 'api';
 let duckDB = null, duckConn = null;
 
@@ -1408,13 +1414,65 @@ function renderResults(data){
   }
 
   // Build table
+  sortState={col:-1,asc:true};
   let html='<div class="results-table-wrap"><table class="results-table"><thead><tr>';
-  for(const col of cols){
+  for(let i=0;i<cols.length;i++){
+    const col=cols[i];
     let label=col;
     if(col.length>20)label=col.substring(0,18)+'…';
-    html+='<th title="'+escapeHtml(col)+'">'+escapeHtml(label)+'</th>';
+    html+='<th class="sortable" data-col="'+i+'" onclick="sortTable('+i+')" title="'+escapeHtml(col)+'">'+escapeHtml(label)+'</th>';
   }
   html+='</tr></thead><tbody>';
+  html+=buildTableBody(cols,rows);
+  html+='</tbody></table></div>';
+  table.innerHTML=html;
+}
+
+/* ===== Sorting ===== */
+function parseSortVal(v){
+  if(v===null||v===undefined||v==='')return{empty:true,num:NaN,str:''};
+  const s=String(v).trim();
+  const n=parseFloat(s);
+  return{empty:false,num:n,str:s.toLowerCase()};
+}
+
+function sortTable(colIdx){
+  if(!lastResult||!lastResult.rows)return;
+  if(sortState.col===colIdx){
+    sortState.asc=!sortState.asc;
+  }else{
+    sortState.col=colIdx;sortState.asc=true;
+  }
+  const cols=lastResult.columns;
+  const rows=[...lastResult.rows];
+  const isNumeric=rows.some(r=>{const p=parseSortVal(r[colIdx]);return!p.empty&&!isNaN(p.num)});
+  rows.sort((a,b)=>{
+    const va=a[colIdx],vb=b[colIdx];
+    const pa=parseSortVal(va),pb=parseSortVal(vb);
+    if(pa.empty&&pb.empty)return 0;
+    if(pa.empty)return 1;
+    if(pb.empty)return-1;
+    let cmp;
+    if(isNumeric&&!isNaN(pa.num)&&!isNaN(pb.num)){
+      cmp=pa.num-pb.num;
+    }else{
+      cmp=pa.str.localeCompare(pb.str,'zh');
+    }
+    return sortState.asc?cmp:-cmp;
+  });
+  lastResult.rows=rows;
+  const tbody=document.querySelector('.results-table tbody');
+  if(tbody)tbody.innerHTML=buildTableBody(cols,rows);
+  // Update header indicators
+  document.querySelectorAll('.results-table th.sortable').forEach(th=>{
+    th.classList.remove('sort-asc','sort-desc');
+    const ci=parseInt(th.dataset.col);
+    if(ci===sortState.col)th.classList.add(sortState.asc?'sort-asc':'sort-desc');
+  });
+}
+
+function buildTableBody(cols,rows){
+  let html='';
   for(const row of rows){
     html+='<tr>';
     for(let i=0;i<cols.length;i++){
@@ -1440,8 +1498,7 @@ function renderResults(data){
     }
     html+='</tr>';
   }
-  html+='</tbody></table></div>';
-  table.innerHTML=html;
+  return html;
 }
 
 /* ===== Export ===== */
