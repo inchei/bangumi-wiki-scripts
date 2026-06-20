@@ -914,7 +914,10 @@ func normalizeDate(expr string) string {
 }
 
 func (b *SQLBuilder) buildSelect() []string {
-	cols := b.cfg.Output.Columns
+	var cols []string
+	if b.cfg.Output != nil {
+		cols = b.cfg.Output.Columns
+	}
 	a := b.mainAlias
 	if len(cols) == 0 {
 		if b.target == "person" {

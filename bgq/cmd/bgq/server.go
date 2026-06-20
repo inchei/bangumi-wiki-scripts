@@ -16,6 +16,7 @@ import (
 	srv "github.com/inchei/bangumi-query/internal/server"
 	"github.com/inchei/bangumi-query/internal/query"
 	webui "github.com/inchei/bangumi-query/internal/server"
+	"gopkg.in/yaml.v3"
 )
 
 type server struct {
@@ -74,6 +75,7 @@ func startServer(dataDir, listenAddr string) {
 	// API endpoints
 	mux.HandleFunc("/api/query", s.handleQuery)
 	mux.HandleFunc("/api/config/parse", s.handleConfigParse)
+	mux.HandleFunc("/api/config/export", s.handleConfigExport)
 	mux.HandleFunc("/api/schema/fields", s.handleSchemaFields)
 	mux.HandleFunc("/api/schema/options", s.handleSchemaOptions)
 	mux.HandleFunc("/api/schema/relations", s.handleSchemaRelations)
@@ -154,7 +156,7 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 			Target:  req.Target,
 			DataDir: s.dataDir,
 			Filters: req.Filters,
-			Output:  config.Output{Format: "json"},
+			Output:  &config.Output{Format: "json"},
 			Sort:    req.Sort,
 			Limit:   req.Limit,
 		}
@@ -162,7 +164,7 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 		cfg = &config.Config{
 			Target:  req.Target,
 			DataDir: s.dataDir,
-			Output:  config.Output{Format: "json"},
+			Output:  &config.Output{Format: "json"},
 			Sort:    req.Sort,
 			Limit:   req.Limit,
 		}
@@ -332,6 +334,41 @@ func (s *server) handleConfigParse(w http.ResponseWriter, r *http.Request) {
 		"limit":    cfg.Limit,
 		"data_dir": cfg.DataDir,
 	})
+}
+
+// handleConfigExport accepts filters/output/sort/limit as JSON and returns proper YAML.
+func (s *server) handleConfigExport(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		writeJSON(w, http.StatusMethodNotAllowed, apiError{Error: "只支持POST请求"})
+		return
+	}
+
+	var body struct {
+		Filters []config.Filter  `json:"filters"`
+		Output  *config.Output   `json:"output"`
+		Sort    []config.SortRule `json:"sort"`
+		Limit   int              `json:"limit"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeJSON(w, http.StatusBadRequest, apiError{Error: "请求格式错误: " + err.Error()})
+		return
+	}
+
+	cfg := config.Config{
+		Filters: body.Filters,
+		Output:  body.Output,
+		Sort:    body.Sort,
+		Limit:   body.Limit,
+	}
+
+	out, err := yaml.Marshal(cfg)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, apiError{Error: "YAML序列化失败: " + err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/yaml; charset=utf-8")
+	w.Write(out)
 }
 
 func (s *server) handleDebug(w http.ResponseWriter, r *http.Request) {

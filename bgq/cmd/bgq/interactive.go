@@ -16,7 +16,7 @@ func interactiveMode(dataDir string) {
 	reader := bufio.NewReader(os.Stdin)
 	cfg := &config.Config{
 		DataDir: dataDir,
-		Output: config.Output{
+		Output: &config.Output{
 			Format: "table",
 		},
 		Limit: 50,
@@ -344,7 +344,7 @@ func printInteractiveHelp() {
 func runInteractiveQuery(dataDir string, conditions []string) (*query.QueryResult, error) {
 	cfg := &config.Config{
 		DataDir: dataDir,
-		Output: config.Output{
+		Output: &config.Output{
 			Format: "json",
 		},
 		Limit: 1000,

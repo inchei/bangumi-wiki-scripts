@@ -189,6 +189,9 @@ func cmdQuery(args []string) {
 
 	// Override format if specified
 	if formatOverride != "" {
+		if cfg.Output == nil {
+			cfg.Output = &config.Output{}
+		}
 		cfg.Output.Format = formatOverride
 	}
 

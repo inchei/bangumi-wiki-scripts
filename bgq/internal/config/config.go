@@ -10,13 +10,13 @@ import (
 
 // Config is the top-level YAML configuration.
 type Config struct {
-	Database  string     `yaml:"database" json:"database"`
-	DataDir   string     `yaml:"data_dir" json:"data_dir"`
-	Target    string     `yaml:"target" json:"target"` // "subject" (default) or "person"
-	Filters   []Filter   `yaml:"filters" json:"filters"`
-	Output    Output     `yaml:"output" json:"output"`
-	Sort      []SortRule `yaml:"sort" json:"sort"`
-	Limit     int        `yaml:"limit" json:"limit"`
+	Database  string      `yaml:"database,omitempty" json:"database,omitempty"`
+	DataDir   string      `yaml:"data_dir,omitempty" json:"data_dir,omitempty"`
+	Target    string      `yaml:"target,omitempty" json:"target,omitempty"` // "subject" (default) or "person"
+	Filters   []Filter    `yaml:"filters,omitempty" json:"filters,omitempty"`
+	Output    *Output     `yaml:"output,omitempty" json:"output,omitempty"`
+	Sort      []SortRule  `yaml:"sort,omitempty" json:"sort,omitempty"`
+	Limit     int         `yaml:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // Filter is a single filter condition. Exactly one of the pointer fields should be set.
@@ -300,9 +300,9 @@ type CountFilter struct {
 
 // Output configures the query output.
 type Output struct {
-	Format  string   `yaml:"format" json:"format"`   // csv, json, table
-	Path    string   `yaml:"path" json:"path"`       // output file path (empty = stdout)
-	Columns []string `yaml:"columns" json:"columns"` // columns to include
+	Format  string   `yaml:"format,omitempty" json:"format,omitempty"`   // csv, json, table
+	Path    string   `yaml:"path,omitempty" json:"path,omitempty"`       // output file path (empty = stdout)
+	Columns []string `yaml:"columns,omitempty" json:"columns,omitempty"` // columns to include
 }
 
 // SortRule defines a sort order.
@@ -420,6 +420,9 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	if c.Output == nil {
+		c.Output = &Output{}
+	}
 	if c.Output.Format == "" {
 		c.Output.Format = "table"
 	}
