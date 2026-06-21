@@ -39,15 +39,19 @@ export function newLogicGroup(op) {
 
 export const subjectRootLogic = writable(newLogicGroup("and"));
 export const personRootLogic = writable(newLogicGroup("and"));
+export const characterRootLogic = writable(newLogicGroup("and"));
 
 export function getRootLogic() {
   const target = get(queryTarget);
-  return target === "person" ? get(personRootLogic) : get(subjectRootLogic);
+  if (target === "person") return get(personRootLogic);
+  if (target === "character") return get(characterRootLogic);
+  return get(subjectRootLogic);
 }
 
 export function updateRootLogic(lg) {
   const target = get(queryTarget);
   if (target === "person") personRootLogic.set(lg);
+  else if (target === "character") characterRootLogic.set(lg);
   else subjectRootLogic.set(lg);
   bumpVersion();
 }
@@ -56,6 +60,7 @@ export function resetLogicBuilder() {
   _logicIdCounter = 0;
   subjectRootLogic.set(newLogicGroup("and"));
   personRootLogic.set(newLogicGroup("and"));
+  characterRootLogic.set(newLogicGroup("and"));
 }
 
 // ---- Logic tree helpers ----
@@ -77,6 +82,22 @@ export function findLogicGroup(node, id) {
     }
     if (item.person_relation?.conditions) {
       for (const c of item.person_relation.conditions) {
+        if (c.logic) {
+          const r = findLogicGroup(c.logic, id);
+          if (r) return r;
+        }
+      }
+    }
+    if (item.character_relation?.conditions) {
+      for (const c of item.character_relation.conditions) {
+        if (c.logic) {
+          const r = findLogicGroup(c.logic, id);
+          if (r) return r;
+        }
+      }
+    }
+    if (item.character?.conditions) {
+      for (const c of item.character.conditions) {
         if (c.logic) {
           const r = findLogicGroup(c.logic, id);
           if (r) return r;
@@ -116,6 +137,16 @@ export function removeLogicItemById(node, id) {
     }
     if (item.person_relation?.conditions) {
       for (const c of item.person_relation.conditions) {
+        if (c.logic && removeLogicItemById(c.logic, id)) return true;
+      }
+    }
+    if (item.character_relation?.conditions) {
+      for (const c of item.character_relation.conditions) {
+        if (c.logic && removeLogicItemById(c.logic, id)) return true;
+      }
+    }
+    if (item.character?.conditions) {
+      for (const c of item.character.conditions) {
         if (c.logic && removeLogicItemById(c.logic, id)) return true;
       }
     }
@@ -173,6 +204,22 @@ export function createEmptyCondition(type) {
     case "person_relation":
       return {
         person_relation: {
+          type: "",
+          mode: "any",
+          conditions: [{ logic: newLogicGroup("and") }],
+        },
+      };
+    case "character_relation":
+      return {
+        character_relation: {
+          type: "",
+          mode: "any",
+          conditions: [{ logic: newLogicGroup("and") }],
+        },
+      };
+    case "character":
+      return {
+        character: {
           type: "",
           mode: "any",
           conditions: [{ logic: newLogicGroup("and") }],
@@ -269,6 +316,61 @@ function updateGroupInTree(node, targetId, mutator) {
         return { ...node, items: newItems };
       }
     }
+    // character_relation
+    if (item.character_relation?.conditions) {
+      let changed = false;
+      const newConds = item.character_relation.conditions.map((c) => {
+        if (c.logic && !changed) {
+          if (c.logic._id === targetId) {
+            changed = true;
+            return {
+              logic: { ...c.logic, items: mutator([...c.logic.items]) },
+            };
+          }
+          const updated = updateGroupInTree(c.logic, targetId, mutator);
+          if (updated !== c.logic) {
+            changed = true;
+            return { logic: updated };
+          }
+        }
+        return c;
+      });
+      if (changed) {
+        newItems[i] = {
+          character_relation: {
+            ...item.character_relation,
+            conditions: newConds,
+          },
+        };
+        return { ...node, items: newItems };
+      }
+    }
+    // character
+    if (item.character?.conditions) {
+      let changed = false;
+      const newConds = item.character.conditions.map((c) => {
+        if (c.logic && !changed) {
+          if (c.logic._id === targetId) {
+            changed = true;
+            return {
+              logic: { ...c.logic, items: mutator([...c.logic.items]) },
+            };
+          }
+          const updated = updateGroupInTree(c.logic, targetId, mutator);
+          if (updated !== c.logic) {
+            changed = true;
+            return { logic: updated };
+          }
+        }
+        return c;
+      });
+      if (changed) {
+        newItems[i] = {
+          character: { ...item.character, conditions: newConds },
+        };
+        return { ...node, items: newItems };
+      }
+    }
     // staff
     if (item.staff?.conditions) {
       let changed = false;
@@ -319,7 +421,12 @@ function updateGroupInTree(node, targetId, mutator) {
 
 function applyMutation(targetGroupId, mutator) {
   const target = get(queryTarget);
-  const store = target === "person" ? personRootLogic : subjectRootLogic;
+  const store =
+    target === "person"
+      ? personRootLogic
+      : target === "character"
+        ? characterRootLogic
+        : subjectRootLogic;
   store.update((root) => updateGroupInTree(root, targetGroupId, mutator));
 }
 
@@ -377,7 +484,12 @@ export function addLogicGroupTo(group) {
 
 export function toggleLogicOp(group, val) {
   const target = get(queryTarget);
-  const store = target === "person" ? personRootLogic : subjectRootLogic;
+  const store =
+    target === "person"
+      ? personRootLogic
+      : target === "character"
+        ? characterRootLogic
+        : subjectRootLogic;
   store.update((root) => {
     function cloneAndUpdate(node) {
       if (node._id === group._id) return { ...node, op: val };
@@ -440,6 +552,55 @@ export function toggleLogicOp(group, val) {
                 ...item.person_relation,
                 conditions: newConds,
               },
+            };
+            return { ...node, items: newItems };
+          }
+        }
+        if (item.character_relation?.conditions) {
+          let changed = false;
+          const newConds = item.character_relation.conditions.map((c) => {
+            if (c.logic && !changed) {
+              if (c.logic._id === group._id) {
+                changed = true;
+                return { logic: { ...c.logic, op: val } };
+              }
+              const updated = cloneAndUpdate(c.logic);
+              if (updated !== c.logic) {
+                changed = true;
+                return { logic: updated };
+              }
+            }
+            return c;
+          });
+          if (changed) {
+            newItems[i] = {
+              character_relation: {
+                ...item.character_relation,
+                conditions: newConds,
+              },
+            };
+            return { ...node, items: newItems };
+          }
+        }
+        if (item.character?.conditions) {
+          let changed = false;
+          const newConds = item.character.conditions.map((c) => {
+            if (c.logic && !changed) {
+              if (c.logic._id === group._id) {
+                changed = true;
+                return { logic: { ...c.logic, op: val } };
+              }
+              const updated = cloneAndUpdate(c.logic);
+              if (updated !== c.logic) {
+                changed = true;
+                return { logic: updated };
+              }
+            }
+            return c;
+          });
+          if (changed) {
+            newItems[i] = {
+              character: { ...item.character, conditions: newConds },
             };
             return { ...node, items: newItems };
           }
@@ -511,6 +672,7 @@ export function applyFiltersFromAPI(apiFilters) {
   }
   const target = get(queryTarget);
   if (target === "person") personRootLogic.set(newRoot);
+  else if (target === "character") characterRootLogic.set(newRoot);
   else subjectRootLogic.set(newRoot);
 }
 
@@ -526,6 +688,7 @@ function assignLogicIds(lg) {
 
 export const CTX_SUBJECT = "subject";
 export const CTX_PERSON = "person";
+export const CTX_CHARACTER = "character";
 export const CTX_EPISODE = "episode";
 
 export const EPISODE_FIELDS = [
@@ -568,6 +731,18 @@ export const PERSON_FIELDS = [
   "type",
   "career",
   "appear_eps",
+  "简体中文名",
+  "别名",
+  "性别",
+  "生日",
+];
+
+export const CHARACTER_FIELDS = [
+  "name",
+  "id",
+  "role",
+  "comments",
+  "collects",
   "简体中文名",
   "别名",
   "性别",
@@ -655,13 +830,52 @@ export const PERSON_FIELD_CONFIGS = {
   },
 };
 
+export const CHARACTER_FIELD_CONFIGS = {
+  role: {
+    label: "角色类型",
+    ops: ["eq"],
+    type: "select",
+    options: [
+      ["1", "角色"],
+      ["2", "机体"],
+      ["3", "舰船"],
+      ["4", "组织机构"],
+    ],
+  },
+  性别: {
+    label: "性别",
+    ops: ["contains"],
+    type: "select",
+    options: [
+      ["男", "男"],
+      ["女", "女"],
+      ["其他", "其他"],
+    ],
+  },
+  comments: {
+    label: "评论数",
+    ops: ["gt", "gte", "lt", "lte", "eq"],
+    type: "number",
+    step: "1",
+  },
+  collects: {
+    label: "收藏数",
+    ops: ["gt", "gte", "lt", "lte", "eq"],
+    type: "number",
+    step: "1",
+  },
+};
+
 export function ctxFieldConfigs(ctx) {
-  return ctx === CTX_PERSON ? PERSON_FIELD_CONFIGS : SUBJECT_FIELD_CONFIGS;
+  if (ctx === CTX_PERSON) return PERSON_FIELD_CONFIGS;
+  if (ctx === CTX_CHARACTER) return CHARACTER_FIELD_CONFIGS;
+  return SUBJECT_FIELD_CONFIGS;
 }
 
 export function ctxFields(ctx) {
   if (ctx === CTX_EPISODE) return EPISODE_FIELDS;
   if (ctx === CTX_PERSON) return PERSON_FIELDS;
+  if (ctx === CTX_CHARACTER) return CHARACTER_FIELDS;
   const s = get(schema);
   return s.direct_fields || [];
 }

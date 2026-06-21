@@ -116,3 +116,45 @@ func PersonRelationNames() []string {
 	}
 	return names
 }
+
+// CharacterRelationTypes — 角色-角色关系类型 (person_type=crt)
+// Source: https://github.com/bangumi/common/blob/master/person_relations.yml
+var CharacterRelationTypes = map[int]string{
+	2001: "形态",
+	2002: "朋友",
+	2003: "恋人",
+	2004: "单恋",
+	2005: "对手",
+	2006: "亲属",
+	2007: "成员",
+	2008: "创始人",
+	2009: "主人",
+	2010: "宠物",
+	2011: "学生",
+	2012: "老师",
+	2015: "驾驶员",
+	2016: "侍从",
+	2017: "配偶",
+	2018: "下属",
+	2019: "上司",
+	2020: "改编",
+	2021: "原型",
+	2022: "前任",
+	2023: "同事",
+	2024: "亲戚",
+	2025: "同学",
+	2026: "同门",
+	2027: "进化",
+	2028: "前身",
+	2029: "饲主",
+	2099: "其他",
+}
+
+// CharacterRelationNames returns all character relation type names.
+func CharacterRelationNames() []string {
+	var names []string
+	for _, name := range CharacterRelationTypes {
+		names = append(names, name)
+	}
+	return names
+}

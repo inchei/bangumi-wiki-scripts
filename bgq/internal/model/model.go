@@ -75,6 +75,44 @@ type Person struct {
 	Summary string   `json:"summary"`
 }
 
+// Character represents a character in the database.
+type Character struct {
+	ID       int    `json:"id"`
+	Role     int    `json:"role"`
+	Name     string `json:"name"`
+	Infobox  string `json:"infobox"`
+	Summary  string `json:"summary"`
+	Comments int    `json:"comments"`
+	Collects int    `json:"collects"`
+}
+
+// SubjectCharacter represents a character's appearance in a subject.
+type SubjectCharacter struct {
+	CharacterID int `json:"character_id"`
+	SubjectID   int `json:"subject_id"`
+	Type        int `json:"type"`
+	Order       int `json:"order"`
+}
+
+// CharacterAssociationTypes maps subject_character type codes to Chinese names.
+var CharacterAssociationTypes = map[int]string{
+	1: "主角",
+	2: "配角",
+	3: "客串",
+	4: "闲角",
+	5: "旁白",
+	6: "声库",
+}
+
+// CharacterAssociationTypeNames returns all character association type names.
+func CharacterAssociationTypeNames() []string {
+	var names []string
+	for _, name := range CharacterAssociationTypes {
+		names = append(names, name)
+	}
+	return names
+}
+
 // SubjectType represents a Bangumi subject type.
 type SubjectType int
 

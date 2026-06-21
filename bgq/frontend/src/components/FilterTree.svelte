@@ -3,6 +3,7 @@
   import {
     subjectRootLogic,
     personRootLogic,
+    characterRootLogic,
     queryTarget,
     toggleLogicOp,
     addCondition,
@@ -11,6 +12,7 @@
     ctxFieldConfigs,
     CTX_SUBJECT,
     CTX_PERSON,
+    CTX_CHARACTER,
     CTX_EPISODE,
     EPISODE_FIELDS,
     EPISODE_FIELD_LABELS,
@@ -23,10 +25,21 @@
   let { lg = undefined, isRoot = true, ctx = CTX_SUBJECT } = $props();
 
   const effectiveCtx = $derived(
-    isRoot ? ($queryTarget === "person" ? CTX_PERSON : CTX_SUBJECT) : ctx,
+    isRoot
+      ? $queryTarget === "person"
+        ? CTX_PERSON
+        : $queryTarget === "character"
+          ? CTX_CHARACTER
+          : CTX_SUBJECT
+      : ctx,
   );
   const logic = $derived(
-    lg || ($queryTarget === "person" ? $personRootLogic : $subjectRootLogic),
+    lg ||
+      ($queryTarget === "person"
+        ? $personRootLogic
+        : $queryTarget === "character"
+          ? $characterRootLogic
+          : $subjectRootLogic),
   );
 
   let containerEl;
@@ -66,6 +79,17 @@
     if (currentCtx === CTX_EPISODE) {
       for (const f of EPISODE_FIELDS)
         opts.push({ value: "ep_" + f, label: EPISODE_FIELD_LABELS[f] });
+    } else if (currentCtx === CTX_CHARACTER) {
+      opts.push({ value: "field", label: "字段" });
+      opts.push({ value: "global", label: "全局" });
+      const cfc = ctxFieldConfigs(CTX_CHARACTER);
+      for (const k in cfc) opts.push({ value: k, label: cfc[k].label });
+      if (qTarget === "character") {
+        opts.push({ value: "character_relation", label: "角色关系" });
+      }
+      if (qTarget === "character") {
+        opts.push({ value: "character", label: "条目" });
+      }
     } else if (currentCtx === CTX_PERSON) {
       opts.push({ value: "field", label: "字段" });
       opts.push({ value: "global", label: "全局" });
@@ -84,6 +108,7 @@
       opts.push({ value: "global", label: "全局" });
       if (qTarget === "subject") {
         opts.push({ value: "relation", label: "关系" });
+        opts.push({ value: "character", label: "角色" });
         opts.push({ value: "episode", label: "剧集" });
         opts.push({ value: "count", label: "数量" });
       }
