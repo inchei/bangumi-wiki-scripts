@@ -21,16 +21,17 @@ type Config struct {
 
 // Filter is a single filter condition. Exactly one of the pointer fields should be set.
 type Filter struct {
-	Type     *TypeFilter     `yaml:"type,omitempty" json:"type,omitempty"`
-	Field    *FieldFilter    `yaml:"field,omitempty" json:"field,omitempty"`
-	Global   *GlobalFilter   `yaml:"global,omitempty" json:"global,omitempty"`
-	Tag      *TagFilter      `yaml:"tag,omitempty" json:"tag,omitempty"`
-	MetaTag  *TagFilter      `yaml:"meta_tag,omitempty" json:"meta_tag,omitempty"`
-	Relation *RelationFilter `yaml:"relation,omitempty" json:"relation,omitempty"`
-	Staff    *StaffFilter    `yaml:"staff,omitempty" json:"staff,omitempty"`
-	Episode  *EpisodeFilter  `yaml:"episode,omitempty" json:"episode,omitempty"`
-	Count    *CountFilter    `yaml:"count,omitempty" json:"count,omitempty"`
-	Logic    *LogicFilter    `yaml:"logic,omitempty" json:"logic,omitempty"`
+	Type           *TypeFilter           `yaml:"type,omitempty" json:"type,omitempty"`
+	Field          *FieldFilter          `yaml:"field,omitempty" json:"field,omitempty"`
+	Global         *GlobalFilter         `yaml:"global,omitempty" json:"global,omitempty"`
+	Tag            *TagFilter            `yaml:"tag,omitempty" json:"tag,omitempty"`
+	MetaTag        *TagFilter            `yaml:"meta_tag,omitempty" json:"meta_tag,omitempty"`
+	Relation       *RelationFilter       `yaml:"relation,omitempty" json:"relation,omitempty"`
+	PersonRelation *PersonRelationFilter `yaml:"person_relation,omitempty" json:"person_relation,omitempty"`
+	Staff          *StaffFilter          `yaml:"staff,omitempty" json:"staff,omitempty"`
+	Episode        *EpisodeFilter        `yaml:"episode,omitempty" json:"episode,omitempty"`
+	Count          *CountFilter          `yaml:"count,omitempty" json:"count,omitempty"`
+	Logic          *LogicFilter          `yaml:"logic,omitempty" json:"logic,omitempty"`
 }
 
 // LogicFilter combines child filters with AND or OR logic.
@@ -66,6 +67,9 @@ func (f *Filter) UnmarshalJSON(data []byte) error {
 		case "relation":
 			f.Relation = &RelationFilter{}
 			return json.Unmarshal(val, f.Relation)
+		case "person_relation":
+			f.PersonRelation = &PersonRelationFilter{}
+			return json.Unmarshal(val, f.PersonRelation)
 		case "staff":
 			f.Staff = &StaffFilter{}
 			return json.Unmarshal(val, f.Staff)
@@ -80,7 +84,7 @@ func (f *Filter) UnmarshalJSON(data []byte) error {
 			return json.Unmarshal(val, f.Logic)
 		}
 	}
-	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, staff, episode, count, logic")
+	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, person_relation, staff, episode, count, logic")
 }
 
 // UnmarshalYAML implements custom YAML unmarshaling for Filter.
@@ -151,6 +155,15 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 			} else {
 				f.Relation = &RelationFilter{}
 				if err := val.Decode(f.Relation); err != nil {
+					return err
+				}
+			}
+		case "person_relation":
+			if val.Kind == yaml.ScalarNode {
+				f.PersonRelation = &PersonRelationFilter{Type: val.Value, Mode: "any"}
+			} else {
+				f.PersonRelation = &PersonRelationFilter{}
+				if err := val.Decode(f.PersonRelation); err != nil {
 					return err
 				}
 			}
@@ -276,6 +289,14 @@ type RelationFilter struct {
 	Conditions []Filter `yaml:"conditions" json:"conditions"` // conditions on the related subject (full filter types)
 }
 
+// PersonRelationFilter filters by person-to-person relation (person_type=prsn).
+// Conditions support person-level filter types on the related person.
+type PersonRelationFilter struct {
+	Type       string   `yaml:"type" json:"type"`             // Chinese relation name (e.g., "同事")
+	Mode       string   `yaml:"mode" json:"mode"`             // any, all, none
+	Conditions []Filter `yaml:"conditions" json:"conditions"` // conditions on the related person
+}
+
 // StaffFilter filters by staff/person.
 // Conditions support all filter types (nested), allowing full filtering on persons (subject target) or subjects (person target).
 type StaffFilter struct {
@@ -361,6 +382,9 @@ func (c *Config) Validate() error {
 		if f.Relation != nil {
 			set++
 		}
+		if f.PersonRelation != nil {
+			set++
+		}
 		if f.Staff != nil {
 			set++
 		}
@@ -395,6 +419,13 @@ func (c *Config) Validate() error {
 			}
 			if f.Relation.Mode == "" {
 				f.Relation.Mode = "any"
+			}
+		case f.PersonRelation != nil:
+			if f.PersonRelation.Type == "" {
+				return fmt.Errorf("筛选条件 %d: person_relation type 不能为空", i+1)
+			}
+			if f.PersonRelation.Mode == "" {
+				f.PersonRelation.Mode = "any"
 			}
 		case f.Staff != nil:
 			if f.Staff.Position == "" {
@@ -463,6 +494,23 @@ func filtersNeedPersons(filters []Filter) bool {
 			return true
 		}
 		if f.Logic != nil && filtersNeedPersons(f.Logic.Items) {
+			return true
+		}
+	}
+	return false
+}
+
+// NeedsPersonRelations returns true if any filter requires person_relations data.
+func (c *Config) NeedsPersonRelations() bool {
+	return filtersNeedPersonRelations(c.Filters)
+}
+
+func filtersNeedPersonRelations(filters []Filter) bool {
+	for _, f := range filters {
+		if f.PersonRelation != nil {
+			return true
+		}
+		if f.Logic != nil && filtersNeedPersonRelations(f.Logic.Items) {
 			return true
 		}
 	}

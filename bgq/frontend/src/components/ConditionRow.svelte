@@ -31,6 +31,7 @@
     if (item.count) return "count";
     if (item.type) return "type";
     if (item.relation) return "relation";
+    if (item.person_relation) return "person_relation";
     if (item.staff) return "staff";
     if (item.episode) return "episode";
     return "unknown";
@@ -294,6 +295,48 @@
           lg={r.conditions[0].logic}
           isRoot={false}
           ctx={CTX_SUBJECT}
+        />
+      </div>
+    {/if}
+  {:else if condType === "person_relation"}
+    {@const pr = item.person_relation}
+    <div class="cond-row-inner">
+      <span class="cond-type">人物关系</span>
+      <RestrictedSelect
+        value={pr.type}
+        suggestions={["任意"].concat($schemaOptions.person_relations || [])}
+        onchange={(v) =>
+          updateCondition(group, idx, "person_relation", "type", v)}
+        placeholder="关系名"
+      />
+      <select
+        class="select select-sm"
+        value={pr.mode}
+        onchange={(e) =>
+          updateCondition(
+            group,
+            idx,
+            "person_relation",
+            "mode",
+            e.target.value,
+          )}
+      >
+        <option value="any">任意</option>
+        <option value="all">全部</option>
+        <option value="none">排除</option>
+      </select>
+      <button
+        class="tag-remove"
+        onclick={() => removeLogicLeaf(group, idx)}
+        title="删除">&times;</button
+      >
+    </div>
+    {#if pr.conditions?.length > 0 && pr.conditions[0].logic}
+      <div class="nested">
+        <FilterTree
+          lg={pr.conditions[0].logic}
+          isRoot={false}
+          ctx={CTX_PERSON}
         />
       </div>
     {/if}
