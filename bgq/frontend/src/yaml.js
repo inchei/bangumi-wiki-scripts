@@ -1,5 +1,5 @@
 // YAML ↔ Filter conversion (frontend-only, no server round-trip)
-import { load, dump } from 'js-yaml';
+import { load, dump } from "js-yaml";
 
 /**
  * Convert filter tree (API format) to YAML string.
@@ -12,9 +12,13 @@ export function filtersToYAML(filters, columns, limit) {
     cfg.filters = cleanFilters(filters);
   }
   if (columns) {
-    const cols = typeof columns === 'string'
-      ? columns.split(',').map(s => s.trim()).filter(Boolean)
-      : columns;
+    const cols =
+      typeof columns === "string"
+        ? columns
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : columns;
     if (cols.length > 0) cfg.output = { columns: cols };
   }
   if (limit) cfg.limit = limit;
@@ -23,7 +27,7 @@ export function filtersToYAML(filters, columns, limit) {
 
 /** Remove internal fields (_id, _ctx, _groupNumMap) from filter tree */
 function cleanFilters(filters) {
-  return filters.map(f => cleanFilter(f));
+  return filters.map((f) => cleanFilter(f));
 }
 
 function cleanFilter(f) {
@@ -31,7 +35,17 @@ function cleanFilter(f) {
     return { logic: { op: f.logic.op, items: cleanFilters(f.logic.items) } };
   }
   const out = {};
-  for (const key of ['type', 'field', 'global', 'tag', 'meta_tag', 'relation', 'staff', 'episode', 'count']) {
+  for (const key of [
+    "type",
+    "field",
+    "global",
+    "tag",
+    "meta_tag",
+    "relation",
+    "staff",
+    "episode",
+    "count",
+  ]) {
     if (f[key]) {
       out[key] = cleanValue(f[key], key);
     }
@@ -40,14 +54,14 @@ function cleanFilter(f) {
 }
 
 function cleanValue(val, key) {
-  if (key === 'relation' || key === 'staff') {
+  if (key === "relation" || key === "staff") {
     const out = { ...val };
     if (out.conditions) {
       out.conditions = cleanFilters(out.conditions);
     }
     return out;
   }
-  if (key === 'episode') {
+  if (key === "episode") {
     const out = { ...val };
     if (out.logic) {
       out.logic = { op: out.logic.op, items: cleanFilters(out.logic.items) };
@@ -63,7 +77,7 @@ function cleanValue(val, key) {
  */
 export function parseYAML(raw) {
   const text = raw.trim();
-  if (!text) throw new Error('YAML 内容为空');
+  if (!text) throw new Error("YAML 内容为空");
 
   // Try YAML first, fallback to JSON
   let cfg;
@@ -73,12 +87,14 @@ export function parseYAML(raw) {
     try {
       cfg = JSON.parse(text);
     } catch (e2) {
-      throw new Error(`YAML: ${e1.message}\nJSON: ${e2.message}`);
+      throw new Error(`YAML: ${e1.message}\nJSON: ${e2.message}`, {
+        cause: e2,
+      });
     }
   }
 
-  if (!cfg || typeof cfg !== 'object') {
-    throw new Error('配置格式错误：需要一个对象');
+  if (!cfg || typeof cfg !== "object") {
+    throw new Error("配置格式错误：需要一个对象");
   }
 
   const result = {};
@@ -92,17 +108,32 @@ export function parseYAML(raw) {
 /** Normalize YAML filters to API format (wrap in logic if needed) */
 function normalizeFilters(filters) {
   if (!Array.isArray(filters)) return [];
-  return filters.map(f => normalizeFilter(f));
+  return filters.map((f) => normalizeFilter(f));
 }
 
 function normalizeFilter(f) {
   // Already in API format with logic wrapper
   if (f.logic) {
-    return { logic: { op: f.logic.op || 'and', items: normalizeFilters(f.logic.items || []) } };
+    return {
+      logic: {
+        op: f.logic.op || "and",
+        items: normalizeFilters(f.logic.items || []),
+      },
+    };
   }
   // Direct filter types
   const out = {};
-  for (const key of ['type', 'field', 'global', 'tag', 'meta_tag', 'relation', 'staff', 'episode', 'count']) {
+  for (const key of [
+    "type",
+    "field",
+    "global",
+    "tag",
+    "meta_tag",
+    "relation",
+    "staff",
+    "episode",
+    "count",
+  ]) {
     if (f[key] !== undefined && f[key] !== null) {
       out[key] = normalizeFilterValue(f[key], key);
     }
@@ -111,39 +142,42 @@ function normalizeFilter(f) {
 }
 
 function normalizeFilterValue(val, key) {
-  if (key === 'relation' || key === 'staff') {
+  if (key === "relation" || key === "staff") {
     const out = { ...val };
     if (out.conditions) {
       out.conditions = normalizeFilters(out.conditions);
     }
     return out;
   }
-  if (key === 'episode') {
+  if (key === "episode") {
     const out = { ...val };
     if (out.logic) {
-      out.logic = { op: out.logic.op || 'and', items: normalizeFilters(out.logic.items || []) };
+      out.logic = {
+        op: out.logic.op || "and",
+        items: normalizeFilters(out.logic.items || []),
+      };
     }
     if (out.conditions && !out.logic) {
-      out.logic = { op: 'and', items: normalizeFilters(out.conditions) };
+      out.logic = { op: "and", items: normalizeFilters(out.conditions) };
       delete out.conditions;
     }
     return out;
   }
   // Shorthand: type: 2 → type: { value: 2 }
-  if (key === 'type' && typeof val !== 'object') {
+  if (key === "type" && typeof val !== "object") {
     return { value: val };
   }
   // Shorthand: field: "name" → field: { field: "name", operator: "contains", value: "" }
-  if (key === 'field' && typeof val === 'string') {
-    return { field: val, operator: 'contains', value: '' };
+  if (key === "field" && typeof val === "string") {
+    return { field: val, operator: "contains", value: "" };
   }
   // Shorthand: tag: "轻小说" → tag: { value: "轻小说", negate: false }
-  if ((key === 'tag' || key === 'meta_tag') && typeof val === 'string') {
+  if ((key === "tag" || key === "meta_tag") && typeof val === "string") {
     return { value: val, negate: false };
   }
   // Shorthand: global: "text" → global: { operator: "contains", value: "text" }
-  if (key === 'global' && typeof val === 'string') {
-    return { operator: 'contains', value: val };
+  if (key === "global" && typeof val === "string") {
+    return { operator: "contains", value: val };
   }
   return { ...val };
 }

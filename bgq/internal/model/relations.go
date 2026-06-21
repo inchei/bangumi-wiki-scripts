@@ -2,11 +2,11 @@ package model
 
 // RelationTypes maps relation type ID to Chinese name, grouped by subject type.
 var RelationTypes = map[int]map[int]string{
-	1: BookRelations,   // 书籍
-	2: AnimeRelations,  // 动画
-	3: MusicRelations,  // 音乐
-	4: GameRelations,   // 游戏
-	6: RealRelations,   // 三次元
+	1: BookRelations,  // 书籍
+	2: AnimeRelations, // 动画
+	3: MusicRelations, // 音乐
+	4: GameRelations,  // 游戏
+	6: RealRelations,  // 三次元
 }
 
 // AllRelations collects all relation names for lookup.

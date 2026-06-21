@@ -1,0 +1,7 @@
+# 系列条目不应有 ISBN，9784 开头为日本出版（其他国家套书常用同一 ISBN）
+filters:
+  - type: 书籍
+  - field: { field: series, operator: eq, value: "true" }
+  - field: { field: ISBN, operator: regex, value: "^9784" }
+output:
+  columns: [id, name, name_cn, ISBN]

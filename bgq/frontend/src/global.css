@@ -1,67 +1,173 @@
 /* ===== Reset & Base ===== */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 :root {
-  --accent: #f09199; --accent-hover: #e07a85; --accent-light: #fef0f2; --accent-border: #fad4da;
-  --link: #0084b4; --link-hover: #006d96;
-  --white: #fff; --bg: #f7f8fa; --bg-alt: #f0f1f3; --bg-secondary: #f5f6f8;
-  --text: #303133; --text-secondary: #909399; --text-placeholder: #c0c4cc;
-  --border: #e4e7ed; --border-light: #ebeef5;
-  --radius: 15px; --radius-sm: 10px; --radius-xs: 6px;
-  --shadow: 0 0 0 2px rgba(0,0,0,.04);
-  --shadow-hover: 0 2px 12px rgba(0,0,0,.08);
-  --transition: all .2s ease;
-  --status-ok: #67c23a; --status-warn: #e6a23c; --status-err: #f56c6c;
-  --error-bg: #fef0f0; --error-border: #fde2e2; --error-text: #f56c6c; --error-pre-bg: #fff5f5;
-  --scrollbar: #ddd; --scrollbar-hover: #ccc;
-  --dropdown-bg: rgba(254,254,254,.82); --dropdown-shadow: 0 4px 24px rgba(80,80,80,.12);
-  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --accent: #f09199;
+  --accent-hover: #e07a85;
+  --accent-light: #fef0f2;
+  --accent-border: #fad4da;
+  --link: #0084b4;
+  --link-hover: #006d96;
+  --white: #fff;
+  --bg: #f7f8fa;
+  --bg-alt: #f0f1f3;
+  --bg-secondary: #f5f6f8;
+  --text: #303133;
+  --text-secondary: #909399;
+  --text-placeholder: #c0c4cc;
+  --border: #e4e7ed;
+  --border-light: #ebeef5;
+  --radius: 15px;
+  --radius-sm: 10px;
+  --radius-xs: 6px;
+  --shadow: 0 0 0 2px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 2px 12px rgba(0, 0, 0, 0.08);
+  --transition: all 0.2s ease;
+  --status-ok: #67c23a;
+  --status-warn: #e6a23c;
+  --status-err: #f56c6c;
+  --error-bg: #fef0f0;
+  --error-border: #fde2e2;
+  --error-text: #f56c6c;
+  --error-pre-bg: #fff5f5;
+  --scrollbar: #ddd;
+  --scrollbar-hover: #ccc;
+  --dropdown-bg: rgba(254, 254, 254, 0.82);
+  --dropdown-shadow: 0 4px 24px rgba(80, 80, 80, 0.12);
+  --font:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
 }
 [data-theme="dark"] {
-  --accent: #f09199; --accent-hover: #f5a3aa; --accent-light: rgba(240,145,153,.12); --accent-border: rgba(240,145,153,.25);
-  --link: #2ea6ff; --link-hover: #5cb8ff;
-  --white: #2d2e2f; --bg: #1e1e1f; --bg-alt: #353637; --bg-secondary: #353637;
-  --text: #dcdcdc; --text-secondary: #9a9a9a; --text-placeholder: #666;
-  --border: #404040; --border-light: #383838;
-  --shadow: 0 0 0 2px rgba(255,255,255,.04); --shadow-hover: 0 2px 12px rgba(0,0,0,.3);
-  --status-ok: #67c23a; --status-warn: #e6a23c; --status-err: #f56c6c;
-  --error-bg: rgba(245,108,108,.1); --error-border: rgba(245,108,108,.2); --error-text: #f56c6c; --error-pre-bg: rgba(245,108,108,.06);
-  --scrollbar: #555; --scrollbar-hover: #666;
-  --dropdown-bg: rgba(40,40,40,.8); --dropdown-shadow: 0 5px 30px 10px rgba(0,0,0,.2);
+  --accent: #f09199;
+  --accent-hover: #f5a3aa;
+  --accent-light: rgba(240, 145, 153, 0.12);
+  --accent-border: rgba(240, 145, 153, 0.25);
+  --link: #2ea6ff;
+  --link-hover: #5cb8ff;
+  --white: #2d2e2f;
+  --bg: #1e1e1f;
+  --bg-alt: #353637;
+  --bg-secondary: #353637;
+  --text: #dcdcdc;
+  --text-secondary: #9a9a9a;
+  --text-placeholder: #666;
+  --border: #404040;
+  --border-light: #383838;
+  --shadow: 0 0 0 2px rgba(255, 255, 255, 0.04);
+  --shadow-hover: 0 2px 12px rgba(0, 0, 0, 0.3);
+  --status-ok: #67c23a;
+  --status-warn: #e6a23c;
+  --status-err: #f56c6c;
+  --error-bg: rgba(245, 108, 108, 0.1);
+  --error-border: rgba(245, 108, 108, 0.2);
+  --error-text: #f56c6c;
+  --error-pre-bg: rgba(245, 108, 108, 0.06);
+  --scrollbar: #555;
+  --scrollbar-hover: #666;
+  --dropdown-bg: rgba(40, 40, 40, 0.8);
+  --dropdown-shadow: 0 5px 30px 10px rgba(0, 0, 0, 0.2);
 }
-body { font-family: var(--font); background: var(--bg); color: var(--text); line-height: 1.6; min-height: 100vh; }
-a { color: var(--link); text-decoration: none; transition: var(--transition); }
-a:hover { color: var(--link-hover); text-decoration: underline; }
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+a {
+  color: var(--link);
+  text-decoration: none;
+  transition: var(--transition);
+}
+a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
 
 /* ===== Scrollbar ===== */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-hover); }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-hover);
+}
 
 /* ===== Awesomplete theme override ===== */
-.awesomplete { position: relative !important; display: inline-block !important; }
+.awesomplete {
+  position: relative !important;
+  display: inline-block !important;
+}
 .awesomplete > ul {
-  position: absolute !important; left: 0 !important; z-index: 100 !important;
-  min-width: 140px !important; max-height: 200px !important; overflow-y: auto !important;
+  position: absolute !important;
+  left: 0 !important;
+  z-index: 100 !important;
+  min-width: 140px !important;
+  max-height: 200px !important;
+  overflow-y: auto !important;
   background: var(--dropdown-bg) !important;
-  backdrop-filter: blur(10px) !important; -webkit-backdrop-filter: blur(10px) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
   border: 1px solid var(--border) !important;
   border-radius: 12px !important;
   box-shadow: var(--dropdown-shadow) !important;
-  list-style: none !important; padding: 4px 0 !important; margin: 2px 0 0 !important;
+  list-style: none !important;
+  padding: 4px 0 !important;
+  margin: 2px 0 0 !important;
   font-size: 12px !important;
-  transition: none !important; animation: none !important;
+  transition: none !important;
+  animation: none !important;
 }
 .awesomplete > ul > li {
-  padding: 5px 10px !important; cursor: pointer !important; white-space: nowrap !important;
-  color: var(--text) !important; background: transparent !important;
+  padding: 5px 10px !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  color: var(--text) !important;
+  background: transparent !important;
   transition: none !important;
 }
-.awesomplete > ul > li:hover { background: var(--accent-light) !important; color: var(--text) !important; }
-.awesomplete > ul > li[aria-selected="true"] { background: var(--accent) !important; color: #fff !important; }
-.awesomplete > ul > li:hover mark { background: transparent !important; color: var(--accent) !important; font-weight: 600 !important; }
-.awesomplete > ul > li[aria-selected="true"] mark { background: transparent !important; color: #fff !important; font-weight: 600 !important; }
-.awesomplete > ul > li mark { background: transparent !important; color: var(--accent) !important; font-weight: 600 !important; padding: 0 !important; }
-.awesomplete > ul:empty { display: none !important; }
-.awesomplete .visually-hidden { position: absolute !important; clip: rect(0,0,0,0) !important; }
+.awesomplete > ul > li:hover {
+  background: var(--accent-light) !important;
+  color: var(--text) !important;
+}
+.awesomplete > ul > li[aria-selected="true"] {
+  background: var(--accent) !important;
+  color: #fff !important;
+}
+.awesomplete > ul > li:hover mark {
+  background: transparent !important;
+  color: var(--accent) !important;
+  font-weight: 600 !important;
+}
+.awesomplete > ul > li[aria-selected="true"] mark {
+  background: transparent !important;
+  color: #fff !important;
+  font-weight: 600 !important;
+}
+.awesomplete > ul > li mark {
+  background: transparent !important;
+  color: var(--accent) !important;
+  font-weight: 600 !important;
+  padding: 0 !important;
+}
+.awesomplete > ul:empty {
+  display: none !important;
+}
+.awesomplete .visually-hidden {
+  position: absolute !important;
+  clip: rect(0, 0, 0, 0) !important;
+}

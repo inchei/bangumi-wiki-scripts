@@ -10,13 +10,13 @@ import (
 
 // Config is the top-level YAML configuration.
 type Config struct {
-	Database  string      `yaml:"database,omitempty" json:"database,omitempty"`
-	DataDir   string      `yaml:"data_dir,omitempty" json:"data_dir,omitempty"`
-	Target    string      `yaml:"target,omitempty" json:"target,omitempty"` // "subject" (default) or "person"
-	Filters   []Filter    `yaml:"filters,omitempty" json:"filters,omitempty"`
-	Output    *Output     `yaml:"output,omitempty" json:"output,omitempty"`
-	Sort      []SortRule  `yaml:"sort,omitempty" json:"sort,omitempty"`
-	Limit     int         `yaml:"limit,omitempty" json:"limit,omitempty"`
+	Database string     `yaml:"database,omitempty" json:"database,omitempty"`
+	DataDir  string     `yaml:"data_dir,omitempty" json:"data_dir,omitempty"`
+	Target   string     `yaml:"target,omitempty" json:"target,omitempty"` // "subject" (default) or "person"
+	Filters  []Filter   `yaml:"filters,omitempty" json:"filters,omitempty"`
+	Output   *Output    `yaml:"output,omitempty" json:"output,omitempty"`
+	Sort     []SortRule `yaml:"sort,omitempty" json:"sort,omitempty"`
+	Limit    int        `yaml:"limit,omitempty" json:"limit,omitempty"`
 }
 
 // Filter is a single filter condition. Exactly one of the pointer fields should be set.
@@ -228,15 +228,15 @@ func parseYAMLValue(node *yaml.Node) interface{} {
 	switch node.Tag {
 	case "!!int":
 		var v int
-		node.Decode(&v)
+		_ = node.Decode(&v)
 		return v
 	case "!!float":
 		var v float64
-		node.Decode(&v)
+		_ = node.Decode(&v)
 		return v
 	case "!!bool":
 		var v bool
-		node.Decode(&v)
+		_ = node.Decode(&v)
 		return v
 	default:
 		return node.Value
@@ -337,9 +337,6 @@ func ParseYAML(data []byte) (*Config, error) {
 // Validate checks the configuration for errors.
 func (c *Config) Validate() error {
 	// data_dir/database will be provided via CLI if not in config
-	if c.Database == "" && c.DataDir == "" {
-		// OK — CLI will supply via --data-dir
-	}
 	if len(c.Filters) == 0 {
 		return fmt.Errorf("至少需要一个筛选条件 (filters)")
 	}

@@ -1,0 +1,7 @@
+# 关联了作者人物但 infobox 中"作者"字段为空
+filters:
+  - type: 书籍
+  - staff: { position: 作者, mode: any }
+  - field: { field: 作者, operator: regex, value: "^\\s*$" }
+output:
+  columns: [id, name, name_cn]

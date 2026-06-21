@@ -2,22 +2,22 @@ package model
 
 // Subject represents a Bangumi subject entry.
 type Subject struct {
-	ID           int     `json:"id"`
-	Type         int     `json:"type"`
-	Name         string  `json:"name"`
-	NameCN       string  `json:"name_cn"`
-	Infobox      string  `json:"infobox"`
-	Platform     int     `json:"platform"`
-	Summary      string  `json:"summary"`
-	NFSW         bool    `json:"nsfw"`
-	Score        float64 `json:"score"`
-	Rank         int     `json:"rank"`
-	Date         string  `json:"date"`
-	Series       bool    `json:"series"`
-	Tags         []Tag   `json:"tags"`
-	MetaTags     []string `json:"meta_tags"`
+	ID           int            `json:"id"`
+	Type         int            `json:"type"`
+	Name         string         `json:"name"`
+	NameCN       string         `json:"name_cn"`
+	Infobox      string         `json:"infobox"`
+	Platform     int            `json:"platform"`
+	Summary      string         `json:"summary"`
+	NFSW         bool           `json:"nsfw"`
+	Score        float64        `json:"score"`
+	Rank         int            `json:"rank"`
+	Date         string         `json:"date"`
+	Series       bool           `json:"series"`
+	Tags         []Tag          `json:"tags"`
+	MetaTags     []string       `json:"meta_tags"`
 	ScoreDetails map[string]int `json:"score_details"`
-	Favorite     Favorite `json:"favorite"`
+	Favorite     Favorite       `json:"favorite"`
 }
 
 // Tag represents a subject tag.
@@ -45,10 +45,10 @@ type SubjectRelation struct {
 
 // SubjectPerson represents a person's role in a subject.
 type SubjectPerson struct {
-	PersonID   int    `json:"person_id"`
-	SubjectID  int    `json:"subject_id"`
-	Position   int    `json:"position"`
-	AppearEps  string `json:"appear_eps"`
+	PersonID  int    `json:"person_id"`
+	SubjectID int    `json:"subject_id"`
+	Position  int    `json:"position"`
+	AppearEps string `json:"appear_eps"`
 }
 
 // Episode represents an episode/chapter of a subject.
@@ -67,12 +67,12 @@ type Episode struct {
 
 // Person represents a person in the database.
 type Person struct {
-	ID      int    `json:"id"`
-	Name    string `json:"name"`
-	Type    int    `json:"type"`
+	ID      int      `json:"id"`
+	Name    string   `json:"name"`
+	Type    int      `json:"type"`
 	Career  []string `json:"career"`
-	Infobox string `json:"infobox"`
-	Summary string `json:"summary"`
+	Infobox string   `json:"infobox"`
+	Summary string   `json:"summary"`
 }
 
 // SubjectType represents a Bangumi subject type.

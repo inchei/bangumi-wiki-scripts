@@ -29,11 +29,11 @@ func GetDuckDBPath() string {
 
 // QueryResult holds the results of a query execution.
 type QueryResult struct {
-	Columns   []string   `json:"columns"`
-	Rows      [][]string `json:"rows"`
-	TotalRows int        `json:"total_rows"`
+	Columns   []string      `json:"columns"`
+	Rows      [][]string    `json:"rows"`
+	TotalRows int           `json:"total_rows"`
 	Duration  time.Duration `json:"duration"`
-	SQL       string     `json:"sql"`
+	SQL       string        `json:"sql"`
 }
 
 // Engine executes queries via DuckDB CLI.
@@ -83,13 +83,13 @@ func (e *Engine) executeSQL(ctx context.Context, sql string) (*QueryResult, erro
 		return nil, fmt.Errorf("创建临时SQL文件失败: %w", err)
 	}
 	tmpPath := tmpFile.Name()
-	defer os.Remove(tmpPath)
+	defer func() { _ = os.Remove(tmpPath) }()
 
 	if _, err := tmpFile.WriteString(sql); err != nil {
-		tmpFile.Close()
+		_ = tmpFile.Close()
 		return nil, fmt.Errorf("写入SQL文件失败: %w", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	// Build DuckDB CLI command — use CSV mode (preserves column order, handles empty results)
 	args := []string{"-csv", "-f", tmpPath}
@@ -158,10 +158,10 @@ func (r *QueryResult) WriteCSV(path string) error {
 	if err != nil {
 		return fmt.Errorf("创建CSV文件失败: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Write BOM for Excel compatibility
-	f.Write([]byte{0xEF, 0xBB, 0xBF})
+	_, _ = f.Write([]byte{0xEF, 0xBB, 0xBF})
 
 	w := csv.NewWriter(f)
 	defer w.Flush()
@@ -187,7 +187,7 @@ func (r *QueryResult) WriteJSON(path string) error {
 	if err != nil {
 		return fmt.Errorf("创建JSON文件失败: %w", err)
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	// Build array of objects
 	var objs []map[string]string
@@ -210,13 +210,13 @@ func ExecuteDuckDBSQL(ctx context.Context, dbPath, sql string) error {
 	if err != nil {
 		return fmt.Errorf("创建临时SQL文件失败: %w", err)
 	}
-	defer os.Remove(tmpFile.Name())
+	defer func() { _ = os.Remove(tmpFile.Name()) }()
 
 	if _, err := tmpFile.WriteString(sql); err != nil {
-		tmpFile.Close()
+		_ = tmpFile.Close()
 		return fmt.Errorf("写入SQL文件失败: %w", err)
 	}
-	tmpFile.Close()
+	_ = tmpFile.Close()
 
 	cmd := exec.CommandContext(ctx, DuckDBPath, dbPath, "-f", tmpFile.Name())
 	cmd.Stdout = os.Stdout
@@ -253,7 +253,7 @@ func (r *QueryResult) FormatTable(maxRows int) string {
 
 	// Header
 	for i, col := range r.Columns {
-		sb.WriteString(fmt.Sprintf("%-*s", widths[i]+2, col))
+		fmt.Fprintf(&sb, "%-*s", widths[i]+2, col)
 	}
 	sb.WriteString("\n")
 
@@ -274,15 +274,15 @@ func (r *QueryResult) FormatTable(maxRows int) string {
 			if len(display) > 80 {
 				display = display[:77] + "..."
 			}
-			sb.WriteString(fmt.Sprintf("%-*s", widths[i]+2, display))
+			fmt.Fprintf(&sb, "%-*s", widths[i]+2, display)
 		}
 		sb.WriteString("\n")
 	}
 
 	if maxRows > 0 && len(r.Rows) > maxRows {
-		sb.WriteString(fmt.Sprintf("... 还有 %d 行未显示\n", len(r.Rows)-maxRows))
+		fmt.Fprintf(&sb, "... 还有 %d 行未显示\n", len(r.Rows)-maxRows)
 	}
 
-	sb.WriteString(fmt.Sprintf("\n共 %d 行, 耗时 %v\n", r.TotalRows, r.Duration.Round(time.Millisecond)))
+	fmt.Fprintf(&sb, "\n共 %d 行, 耗时 %v\n", r.TotalRows, r.Duration.Round(time.Millisecond))
 	return sb.String()
 }

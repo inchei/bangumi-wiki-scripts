@@ -1,22 +1,9 @@
+# 非系列条目却关联了单行本
 filters:
-  - {
-      "type": {
-        "value": "书籍"
-      }
-    }
-  - {
-      "relation": {
-        "type": "单行本",
-        "mode": "any",
-        "conditions": []
-      }
-    }
-  - {
-      "field": {
-        "field": "series",
-        "operator": "eq",
-        "value": "false"
-      }
-    }
+  - type: 书籍
+  - field: { field: series, operator: eq, value: "false" }
+  - relation:
+      type: 单行本
+      mode: any
 output:
-  columns: [id,name,name_cn,作者]
+  columns: [id, name, name_cn, 作者]
