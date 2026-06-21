@@ -21,19 +21,21 @@ type Config struct {
 
 // Filter is a single filter condition. Exactly one of the pointer fields should be set.
 type Filter struct {
-	Type             *TypeFilter             `yaml:"type,omitempty" json:"type,omitempty"`
-	Field            *FieldFilter            `yaml:"field,omitempty" json:"field,omitempty"`
-	Global           *GlobalFilter           `yaml:"global,omitempty" json:"global,omitempty"`
-	Tag              *TagFilter              `yaml:"tag,omitempty" json:"tag,omitempty"`
-	MetaTag          *TagFilter              `yaml:"meta_tag,omitempty" json:"meta_tag,omitempty"`
-	Relation         *RelationFilter         `yaml:"relation,omitempty" json:"relation,omitempty"`
-	PersonRelation   *PersonRelationFilter   `yaml:"person_relation,omitempty" json:"person_relation,omitempty"`
+	Type              *TypeFilter              `yaml:"type,omitempty" json:"type,omitempty"`
+	Field             *FieldFilter             `yaml:"field,omitempty" json:"field,omitempty"`
+	Global            *GlobalFilter            `yaml:"global,omitempty" json:"global,omitempty"`
+	Tag               *TagFilter               `yaml:"tag,omitempty" json:"tag,omitempty"`
+	MetaTag           *TagFilter               `yaml:"meta_tag,omitempty" json:"meta_tag,omitempty"`
+	Relation          *RelationFilter          `yaml:"relation,omitempty" json:"relation,omitempty"`
+	PersonRelation    *PersonRelationFilter    `yaml:"person_relation,omitempty" json:"person_relation,omitempty"`
 	CharacterRelation *CharacterRelationFilter `yaml:"character_relation,omitempty" json:"character_relation,omitempty"`
-	Staff            *StaffFilter            `yaml:"staff,omitempty" json:"staff,omitempty"`
-	Character        *CharacterFilter        `yaml:"character,omitempty" json:"character,omitempty"`
-	Episode          *EpisodeFilter          `yaml:"episode,omitempty" json:"episode,omitempty"`
-	Count            *CountFilter            `yaml:"count,omitempty" json:"count,omitempty"`
-	Logic            *LogicFilter            `yaml:"logic,omitempty" json:"logic,omitempty"`
+	Staff             *StaffFilter             `yaml:"staff,omitempty" json:"staff,omitempty"`
+	Character         *CharacterFilter         `yaml:"character,omitempty" json:"character,omitempty"`
+	PersonCharacter   *PersonCharacterFilter   `yaml:"person_character,omitempty" json:"person_character,omitempty"`
+	CharacterPerson   *CharacterPersonFilter   `yaml:"character_person,omitempty" json:"character_person,omitempty"`
+	Episode           *EpisodeFilter           `yaml:"episode,omitempty" json:"episode,omitempty"`
+	Count             *CountFilter             `yaml:"count,omitempty" json:"count,omitempty"`
+	Logic             *LogicFilter             `yaml:"logic,omitempty" json:"logic,omitempty"`
 }
 
 // LogicFilter combines child filters with AND or OR logic.
@@ -81,6 +83,12 @@ func (f *Filter) UnmarshalJSON(data []byte) error {
 		case "character":
 			f.Character = &CharacterFilter{}
 			return json.Unmarshal(val, f.Character)
+		case "person_character":
+			f.PersonCharacter = &PersonCharacterFilter{}
+			return json.Unmarshal(val, f.PersonCharacter)
+		case "character_person":
+			f.CharacterPerson = &CharacterPersonFilter{}
+			return json.Unmarshal(val, f.CharacterPerson)
 		case "episode":
 			f.Episode = &EpisodeFilter{}
 			return json.Unmarshal(val, f.Episode)
@@ -92,7 +100,7 @@ func (f *Filter) UnmarshalJSON(data []byte) error {
 			return json.Unmarshal(val, f.Logic)
 		}
 	}
-	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, person_relation, character_relation, staff, character, episode, count, logic")
+	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, person_relation, character_relation, staff, character, person_character, character_person, episode, count, logic")
 }
 
 // UnmarshalYAML implements custom YAML unmarshaling for Filter.
@@ -196,6 +204,16 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 		case "character":
 			f.Character = &CharacterFilter{}
 			if err := val.Decode(f.Character); err != nil {
+				return err
+			}
+		case "person_character":
+			f.PersonCharacter = &PersonCharacterFilter{}
+			if err := val.Decode(f.PersonCharacter); err != nil {
+				return err
+			}
+		case "character_person":
+			f.CharacterPerson = &CharacterPersonFilter{}
+			if err := val.Decode(f.CharacterPerson); err != nil {
 				return err
 			}
 		case "episode":
@@ -343,6 +361,26 @@ type CharacterFilter struct {
 	Conditions []Filter `yaml:"conditions" json:"conditions"`         // conditions on the character
 }
 
+// PersonCharacterFilter filters persons by their associated characters (via person_characters).
+// Supports filtering by character conditions AND related subject conditions.
+type PersonCharacterFilter struct {
+	Type             string   `yaml:"type,omitempty" json:"type,omitempty"`       // CV type name (e.g., "CV", "演员")
+	Mode             string   `yaml:"mode" json:"mode"`                           // any, all, none — character-level quantifier
+	SubjectMode      string   `yaml:"subject_mode,omitempty" json:"subject_mode,omitempty"` // any, all — subject-level quantifier per character
+	Conditions       []Filter `yaml:"conditions" json:"conditions"`               // conditions on the character
+	SubjectConditions []Filter `yaml:"subject_conditions,omitempty" json:"subject_conditions,omitempty"` // conditions on the related subject
+}
+
+// CharacterPersonFilter filters characters by their associated persons (via person_characters).
+// Supports filtering by person conditions AND related subject conditions.
+type CharacterPersonFilter struct {
+	Type             string   `yaml:"type,omitempty" json:"type,omitempty"`       // CV type name (e.g., "CV", "演员")
+	Mode             string   `yaml:"mode" json:"mode"`                           // any, all, none — person-level quantifier
+	SubjectMode      string   `yaml:"subject_mode,omitempty" json:"subject_mode,omitempty"` // any, all — subject-level quantifier per person
+	Conditions       []Filter `yaml:"conditions" json:"conditions"`               // conditions on the person
+	SubjectConditions []Filter `yaml:"subject_conditions,omitempty" json:"subject_conditions,omitempty"` // conditions on the related subject
+}
+
 // EpisodeFilter filters by episode.
 type EpisodeFilter struct {
 	Mode       string        `yaml:"mode" json:"mode"`                       // any, all
@@ -432,6 +470,12 @@ func (c *Config) Validate() error {
 		if f.Character != nil {
 			set++
 		}
+		if f.PersonCharacter != nil {
+			set++
+		}
+		if f.CharacterPerson != nil {
+			set++
+		}
 		if f.Episode != nil {
 			set++
 		}
@@ -488,6 +532,14 @@ func (c *Config) Validate() error {
 		case f.Character != nil:
 			if f.Character.Mode == "" {
 				f.Character.Mode = "any"
+			}
+		case f.PersonCharacter != nil:
+			if f.PersonCharacter.Mode == "" {
+				f.PersonCharacter.Mode = "any"
+			}
+		case f.CharacterPerson != nil:
+			if f.CharacterPerson.Mode == "" {
+				f.CharacterPerson.Mode = "any"
 			}
 		case f.Episode != nil:
 			if f.Episode.Mode == "" {
@@ -600,6 +652,23 @@ func filtersNeedCharacters(filters []Filter) bool {
 			return true
 		}
 		if f.Logic != nil && filtersNeedCharacters(f.Logic.Items) {
+			return true
+		}
+	}
+	return false
+}
+
+// NeedsPersonCharacters returns true if any filter requires person_characters data.
+func (c *Config) NeedsPersonCharacters() bool {
+	return filtersNeedPersonCharacters(c.Filters)
+}
+
+func filtersNeedPersonCharacters(filters []Filter) bool {
+	for _, f := range filters {
+		if f.PersonCharacter != nil || f.CharacterPerson != nil {
+			return true
+		}
+		if f.Logic != nil && filtersNeedPersonCharacters(f.Logic.Items) {
 			return true
 		}
 	}

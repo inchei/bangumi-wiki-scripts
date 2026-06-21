@@ -104,6 +104,34 @@ export function findLogicGroup(node, id) {
         }
       }
     }
+    if (item.person_character?.conditions) {
+      for (const c of item.person_character.conditions) {
+        if (c.logic) {
+          const r = findLogicGroup(c.logic, id);
+          if (r) return r;
+        }
+      }
+      for (const c of item.person_character.subject_conditions || []) {
+        if (c.logic) {
+          const r = findLogicGroup(c.logic, id);
+          if (r) return r;
+        }
+      }
+    }
+    if (item.character_person?.conditions) {
+      for (const c of item.character_person.conditions) {
+        if (c.logic) {
+          const r = findLogicGroup(c.logic, id);
+          if (r) return r;
+        }
+      }
+      for (const c of item.character_person.subject_conditions || []) {
+        if (c.logic) {
+          const r = findLogicGroup(c.logic, id);
+          if (r) return r;
+        }
+      }
+    }
     if (item.staff?.conditions) {
       for (const c of item.staff.conditions) {
         if (c.logic) {
@@ -147,6 +175,22 @@ export function removeLogicItemById(node, id) {
     }
     if (item.character?.conditions) {
       for (const c of item.character.conditions) {
+        if (c.logic && removeLogicItemById(c.logic, id)) return true;
+      }
+    }
+    if (item.person_character?.conditions) {
+      for (const c of item.person_character.conditions) {
+        if (c.logic && removeLogicItemById(c.logic, id)) return true;
+      }
+      for (const c of item.person_character.subject_conditions || []) {
+        if (c.logic && removeLogicItemById(c.logic, id)) return true;
+      }
+    }
+    if (item.character_person?.conditions) {
+      for (const c of item.character_person.conditions) {
+        if (c.logic && removeLogicItemById(c.logic, id)) return true;
+      }
+      for (const c of item.character_person.subject_conditions || []) {
         if (c.logic && removeLogicItemById(c.logic, id)) return true;
       }
     }
@@ -223,6 +267,26 @@ export function createEmptyCondition(type) {
           type: "",
           mode: "any",
           conditions: [{ logic: newLogicGroup("and") }],
+        },
+      };
+    case "person_character":
+      return {
+        person_character: {
+          type: "",
+          mode: "any",
+          subject_mode: "any",
+          conditions: [{ logic: newLogicGroup("and") }],
+          subject_conditions: [{ logic: newLogicGroup("and") }],
+        },
+      };
+    case "character_person":
+      return {
+        character_person: {
+          type: "",
+          mode: "any",
+          subject_mode: "any",
+          conditions: [{ logic: newLogicGroup("and") }],
+          subject_conditions: [{ logic: newLogicGroup("and") }],
         },
       };
     case "staff":
@@ -367,6 +431,104 @@ function updateGroupInTree(node, targetId, mutator) {
       if (changed) {
         newItems[i] = {
           character: { ...item.character, conditions: newConds },
+        };
+        return { ...node, items: newItems };
+      }
+    }
+    // person_character
+    if (item.person_character?.conditions || item.person_character?.subject_conditions) {
+      let condChanged = false;
+      const newConds = (item.person_character.conditions || []).map((c) => {
+        if (c.logic && !condChanged) {
+          if (c.logic._id === targetId) {
+            condChanged = true;
+            return {
+              logic: { ...c.logic, items: mutator([...c.logic.items]) },
+            };
+          }
+          const updated = updateGroupInTree(c.logic, targetId, mutator);
+          if (updated !== c.logic) {
+            condChanged = true;
+            return { logic: updated };
+          }
+        }
+        return c;
+      });
+      let subjChanged = false;
+      const newSubjConds = (item.person_character.subject_conditions || []).map(
+        (c) => {
+          if (c.logic && !subjChanged) {
+            if (c.logic._id === targetId) {
+              subjChanged = true;
+              return {
+                logic: { ...c.logic, items: mutator([...c.logic.items]) },
+              };
+            }
+            const updated = updateGroupInTree(c.logic, targetId, mutator);
+            if (updated !== c.logic) {
+              subjChanged = true;
+              return { logic: updated };
+            }
+          }
+          return c;
+        },
+      );
+      if (condChanged || subjChanged) {
+        newItems[i] = {
+          person_character: {
+            ...item.person_character,
+            conditions: newConds,
+            subject_conditions: newSubjConds,
+          },
+        };
+        return { ...node, items: newItems };
+      }
+    }
+    // character_person
+    if (item.character_person?.conditions || item.character_person?.subject_conditions) {
+      let condChanged = false;
+      const newConds = (item.character_person.conditions || []).map((c) => {
+        if (c.logic && !condChanged) {
+          if (c.logic._id === targetId) {
+            condChanged = true;
+            return {
+              logic: { ...c.logic, items: mutator([...c.logic.items]) },
+            };
+          }
+          const updated = updateGroupInTree(c.logic, targetId, mutator);
+          if (updated !== c.logic) {
+            condChanged = true;
+            return { logic: updated };
+          }
+        }
+        return c;
+      });
+      let subjChanged = false;
+      const newSubjConds = (item.character_person.subject_conditions || []).map(
+        (c) => {
+          if (c.logic && !subjChanged) {
+            if (c.logic._id === targetId) {
+              subjChanged = true;
+              return {
+                logic: { ...c.logic, items: mutator([...c.logic.items]) },
+              };
+            }
+            const updated = updateGroupInTree(c.logic, targetId, mutator);
+            if (updated !== c.logic) {
+              subjChanged = true;
+              return { logic: updated };
+            }
+          }
+          return c;
+        },
+      );
+      if (condChanged || subjChanged) {
+        newItems[i] = {
+          character_person: {
+            ...item.character_person,
+            conditions: newConds,
+            subject_conditions: newSubjConds,
+          },
         };
         return { ...node, items: newItems };
       }
@@ -601,6 +763,94 @@ export function toggleLogicOp(group, val) {
           if (changed) {
             newItems[i] = {
               character: { ...item.character, conditions: newConds },
+            };
+            return { ...node, items: newItems };
+          }
+        }
+        if (item.person_character?.conditions || item.person_character?.subject_conditions) {
+          let condChanged = false;
+          const newConds = (item.person_character.conditions || []).map((c) => {
+            if (c.logic && !condChanged) {
+              if (c.logic._id === group._id) {
+                condChanged = true;
+                return { logic: { ...c.logic, op: val } };
+              }
+              const updated = cloneAndUpdate(c.logic);
+              if (updated !== c.logic) {
+                condChanged = true;
+                return { logic: updated };
+              }
+            }
+            return c;
+          });
+          let subjChanged = false;
+          const newSubjConds = (
+            item.person_character.subject_conditions || []
+          ).map((c) => {
+            if (c.logic && !subjChanged) {
+              if (c.logic._id === group._id) {
+                subjChanged = true;
+                return { logic: { ...c.logic, op: val } };
+              }
+              const updated = cloneAndUpdate(c.logic);
+              if (updated !== c.logic) {
+                subjChanged = true;
+                return { logic: updated };
+              }
+            }
+            return c;
+          });
+          if (condChanged || subjChanged) {
+            newItems[i] = {
+              person_character: {
+                ...item.person_character,
+                conditions: newConds,
+                subject_conditions: newSubjConds,
+              },
+            };
+            return { ...node, items: newItems };
+          }
+        }
+        if (item.character_person?.conditions || item.character_person?.subject_conditions) {
+          let condChanged = false;
+          const newConds = (item.character_person.conditions || []).map((c) => {
+            if (c.logic && !condChanged) {
+              if (c.logic._id === group._id) {
+                condChanged = true;
+                return { logic: { ...c.logic, op: val } };
+              }
+              const updated = cloneAndUpdate(c.logic);
+              if (updated !== c.logic) {
+                condChanged = true;
+                return { logic: updated };
+              }
+            }
+            return c;
+          });
+          let subjChanged = false;
+          const newSubjConds = (
+            item.character_person.subject_conditions || []
+          ).map((c) => {
+            if (c.logic && !subjChanged) {
+              if (c.logic._id === group._id) {
+                subjChanged = true;
+                return { logic: { ...c.logic, op: val } };
+              }
+              const updated = cloneAndUpdate(c.logic);
+              if (updated !== c.logic) {
+                subjChanged = true;
+                return { logic: updated };
+              }
+            }
+            return c;
+          });
+          if (condChanged || subjChanged) {
+            newItems[i] = {
+              character_person: {
+                ...item.character_person,
+                conditions: newConds,
+                subject_conditions: newSubjConds,
+              },
             };
             return { ...node, items: newItems };
           }
