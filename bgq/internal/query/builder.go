@@ -977,14 +977,31 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 
 	// Subject target: conditions on persons
 
+	// Build appear_eps condition
+	appearEpsCond := "TRUE"
+	if f.AppearEps != nil {
+		var epsErr error
+		appearEpsCond, epsErr = b.buildCondition("sp.appear_eps", f.AppearEps.Operator, fmt.Sprintf("%v", f.AppearEps.Value))
+		if epsErr != nil {
+			return "", fmt.Errorf("appear_eps condition: %w", epsErr)
+		}
+	}
+
 	// none mode: exclude subjects with this position
 	if f.Mode == "none" {
-		if anyPos {
+		if anyPos && appearEpsCond == "TRUE" {
 			return "NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id)", nil
 		}
+		cond := "TRUE"
+		if !anyPos {
+			cond = fmt.Sprintf("sp.position IN (%s)", posIDList)
+		}
+		if appearEpsCond != "TRUE" {
+			cond = cond + " AND " + appearEpsCond
+		}
 		return fmt.Sprintf(
-			"NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id AND sp.position IN (%s))",
-			posIDList), nil
+			"NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id AND %s)",
+			cond), nil
 	}
 
 	// Build person-specific conditions
@@ -999,8 +1016,17 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 		fromClause = "subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id"
 	}
 
+	// Build combined position + appear_eps condition
+	posAppearCond := "TRUE"
+	if !anyPos {
+		posAppearCond = fmt.Sprintf("sp.position IN (%s)", posIDList)
+	}
+	if appearEpsCond != "TRUE" {
+		posAppearCond = posAppearCond + " AND " + appearEpsCond
+	}
+
 	if f.Mode == "all" {
-		if anyPos {
+		if posAppearCond == "TRUE" {
 			return fmt.Sprintf(
 				`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id) AND
 				 (SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND %s) =
@@ -1008,20 +1034,20 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 				fromClause, personWhere), nil
 		}
 		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id AND sp.position IN (%s)) AND
-			 (SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND sp.position IN (%s) AND %s) =
-			 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.subject_id = s.id AND sp.position IN (%s))`,
-			posIDList, fromClause, posIDList, personWhere, posIDList), nil
+			`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id AND %s) AND
+			 (SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND %s AND %s) =
+			 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.subject_id = s.id AND %s)`,
+			posAppearCond, fromClause, posAppearCond, personWhere, posAppearCond), nil
 	}
 
-	if anyPos {
+	if posAppearCond == "TRUE" {
 		return fmt.Sprintf(
 			"EXISTS (SELECT 1 FROM %s WHERE sp.subject_id = s.id AND %s)",
 			fromClause, personWhere), nil
 	}
 	return fmt.Sprintf(
-		"EXISTS (SELECT 1 FROM %s WHERE sp.subject_id = s.id AND sp.position IN (%s) AND %s)",
-		fromClause, posIDList, personWhere), nil
+		"EXISTS (SELECT 1 FROM %s WHERE sp.subject_id = s.id AND %s AND %s)",
+		fromClause, posAppearCond, personWhere), nil
 }
 
 // characterFilter handles character-based filtering for subject queries.

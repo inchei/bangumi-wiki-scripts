@@ -582,6 +582,43 @@
         onchange={(v) => updateCondition(group, idx, "staff", "position", v)}
         placeholder="职位名"
       />
+      {#if $queryTarget === "subject"}
+        <span class="cond-type">参与</span>
+        <select
+          class="select select-sm"
+          value={s.appear_eps?.operator || "contains"}
+          onchange={(e) => {
+            const op = e.target.value;
+            const cur = s.appear_eps || { operator: "contains", value: "" };
+            updateCondition(group, idx, "staff", "appear_eps", {
+              ...cur,
+              operator: op,
+            });
+          }}
+        >
+          <option value="contains">包含</option>
+          <option value="not_contains">不包含</option>
+          <option value="regex">正则</option>
+          <option value="empty">为空</option>
+        </select>
+        {#if (s.appear_eps?.operator || "contains") !== "empty"}
+          <input
+            class="input"
+            value={s.appear_eps?.value || ""}
+            onchange={(e) => {
+              const cur = s.appear_eps || {
+                operator: "contains",
+                value: "",
+              };
+              updateCondition(group, idx, "staff", "appear_eps", {
+                ...cur,
+                value: e.target.value,
+              });
+            }}
+            placeholder="剧集ID"
+          />
+        {/if}
+      {/if}
       <select
         class="select select-sm"
         value={s.mode}

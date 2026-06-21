@@ -348,9 +348,10 @@ type CharacterRelationFilter struct {
 // StaffFilter filters by staff/person.
 // Conditions support all filter types (nested), allowing full filtering on persons (subject target) or subjects (person target).
 type StaffFilter struct {
-	Position   string   `yaml:"position" json:"position"`     // Chinese position name (e.g., "原作")
-	Mode       string   `yaml:"mode" json:"mode"`             // any, all, none
-	Conditions []Filter `yaml:"conditions" json:"conditions"` // conditions on person (subject target) or subject (person target)
+	Position   string      `yaml:"position" json:"position"`     // Chinese position name (e.g., "原作")
+	AppearEps  *FieldFilter `yaml:"appear_eps,omitempty" json:"appear_eps,omitempty"` // filter on appear_eps field
+	Mode       string      `yaml:"mode" json:"mode"`             // any, all, none
+	Conditions []Filter    `yaml:"conditions" json:"conditions"` // conditions on person (subject target) or subject (person target)
 }
 
 // CharacterFilter filters by character in a subject.
