@@ -17,6 +17,7 @@
   } from "../stores.js";
   import FilterTree from "./FilterTree.svelte";
   import AwesompleteInput from "./AwesompleteInput.svelte";
+  import RestrictedSelect from "./RestrictedSelect.svelte";
 
   /** @type {{ item: object, group: object, idx: number, ctx: string }} */
   let { item, group, idx, ctx } = $props();
@@ -148,7 +149,7 @@
     </select>
   {:else if condType === "meta_tag"}
     <span class="cond-type">公共标签</span>
-    <AwesompleteInput
+    <RestrictedSelect
       value={item.meta_tag.value}
       suggestions={$schemaOptions.meta_tags || []}
       onchange={(v) => updateCondition(group, idx, "meta_tag", "value", v)}
@@ -189,7 +190,7 @@
     />
   {:else if condType === "count"}
     <span class="cond-type">数量</span>
-    <AwesompleteInput
+    <RestrictedSelect
       value={item.count.what}
       suggestions={["ep"].concat($schemaOptions.relations || [])}
       onchange={(v) => updateCondition(group, idx, "count", "what", v)}
@@ -244,7 +245,7 @@
     {@const r = item.relation}
     <div class="cond-row-inner">
       <span class="cond-type">关系</span>
-      <AwesompleteInput
+      <RestrictedSelect
         value={r.type}
         suggestions={$schemaOptions.relations || []}
         onchange={(v) => updateCondition(group, idx, "relation", "type", v)}
@@ -281,7 +282,7 @@
       <span class="cond-type"
         >{$queryTarget === "person" ? "关联" : "人物"}</span
       >
-      <AwesompleteInput
+      <RestrictedSelect
         value={s.position}
         suggestions={$schemaOptions.positions || []}
         onchange={(v) => updateCondition(group, idx, "staff", "position", v)}
