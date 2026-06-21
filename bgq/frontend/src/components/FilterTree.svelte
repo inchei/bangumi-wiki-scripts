@@ -86,8 +86,7 @@
       for (const k in cfc) opts.push({ value: k, label: cfc[k].label });
       if (qTarget === "character") {
         opts.push({ value: "character_relation", label: "角色关系" });
-      }
-      if (qTarget === "character") {
+        opts.push({ value: "character_person", label: "人物" });
         opts.push({ value: "character", label: "条目" });
       }
     } else if (currentCtx === CTX_PERSON) {
@@ -97,6 +96,7 @@
       for (const k in pfc) opts.push({ value: k, label: pfc[k].label });
       if (qTarget === "person") {
         opts.push({ value: "person_relation", label: "人物关系" });
+        opts.push({ value: "person_character", label: "角色" });
       }
       opts.push({ value: "staff", label: "关联" });
     } else {

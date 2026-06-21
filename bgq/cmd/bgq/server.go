@@ -219,6 +219,7 @@ func (s *server) handleSchemaOptions(w http.ResponseWriter, r *http.Request) {
 		"person_relations":       model.PersonRelationNames(),
 		"character_relations":    model.CharacterRelationNames(),
 		"character_assoc_types":  model.CharacterAssociationTypeNames(),
+		"person_char_types":      model.PersonCharacterTypeNames(),
 		"positions":              model.PositionsByType(typeCode),
 		"meta_tags":              model.MetaTagsForType(typeCode),
 		"types":                  model.TypeCNToNum,

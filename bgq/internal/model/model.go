@@ -113,6 +113,35 @@ func CharacterAssociationTypeNames() []string {
 	return names
 }
 
+// PersonCharacter represents a person-character-subject three-way relationship.
+type PersonCharacter struct {
+	PersonID    int    `json:"person_id"`
+	SubjectID   int    `json:"subject_id"`
+	CharacterID int    `json:"character_id"`
+	Type        int    `json:"type"`
+	Summary     string `json:"summary"`
+}
+
+// PersonCharacterTypes maps person_character type codes to Chinese names (CV type).
+var PersonCharacterTypes = map[int]string{
+	0: "CV",
+	1: "译配",
+	2: "演员",
+	3: "中配",
+	4: "日配",
+	5: "英配",
+	6: "韩配",
+}
+
+// PersonCharacterTypeNames returns all person character type names.
+func PersonCharacterTypeNames() []string {
+	var names []string
+	for _, name := range PersonCharacterTypes {
+		names = append(names, name)
+	}
+	return names
+}
+
 // SubjectType represents a Bangumi subject type.
 type SubjectType int
 
