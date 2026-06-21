@@ -42,7 +42,12 @@ function cleanFilter(f) {
     "tag",
     "meta_tag",
     "relation",
+    "person_relation",
+    "character_relation",
     "staff",
+    "character",
+    "person_character",
+    "character_person",
     "episode",
     "count",
   ]) {
@@ -54,10 +59,26 @@ function cleanFilter(f) {
 }
 
 function cleanValue(val, key) {
-  if (key === "relation" || key === "staff") {
+  if (
+    key === "relation" ||
+    key === "person_relation" ||
+    key === "character_relation" ||
+    key === "staff" ||
+    key === "character"
+  ) {
     const out = { ...val };
     if (out.conditions) {
       out.conditions = cleanFilters(out.conditions);
+    }
+    return out;
+  }
+  if (key === "person_character" || key === "character_person") {
+    const out = { ...val };
+    if (out.conditions) {
+      out.conditions = cleanFilters(out.conditions);
+    }
+    if (out.subject_conditions) {
+      out.subject_conditions = cleanFilters(out.subject_conditions);
     }
     return out;
   }
@@ -130,7 +151,12 @@ function normalizeFilter(f) {
     "tag",
     "meta_tag",
     "relation",
+    "person_relation",
+    "character_relation",
     "staff",
+    "character",
+    "person_character",
+    "character_person",
     "episode",
     "count",
   ]) {
@@ -142,10 +168,26 @@ function normalizeFilter(f) {
 }
 
 function normalizeFilterValue(val, key) {
-  if (key === "relation" || key === "staff") {
+  if (
+    key === "relation" ||
+    key === "person_relation" ||
+    key === "character_relation" ||
+    key === "staff" ||
+    key === "character"
+  ) {
     const out = { ...val };
     if (out.conditions) {
       out.conditions = normalizeFilters(out.conditions);
+    }
+    return out;
+  }
+  if (key === "person_character" || key === "character_person") {
+    const out = { ...val };
+    if (out.conditions) {
+      out.conditions = normalizeFilters(out.conditions);
+    }
+    if (out.subject_conditions) {
+      out.subject_conditions = normalizeFilters(out.subject_conditions);
     }
     return out;
   }
