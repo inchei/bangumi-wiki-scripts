@@ -102,7 +102,16 @@
       </select>
     {/if}
 
-    {#if fc && fc.type === "select"}
+    {#if fc && fc.type === "select" && fc.dynamic === "platform"}
+      <RestrictedSelect
+        value={String(item.field.value || "")}
+        suggestions={selectOpts.map((opt) => opt[1])}
+        getCode={(label) =>
+          selectOpts.find((opt) => opt[1] === label)?.[0] ?? ""}
+        onchange={(v) => updateCondition(group, idx, "field", "value", v)}
+        placeholder="子类型"
+      />
+    {:else if fc && fc.type === "select"}
       {#each selectOpts as [v, l] (v)}
         <button
           class="radio-pill"

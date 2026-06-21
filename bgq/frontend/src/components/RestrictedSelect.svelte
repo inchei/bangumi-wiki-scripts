@@ -1,16 +1,26 @@
 <script>
-  /** @type {{ value?: string, suggestions?: string[], onchange?: (v: string) => void, placeholder?: string }} */
+  /**
+   * @type {{ value?: string, suggestions?: string[], onchange?: (v: string) => void, placeholder?: string, getCode?: (label: string) => string }}
+   */
   let {
     value = "",
     suggestions = [],
     onchange = () => {},
     placeholder = "",
+    getCode = undefined,
   } = $props();
 
   let open = $state(false);
   let filterText = $state("");
   let hoverIndex = $state(0);
   let inputEl;
+
+  // When getCode is provided, find the display label for the current value
+  const displayLabel = $derived(
+    getCode
+      ? suggestions.find((s) => getCode(s) === value) || value
+      : value,
+  );
 
   const filtered = $derived(
     filterText
@@ -27,7 +37,7 @@
   }
 
   function handleFocus() {
-    filterText = value || "";
+    filterText = displayLabel || "";
     open = true;
   }
 
@@ -35,9 +45,9 @@
     setTimeout(() => {
       open = false;
       if (filterText && suggestions.includes(filterText)) {
-        onchange(filterText);
+        onchange(getCode ? getCode(filterText) : filterText);
       } else {
-        filterText = value || "";
+        filterText = displayLabel || "";
       }
     }, 150);
   }
@@ -56,12 +66,12 @@
       }
     } else if (e.key === "Escape") {
       open = false;
-      filterText = value || "";
+      filterText = displayLabel || "";
     }
   }
 
   function selectItem(item) {
-    onchange(item);
+    onchange(getCode ? getCode(item) : item);
     filterText = item;
     open = false;
   }
@@ -90,7 +100,7 @@
           class="rs-item"
           class:hover={i === hoverIndex}
           role="option"
-          aria-selected={item === value}
+          aria-selected={item === displayLabel}
           onmousedown={(e) => {
             e.preventDefault();
             selectItem(item);
