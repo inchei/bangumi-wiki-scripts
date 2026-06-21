@@ -1,4 +1,4 @@
-data_dir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive"
+data_dir: "../bangumi_archive"
 filters:
   - type:
       value: 2

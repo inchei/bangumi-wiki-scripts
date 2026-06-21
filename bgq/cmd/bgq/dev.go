@@ -10,7 +10,7 @@ import (
 
 func startDevMode(bgqDir, dataDir, listen string) {
 	// Mark that we're running under air, so the child binary won't re-exec
-	os.Setenv("BGQ_AIR", "1")
+	_ = os.Setenv("BGQ_AIR", "1")
 
 	absDir, err := filepath.Abs(bgqDir)
 	if err != nil {

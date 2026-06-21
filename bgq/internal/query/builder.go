@@ -16,7 +16,6 @@ type SQLBuilder struct {
 	useDB     bool   // if true, reference tables directly instead of JSON CTEs
 	target    string // "subject" or "person"
 	mainAlias string // "s" or "p"
-	paramIdx  int
 }
 
 // clauseContext controls how filters are generated in different SQL contexts.
@@ -106,7 +105,7 @@ func (b *SQLBuilder) Build() (string, error) {
 		sql.WriteString("\n")
 	}
 
-	sql.WriteString(fmt.Sprintf("LIMIT %d", limit))
+	fmt.Fprintf(&sql, "LIMIT %d", limit)
 
 	return sql.String(), nil
 }
@@ -223,10 +222,6 @@ func (b *SQLBuilder) buildClausesWithOp(filters []config.Filter, ctx clauseConte
 		joined = "(" + joined + ")"
 	}
 	return joined, nil
-}
-
-func (b *SQLBuilder) filterToSQL(f config.Filter, idx int) (string, error) {
-	return b.filterToCtx(f, clauseContext{alias: b.mainAlias}, idx)
 }
 
 // filterToCtx dispatches a single filter to the appropriate handler based on context.
@@ -1067,9 +1062,6 @@ func isDirectField(field string) bool {
 	}
 }
 
-// mainDot returns the main table alias followed by a dot (e.g., "s." or "p.").
-func (b *SQLBuilder) mainDot() string { return b.mainAlias + "." }
-
 // Helper functions
 
 func quoteIdent(s string) string {
@@ -1108,12 +1100,6 @@ func escapeRegex(s string) string {
 		s = strings.ReplaceAll(s, ch, `\`+ch)
 	}
 	return s
-}
-
-func regexEscapeFieldName(name string) string {
-	// For Chinese field names, most regex chars don't appear
-	// But be safe and escape
-	return escapeRegex(name)
 }
 
 func (b *SQLBuilder) safeNum(v string) string {

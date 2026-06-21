@@ -1,30 +1,11 @@
+# 漫画系列关联了小说类型的单行本（platform 1001=漫画, 1002=小说）
 filters:
-  - {
-      "type": {
-        "value": "书籍"
-      }
-    }
-  - {
-      "field": {
-        "field": "platform",
-        "operator": "eq",
-        "value": "1001"
-      }
-    }
-  - {
-      "relation": {
-        "type": "单行本",
-        "mode": "any",
-        "conditions": [
-          {
-            "field": {
-              "field": "platform",
-              "operator": "eq",
-              "value": "1002"
-            }
-          }
-        ]
-      }
-    }
+  - type: 书籍
+  - field: { field: platform, operator: eq, value: "1001" }
+  - relation:
+      type: 单行本
+      mode: any
+      conditions:
+        - field: { field: platform, operator: eq, value: "1002" }
 output:
-  columns: [id,name,name_cn]
+  columns: [id, name, name_cn]
