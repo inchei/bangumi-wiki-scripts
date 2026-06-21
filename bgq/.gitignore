@@ -1,3 +1,13 @@
 # Air live-reload
 tmp/
 .air-dev.toml
+
+# Frontend build
+frontend/node_modules/
+frontend/dist/
+
+# Binaries
+bgq
+bin/bgq
+bin/duckdb
+bin/duckdb.zip

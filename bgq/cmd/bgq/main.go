@@ -10,7 +10,6 @@ import (
 
 	"github.com/inchei/bangumi-query/internal/config"
 	"github.com/inchei/bangumi-query/internal/query"
-	webui "github.com/inchei/bangumi-query/internal/server"
 )
 
 const (
@@ -43,8 +42,6 @@ func main() {
 		cmdServe(os.Args[2:])
 	case "ingest":
 		cmdIngest(os.Args[2:])
-	case "export-deploy":
-		cmdExportDeploy(os.Args[2:])
 	case "interactive":
 		cmdInteractive(os.Args[2:])
 	case "version", "--version", "-v":
@@ -347,23 +344,6 @@ func runQuery(cfg *config.Config, dataDir, outputFile string, verbose bool) {
 	default:
 		fmt.Print(result.FormatTable(50))
 	}
-}
-
-func cmdExportDeploy(args []string) {
-	output := "deploy/index.html"
-	for i := 0; i < len(args); i++ {
-		if args[i] == "--output" || args[i] == "-o" {
-			if i+1 < len(args) {
-				output = args[i+1]
-				i++
-			}
-		}
-	}
-	if err := os.WriteFile(output, []byte(webui.WebUIHTML), 0644); err != nil {
-		fmt.Fprintf(os.Stderr, "写入失败: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Printf("已导出到 %s (%d bytes)\n", output, len(webui.WebUIHTML))
 }
 
 func resolveDataDir(dataDir, configFile string) string {
