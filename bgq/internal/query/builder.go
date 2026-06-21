@@ -519,6 +519,17 @@ func (b *SQLBuilder) typeFilterForAlias(f *config.TypeFilter, alias string) (str
 
 func (b *SQLBuilder) fieldFilterForAlias(f *config.FieldFilter, alias string) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
+	// Special case: rank 0 means no ranking
+	if f.Field == "rank" {
+		col := alias + "." + quoteIdent("rank")
+		switch f.Operator {
+		case "empty":
+			return fmt.Sprintf("(%s = 0 OR %s IS NULL)", col, col), nil
+		case "gt", "gte", "lt", "lte":
+			cond, _ := b.buildCondition(col, f.Operator, valueStr)
+			return fmt.Sprintf("%s != 0 AND %s", col, cond), nil
+		}
+	}
 	if isDirectField(f.Field) {
 		return b.buildCondition(alias+"."+quoteIdent(f.Field), f.Operator, valueStr)
 	}
@@ -894,13 +905,10 @@ func extractNum(expr string) string {
 // normalizeDate wraps an expression to safely parse various date formats.
 // Handles: "2007-12-15", "2007-12", "2007年12月15日", "2007年12月", "2007年"
 // All partial dates default to the 1st. Invalid dates return NULL via TRY_CAST.
-// Uses minimal nesting to avoid DuckDB expression depth limits.
 func normalizeDate(expr string) string {
-	// Step 1: Replace Chinese date markers (年→-, 月→-) with a single regexp_replace
-	// Step 2: Remove 日 suffix
-	// Step 3: Trim and pad partial dates
+	// Replace Chinese date markers and trim; TRY_CAST handles trailing control chars
 	normalized := fmt.Sprintf(
-		"regexp_replace(regexp_replace(TRIM(%s), '[年月]', '-'), '日', '')",
+		"replace(replace(replace(TRIM(%s), '年', '-'), '月', '-'), '日', '')",
 		expr,
 	)
 	padded := fmt.Sprintf(

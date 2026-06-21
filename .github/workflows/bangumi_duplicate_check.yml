@@ -112,41 +112,6 @@ jobs:
           echo ""
           echo "  筛选完成: ${success} 成功, ${fail} 失败"
 
-      # ===== 构建 Web 数据库 =====
-      - name: 构建 Web 数据库
-        run: |
-          set -e
-          DATA_DIR="${GITHUB_WORKSPACE}/bangumi_archive"
-          DUCKDB="${GITHUB_WORKSPACE}/bgq/bin/duckdb"
-          DB_FILE="/tmp/bangumi_web.db"
-
-          echo "数据目录: ${DATA_DIR}"
-          echo "构建 bangumi_web.db ..."
-
-          printf '%s\n' \
-            "CREATE TABLE subjects AS" \
-            "  SELECT id, type, name, name_cn, infobox, platform," \
-            "         nsfw, score, rank, date, series, tags, meta_tags" \
-            "  FROM read_json_auto('${DATA_DIR}/subject.jsonlines', format='newline_delimited');" \
-            "CREATE TABLE subject_relations AS" \
-            "  SELECT subject_id, relation_type, related_subject_id, \"order\"" \
-            "  FROM read_json_auto('${DATA_DIR}/subject-relations.jsonlines', format='newline_delimited');" \
-            "CREATE TABLE subject_persons AS" \
-            "  SELECT person_id, subject_id, \"position\", appear_eps" \
-            "  FROM read_json_auto('${DATA_DIR}/subject-persons.jsonlines', format='newline_delimited');" \
-            "CREATE TABLE episodes AS" \
-            "  SELECT id, name, name_cn, airdate, disc, duration, subject_id, sort, type" \
-            "  FROM read_json_auto('${DATA_DIR}/episode.jsonlines', format='newline_delimited');" \
-            "CREATE INDEX idx_sub_type ON subjects(type);" \
-            "CREATE INDEX idx_sub_score ON subjects(score);" \
-            "CREATE INDEX idx_rel_subject ON subject_relations(subject_id);" \
-            "CREATE INDEX idx_ep_subject ON episodes(subject_id);" \
-            "CREATE INDEX idx_per_subject ON subject_persons(subject_id);" \
-            > /tmp/build_web_db.sql
-
-          "${DUCKDB}" "${DB_FILE}" -f /tmp/build_web_db.sql
-          echo "数据库大小: $(du -h ${DB_FILE} | cut -f1)"
-
       # ===== 上传产物 =====
       - name: 上传产物
         uses: actions/upload-artifact@v4
@@ -189,21 +154,3 @@ jobs:
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: 导出并准备网页版
-        run: |
-          ${GITHUB_WORKSPACE}/bgq/bin/bgq export-deploy --output bgq/deploy/index.html
-          # Download DuckDB-WASM worker/wasm files (same-origin required)
-          CDN="https://cdn.jsdelivr.net/npm/@duckdb/duckdb-wasm@1.29.0/dist"
-          for f in duckdb-mvp.wasm duckdb-eh.wasm duckdb-browser-mvp.worker.js duckdb-browser-eh.worker.js; do
-            curl -fsSL "${CDN}/${f}" -o bgq/deploy/"${f}"
-          done
-          ls -lh bgq/deploy/
-
-      - name: 部署网页版
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: bgq/deploy
-          destination_dir: bgq
-          commit_message: '部署网页版 ${{ env.TAG_NAME }}'

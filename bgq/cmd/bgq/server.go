@@ -13,9 +13,8 @@ import (
 
 	"github.com/inchei/bangumi-query/internal/config"
 	"github.com/inchei/bangumi-query/internal/model"
-	srv "github.com/inchei/bangumi-query/internal/server"
 	"github.com/inchei/bangumi-query/internal/query"
-	webui "github.com/inchei/bangumi-query/internal/server"
+	srv "github.com/inchei/bangumi-query/internal/server"
 	"gopkg.in/yaml.v3"
 )
 
@@ -415,7 +414,7 @@ func getCWD() string {
 func (s *server) handleStatic(w http.ResponseWriter, r *http.Request) {
 	// Serve the embedded SPA
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(webui.WebUIHTML))
+	w.Write([]byte(srv.WebUIHTML))
 }
 
 func (s *server) listDataFiles() []map[string]string {
