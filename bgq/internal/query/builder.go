@@ -421,15 +421,22 @@ func (b *SQLBuilder) metaTagFilter(f *config.TagFilter) (string, error) {
 
 // relationFilter handles relation-based filtering.
 func (b *SQLBuilder) relationFilter(f *config.RelationFilter) (string, error) {
-	// Resolve relation type name to IDs
-	relIDs := b.getRelationIDsForName(f.Type)
-	if len(relIDs) == 0 {
-		return "", fmt.Errorf("未找到关系类型: %s", f.Type)
+	// Resolve relation type name to IDs; empty or "任意" means any relation type
+	anyType := f.Type == "" || f.Type == "任意"
+	var relIDList string
+	if !anyType {
+		relIDs := b.getRelationIDsForName(f.Type)
+		if len(relIDs) == 0 {
+			return "", fmt.Errorf("未找到关系类型: %s", f.Type)
+		}
+		relIDList = intListToSQL(relIDs)
 	}
-	relIDList := intListToSQL(relIDs)
 
 	// For "none" mode: no matching relations should exist
 	if f.Mode == "none" {
+		if anyType {
+			return "NOT EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id)", nil
+		}
 		return fmt.Sprintf(
 			"NOT EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (%s))",
 			relIDList), nil
@@ -437,7 +444,9 @@ func (b *SQLBuilder) relationFilter(f *config.RelationFilter) (string, error) {
 
 	// Build subquery for related subjects
 	var subClauses []string
-	subClauses = append(subClauses, fmt.Sprintf("r.relation_type IN (%s)", relIDList))
+	if !anyType {
+		subClauses = append(subClauses, fmt.Sprintf("r.relation_type IN (%s)", relIDList))
+	}
 
 	// Filter by conditions on the related subject (support all filter types = nested)
 	relatedWhere, err := b.buildWhereForAlias(f.Conditions, "rs")
@@ -449,10 +458,20 @@ func (b *SQLBuilder) relationFilter(f *config.RelationFilter) (string, error) {
 	}
 
 	subWhere := strings.Join(subClauses, " AND ")
+	if subWhere == "" {
+		subWhere = "TRUE"
+	}
 
 	// For "all" mode: count of matching relations = count of all relations of this type
 	if f.Mode == "all" {
 		nestedWhere, _ := b.buildWhereForAlias(f.Conditions, "rs")
+		if anyType {
+			return fmt.Sprintf(
+				`EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id) AND
+				 (SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND %s) =
+				 (SELECT COUNT(*) FROM subject_relations r WHERE r.subject_id = s.id)`,
+				nestedWhere), nil
+		}
 		return fmt.Sprintf(
 			`EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (%s)) AND
 			 (SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (%s) AND %s) =
@@ -583,23 +602,34 @@ func (b *SQLBuilder) countFilterForAlias(f *config.CountFilter, alias string) (s
 
 // staffFilter handles staff/person-based filtering.
 func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
-	posIDs := b.getPositionIDsForName(f.Position)
-	if len(posIDs) == 0 {
-		return "", fmt.Errorf("未找到职位类型: %s", f.Position)
+	// Resolve position name to IDs; empty or "任意" means any position
+	anyPos := f.Position == "" || f.Position == "任意"
+	var posIDList string
+	if !anyPos {
+		posIDs := b.getPositionIDsForName(f.Position)
+		if len(posIDs) == 0 {
+			return "", fmt.Errorf("未找到职位类型: %s", f.Position)
+		}
+		posIDList = intListToSQL(posIDs)
 	}
-	posIDList := intListToSQL(posIDs)
 
 	// For person target: conditions on associated subjects (like relation filter)
 	if b.target == "person" {
 		// none mode: exclude persons with this position
 		if f.Mode == "none" {
+			if anyPos {
+				return "NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id)", nil
+			}
 			return fmt.Sprintf(
 				"NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s))",
 				posIDList), nil
 		}
 
 		// Build conditions on associated subjects using buildWhereForAlias (same as relation filter)
-		subClauses := []string{fmt.Sprintf("sp.position IN (%s)", posIDList)}
+		var subClauses []string
+		if !anyPos {
+			subClauses = append(subClauses, fmt.Sprintf("sp.position IN (%s)", posIDList))
+		}
 		if len(f.Conditions) > 0 {
 			relatedWhere, err := b.buildWhereForAlias(f.Conditions, "rs")
 			if err != nil {
@@ -610,11 +640,21 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 			}
 		}
 		subWhere := strings.Join(subClauses, " AND ")
+		if subWhere == "" {
+			subWhere = "TRUE"
+		}
 
 		if f.Mode == "all" {
 			condWhere := "TRUE"
 			if len(f.Conditions) > 0 {
 				condWhere, _ = b.buildWhereForAlias(f.Conditions, "rs")
+			}
+			if anyPos {
+				return fmt.Sprintf(
+					`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id) AND
+					 (SELECT COUNT(*) FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND %s) =
+					 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.person_id = p.person_id)`,
+					condWhere), nil
 			}
 			return fmt.Sprintf(
 				`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s)) AND
@@ -632,6 +672,9 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 
 	// none mode: exclude subjects with this position
 	if f.Mode == "none" {
+		if anyPos {
+			return "NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id)", nil
+		}
 		return fmt.Sprintf(
 			"NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id AND sp.position IN (%s))",
 			posIDList), nil
@@ -650,6 +693,13 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 	}
 
 	if f.Mode == "all" {
+		if anyPos {
+			return fmt.Sprintf(
+				`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id) AND
+				 (SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND %s) =
+				 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.subject_id = s.id)`,
+				fromClause, personWhere), nil
+		}
 		return fmt.Sprintf(
 			`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id AND sp.position IN (%s)) AND
 			 (SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND sp.position IN (%s) AND %s) =
@@ -657,6 +707,11 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 			posIDList, fromClause, posIDList, personWhere, posIDList), nil
 	}
 
+	if anyPos {
+		return fmt.Sprintf(
+			"EXISTS (SELECT 1 FROM %s WHERE sp.subject_id = s.id AND %s)",
+			fromClause, personWhere), nil
+	}
 	return fmt.Sprintf(
 		"EXISTS (SELECT 1 FROM %s WHERE sp.subject_id = s.id AND sp.position IN (%s) AND %s)",
 		fromClause, posIDList, personWhere), nil
