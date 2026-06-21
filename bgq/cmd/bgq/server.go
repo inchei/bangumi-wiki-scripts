@@ -361,14 +361,17 @@ func (s *server) handleConfigExport(w http.ResponseWriter, r *http.Request) {
 		Limit:   body.Limit,
 	}
 
-	out, err := yaml.Marshal(cfg)
-	if err != nil {
+	var buf strings.Builder
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(1)
+	if err := enc.Encode(cfg); err != nil {
 		writeJSON(w, http.StatusInternalServerError, apiError{Error: "YAML序列化失败: " + err.Error()})
 		return
 	}
+	enc.Close()
 
 	w.Header().Set("Content-Type", "text/yaml; charset=utf-8")
-	w.Write(out)
+	w.Write([]byte(buf.String()))
 }
 
 func (s *server) handleDebug(w http.ResponseWriter, r *http.Request) {
