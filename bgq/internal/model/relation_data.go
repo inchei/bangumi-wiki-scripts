@@ -86,3 +86,33 @@ var RealRelations = map[int]string{
 	14: "联动",
 	99: "其他",
 }
+
+// PersonRelationTypes — 人物-人物关系类型 (person_type=prsn)
+// Source: https://github.com/bangumi/common/blob/master/person_relations.yml
+var PersonRelationTypes = map[int]string{
+	1001: "家人",
+	1002: "配偶",
+	1003: "离异",
+	1004: "创始人",
+	1005: "员工",
+	1006: "成员",
+	1008: "从属事业",
+	1009: "主体事业",
+	1010: "品牌",
+	1011: "原成员",
+	1012: "团体",
+	1013: "老师",
+	1014: "学生",
+	1015: "同事",
+	1016: "运营",
+	1017: "经纪公司",
+}
+
+// PersonRelationNames returns all person relation type names.
+func PersonRelationNames() []string {
+	var names []string
+	for _, name := range PersonRelationTypes {
+		names = append(names, name)
+	}
+	return names
+}
