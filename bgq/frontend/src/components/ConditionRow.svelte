@@ -268,7 +268,7 @@
       <span class="cond-type">关系</span>
       <RestrictedSelect
         value={r.type}
-        suggestions={$schemaOptions.relations || []}
+        suggestions={["任意"].concat($schemaOptions.relations || [])}
         onchange={(v) => updateCondition(group, idx, "relation", "type", v)}
         placeholder="关系名"
       />
@@ -305,7 +305,7 @@
       >
       <RestrictedSelect
         value={s.position}
-        suggestions={$schemaOptions.positions || []}
+        suggestions={["任意"].concat($schemaOptions.positions || [])}
         onchange={(v) => updateCondition(group, idx, "staff", "position", v)}
         placeholder="职位名"
       />
