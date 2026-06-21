@@ -1,0 +1,7 @@
+# 标题含序号（单行本）但未关联系列
+filters:
+  - type: 书籍
+  - field: { field: name, operator: regex, value: "\\(\\d{1,2}\\)" }
+  - relation: { type: 系列, mode: none }
+output:
+  columns: [id, name, name_cn]

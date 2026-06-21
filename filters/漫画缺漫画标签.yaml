@@ -1,0 +1,8 @@
+# platform 为漫画（1001）但没有"漫画"标签，且未关联系列
+filters:
+  - type: 书籍
+  - field: { field: platform, operator: eq, value: "1001" }
+  - meta_tag: { value: "漫画", operator: contains, negate: true }
+  - relation: { type: 系列, mode: none }
+output:
+  columns: [id, name, name_cn]

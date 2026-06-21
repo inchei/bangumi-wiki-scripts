@@ -1,22 +1,7 @@
+# 标题含有序号（如 (1)、(02)）却被标记为系列
 filters:
-  - {
-      "type": {
-        "value": "书籍"
-      }
-    }
-  - {
-      "field": {
-        "field": "series",
-        "operator": "eq",
-        "value": "true"
-      }
-    }
-  - {
-      "field": {
-        "field": "name",
-        "operator": "regex",
-        "value": "\\(\\d{1,2}\\)"
-      }
-    }
+  - type: 书籍
+  - field: { field: series, operator: eq, value: "true" }
+  - field: { field: name, operator: regex, value: "\\(\\d{1,2}\\)" }
 output:
-  columns: [id,name,name_cn]
+  columns: [id, name, name_cn]

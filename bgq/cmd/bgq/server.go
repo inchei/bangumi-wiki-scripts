@@ -8,36 +8,27 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/inchei/bangumi-query/internal/config"
 	"github.com/inchei/bangumi-query/internal/model"
 	"github.com/inchei/bangumi-query/internal/query"
 	srv "github.com/inchei/bangumi-query/internal/server"
-	"gopkg.in/yaml.v3"
 )
 
 type server struct {
-	dataDir    string
-	mu         sync.RWMutex
-	queryCache map[string]*cachedQuery
-}
-
-type cachedQuery struct {
-	Result    *query.QueryResult
-	Timestamp time.Time
+	dataDir string
 }
 
 type apiQueryRequest struct {
-	Target     string         `json:"target,omitempty"`
-	Conditions []string       `json:"conditions,omitempty"`
-	Filters    []config.Filter `json:"filters,omitempty"`
-	Columns    []string       `json:"columns,omitempty"`
+	Target     string            `json:"target,omitempty"`
+	Conditions []string          `json:"conditions,omitempty"`
+	Filters    []config.Filter   `json:"filters,omitempty"`
+	Columns    []string          `json:"columns,omitempty"`
 	Sort       []config.SortRule `json:"sort,omitempty"`
-	Limit      int            `json:"limit,omitempty"`
-	Format     string         `json:"format,omitempty"`
-	YAML       string         `json:"yaml,omitempty"`
+	Limit      int               `json:"limit,omitempty"`
+	Format     string            `json:"format,omitempty"`
+	YAML       string            `json:"yaml,omitempty"`
 }
 
 type apiError struct {
@@ -48,7 +39,7 @@ type apiError struct {
 type apiSchemaFields struct {
 	DirectFields  []string            `json:"direct_fields"`
 	SubjectTypes  map[string]int      `json:"subject_types"`
-	RelationTypes map[string][]string `json:"relation_types"` // type -> relation names
+	RelationTypes map[string][]string `json:"relation_types"`  // type -> relation names
 	StaffPosition map[string][]string `json:"staff_positions"` // type -> position names
 }
 
@@ -65,22 +56,15 @@ func startServer(dataDir, listenAddr string) {
 	}
 
 	s := &server{
-		dataDir:    dataDir,
-		queryCache: make(map[string]*cachedQuery),
+		dataDir: dataDir,
 	}
 
 	mux := http.NewServeMux()
 
 	// API endpoints
 	mux.HandleFunc("/api/query", s.handleQuery)
-	mux.HandleFunc("/api/config/parse", s.handleConfigParse)
-	mux.HandleFunc("/api/config/export", s.handleConfigExport)
 	mux.HandleFunc("/api/schema/fields", s.handleSchemaFields)
 	mux.HandleFunc("/api/schema/options", s.handleSchemaOptions)
-	mux.HandleFunc("/api/schema/relations", s.handleSchemaRelations)
-	mux.HandleFunc("/api/schema/positions", s.handleSchemaPositions)
-	mux.HandleFunc("/api/schema/types", s.handleSchemaTypes)
-	mux.HandleFunc("/api/stats", s.handleStats)
 	mux.HandleFunc("/api/health", s.handleHealth)
 	mux.HandleFunc("/api/debug", s.handleDebug)
 
@@ -226,7 +210,7 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 func (s *server) handleSchemaOptions(w http.ResponseWriter, r *http.Request) {
 	typeCode := 0
 	if t := r.URL.Query().Get("type"); t != "" {
-		fmt.Sscanf(t, "%d", &typeCode)
+		_, _ = fmt.Sscanf(t, "%d", &typeCode)
 	}
 
 	resp := map[string]interface{}{
@@ -261,116 +245,8 @@ func (s *server) handleSchemaFields(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func (s *server) handleSchemaRelations(w http.ResponseWriter, r *http.Request) {
-	resp := getRelationTypesBySubjectType()
-	writeJSON(w, http.StatusOK, resp)
-}
-
-func (s *server) handleSchemaPositions(w http.ResponseWriter, r *http.Request) {
-	resp := getStaffPositionsBySubjectType()
-	writeJSON(w, http.StatusOK, resp)
-}
-
-func (s *server) handleSchemaTypes(w http.ResponseWriter, r *http.Request) {
-	resp := map[string]interface{}{
-		"types": model.TypeCNToNum,
-		"type_names": map[int]string{
-			1: "书籍", 2: "动画", 3: "音乐", 4: "游戏", 6: "三次元",
-		},
-	}
-	writeJSON(w, http.StatusOK, resp)
-}
-
-func (s *server) handleStats(w http.ResponseWriter, r *http.Request) {
-	resp := map[string]interface{}{
-		"data_dir": s.dataDir,
-		"files":    s.listDataFiles(),
-	}
-	writeJSON(w, http.StatusOK, resp)
-}
-
 func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
-}
-
-// handleConfigParse parses YAML (or JSON) config text and returns structured config.
-func (s *server) handleConfigParse(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		writeJSON(w, http.StatusMethodNotAllowed, apiError{Error: "只支持POST请求"})
-		return
-	}
-
-	var body struct {
-		YAML string `json:"yaml"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusBadRequest, apiError{Error: "请求格式错误: " + err.Error()})
-		return
-	}
-	if body.YAML == "" {
-		writeJSON(w, http.StatusBadRequest, apiError{Error: "yaml 字段不能为空"})
-		return
-	}
-
-	// Try parsing as YAML
-	cfg, err := config.ParseYAML([]byte(body.YAML))
-	if err != nil {
-		// Fallback: try as pure JSON
-		cfg = &config.Config{}
-		if err2 := json.Unmarshal([]byte(body.YAML), cfg); err2 != nil {
-			writeJSON(w, http.StatusBadRequest, apiError{
-				Error:   "YAML/JSON 解析失败",
-				Message: fmt.Sprintf("YAML: %v\nJSON: %v", err, err2),
-			})
-			return
-		}
-	}
-
-	writeJSON(w, http.StatusOK, map[string]interface{}{
-		"filters":  cfg.Filters,
-		"output":   cfg.Output,
-		"sort":     cfg.Sort,
-		"limit":    cfg.Limit,
-		"data_dir": cfg.DataDir,
-	})
-}
-
-// handleConfigExport accepts filters/output/sort/limit as JSON and returns proper YAML.
-func (s *server) handleConfigExport(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "POST" {
-		writeJSON(w, http.StatusMethodNotAllowed, apiError{Error: "只支持POST请求"})
-		return
-	}
-
-	var body struct {
-		Filters []config.Filter  `json:"filters"`
-		Output  *config.Output   `json:"output"`
-		Sort    []config.SortRule `json:"sort"`
-		Limit   int              `json:"limit"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		writeJSON(w, http.StatusBadRequest, apiError{Error: "请求格式错误: " + err.Error()})
-		return
-	}
-
-	cfg := config.Config{
-		Filters: body.Filters,
-		Output:  body.Output,
-		Sort:    body.Sort,
-		Limit:   body.Limit,
-	}
-
-	var buf strings.Builder
-	enc := yaml.NewEncoder(&buf)
-	enc.SetIndent(1)
-	if err := enc.Encode(cfg); err != nil {
-		writeJSON(w, http.StatusInternalServerError, apiError{Error: "YAML序列化失败: " + err.Error()})
-		return
-	}
-	enc.Close()
-
-	w.Header().Set("Content-Type", "text/yaml; charset=utf-8")
-	w.Write([]byte(buf.String()))
 }
 
 func (s *server) handleDebug(w http.ResponseWriter, r *http.Request) {
@@ -414,7 +290,7 @@ func getCWD() string {
 func (s *server) handleStatic(w http.ResponseWriter, r *http.Request) {
 	// Serve the embedded SPA
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Write([]byte(srv.WebUIHTML))
+	_, _ = w.Write([]byte(srv.WebUIHTML))
 }
 
 func (s *server) listDataFiles() []map[string]string {
@@ -468,14 +344,14 @@ func getStaffPositionsBySubjectType() map[string][]string {
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
-	json.NewEncoder(w).Encode(data)
+	_ = json.NewEncoder(w).Encode(data)
 }
 
 // writeCSVToWriter writes query results as CSV to an io.Writer.
 func writeCSVToWriter(r *query.QueryResult, w http.ResponseWriter) error {
-	w.Write([]byte{0xEF, 0xBB, 0xBF})
+	_, _ = w.Write([]byte{0xEF, 0xBB, 0xBF})
 	header := strings.Join(r.Columns, ",") + "\n"
-	w.Write([]byte(header))
+	_, _ = w.Write([]byte(header))
 	for _, row := range r.Rows {
 		escaped := make([]string, len(row))
 		for i, val := range row {
@@ -485,7 +361,7 @@ func writeCSVToWriter(r *query.QueryResult, w http.ResponseWriter) error {
 				escaped[i] = val
 			}
 		}
-		w.Write([]byte(strings.Join(escaped, ",") + "\n"))
+		_, _ = w.Write([]byte(strings.Join(escaped, ",") + "\n"))
 	}
 	return nil
 }

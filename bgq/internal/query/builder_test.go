@@ -1,17 +1,26 @@
 package query
 
 import (
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/inchei/bangumi-query/internal/config"
 )
 
+// testDataDir returns the absolute path to bangumi_archive relative to the repo root.
+func testDataDir() string {
+	// This file is at bgq/internal/query/builder_test.go
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(filename), "..", "..", "..", "bangumi_archive")
+}
+
 func TestBuildSQL(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name", "score"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name", "score"}},
 		Filters: []config.Filter{
 			{Type: &config.TypeFilter{Value: 2}},
 			{Field: &config.FieldFilter{Field: "score", Operator: "gt", Value: "8.5"}},
@@ -28,9 +37,9 @@ func TestBuildSQL(t *testing.T) {
 
 func TestBuildComplexSQL(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name", "name_cn", "score", "出版社", "作者"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name", "name_cn", "score", "出版社", "作者"}},
 		Filters: []config.Filter{
 			{Type: &config.TypeFilter{Value: 1}},
 			{Field: &config.FieldFilter{Field: "出版社", Operator: "contains", Value: "角川"}},
@@ -48,17 +57,17 @@ func TestBuildComplexSQL(t *testing.T) {
 
 func TestBuildRelationSQL(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
 		Filters: []config.Filter{
 			{Type: &config.TypeFilter{Value: 1}},
 			{Relation: &config.RelationFilter{
-				Type:       "单行本",
-				Mode:       "any",
+				Type: "单行本",
+				Mode: "any",
 				Conditions: []config.Filter{
-				{Field: &config.FieldFilter{Field: "发售日", Operator: "after", Value: "2020-01-01"}},
-			},
+					{Field: &config.FieldFilter{Field: "发售日", Operator: "after", Value: "2020-01-01"}},
+				},
 			}},
 		},
 	}
@@ -72,9 +81,9 @@ func TestBuildRelationSQL(t *testing.T) {
 
 func TestBuildStaffSQL_SubjectTarget(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
 		Filters: []config.Filter{
 			{Type: &config.TypeFilter{Value: 2}},
 			{Staff: &config.StaffFilter{
@@ -96,9 +105,9 @@ func TestBuildStaffSQL_SubjectTarget(t *testing.T) {
 
 func TestBuildStaffSQL_SubjectTarget_MultiCond(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
 		Filters: []config.Filter{
 			{Staff: &config.StaffFilter{
 				Position: "原作",
@@ -120,9 +129,9 @@ func TestBuildStaffSQL_SubjectTarget_MultiCond(t *testing.T) {
 
 func TestBuildStaffSQL_SubjectTarget_None(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
 		Filters: []config.Filter{
 			{Staff: &config.StaffFilter{
 				Position: "导演",
@@ -140,10 +149,10 @@ func TestBuildStaffSQL_SubjectTarget_None(t *testing.T) {
 
 func TestBuildStaffSQL_PersonTarget(t *testing.T) {
 	cfg := &config.Config{
-		DataDir:   "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
-		Limit:     10,
-		Output:    config.Output{Format: "table", Columns: []string{"person_id", "name"}},
-		Target:    "person",
+		DataDir: testDataDir(),
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"person_id", "name"}},
+		Target:  "person",
 		Filters: []config.Filter{
 			{Staff: &config.StaffFilter{
 				Position: "原作",
@@ -164,10 +173,10 @@ func TestBuildStaffSQL_PersonTarget(t *testing.T) {
 
 func TestBuildStaffSQL_PersonTarget_MultiCond(t *testing.T) {
 	cfg := &config.Config{
-		DataDir:   "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
-		Limit:     10,
-		Output:    config.Output{Format: "table", Columns: []string{"person_id", "name"}},
-		Target:    "person",
+		DataDir: testDataDir(),
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"person_id", "name"}},
+		Target:  "person",
 		Filters: []config.Filter{
 			{Staff: &config.StaffFilter{
 				Position: "原作",
@@ -189,9 +198,9 @@ func TestBuildStaffSQL_PersonTarget_MultiCond(t *testing.T) {
 
 func TestBuildLogicOR(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name", "score"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name", "score"}},
 		Filters: []config.Filter{
 			{Logic: &config.LogicFilter{
 				Op: "or",
@@ -218,9 +227,9 @@ func TestBuildLogicOR(t *testing.T) {
 
 func TestBuildLogicNested(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name", "score"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name", "score"}},
 		Filters: []config.Filter{
 			{Logic: &config.LogicFilter{
 				Op: "or",
@@ -250,9 +259,9 @@ func TestBuildLogicNested(t *testing.T) {
 
 func TestBuildLogicInRelation(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
 		Filters: []config.Filter{
 			{Type: &config.TypeFilter{Value: 1}},
 			{Relation: &config.RelationFilter{
@@ -283,9 +292,9 @@ func TestBuildLogicInRelation(t *testing.T) {
 
 func TestBuildLogicInStaff(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
 		Filters: []config.Filter{
 			{Type: &config.TypeFilter{Value: 2}},
 			{Staff: &config.StaffFilter{
@@ -316,9 +325,9 @@ func TestBuildLogicInStaff(t *testing.T) {
 
 func TestBuildLogicSingleItem(t *testing.T) {
 	cfg := &config.Config{
-		DataDir: "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive",
+		DataDir: testDataDir(),
 		Limit:   10,
-		Output:  config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
 		Filters: []config.Filter{
 			{Logic: &config.LogicFilter{
 				Op: "or",

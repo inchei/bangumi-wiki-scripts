@@ -2,14 +2,12 @@ package main
 
 import (
 	"bufio"
-	"context"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/inchei/bangumi-query/internal/config"
 	"github.com/inchei/bangumi-query/internal/model"
-	"github.com/inchei/bangumi-query/internal/query"
 )
 
 func interactiveMode(dataDir string) {
@@ -243,8 +241,8 @@ func parseInlineRelationCondition(relName, rest string) (config.Filter, error) {
 
 	return config.Filter{
 		Relation: &config.RelationFilter{
-			Type:       relName,
-			Mode:       "any",
+			Type: relName,
+			Mode: "any",
 			Conditions: []config.Filter{
 				{Field: &config.FieldFilter{Field: field, Operator: op, Value: val}},
 			},
@@ -338,31 +336,4 @@ func printInteractiveHelp() {
 
 直接字段名: id, type, name, name_cn, score, rank, date, platform, summary, nsfw, series
 `)
-}
-
-// runInteractiveQuery is used by the web server for interactive-style queries.
-func runInteractiveQuery(dataDir string, conditions []string) (*query.QueryResult, error) {
-	cfg := &config.Config{
-		DataDir: dataDir,
-		Output: &config.Output{
-			Format: "json",
-		},
-		Limit: 1000,
-	}
-
-	for _, cond := range conditions {
-		filter, err := parseInteractiveCondition(cond)
-		if err != nil {
-			return nil, fmt.Errorf("条件 '%s': %w", cond, err)
-		}
-		cfg.Filters = append(cfg.Filters, filter)
-	}
-
-	if len(cfg.Filters) == 0 {
-		return nil, fmt.Errorf("未提供任何筛选条件")
-	}
-
-	ctx := context.Background()
-	engine := query.NewEngine("", dataDir)
-	return engine.Execute(ctx, cfg)
 }

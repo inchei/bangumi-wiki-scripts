@@ -2,11 +2,19 @@ package query
 
 import (
 	"context"
+	"path/filepath"
+	"runtime"
 	"testing"
 )
 
+// testBinDir returns the absolute path to bgq/bin relative to the repo root.
+func testBinDir() string {
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(filename), "..", "..", "..", "bin")
+}
+
 func TestExecuteSimple(t *testing.T) {
-	SetDuckDBPath("/home/ooo/workspace/bangumi-wiki-scripts/bgq/bin/duckdb")
+	SetDuckDBPath(filepath.Join(testBinDir(), "duckdb"))
 
 	// Test that DuckDB execution works via temp file
 	result, err := executeSQLDirectly(context.Background(), "SELECT 1 AS test, 2 AS num;")
@@ -21,12 +29,13 @@ func TestExecuteSimple(t *testing.T) {
 }
 
 func TestExecuteWithJSON(t *testing.T) {
-	SetDuckDBPath("/home/ooo/workspace/bangumi-wiki-scripts/bgq/bin/duckdb")
+	SetDuckDBPath(filepath.Join(testBinDir(), "duckdb"))
 
-	engine := NewEngine("", "/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive")
+	archiveDir := testDataDir()
+	engine := NewEngine("", archiveDir)
 	// Use direct executeSQL
-	sql := `WITH subjects AS (SELECT * FROM read_json_auto('/home/ooo/workspace/bangumi-wiki-scripts/bangumi_archive/subject.jsonlines', format='newline_delimited'))
-SELECT s.id, s.name, s.score
+	sql := "WITH subjects AS (SELECT * FROM read_json_auto('" + filepath.Join(archiveDir, "subject.jsonlines") + "', format='newline_delimited'))\n" +
+		`SELECT s.id, s.name, s.score
 FROM subjects s
 WHERE s.type = 2 AND CAST(s.score AS DOUBLE) > 8.5
 ORDER BY s.score DESC
