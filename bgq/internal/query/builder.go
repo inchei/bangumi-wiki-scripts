@@ -162,6 +162,24 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		}
 	}
 
+	// Person Relations CTE (person-to-person, filtered by person_type='prsn')
+	if b.cfg.NeedsPersonRelations() {
+		persRelFile := b.dataDir + "/person-relations.jsonlines"
+		ctes = append(ctes, fmt.Sprintf(
+			`person_relations AS (SELECT * FROM read_json_auto('%s', format='newline_delimited') WHERE person_type = 'prsn')`,
+			escapeSQLString(persRelFile),
+		))
+		// Ensure persons table is loaded for related person lookups
+		if !personsLoaded {
+			personFile := b.dataDir + "/person.jsonlines"
+			ctes = append(ctes, fmt.Sprintf(
+				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox FROM read_json_auto('%s', format='newline_delimited'))`,
+				escapeSQLString(personFile),
+			))
+			personsLoaded = true
+		}
+	}
+
 	// Episodes CTE
 	if b.cfg.NeedsEpisodes() {
 		epFile := b.dataDir + "/episode.jsonlines"
@@ -277,6 +295,8 @@ func (b *SQLBuilder) filterToSQLMain(f config.Filter, idx int) (string, error) {
 		return b.metaTagFilter(f.MetaTag)
 	case f.Relation != nil:
 		return b.relationFilter(f.Relation)
+	case f.PersonRelation != nil:
+		return b.personRelationFilter(f.PersonRelation)
 	case f.Staff != nil:
 		return b.staffFilter(f.Staff)
 	case f.Episode != nil:
@@ -483,6 +503,102 @@ func (b *SQLBuilder) relationFilter(f *config.RelationFilter) (string, error) {
 	return fmt.Sprintf(
 		"EXISTS (SELECT 1 FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND %s)",
 		subWhere), nil
+}
+
+// personRelationFilter handles person-to-person relation filtering (person_type=prsn).
+func (b *SQLBuilder) personRelationFilter(f *config.PersonRelationFilter) (string, error) {
+	// Only valid for person target
+	if b.target != "person" {
+		return "", fmt.Errorf("person_relation filter only supported for person target")
+	}
+
+	// Resolve relation type name to IDs; empty or "任意" means any type
+	anyType := f.Type == "" || f.Type == "任意"
+	var relIDList string
+	if !anyType {
+		relIDs := b.getPersonRelationIDsForName(f.Type)
+		if len(relIDs) == 0 {
+			return "", fmt.Errorf("未找到人物关系类型: %s", f.Type)
+		}
+		relIDList = intListToSQL(relIDs)
+	}
+
+	// For "none" mode: no matching person relations should exist
+	if f.Mode == "none" {
+		if anyType {
+			return "NOT EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id)", nil
+		}
+		return fmt.Sprintf(
+			"NOT EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s))",
+			relIDList), nil
+	}
+
+	// Build subquery for related person
+	var subClauses []string
+	if !anyType {
+		subClauses = append(subClauses, fmt.Sprintf("pr.relation_type IN (%s)", relIDList))
+	}
+
+	// Filter by conditions on the related person
+	relatedWhere := "TRUE"
+	if len(f.Conditions) > 0 {
+		var err error
+		relatedWhere, err = b.buildPersonRelationWhereForAlias(f.Conditions)
+		if err != nil {
+			return "", fmt.Errorf("person_relation condition: %w", err)
+		}
+	}
+	if relatedWhere != "TRUE" {
+		subClauses = append(subClauses, relatedWhere)
+	}
+
+	subWhere := strings.Join(subClauses, " AND ")
+	if subWhere == "" {
+		subWhere = "TRUE"
+	}
+
+	personJoin := "person_relations pr LEFT JOIN persons rp ON pr.related_person_id = rp.person_id"
+
+	// For "all" mode: count of matching = count of all
+	if f.Mode == "all" {
+		nestedWhere := "TRUE"
+		if len(f.Conditions) > 0 {
+			nestedWhere, _ = b.buildPersonRelationWhereForAlias(f.Conditions)
+		}
+		if anyType {
+			return fmt.Sprintf(
+				`EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id) AND
+				 (SELECT COUNT(*) FROM %s WHERE pr.person_id = p.person_id AND %s) =
+				 (SELECT COUNT(*) FROM person_relations pr WHERE pr.person_id = p.person_id)`,
+				personJoin, nestedWhere), nil
+		}
+		return fmt.Sprintf(
+			`EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s)) AND
+			 (SELECT COUNT(*) FROM %s WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s) AND %s) =
+			 (SELECT COUNT(*) FROM person_relations pr WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s))`,
+			relIDList, personJoin, relIDList, nestedWhere, relIDList), nil
+	}
+
+	// For "any" mode
+	return fmt.Sprintf(
+		"EXISTS (SELECT 1 FROM %s WHERE pr.person_id = p.person_id AND %s)",
+		personJoin, subWhere), nil
+}
+
+// getPersonRelationIDsForName returns all person relation type IDs for a given Chinese name.
+func (b *SQLBuilder) getPersonRelationIDsForName(name string) []int {
+	var ids []int
+	for id, cnName := range model.PersonRelationTypes {
+		if cnName == name {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+// buildPersonRelationWhereForAlias generates WHERE clauses for related person conditions.
+func (b *SQLBuilder) buildPersonRelationWhereForAlias(filters []config.Filter) (string, error) {
+	return b.buildClauses(filters, clauseContext{alias: "rp", isPersonCtx: true})
 }
 
 // buildWhereForAlias generates WHERE clauses for a given table alias, supporting all filter types.

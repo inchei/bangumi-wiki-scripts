@@ -390,6 +390,10 @@ CREATE TABLE IF NOT EXISTS subject_persons AS
 CREATE TABLE IF NOT EXISTS episodes AS
   SELECT * FROM read_json_auto('%s/episode.jsonlines', format='newline_delimited');
 
+CREATE TABLE IF NOT EXISTS person_relations AS
+  SELECT * FROM read_json_auto('%s/person-relations.jsonlines', format='newline_delimited')
+  WHERE person_type = 'prsn';
+
 -- Create indexes
 CREATE INDEX IF NOT EXISTS idx_subjects_type ON subjects(type);
 CREATE INDEX IF NOT EXISTS idx_relations_subject ON subject_relations(subject_id);
@@ -397,7 +401,9 @@ CREATE INDEX IF NOT EXISTS idx_relations_type ON subject_relations(relation_type
 CREATE INDEX IF NOT EXISTS idx_persons_subject ON subject_persons(subject_id);
 CREATE INDEX IF NOT EXISTS idx_persons_position ON subject_persons(position);
 CREATE INDEX IF NOT EXISTS idx_episodes_subject ON episodes(subject_id);
-`, dataDir, dataDir, dataDir, dataDir)
+CREATE INDEX IF NOT EXISTS idx_person_relations_person ON person_relations(person_id);
+CREATE INDEX IF NOT EXISTS idx_person_relations_type ON person_relations(relation_type);
+`, dataDir, dataDir, dataDir, dataDir, dataDir)
 
 	return query.ExecuteDuckDBSQL(ctx, dbPath, sql)
 }

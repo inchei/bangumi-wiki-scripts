@@ -71,6 +71,9 @@
       opts.push({ value: "global", label: "全局" });
       const pfc = ctxFieldConfigs(CTX_PERSON);
       for (const k in pfc) opts.push({ value: k, label: pfc[k].label });
+      if (qTarget === "person") {
+        opts.push({ value: "person_relation", label: "人物关系" });
+      }
       opts.push({ value: "staff", label: "关联" });
     } else {
       opts.push({ value: "field", label: "字段" });

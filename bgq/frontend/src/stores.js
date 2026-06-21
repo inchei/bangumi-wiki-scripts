@@ -75,6 +75,14 @@ export function findLogicGroup(node, id) {
         }
       }
     }
+    if (item.person_relation?.conditions) {
+      for (const c of item.person_relation.conditions) {
+        if (c.logic) {
+          const r = findLogicGroup(c.logic, id);
+          if (r) return r;
+        }
+      }
+    }
     if (item.staff?.conditions) {
       for (const c of item.staff.conditions) {
         if (c.logic) {
@@ -103,6 +111,11 @@ export function removeLogicItemById(node, id) {
     }
     if (item.relation?.conditions) {
       for (const c of item.relation.conditions) {
+        if (c.logic && removeLogicItemById(c.logic, id)) return true;
+      }
+    }
+    if (item.person_relation?.conditions) {
+      for (const c of item.person_relation.conditions) {
         if (c.logic && removeLogicItemById(c.logic, id)) return true;
       }
     }
@@ -152,6 +165,14 @@ export function createEmptyCondition(type) {
     case "relation":
       return {
         relation: {
+          type: "",
+          mode: "any",
+          conditions: [{ logic: newLogicGroup("and") }],
+        },
+      };
+    case "person_relation":
+      return {
+        person_relation: {
           type: "",
           mode: "any",
           conditions: [{ logic: newLogicGroup("and") }],
@@ -219,6 +240,32 @@ function updateGroupInTree(node, targetId, mutator) {
       });
       if (changed) {
         newItems[i] = { relation: { ...item.relation, conditions: newConds } };
+        return { ...node, items: newItems };
+      }
+    }
+    // person_relation
+    if (item.person_relation?.conditions) {
+      let changed = false;
+      const newConds = item.person_relation.conditions.map((c) => {
+        if (c.logic && !changed) {
+          if (c.logic._id === targetId) {
+            changed = true;
+            return {
+              logic: { ...c.logic, items: mutator([...c.logic.items]) },
+            };
+          }
+          const updated = updateGroupInTree(c.logic, targetId, mutator);
+          if (updated !== c.logic) {
+            changed = true;
+            return { logic: updated };
+          }
+        }
+        return c;
+      });
+      if (changed) {
+        newItems[i] = {
+          person_relation: { ...item.person_relation, conditions: newConds },
+        };
         return { ...node, items: newItems };
       }
     }
@@ -367,6 +414,32 @@ export function toggleLogicOp(group, val) {
           if (changed) {
             newItems[i] = {
               relation: { ...item.relation, conditions: newConds },
+            };
+            return { ...node, items: newItems };
+          }
+        }
+        if (item.person_relation?.conditions) {
+          let changed = false;
+          const newConds = item.person_relation.conditions.map((c) => {
+            if (c.logic && !changed) {
+              if (c.logic._id === group._id) {
+                changed = true;
+                return { logic: { ...c.logic, op: val } };
+              }
+              const updated = cloneAndUpdate(c.logic);
+              if (updated !== c.logic) {
+                changed = true;
+                return { logic: updated };
+              }
+            }
+            return c;
+          });
+          if (changed) {
+            newItems[i] = {
+              person_relation: {
+                ...item.person_relation,
+                conditions: newConds,
+              },
             };
             return { ...node, items: newItems };
           }
