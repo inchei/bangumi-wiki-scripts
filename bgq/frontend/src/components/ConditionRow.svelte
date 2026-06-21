@@ -9,6 +9,7 @@
     opInputType,
     CTX_SUBJECT,
     CTX_PERSON,
+    CTX_CHARACTER,
     CTX_EPISODE,
     EPISODE_FIELD_LABELS,
     EPISODE_FIELD_OPS,
@@ -32,6 +33,8 @@
     if (item.type) return "type";
     if (item.relation) return "relation";
     if (item.person_relation) return "person_relation";
+    if (item.character_relation) return "character_relation";
+    if (item.character) return "character";
     if (item.staff) return "staff";
     if (item.episode) return "episode";
     return "unknown";
@@ -337,6 +340,87 @@
           lg={pr.conditions[0].logic}
           isRoot={false}
           ctx={CTX_PERSON}
+        />
+      </div>
+    {/if}
+  {:else if condType === "character_relation"}
+    {@const cr = item.character_relation}
+    <div class="cond-row-inner">
+      <span class="cond-type">角色关系</span>
+      <RestrictedSelect
+        value={cr.type}
+        suggestions={["任意"].concat(
+          $schemaOptions.character_relations || [],
+        )}
+        onchange={(v) =>
+          updateCondition(group, idx, "character_relation", "type", v)}
+        placeholder="关系名"
+      />
+      <select
+        class="select select-sm"
+        value={cr.mode}
+        onchange={(e) =>
+          updateCondition(
+            group,
+            idx,
+            "character_relation",
+            "mode",
+            e.target.value,
+          )}
+      >
+        <option value="any">任意</option>
+        <option value="all">全部</option>
+        <option value="none">排除</option>
+      </select>
+      <button
+        class="tag-remove"
+        onclick={() => removeLogicLeaf(group, idx)}
+        title="删除">&times;</button
+      >
+    </div>
+    {#if cr.conditions?.length > 0 && cr.conditions[0].logic}
+      <div class="nested">
+        <FilterTree
+          lg={cr.conditions[0].logic}
+          isRoot={false}
+          ctx={CTX_CHARACTER}
+        />
+      </div>
+    {/if}
+  {:else if condType === "character"}
+    {@const ch = item.character}
+    <div class="cond-row-inner">
+      <span class="cond-type">角色</span>
+      <RestrictedSelect
+        value={ch.type || ""}
+        suggestions={["任意"].concat(
+          $schemaOptions.character_assoc_types || [],
+        )}
+        onchange={(v) => updateCondition(group, idx, "character", "type", v)}
+        placeholder="关联类型"
+      />
+      <select
+        class="select select-sm"
+        value={ch.mode}
+        onchange={(e) =>
+          updateCondition(group, idx, "character", "mode", e.target.value)}
+      >
+        <option value="any">任意</option>
+        <option value="all">全部</option>
+        <option value="none">排除</option>
+      </select>
+      <button
+        class="tag-remove"
+        onclick={() => removeLogicLeaf(group, idx)}
+        title="删除">&times;</button
+      >
+    </div>
+    {#if ch.conditions?.length > 0 && ch.conditions[0].logic}
+      <div class="nested">
+        <FilterTree
+          lg={ch.conditions[0].logic}
+          isRoot={false}
+          ctx={$queryTarget === "character" ? CTX_SUBJECT : CTX_CHARACTER}
         />
       </div>
     {/if}

@@ -29,6 +29,9 @@
     queryTarget.set(t);
     if (t === "person") {
       document.getElementById("outputColumns").value = "person_id,name,career";
+    } else if (t === "character") {
+      document.getElementById("outputColumns").value =
+        "character_id,name,role";
     } else {
       document.getElementById("outputColumns").value =
         "id,name,name_cn,type,score";
@@ -95,21 +98,25 @@
         <span class="dot-indicator"></span>筛选条件
         <span class="spacer"></span>
         <button
+          class="btn btn-outline btn-xs"
+          onclick={clearFilters}>清除全部</button
+        >
+      </div>
+      <div class="target-toggle">
+        <button
           class="radio-pill"
           class:active={$queryTarget === "subject"}
-          onclick={() => setTarget("subject")}
-          style="cursor:pointer;padding:2px 8px">📚 条目</button
+          onclick={() => setTarget("subject")}>📚 条目</button
         >
         <button
           class="radio-pill"
           class:active={$queryTarget === "person"}
-          onclick={() => setTarget("person")}
-          style="cursor:pointer;padding:2px 8px">👤 人物</button
+          onclick={() => setTarget("person")}>👤 人物</button
         >
         <button
-          class="btn btn-outline btn-xs"
-          onclick={clearFilters}
-          style="margin-left:8px">清除全部</button
+          class="radio-pill"
+          class:active={$queryTarget === "character"}
+          onclick={() => setTarget("character")}>🎭 角色</button
         >
       </div>
       <FilterTree />
@@ -228,6 +235,11 @@
     height: 6px;
     border-radius: 50%;
     background: var(--accent);
+  }
+  :global(.target-toggle) {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
   }
 
   /* ===== Form Controls ===== */
@@ -353,6 +365,7 @@
     user-select: none;
     display: inline-block;
     font-family: inherit;
+    white-space: nowrap;
   }
   :global(.radio-pill:hover) {
     border-color: var(--accent);

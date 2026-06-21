@@ -14,15 +14,16 @@ type SQLBuilder struct {
 	cfg       *config.Config
 	dataDir   string
 	useDB     bool   // if true, reference tables directly instead of JSON CTEs
-	target    string // "subject" or "person"
-	mainAlias string // "s" or "p"
+	target    string // "subject", "person", or "character"
+	mainAlias string // "s", "p", or "c"
 }
 
 // clauseContext controls how filters are generated in different SQL contexts.
 type clauseContext struct {
-	alias        string // table alias: "s" (main subject), "rs" (related subject), "p" (person)
-	isPersonCtx  bool   // true when filtering person-level conditions (uses personFilterForAlias)
-	isEpisodeCtx bool   // true when filtering episode conditions (direct fields only, no infobox)
+	alias         string // table alias: "s" (main subject), "rs" (related subject), "p" (person), "c" (character), "rc" (related character)
+	isPersonCtx   bool   // true when filtering person-level conditions (uses personFilterForAlias)
+	isCharacterCtx bool  // true when filtering character-level conditions (uses characterFilterForAlias)
+	isEpisodeCtx  bool   // true when filtering episode conditions (direct fields only, no infobox)
 }
 
 // NewSQLBuilder creates a new SQL builder.
@@ -34,6 +35,8 @@ func NewSQLBuilder(cfg *config.Config, dataDir string) *SQLBuilder {
 	alias := "s"
 	if target == "person" {
 		alias = "p"
+	} else if target == "character" {
+		alias = "c"
 	}
 	return &SQLBuilder{
 		cfg:       cfg,
@@ -80,9 +83,12 @@ func (b *SQLBuilder) Build() (string, error) {
 
 	sql.WriteString("SELECT ")
 	sql.WriteString(strings.Join(selectCols, ", "))
-	if b.target == "person" {
+	switch b.target {
+	case "person":
 		sql.WriteString("\nFROM persons p\n")
-	} else {
+	case "character":
+		sql.WriteString("\nFROM characters c\n")
+	default:
 		sql.WriteString("\nFROM subjects s\n")
 	}
 
@@ -136,6 +142,17 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		personsLoaded = true
 	}
 
+	// For character target: load characters as main table
+	charactersLoaded := false
+	if b.target == "character" {
+		charFile := b.dataDir + "/character.jsonlines"
+		ctes = append(ctes, fmt.Sprintf(
+			`characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('%s', format='newline_delimited'))`,
+			escapeSQLString(charFile),
+		))
+		charactersLoaded = true
+	}
+
 	// Relations CTE
 	if b.cfg.NeedsRelations() {
 		relFile := b.dataDir + "/subject-relations.jsonlines"
@@ -177,6 +194,42 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 				escapeSQLString(personFile),
 			))
 			personsLoaded = true
+		}
+	}
+
+	// Character Relations CTE (character-to-character, filtered by person_type='crt')
+	if b.cfg.NeedsCharacterRelations() {
+		charRelFile := b.dataDir + "/person-relations.jsonlines"
+		ctes = append(ctes, fmt.Sprintf(
+			`character_relations AS (SELECT * FROM read_json_auto('%s', format='newline_delimited') WHERE person_type = 'crt')`,
+			escapeSQLString(charRelFile),
+		))
+		// Ensure characters table is loaded for related character lookups
+		if !charactersLoaded {
+			charFile := b.dataDir + "/character.jsonlines"
+			ctes = append(ctes, fmt.Sprintf(
+				`characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('%s', format='newline_delimited'))`,
+				escapeSQLString(charFile),
+			))
+			charactersLoaded = true
+		}
+	}
+
+	// Subject Characters CTE
+	if b.cfg.NeedsCharacters() {
+		subCharFile := b.dataDir + "/subject-characters.jsonlines"
+		ctes = append(ctes, fmt.Sprintf(
+			`subject_characters AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
+			escapeSQLString(subCharFile),
+		))
+		// Ensure characters table is loaded for character lookups
+		if !charactersLoaded {
+			charFile := b.dataDir + "/character.jsonlines"
+			ctes = append(ctes, fmt.Sprintf(
+				`characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('%s', format='newline_delimited'))`,
+				escapeSQLString(charFile),
+			))
+			charactersLoaded = true
 		}
 	}
 
@@ -259,6 +312,11 @@ func (b *SQLBuilder) filterToCtx(f config.Filter, ctx clauseContext, idx int) (s
 		return b.personFilterForAlias(f, idx)
 	}
 
+	// Character context: use character-specific handlers
+	if ctx.isCharacterCtx {
+		return b.characterFilterForAlias(f, idx)
+	}
+
 	// Main alias context (top-level): use main handlers
 	if ctx.alias == b.mainAlias {
 		return b.filterToSQLMain(f, idx)
@@ -297,8 +355,12 @@ func (b *SQLBuilder) filterToSQLMain(f config.Filter, idx int) (string, error) {
 		return b.relationFilter(f.Relation)
 	case f.PersonRelation != nil:
 		return b.personRelationFilter(f.PersonRelation)
+	case f.CharacterRelation != nil:
+		return b.characterRelationFilter(f.CharacterRelation)
 	case f.Staff != nil:
 		return b.staffFilter(f.Staff)
+	case f.Character != nil:
+		return b.characterFilter(f.Character)
 	case f.Episode != nil:
 		return b.episodeFilter(f.Episode)
 	case f.Count != nil:
@@ -314,6 +376,8 @@ func (b *SQLBuilder) typeFilter(f *config.TypeFilter) (string, error) {
 	col := a + ".type"
 	if b.target == "person" {
 		col = a + ".person_type"
+	} else if b.target == "character" {
+		col = a + ".role"
 	}
 	switch v := f.Value.(type) {
 	case int:
@@ -601,6 +665,102 @@ func (b *SQLBuilder) buildPersonRelationWhereForAlias(filters []config.Filter) (
 	return b.buildClauses(filters, clauseContext{alias: "rp", isPersonCtx: true})
 }
 
+// characterRelationFilter handles character-to-character relation filtering (person_type=crt).
+func (b *SQLBuilder) characterRelationFilter(f *config.CharacterRelationFilter) (string, error) {
+	// Only valid for character target
+	if b.target != "character" {
+		return "", fmt.Errorf("character_relation filter only supported for character target")
+	}
+
+	// Resolve relation type name to IDs; empty or "任意" means any type
+	anyType := f.Type == "" || f.Type == "任意"
+	var relIDList string
+	if !anyType {
+		relIDs := b.getCharacterRelationIDsForName(f.Type)
+		if len(relIDs) == 0 {
+			return "", fmt.Errorf("未找到角色关系类型: %s", f.Type)
+		}
+		relIDList = intListToSQL(relIDs)
+	}
+
+	// For "none" mode: no matching character relations should exist
+	if f.Mode == "none" {
+		if anyType {
+			return "NOT EXISTS (SELECT 1 FROM character_relations cr WHERE cr.person_id = c.character_id)", nil
+		}
+		return fmt.Sprintf(
+			"NOT EXISTS (SELECT 1 FROM character_relations cr WHERE cr.person_id = c.character_id AND cr.relation_type IN (%s))",
+			relIDList), nil
+	}
+
+	// Build subquery for related character
+	var subClauses []string
+	if !anyType {
+		subClauses = append(subClauses, fmt.Sprintf("cr.relation_type IN (%s)", relIDList))
+	}
+
+	// Filter by conditions on the related character
+	relatedWhere := "TRUE"
+	if len(f.Conditions) > 0 {
+		var err error
+		relatedWhere, err = b.buildCharacterRelationWhereForAlias(f.Conditions)
+		if err != nil {
+			return "", fmt.Errorf("character_relation condition: %w", err)
+		}
+	}
+	if relatedWhere != "TRUE" {
+		subClauses = append(subClauses, relatedWhere)
+	}
+
+	subWhere := strings.Join(subClauses, " AND ")
+	if subWhere == "" {
+		subWhere = "TRUE"
+	}
+
+	charJoin := "character_relations cr LEFT JOIN characters rc ON cr.related_person_id = rc.character_id"
+
+	// For "all" mode: count of matching = count of all
+	if f.Mode == "all" {
+		nestedWhere := "TRUE"
+		if len(f.Conditions) > 0 {
+			nestedWhere, _ = b.buildCharacterRelationWhereForAlias(f.Conditions)
+		}
+		if anyType {
+			return fmt.Sprintf(
+				`EXISTS (SELECT 1 FROM character_relations cr WHERE cr.person_id = c.character_id) AND
+				 (SELECT COUNT(*) FROM %s WHERE cr.person_id = c.character_id AND %s) =
+				 (SELECT COUNT(*) FROM character_relations cr WHERE cr.person_id = c.character_id)`,
+				charJoin, nestedWhere), nil
+		}
+		return fmt.Sprintf(
+			`EXISTS (SELECT 1 FROM character_relations cr WHERE cr.person_id = c.character_id AND cr.relation_type IN (%s)) AND
+			 (SELECT COUNT(*) FROM %s WHERE cr.person_id = c.character_id AND cr.relation_type IN (%s) AND %s) =
+			 (SELECT COUNT(*) FROM character_relations cr WHERE cr.person_id = c.character_id AND cr.relation_type IN (%s))`,
+			relIDList, charJoin, relIDList, nestedWhere, relIDList), nil
+	}
+
+	// For "any" mode
+	return fmt.Sprintf(
+		"EXISTS (SELECT 1 FROM %s WHERE cr.person_id = c.character_id AND %s)",
+		charJoin, subWhere), nil
+}
+
+// getCharacterRelationIDsForName returns all character relation type IDs for a given Chinese name.
+func (b *SQLBuilder) getCharacterRelationIDsForName(name string) []int {
+	var ids []int
+	for id, cnName := range model.CharacterRelationTypes {
+		if cnName == name {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+// buildCharacterRelationWhereForAlias generates WHERE clauses for related character conditions.
+func (b *SQLBuilder) buildCharacterRelationWhereForAlias(filters []config.Filter) (string, error) {
+	return b.buildClauses(filters, clauseContext{alias: "rc", isCharacterCtx: true})
+}
+
 // buildWhereForAlias generates WHERE clauses for a given table alias, supporting all filter types.
 // Used for nested filtering on related subjects (rs), persons (sp), or episodes (e).
 func (b *SQLBuilder) buildWhereForAlias(filters []config.Filter, alias string) (string, error) {
@@ -833,6 +993,128 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 		fromClause, posIDList, personWhere), nil
 }
 
+// characterFilter handles character-based filtering for subject queries.
+func (b *SQLBuilder) characterFilter(f *config.CharacterFilter) (string, error) {
+	// Resolve association type name to ID; empty or "任意" means any type
+	anyType := f.Type == "" || f.Type == "任意"
+	var typeID int
+	if !anyType {
+		var found bool
+		typeID, found = b.getCharacterAssociationTypeID(f.Type)
+		if !found {
+			return "", fmt.Errorf("未找到角色关联类型: %s", f.Type)
+		}
+	}
+
+	// Build type condition
+	typeCond := "TRUE"
+	if !anyType {
+		typeCond = fmt.Sprintf("sc.type = %d", typeID)
+	}
+
+	// For character target: filter characters by their associated subjects
+	if b.target == "character" {
+		// none mode: exclude characters with this association
+		if f.Mode == "none" {
+			if anyType {
+				return "NOT EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.character_id = c.character_id)", nil
+			}
+			return fmt.Sprintf(
+				"NOT EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.character_id = c.character_id AND %s)",
+				typeCond), nil
+		}
+
+		// Build subject-level conditions
+		subWhere := typeCond
+		if len(f.Conditions) > 0 {
+			subjectWhere, err := b.buildWhereForAlias(f.Conditions, "rs")
+			if err != nil {
+				return "", fmt.Errorf("character condition: %w", err)
+			}
+			if subjectWhere != "TRUE" {
+				subWhere = strings.Join([]string{typeCond, subjectWhere}, " AND ")
+			}
+		}
+
+		if f.Mode == "all" {
+			condWhere := typeCond
+			if len(f.Conditions) > 0 {
+				subjectWhere, _ := b.buildWhereForAlias(f.Conditions, "rs")
+				if subjectWhere != "TRUE" {
+					condWhere = strings.Join([]string{typeCond, subjectWhere}, " AND ")
+				}
+			}
+			return fmt.Sprintf(
+				`EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.character_id = c.character_id AND %s) AND
+				 (SELECT COUNT(*) FROM subject_characters sc LEFT JOIN subjects rs ON sc.subject_id = rs.id WHERE sc.character_id = c.character_id AND %s) =
+				 (SELECT COUNT(*) FROM subject_characters sc WHERE sc.character_id = c.character_id AND %s)`,
+				typeCond, condWhere, typeCond), nil
+		}
+
+		// any mode
+		return fmt.Sprintf(
+			"EXISTS (SELECT 1 FROM subject_characters sc LEFT JOIN subjects rs ON sc.subject_id = rs.id WHERE sc.character_id = c.character_id AND %s)",
+			subWhere), nil
+	}
+
+	// For subject target: filter subjects by their associated characters
+
+	// For "none" mode: no matching characters should exist
+	if f.Mode == "none" {
+		if anyType {
+			return "NOT EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.subject_id = s.id)", nil
+		}
+		return fmt.Sprintf(
+			"NOT EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.subject_id = s.id AND %s)",
+			typeCond), nil
+	}
+
+	// Build character-level conditions
+	charWhere := "TRUE"
+	if len(f.Conditions) > 0 {
+		var err error
+		charWhere, err = b.buildCharacterWhereForAlias(f.Conditions)
+		if err != nil {
+			return "", fmt.Errorf("character condition: %w", err)
+		}
+	}
+
+	fromClause := "subject_characters sc"
+	if len(f.Conditions) > 0 {
+		fromClause = "subject_characters sc LEFT JOIN characters c ON sc.character_id = c.character_id"
+	}
+
+	subWhere := strings.Join([]string{typeCond, charWhere}, " AND ")
+
+	if f.Mode == "all" {
+		return fmt.Sprintf(
+			`EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.subject_id = s.id AND %s) AND
+			 (SELECT COUNT(*) FROM %s WHERE sc.subject_id = s.id AND %s) =
+			 (SELECT COUNT(*) FROM subject_characters sc WHERE sc.subject_id = s.id AND %s)`,
+			typeCond, fromClause, subWhere, typeCond), nil
+	}
+
+	// any mode
+	return fmt.Sprintf(
+		"EXISTS (SELECT 1 FROM %s WHERE sc.subject_id = s.id AND %s)",
+		fromClause, subWhere), nil
+}
+
+// getCharacterAssociationTypeID returns the ID for a Chinese association type name.
+func (b *SQLBuilder) getCharacterAssociationTypeID(name string) (int, bool) {
+	for id, cnName := range model.CharacterAssociationTypes {
+		if cnName == name {
+			return id, true
+		}
+	}
+	return 0, false
+}
+
+// buildCharacterWhereForAlias generates WHERE clauses for character-level nested conditions.
+func (b *SQLBuilder) buildCharacterWhereForAlias(filters []config.Filter) (string, error) {
+	return b.buildClauses(filters, clauseContext{alias: "c", isCharacterCtx: true})
+}
+
 // buildPersonWhereForAlias generates WHERE clauses for person-level nested conditions.
 func (b *SQLBuilder) buildPersonWhereForAlias(filters []config.Filter) (string, error) {
 	return b.buildClauses(filters, clauseContext{alias: "p", isPersonCtx: true})
@@ -912,6 +1194,74 @@ func (b *SQLBuilder) personCountFilterForAlias(f *config.CountFilter) (string, e
 		countExpr = fmt.Sprintf(
 			"(SELECT COUNT(*) FROM subject_persons sp2 WHERE sp2.person_id = p.person_id AND sp2.position IN (%s))",
 			intListToSQL(posIDs))
+	}
+	return b.buildCondition(countExpr, f.Operator, fmt.Sprintf("%v", f.Value))
+}
+
+// characterFilterForAlias dispatches a single filter for character-level conditions.
+func (b *SQLBuilder) characterFilterForAlias(f config.Filter, idx int) (string, error) {
+	switch {
+	case f.Field != nil:
+		return b.characterFieldFilterForAlias(f.Field)
+	case f.Global != nil:
+		return b.characterGlobalFilterForAlias(f.Global)
+	case f.Count != nil:
+		return b.characterCountFilterForAlias(f.Count)
+	default:
+		return "", fmt.Errorf("角色筛选不支持此条件类型 (index %d)", idx)
+	}
+}
+
+// characterFieldFilterForAlias builds a field filter on character data (supports all operators).
+func (b *SQLBuilder) characterFieldFilterForAlias(f *config.FieldFilter) (string, error) {
+	valueStr := fmt.Sprintf("%v", f.Value)
+	switch f.Field {
+	case "name":
+		return b.buildCondition("c.name", f.Operator, valueStr)
+	case "id", "character_id":
+		return b.buildCondition("sc.character_id", f.Operator, valueStr)
+	case "role":
+		return b.buildCondition("c.role", f.Operator, valueStr)
+	case "comments":
+		return b.buildCondition("c.comments", f.Operator, valueStr)
+	case "collects":
+		return b.buildCondition("c.collects", f.Operator, valueStr)
+	default:
+		// Special case: 性别=其他 means gender exists and is not 男/♀
+		if f.Field == "性别" && valueStr == "其他" && f.Operator == "contains" {
+			expr := b.infoboxExtractExpr("性别", "c")
+			return fmt.Sprintf("COALESCE(%s, '') != '' AND %s NOT LIKE '%%男%%' AND %s NOT LIKE '%%♂%%' AND %s NOT LIKE '%%女%%' AND %s NOT LIKE '%%♀%%'", expr, expr, expr, expr, expr), nil
+		}
+		// Try character infobox field
+		fieldExpr := b.infoboxExtractExpr(f.Field, "c")
+		if isNumericOp(f.Operator) {
+			fieldExpr = extractNum(fieldExpr)
+		}
+		return b.buildCondition(fieldExpr, f.Operator, valueStr)
+	}
+}
+
+// characterGlobalFilterForAlias builds a global search on character infobox.
+func (b *SQLBuilder) characterGlobalFilterForAlias(f *config.GlobalFilter) (string, error) {
+	valueStr := fmt.Sprintf("%v", f.Value)
+	switch f.Operator {
+	case "regex":
+		return fmt.Sprintf("regexp_matches(c.infobox, '%s')", escapeRegex(valueStr)), nil
+	case "contains":
+		return fmt.Sprintf("c.infobox LIKE '%%%s%%'", escapeLike(valueStr)), nil
+	default:
+		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
+	}
+}
+
+// characterCountFilterForAlias builds a count filter on character appearances.
+func (b *SQLBuilder) characterCountFilterForAlias(f *config.CountFilter) (string, error) {
+	var countExpr string
+	if f.What == "ep" {
+		countExpr = "(SELECT COUNT(*) FROM subject_characters sc2 WHERE sc2.character_id = c.character_id)"
+	} else {
+		// Could be subject count or other metrics
+		countExpr = "(SELECT COUNT(*) FROM subject_characters sc2 WHERE sc2.character_id = c.character_id)"
 	}
 	return b.buildCondition(countExpr, f.Operator, fmt.Sprintf("%v", f.Value))
 }
@@ -1094,19 +1444,26 @@ func (b *SQLBuilder) buildSelect() []string {
 	}
 	a := b.mainAlias
 	if len(cols) == 0 {
-		if b.target == "person" {
+		switch b.target {
+		case "person":
 			return []string{a + ".person_id as id", a + ".name", a + ".career"}
+		case "character":
+			return []string{a + ".character_id as id", a + ".name", a + ".role"}
+		default:
+			return []string{a + ".id", a + ".name", a + ".name_cn", a + ".type", a + ".score", a + ".date"}
 		}
-		return []string{a + ".id", a + ".name", a + ".name_cn", a + ".type", a + ".score", a + ".date"}
 	}
 
 	var result []string
 	for _, col := range cols {
 		switch {
 		case col == "id" || col == "ID":
-			if b.target == "person" {
+			switch b.target {
+			case "person":
 				result = append(result, a+".person_id as id")
-			} else {
+			case "character":
+				result = append(result, a+".character_id as id")
+			default:
 				result = append(result, a+".id")
 			}
 		case isDirectField(col):
@@ -1227,6 +1584,9 @@ func isDirectField(field string) bool {
 		return true
 	// Person direct fields
 	case "person_id", "person_type", "career":
+		return true
+	// Character direct fields
+	case "character_id", "role", "comments", "collects":
 		return true
 	default:
 		return false
