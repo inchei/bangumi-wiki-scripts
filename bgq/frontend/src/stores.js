@@ -542,6 +542,16 @@ export const SUBJECT_FIELD_CONFIGS = {
   },
 };
 
+export const CAREER_OPTIONS = [
+  ["mangaka", "漫画家"],
+  ["writer", "作家"],
+  ["illustrator", "绘师"],
+  ["seiyu", "声优"],
+  ["actor", "演员"],
+  ["artist", "音乐家"],
+  ["producer", "制作人员"],
+];
+
 export const PERSON_FIELD_CONFIGS = {
   type: {
     label: "类型",

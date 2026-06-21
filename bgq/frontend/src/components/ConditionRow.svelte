@@ -14,6 +14,7 @@
     EPISODE_FIELD_OPS,
     schemaOptions,
     schema,
+    CAREER_OPTIONS,
   } from "../stores.js";
   import FilterTree from "./FilterTree.svelte";
   import AwesompleteInput from "./AwesompleteInput.svelte";
@@ -120,6 +121,15 @@
           >{l}</button
         >
       {/each}
+    {:else if fc?.ac === "career"}
+      <RestrictedSelect
+        value={item.field.value || ""}
+        suggestions={CAREER_OPTIONS.map((opt) => opt[1])}
+        getCode={(label) =>
+          CAREER_OPTIONS.find((opt) => opt[1] === label)?.[0] ?? ""}
+        onchange={(v) => updateCondition(group, idx, "field", "value", v)}
+        placeholder="职业"
+      />
     {:else}
       <input
         class="input"
