@@ -495,6 +495,9 @@ bgq/
 │   │       ├── ResultTable.svelte    # 结果表格
 │   │       └── YamlEditor.svelte     # YAML 编辑器
 │   ├── vite.config.js
+│   ├── eslint.config.js
+│   ├── .stylelintrc.json
+│   ├── .prettierrc
 │   └── package.json
 ├── Dockerfile            # 容器构建
 ├── docker-entrypoint.sh  # 容器启动脚本（自动下载数据）
@@ -537,7 +540,9 @@ pnpm dev                                # 开发模式（热重载）
 pnpm build                              # 构建产物
 
 # 代码质量
-pnpm lint                               # ESLint 检查
+pnpm lint                               # ESLint 检查（JS/Svelte）
+pnpm lint:css                           # Stylelint 检查（CSS/Svelte 样式）
+pnpm lint:css:fix                       # Stylelint 自动修复
 pnpm format                             # Prettier 格式化
 pnpm format:check                       # 检查格式（CI 用）
 ```

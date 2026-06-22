@@ -150,6 +150,7 @@
     top: 0;
     z-index: 100;
   }
+
   .header-logo {
     font-size: 18px;
     font-weight: 700;
@@ -158,6 +159,7 @@
     align-items: center;
     gap: 8px;
   }
+
   .header-logo .icon {
     width: 28px;
     height: 28px;
@@ -168,9 +170,11 @@
     justify-content: center;
     font-size: 16px;
   }
+
   .spacer {
     flex: 1;
   }
+
   .dot {
     width: 8px;
     height: 8px;
@@ -179,9 +183,11 @@
     margin-right: 4px;
     display: inline-block;
   }
+
   .dot.ok {
     background: var(--status-ok);
   }
+
   .status {
     font-size: 12px;
     color: var(--text-secondary);
@@ -194,9 +200,11 @@
     display: flex;
     height: calc(100vh - 56px);
   }
+
   :global(.panel) {
     overflow-y: auto;
   }
+
   :global(.panel-left) {
     width: 420px;
     min-width: 420px;
@@ -207,6 +215,7 @@
     flex-direction: column;
     gap: 20px;
   }
+
   :global(.panel-right) {
     flex: 1;
     background: var(--bg);
@@ -221,6 +230,7 @@
     border: 1px solid var(--border-light);
     padding: 20px;
   }
+
   :global(.card-header) {
     font-size: 15px;
     font-weight: 600;
@@ -230,12 +240,14 @@
     align-items: center;
     gap: 8px;
   }
+
   :global(.card-header .dot-indicator) {
     width: 6px;
     height: 6px;
     border-radius: 50%;
     background: var(--accent);
   }
+
   :global(.target-toggle) {
     display: flex;
     gap: 6px;
@@ -246,12 +258,14 @@
   :global(.form-group) {
     margin-bottom: 12px;
   }
+
   :global(.form-label) {
     font-size: 13px;
     color: var(--text-secondary);
     margin-bottom: 4px;
     display: block;
   }
+
   :global(.input),
   :global(.select) {
     height: 36px;
@@ -266,14 +280,17 @@
     outline: none;
     width: 100%;
   }
+
   :global(.input:focus),
   :global(.select:focus) {
     border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(240, 145, 153, 0.15);
+    box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
   }
+
   :global(.input::placeholder) {
     color: var(--text-placeholder);
   }
+
   :global(.select) {
     cursor: pointer;
     appearance: none;
@@ -282,6 +299,7 @@
     background-position: right 10px center;
     padding-right: 28px;
   }
+
   :global(.select-sm) {
     height: 32px;
     font-size: 12px;
@@ -307,46 +325,56 @@
     transition: var(--transition);
     white-space: nowrap;
   }
+
   :global(.btn-primary) {
     background: var(--accent);
     color: var(--white);
   }
+
   :global(.btn-primary:hover) {
     background: var(--accent-hover);
-    box-shadow: 0 2px 8px rgba(240, 145, 153, 0.3);
+    box-shadow: 0 2px 8px rgb(240 145 153 / 30%);
   }
+
   :global(.btn-outline) {
     background: var(--white);
     color: var(--accent);
     border: 1px solid var(--accent);
   }
+
   :global(.btn-outline:hover) {
     background: var(--accent-light);
   }
+
   :global(.btn-default) {
     background: var(--white);
     color: var(--text);
     border: 1px solid var(--border);
   }
+
   :global(.btn-default:hover) {
     color: var(--accent);
     border-color: var(--accent);
   }
+
   :global(.btn-sm) {
     height: 30px;
     padding: 0 12px;
     font-size: 12px;
     border-radius: var(--radius-xs);
   }
+
   :global(.btn-xs) {
     height: 24px;
     padding: 0 8px;
     font-size: 11px;
     border-radius: 4px;
   }
+
   :global(.btn-block) {
     width: 100%;
   }
+
   :global(.btn:disabled) {
     opacity: 0.5;
     cursor: not-allowed;
@@ -367,9 +395,11 @@
     font-family: inherit;
     white-space: nowrap;
   }
+
   :global(.radio-pill:hover) {
     border-color: var(--accent);
   }
+
   :global(.radio-pill.active) {
     background: var(--accent);
     color: var(--white);
@@ -377,18 +407,20 @@
   }
 
   /* ===== Responsive ===== */
-  @media (max-width: 900px) {
+  @media (width <= 900px) {
     :global(.container) {
       flex-direction: column;
       height: auto;
       min-height: calc(100vh - 56px);
     }
+
     :global(.panel-left) {
       width: 100%;
       min-width: 100%;
       max-height: none;
       overflow-y: visible;
     }
+
     :global(.panel-right) {
       flex: none;
       overflow-y: visible;

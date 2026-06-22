@@ -687,6 +687,7 @@
     margin: 2px 0;
     width: 100%;
   }
+
   .cond-row-inner {
     display: flex;
     gap: 3px;
@@ -694,15 +695,18 @@
     flex-wrap: wrap;
     width: 100%;
   }
+
   .cond-type {
     font-size: 13px;
     color: var(--accent);
     font-weight: 600;
   }
+
   .cond-unknown {
     font-size: 12px;
     flex: 1;
   }
+
   .tag-remove {
     cursor: pointer;
     color: var(--accent);
@@ -715,14 +719,17 @@
     font-family: inherit;
     padding: 0;
   }
+
   .tag-remove:hover {
     color: var(--accent-hover);
     transform: scale(1.2);
   }
+
   .nested {
     margin-left: 12px;
     margin-top: 2px;
   }
+
   .radio-pill {
     cursor: pointer;
     font-size: 12px;
@@ -736,9 +743,11 @@
     display: inline-block;
     font-family: inherit;
   }
+
   .radio-pill:hover {
     border-color: var(--accent);
   }
+
   .radio-pill.active {
     background: var(--accent);
     color: var(--white);

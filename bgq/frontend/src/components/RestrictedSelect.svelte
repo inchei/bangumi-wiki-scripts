@@ -119,6 +119,7 @@
   .rs-wrap {
     position: relative;
   }
+
   .rs-list {
     position: absolute;
     left: 0;
@@ -126,7 +127,7 @@
     min-width: 140px;
     max-height: 200px;
     overflow-y: auto;
-    background: rgba(254, 254, 254, 0.82);
+    background: rgb(254 254 254 / 82%);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--border);
@@ -137,15 +138,18 @@
     margin: 2px 0 0;
     font-size: 12px;
   }
+
   :global([data-theme="dark"]) .rs-list {
-    background: rgba(40, 40, 40, 0.8);
+    background: rgb(40 40 40 / 80%);
   }
+
   .rs-item {
     padding: 5px 10px;
     cursor: pointer;
     white-space: nowrap;
     color: var(--text);
   }
+
   .rs-item:hover,
   .rs-item.hover {
     background: var(--accent-light);
