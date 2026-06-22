@@ -20,10 +20,10 @@ type SQLBuilder struct {
 
 // clauseContext controls how filters are generated in different SQL contexts.
 type clauseContext struct {
-	alias         string // table alias: "s" (main subject), "rs" (related subject), "p" (person), "c" (character), "rc" (related character)
-	isPersonCtx   bool   // true when filtering person-level conditions (uses personFilterForAlias)
-	isCharacterCtx bool  // true when filtering character-level conditions (uses characterFilterForAlias)
-	isEpisodeCtx  bool   // true when filtering episode conditions (direct fields only, no infobox)
+	alias          string // table alias: "s" (main subject), "rs" (related subject), "p" (person), "c" (character), "rc" (related character)
+	isPersonCtx    bool   // true when filtering person-level conditions (uses personFilterForAlias)
+	isCharacterCtx bool   // true when filtering character-level conditions (uses characterFilterForAlias)
+	isEpisodeCtx   bool   // true when filtering episode conditions (direct fields only, no infobox)
 }
 
 // NewSQLBuilder creates a new SQL builder.

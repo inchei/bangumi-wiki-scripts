@@ -1,0 +1,21 @@
+package model
+
+// Source: https://github.com/bangumi/common/blob/master/subject_platforms.yml
+// Run `go generate` or update manually when upstream changes.
+
+{{range .Platforms}}
+// {{.Name}}Platforms — platform codes.
+var {{.Name}}Platforms = map[int]string{
+{{- range .Entries}}
+	{{.Code}}: "{{.Name}}",
+{{- end}}
+}
+{{end}}
+// TypePlatforms maps subject type to its platform codes.
+var TypePlatforms = map[int]map[int]string{
+	1: BookPlatforms,
+	2: AnimePlatforms,
+	3: MusicPlatforms,
+	4: GamePlatforms,
+	6: RealPlatforms,
+}

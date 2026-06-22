@@ -348,10 +348,10 @@ type CharacterRelationFilter struct {
 // StaffFilter filters by staff/person.
 // Conditions support all filter types (nested), allowing full filtering on persons (subject target) or subjects (person target).
 type StaffFilter struct {
-	Position   string      `yaml:"position" json:"position"`     // Chinese position name (e.g., "原作")
+	Position   string       `yaml:"position" json:"position"`                         // Chinese position name (e.g., "原作")
 	AppearEps  *FieldFilter `yaml:"appear_eps,omitempty" json:"appear_eps,omitempty"` // filter on appear_eps field
-	Mode       string      `yaml:"mode" json:"mode"`             // any, all, none
-	Conditions []Filter    `yaml:"conditions" json:"conditions"` // conditions on person (subject target) or subject (person target)
+	Mode       string       `yaml:"mode" json:"mode"`                                 // any, all, none
+	Conditions []Filter     `yaml:"conditions" json:"conditions"`                     // conditions on person (subject target) or subject (person target)
 }
 
 // CharacterFilter filters by character in a subject.
@@ -365,20 +365,20 @@ type CharacterFilter struct {
 // PersonCharacterFilter filters persons by their associated characters (via person_characters).
 // Supports filtering by character conditions AND related subject conditions.
 type PersonCharacterFilter struct {
-	Type             string   `yaml:"type,omitempty" json:"type,omitempty"`       // CV type name (e.g., "CV", "演员")
-	Mode             string   `yaml:"mode" json:"mode"`                           // any, all, none — character-level quantifier
-	SubjectMode      string   `yaml:"subject_mode,omitempty" json:"subject_mode,omitempty"` // any, all — subject-level quantifier per character
-	Conditions       []Filter `yaml:"conditions" json:"conditions"`               // conditions on the character
+	Type              string   `yaml:"type,omitempty" json:"type,omitempty"`                             // CV type name (e.g., "CV", "演员")
+	Mode              string   `yaml:"mode" json:"mode"`                                                 // any, all, none — character-level quantifier
+	SubjectMode       string   `yaml:"subject_mode,omitempty" json:"subject_mode,omitempty"`             // any, all — subject-level quantifier per character
+	Conditions        []Filter `yaml:"conditions" json:"conditions"`                                     // conditions on the character
 	SubjectConditions []Filter `yaml:"subject_conditions,omitempty" json:"subject_conditions,omitempty"` // conditions on the related subject
 }
 
 // CharacterPersonFilter filters characters by their associated persons (via person_characters).
 // Supports filtering by person conditions AND related subject conditions.
 type CharacterPersonFilter struct {
-	Type             string   `yaml:"type,omitempty" json:"type,omitempty"`       // CV type name (e.g., "CV", "演员")
-	Mode             string   `yaml:"mode" json:"mode"`                           // any, all, none — person-level quantifier
-	SubjectMode      string   `yaml:"subject_mode,omitempty" json:"subject_mode,omitempty"` // any, all — subject-level quantifier per person
-	Conditions       []Filter `yaml:"conditions" json:"conditions"`               // conditions on the person
+	Type              string   `yaml:"type,omitempty" json:"type,omitempty"`                             // CV type name (e.g., "CV", "演员")
+	Mode              string   `yaml:"mode" json:"mode"`                                                 // any, all, none — person-level quantifier
+	SubjectMode       string   `yaml:"subject_mode,omitempty" json:"subject_mode,omitempty"`             // any, all — subject-level quantifier per person
+	Conditions        []Filter `yaml:"conditions" json:"conditions"`                                     // conditions on the person
 	SubjectConditions []Filter `yaml:"subject_conditions,omitempty" json:"subject_conditions,omitempty"` // conditions on the related subject
 }
 

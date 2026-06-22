@@ -214,16 +214,16 @@ func (s *server) handleSchemaOptions(w http.ResponseWriter, r *http.Request) {
 	}
 
 	resp := map[string]interface{}{
-		"platforms":              model.PlatformsByType(typeCode),
-		"relations":              model.RelationsByType(typeCode),
-		"person_relations":       model.PersonRelationNames(),
-		"character_relations":    model.CharacterRelationNames(),
-		"character_assoc_types":  model.CharacterAssociationTypeNames(),
-		"person_char_types":      model.PersonCharacterTypeNames(),
-		"positions":              model.PositionsByType(typeCode),
-		"meta_tags":              model.MetaTagsForType(typeCode),
-		"types":                  model.TypeCNToNum,
-		"type_names":             model.TypeNumToCN,
+		"platforms":             model.PlatformsByType(typeCode),
+		"relations":             model.RelationsByType(typeCode),
+		"person_relations":      model.PersonRelationNames(),
+		"character_relations":   model.CharacterRelationNames(),
+		"character_assoc_types": model.CharacterAssociationTypeNames(),
+		"person_char_types":     model.PersonCharacterTypeNames(),
+		"positions":             model.PositionsByType(typeCode),
+		"meta_tags":             model.MetaTagsForType(typeCode),
+		"types":                 model.TypeCNToNum,
+		"type_names":            model.TypeNumToCN,
 	}
 	writeJSON(w, http.StatusOK, resp)
 }

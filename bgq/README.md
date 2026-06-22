@@ -530,6 +530,14 @@ golangci-lint run ./...                 # Lint
 ./bin/bgq serve --dev
 ```
 
+### 模型数据更新
+
+从 [bangumi/common](https://github.com/bangumi/common) 和本地 archive 重新生成 `internal/model/` 下的常量：
+
+```bash
+go generate ./internal/model/
+```
+
 ### 前端（Svelte）
 
 ```bash
