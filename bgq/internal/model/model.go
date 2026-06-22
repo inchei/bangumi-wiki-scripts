@@ -170,3 +170,5 @@ var TypeNumToCN = map[int]string{
 	4: "游戏",
 	6: "三次元",
 }
+
+func test() {}
