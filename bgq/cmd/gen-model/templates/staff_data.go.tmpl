@@ -1,0 +1,22 @@
+package model
+
+// Source: https://github.com/bangumi/common/blob/master/subject_staffs.yml
+// Run `go generate` or update manually when upstream changes.
+
+// StaffPositions maps subject type → position ID → Chinese name.
+var StaffPositions = map[int]map[int]string{
+	1: bookStaffPositions,
+	2: animeStaffPositions,
+	3: musicStaffPositions,
+	4: gameStaffPositions,
+	6: realStaffPositions,
+}
+
+{{range .StaffTypes}}
+// Staff position constants — {{.Comment}} ({{.Prefix}})
+var {{.Prefix}}StaffPositions = map[int]string{
+{{- range .Entries}}
+	{{.Code}}: "{{.Name}}",
+{{- end}}
+}
+{{end}}

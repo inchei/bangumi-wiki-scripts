@@ -1,0 +1,9 @@
+package model
+
+// MetaTagsByType maps subject type to common meta tag names.
+// Auto-generated from archive data. Update periodically via `go generate`.
+var MetaTagsByType = map[int][]string{
+{{- range .Entries}}
+	{{.TypeCode}}: { {{.Tags}} },
+{{- end}}
+}

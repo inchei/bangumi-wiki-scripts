@@ -1,24 +1,10 @@
 package model
 
-// Relation type constants — 动画 (Anime)
-var AnimeRelations = map[int]string{
-	1:  "改编",
-	2:  "前传",
-	3:  "续集",
-	4:  "总集篇",
-	5:  "全集",
-	6:  "番外篇",
-	7:  "角色出演",
-	8:  "相同世界观",
-	9:  "不同世界观",
-	10: "不同演绎",
-	11: "衍生",
-	12: "主线故事",
-	14: "联动",
-	99: "其他",
-}
+// Source: https://github.com/bangumi/common/blob/master/subject_relations.yml
+// Source: https://github.com/bangumi/common/blob/master/person_relations.yml
+// Run `go generate` or update manually when upstream changes.
 
-// Relation type constants — 书籍 (Book)
+// Relation type constants — Book
 var BookRelations = map[int]string{
 	1:    "改编",
 	1002: "系列",
@@ -37,7 +23,25 @@ var BookRelations = map[int]string{
 	1099: "其他",
 }
 
-// Relation type constants — 音乐 (Music)
+// Relation type constants — Anime
+var AnimeRelations = map[int]string{
+	1:  "改编",
+	2:  "前传",
+	3:  "续集",
+	4:  "总集篇",
+	5:  "全集",
+	6:  "番外篇",
+	7:  "角色出演",
+	8:  "相同世界观",
+	9:  "不同世界观",
+	10: "不同演绎",
+	11: "衍生",
+	12: "主线故事",
+	14: "联动",
+	99: "其他",
+}
+
+// Relation type constants — Music
 var MusicRelations = map[int]string{
 	3001: "原声集",
 	3002: "角色歌",
@@ -49,7 +53,7 @@ var MusicRelations = map[int]string{
 	3099: "其他",
 }
 
-// Relation type constants — 游戏 (Game)
+// Relation type constants — Game
 var GameRelations = map[int]string{
 	1:    "改编",
 	4002: "前传",
@@ -69,26 +73,10 @@ var GameRelations = map[int]string{
 	4099: "其他",
 }
 
-// Relation type constants — 三次元 (Real)
-var RealRelations = map[int]string{
-	1:  "改编",
-	2:  "前传",
-	3:  "续集",
-	4:  "总集篇",
-	5:  "全集",
-	6:  "番外篇",
-	7:  "角色出演",
-	8:  "相同世界观",
-	9:  "不同世界观",
-	10: "不同演绎",
-	11: "衍生",
-	12: "主线故事",
-	14: "联动",
-	99: "其他",
-}
+// Relation type constants — Real
+var RealRelations = map[int]string{}
 
-// PersonRelationTypes — 人物-人物关系类型 (person_type=prsn)
-// Source: https://github.com/bangumi/common/blob/master/person_relations.yml
+// PersonRelationTypes — person-to-person relation types (person_type=prsn)
 var PersonRelationTypes = map[int]string{
 	1001: "家人",
 	1002: "配偶",
@@ -108,17 +96,7 @@ var PersonRelationTypes = map[int]string{
 	1017: "经纪公司",
 }
 
-// PersonRelationNames returns all person relation type names.
-func PersonRelationNames() []string {
-	var names []string
-	for _, name := range PersonRelationTypes {
-		names = append(names, name)
-	}
-	return names
-}
-
-// CharacterRelationTypes — 角色-角色关系类型 (person_type=crt)
-// Source: https://github.com/bangumi/common/blob/master/person_relations.yml
+// CharacterRelationTypes — character-to-character relation types (person_type=crt)
 var CharacterRelationTypes = map[int]string{
 	2001: "形态",
 	2002: "朋友",
@@ -148,13 +126,4 @@ var CharacterRelationTypes = map[int]string{
 	2028: "前身",
 	2029: "饲主",
 	2099: "其他",
-}
-
-// CharacterRelationNames returns all character relation type names.
-func CharacterRelationNames() []string {
-	var names []string
-	for _, name := range CharacterRelationTypes {
-		names = append(names, name)
-	}
-	return names
 }

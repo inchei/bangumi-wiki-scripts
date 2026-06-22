@@ -1,0 +1,27 @@
+package model
+
+// Source: https://github.com/bangumi/common/blob/master/subject_relations.yml
+// Source: https://github.com/bangumi/common/blob/master/person_relations.yml
+// Run `go generate` or update manually when upstream changes.
+
+{{range .RelTypes}}
+// Relation type constants — {{.GoType}}
+var {{.GoType}}Relations = map[int]string{
+{{- range .Entries}}
+	{{.Code}}: "{{.Name}}",
+{{- end}}
+}
+{{end}}
+// PersonRelationTypes — person-to-person relation types (person_type=prsn)
+var PersonRelationTypes = map[int]string{
+{{- range .PersonEntries}}
+	{{.Code}}: "{{.Name}}",
+{{- end}}
+}
+
+// CharacterRelationTypes — character-to-character relation types (person_type=crt)
+var CharacterRelationTypes = map[int]string{
+{{- range .CharEntries}}
+	{{.Code}}: "{{.Name}}",
+{{- end}}
+}

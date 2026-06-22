@@ -1,5 +1,8 @@
 package model
 
+// Source: https://github.com/bangumi/common/blob/master/subject_staffs.yml
+// Run `go generate` or update manually when upstream changes.
+
 // StaffPositions maps subject type → position ID → Chinese name.
 var StaffPositions = map[int]map[int]string{
 	1: bookStaffPositions,
@@ -9,7 +12,7 @@ var StaffPositions = map[int]map[int]string{
 	6: realStaffPositions,
 }
 
-// Staff position constants — 书籍 (Book)
+// Staff position constants — 书籍 (book)
 var bookStaffPositions = map[int]string{
 	2001: "作者",
 	2002: "作画",
@@ -26,7 +29,7 @@ var bookStaffPositions = map[int]string{
 	2013: "图书品牌",
 }
 
-// Staff position constants — 动画 (Anime)
+// Staff position constants — 动画 (anime)
 var animeStaffPositions = map[int]string{
 	1:   "原作",
 	2:   "导演",
@@ -49,6 +52,7 @@ var animeStaffPositions = map[int]string{
 	20:  "原画",
 	21:  "第二原画",
 	22:  "动画检查",
+	23:  "助理制片人",
 	24:  "制作助理",
 	25:  "背景美术",
 	26:  "色彩指定",
@@ -159,9 +163,40 @@ var animeStaffPositions = map[int]string{
 	135: "特摄效果",
 	136: "视觉效果",
 	137: "动作导演",
+	138: "转场绘",
+	139: "插画",
+	140: "角色作画监督",
+	141: "作画监修",
+	142: "机设原案",
+	143: "概念艺术",
+	144: "视觉概念",
+	145: "画面设计",
+	146: "怪物设计",
+	147: "故事概念",
+	148: "剧本协调",
+	149: "脚本协力",
+	150: "副系列构成",
+	151: "构成协力",
+	152: "录音工作室",
+	153: "整音",
+	154: "音响制作担当",
+	155: "在线剪辑",
+	156: "离线剪辑",
+	157: "3D 动画师",
+	158: "CG 制作人",
+	159: "宣传制片人",
+	160: "美术制作人",
+	161: "音响制作人",
+	162: "CG 制作进行",
+	163: "美术制作进行",
+	164: "美术监督助理",
+	165: "色彩设计助理",
+	166: "摄影监督助理",
+	167: "制作管理助理",
+	168: "设定制作助理",
 }
 
-// Staff position constants — 音乐 (Music)
+// Staff position constants — 音乐 (music)
 var musicStaffPositions = map[int]string{
 	3001: "艺术家",
 	3002: "制作人",
@@ -180,7 +215,7 @@ var musicStaffPositions = map[int]string{
 	3015: "声乐",
 }
 
-// Staff position constants — 游戏 (Game)
+// Staff position constants — 游戏 (game)
 var gameStaffPositions = map[int]string{
 	1001: "开发",
 	1002: "发行",
@@ -217,7 +252,7 @@ var gameStaffPositions = map[int]string{
 	1033: "海报",
 }
 
-// Staff position constants — 三次元 (Real)
+// Staff position constants — 三次元 (real)
 var realStaffPositions = map[int]string{
 	4001: "原作",
 	4002: "导演",
