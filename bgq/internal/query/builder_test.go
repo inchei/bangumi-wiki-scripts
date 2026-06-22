@@ -348,3 +348,236 @@ func TestBuildLogicSingleItem(t *testing.T) {
 		t.Errorf("single-item logic should not contain OR, got:\n%s", sql)
 	}
 }
+
+func TestBuildTagSQL(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: testDataDir(),
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{Tag: &config.TagFilter{Operator: "contains", Value: "轻小说"}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+	if !strings.Contains(sql, "UNNEST") {
+		t.Errorf("expected UNNEST for tag filter, got:\n%s", sql)
+	}
+}
+
+func TestBuildMetaTagSQL(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: testDataDir(),
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{MetaTag: &config.TagFilter{Operator: "contains", Value: "TV"}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+	if !strings.Contains(sql, "LIST_CONTAINS") {
+		t.Errorf("expected LIST_CONTAINS for meta_tag filter, got:\n%s", sql)
+	}
+}
+
+func TestBuildGlobalSQL(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: testDataDir(),
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{Global: &config.GlobalFilter{Operator: "contains", Value: "完结"}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+	if !strings.Contains(sql, "infobox") {
+		t.Errorf("expected infobox in global filter, got:\n%s", sql)
+	}
+}
+
+func TestBuildEpisodeSQL(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: testDataDir(),
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{Episode: &config.EpisodeFilter{
+				Mode: "any",
+				Logic: &config.LogicFilter{
+					Op: "and",
+					Items: []config.Filter{
+						{Field: &config.FieldFilter{Field: "name", Operator: "regex", Value: "第\\d+話"}},
+					},
+				},
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+	if !strings.Contains(sql, "episodes") {
+		t.Errorf("expected episodes table, got:\n%s", sql)
+	}
+}
+
+func TestBuildCountSQL(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: testDataDir(),
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{Count: &config.CountFilter{What: "单行本", Operator: "gte", Value: "5"}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+	if !strings.Contains(sql, "COUNT") {
+		t.Errorf("expected COUNT in SQL, got:\n%s", sql)
+	}
+}
+
+func TestBuildPersonRelationSQL(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: testDataDir(),
+		Limit:   10,
+		Target:  "person",
+		Output:  &config.Output{Format: "table", Columns: []string{"person_id", "name"}},
+		Filters: []config.Filter{
+			{PersonRelation: &config.PersonRelationFilter{
+				Type: "同事",
+				Mode: "any",
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+	if !strings.Contains(sql, "person_relations") {
+		t.Errorf("expected person_relations table, got:\n%s", sql)
+	}
+}
+
+func TestBuildCharacterFilterSQL(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: testDataDir(),
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{Character: &config.CharacterFilter{
+				Type: "主角",
+				Mode: "any",
+				Conditions: []config.Filter{
+					{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "ルルーシュ"}},
+				},
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+	if !strings.Contains(sql, "subject_characters") {
+		t.Errorf("expected subject_characters table, got:\n%s", sql)
+	}
+}
+
+func TestBuildPersonCharacterSQL(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: testDataDir(),
+		Limit:   10,
+		Target:  "person",
+		Output:  &config.Output{Format: "table", Columns: []string{"person_id", "name"}},
+		Filters: []config.Filter{
+			{PersonCharacter: &config.PersonCharacterFilter{
+				Type:        "CV",
+				Mode:        "any",
+				SubjectMode: "any",
+				SubjectConditions: []config.Filter{
+					{Field: &config.FieldFilter{Field: "score", Operator: "gt", Value: "8"}},
+				},
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+	if !strings.Contains(sql, "person_characters") {
+		t.Errorf("expected person_characters table, got:\n%s", sql)
+	}
+}
+
+func TestBuildAppearEpsSQL(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: testDataDir(),
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{Staff: &config.StaffFilter{
+				Position:  "原作",
+				Mode:      "any",
+				AppearEps: &config.FieldFilter{Field: "appear_eps", Operator: "contains", Value: "1,2,3"},
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+	if !strings.Contains(sql, "appear_eps") {
+		t.Errorf("expected appear_eps in SQL, got:\n%s", sql)
+	}
+}
+
+func TestBuildRelationAnySQL(t *testing.T) {
+	cfg := &config.Config{
+		DataDir: testDataDir(),
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{
+			{Relation: &config.RelationFilter{
+				Type: "任意",
+				Mode: "none",
+			}},
+		},
+	}
+	b := NewSQLBuilder(cfg, cfg.DataDir)
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatalf("Build failed: %v", err)
+	}
+	t.Logf("Generated SQL:\n%s", sql)
+	if !strings.Contains(sql, "NOT EXISTS") {
+		t.Errorf("expected NOT EXISTS for none mode, got:\n%s", sql)
+	}
+}

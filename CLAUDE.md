@@ -49,6 +49,9 @@ pnpm lint:css:fix                          # Stylelint auto-fix
 pnpm format                                # Prettier format
 pnpm format:check                          # Check formatting (CI)
 # After modifying frontend code, run pnpm lint && pnpm lint:css && pnpm format:check before committing
+# Pre-commit hook (.husky/pre-commit) runs automatically:
+#   - Go files: gofmt + go vet + go test (builder tests only)
+#   - Frontend files: lint-staged (ESLint + Stylelint + Prettier)
 ```
 
 ### DuckDB CLI (runtime dependency)
