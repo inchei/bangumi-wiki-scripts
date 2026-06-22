@@ -43,10 +43,12 @@ pnpm install                               # Install deps
 pnpm dev                                   # Dev server (hot reload)
 pnpm build                                 # Build (output embedded in Go binary)
 
-pnpm lint                                  # ESLint
+pnpm lint                                  # ESLint (JS/Svelte)
+pnpm lint:css                              # Stylelint (CSS/Svelte styles)
+pnpm lint:css:fix                          # Stylelint auto-fix
 pnpm format                                # Prettier format
 pnpm format:check                          # Check formatting (CI)
-# After modifying frontend code, run pnpm lint && pnpm format:check before committing
+# After modifying frontend code, run pnpm lint && pnpm lint:css && pnpm format:check before committing
 ```
 
 ### DuckDB CLI (runtime dependency)
@@ -90,6 +92,7 @@ bgq/
 │   │   ├── yaml.js           # YAML parse/generate (js-yaml)
 │   │   └── components/       # UI components
 │   ├── eslint.config.js      # ESLint config
+│   ├── .stylelintrc.json     # Stylelint config
 │   ├── .prettierrc           # Prettier config
 │   ├── vite.config.js
 │   └── package.json
