@@ -84,16 +84,19 @@
     line-height: 1.6;
     tab-size: 2;
   }
+
   .yaml-editor:focus {
     border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgba(240, 145, 153, 0.15);
+    box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
     background: var(--white);
   }
+
   .yaml-actions {
     margin-top: 8px;
     display: flex;
     gap: 8px;
   }
+
   .yaml-error {
     color: var(--error-text);
     font-size: 12px;

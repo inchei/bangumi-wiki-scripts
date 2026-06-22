@@ -195,20 +195,24 @@
     flex-direction: column;
     gap: 2px;
   }
+
   .logic-group.root {
     cursor: default;
   }
+
   .logic-header {
     display: flex;
     align-items: center;
     gap: 6px;
     margin-bottom: 4px;
   }
+
   .logic-op-toggle {
     display: inline-flex;
     border: 1px solid var(--border);
     border-radius: 4px;
   }
+
   .op-btn {
     padding: 1px 8px;
     font-size: 11px;
@@ -220,10 +224,12 @@
     border: none;
     font-family: inherit;
   }
+
   .op-btn.active {
     background: var(--accent);
     color: #fff;
   }
+
   .tag-remove {
     cursor: pointer;
     color: var(--accent);
@@ -236,10 +242,12 @@
     font-family: inherit;
     padding: 0;
   }
+
   .tag-remove:hover {
     color: var(--accent-hover);
     transform: scale(1.2);
   }
+
   .add-row {
     display: flex;
     gap: 4px;
@@ -247,6 +255,7 @@
     margin-top: 4px;
     flex-wrap: wrap;
   }
+
   .logic-group :global(select),
   .logic-group :global(input.input) {
     field-sizing: content;
@@ -256,6 +265,7 @@
     font-size: 13px;
     padding: 0 12px;
   }
+
   .logic-group :global(select) {
     padding-right: 30px !important;
   }
