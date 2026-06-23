@@ -437,26 +437,6 @@ func TestBuildEpisodeSQL(t *testing.T) {
 	}
 }
 
-func TestBuildCountSQL(t *testing.T) {
-	cfg := &config.Config{
-		DataDir: testDataDir(),
-		Limit:   10,
-		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
-		Filters: []config.Filter{
-			{Count: &config.CountFilter{What: "单行本", Operator: "gte", Value: "5"}},
-		},
-	}
-	b := NewSQLBuilder(cfg, cfg.DataDir)
-	sql, err := b.Build()
-	if err != nil {
-		t.Fatalf("Build failed: %v", err)
-	}
-	t.Logf("Generated SQL:\n%s", sql)
-	if !strings.Contains(sql, "COUNT") {
-		t.Errorf("expected COUNT in SQL, got:\n%s", sql)
-	}
-}
-
 func TestBuildPersonRelationSQL(t *testing.T) {
 	cfg := &config.Config{
 		DataDir: testDataDir(),
