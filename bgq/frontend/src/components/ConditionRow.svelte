@@ -12,7 +12,6 @@
     CTX_CHARACTER,
     CTX_EPISODE,
     EPISODE_FIELD_LABELS,
-    EPISODE_FIELD_OPS,
     schemaOptions,
     schema,
     CAREER_OPTIONS,
@@ -47,27 +46,22 @@
       : null,
   );
   const isEpCtx = $derived(ctx === CTX_EPISODE);
-  const epOps = $derived(
-    condType === "field" ? EPISODE_FIELD_OPS[item.field.field] : null,
-  );
   const availOps = $derived(
     fc
       ? fc.ops
-      : isEpCtx && epOps
-        ? epOps
-        : [
-            "contains",
-            "not_contains",
-            "eq",
-            "regex",
-            "gt",
-            "lt",
-            "gte",
-            "lte",
-            "before",
-            "after",
-            "empty",
-          ],
+      : [
+          "contains",
+          "not_contains",
+          "eq",
+          "regex",
+          "gt",
+          "lt",
+          "gte",
+          "lte",
+          "before",
+          "after",
+          "empty",
+        ],
   );
 
   // Reactive field select options — depends on $schema so it updates when schema loads

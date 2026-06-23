@@ -111,6 +111,14 @@ bgq/
 3. `query.Engine` invokes DuckDB CLI subprocess (`-csv` mode)
 4. CSV output parsed → `QueryResult` → terminal table / CSV / JSON / API response
 
+### Query Targets
+
+Four query targets supported via `config.Config.Target`:
+- `subject` (default) — query subjects (条目)
+- `person` — query persons (人物)
+- `character` — query characters (角色)
+- `episode` — query episodes (剧集)
+
 ### Key Design Decisions
 
 - **DuckDB is an external CLI, not embedded.** Avoids CGo. Path resolved from `DUCKDB_PATH`, `bin/duckdb`, or `PATH`.

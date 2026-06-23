@@ -35,10 +35,12 @@
       return escapeHtml(String(id));
     const s = String(id);
     const cn = colName.toLowerCase();
+    const target = get(queryTarget);
     let type = "subject";
-    if (cn.includes("person")) type = "person";
-    else if (cn.includes("character")) type = "character";
-    else if (cn.includes("episode")) type = "episode";
+    if (target === "person" || cn.includes("person")) type = "person";
+    else if (target === "character" || cn.includes("character"))
+      type = "character";
+    else if (target === "episode" || cn.includes("episode")) type = "ep";
     return `<a href="https://bgm.tv/${type}/${s}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
   }
 
