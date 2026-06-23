@@ -1,16 +1,26 @@
 <script>
   import { onMount } from "svelte";
 
-  /** @type {{ value?: string, suggestions?: string[], onchange?: (v: string) => void, placeholder?: string }} */
+  /**
+   * @type {{
+   *   value?: string,
+   *   suggestions?: string[],
+   *   onchange?: (v: string) => void,
+   *   placeholder?: string,
+   *   restrict?: boolean
+   * }}
+   */
   let {
     value = "",
     suggestions = [],
     onchange = () => {},
     placeholder = "",
+    restrict = false,
   } = $props();
 
   let inputEl;
   let aw;
+  let lastValidValue = value;
 
   onMount(() => {
     if (typeof Awesomplete === "undefined" || !inputEl) return;
@@ -27,7 +37,7 @@
       },
     });
     inputEl.addEventListener("focus", () => {
-      aw.list = suggestions; // re-read current prop value
+      aw.list = suggestions;
       aw.evaluate();
       if (inputEl.value.trim() === "" && suggestions.length) {
         aw.ul.innerHTML = "";
@@ -39,21 +49,31 @@
         aw.open();
       }
     });
-    inputEl.addEventListener("blur", () => setTimeout(() => aw?.close(), 150));
+    inputEl.addEventListener("awesomplete-selectcomplete", (e) => {
+      lastValidValue = e.text.value;
+      onchange(e.text.value);
+    });
+    inputEl.addEventListener("blur", () => {
+      setTimeout(() => {
+        aw?.close();
+        if (restrict) {
+          const trimmed = inputEl.value.trim();
+          if (trimmed && suggestions.includes(trimmed)) {
+            lastValidValue = trimmed;
+            onchange(trimmed);
+          } else {
+            inputEl.value = lastValidValue;
+            onchange(lastValidValue);
+          }
+        } else {
+          onchange(inputEl.value.trim());
+        }
+      }, 150);
+    });
     return () => {
       aw = null;
     };
   });
-
-  function handleChange(e) {
-    onchange(e.target.value.trim());
-  }
 </script>
 
-<input
-  bind:this={inputEl}
-  class="input"
-  {value}
-  {placeholder}
-  onchange={handleChange}
-/>
+<input bind:this={inputEl} class="input" {value} {placeholder} />

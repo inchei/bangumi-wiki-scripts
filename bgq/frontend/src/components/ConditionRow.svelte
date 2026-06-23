@@ -19,7 +19,6 @@
   } from "../stores.js";
   import FilterTree from "./FilterTree.svelte";
   import AwesompleteInput from "./AwesompleteInput.svelte";
-  import RestrictedSelect from "./RestrictedSelect.svelte";
 
   /** @type {{ item: object, group: object, idx: number, ctx: string }} */
   let { item, group, idx, ctx } = $props();
@@ -111,12 +110,16 @@
 
     {#if item.field.operator !== "empty"}
       {#if fc && fc.type === "select" && fc.dynamic === "platform"}
-        <RestrictedSelect
-          value={String(item.field.value || "")}
+        <AwesompleteInput
+          value={selectOpts.find(
+            (opt) => opt[0] === String(item.field.value || ""),
+          )?.[1] || ""}
           suggestions={selectOpts.map((opt) => opt[1])}
-          getCode={(label) =>
-            selectOpts.find((opt) => opt[1] === label)?.[0] ?? ""}
-          onchange={(v) => updateCondition(group, idx, "field", "value", v)}
+          restrict={true}
+          onchange={(label) => {
+            const code = selectOpts.find((opt) => opt[1] === label)?.[0] ?? "";
+            updateCondition(group, idx, "field", "value", code);
+          }}
           placeholder="子类型"
         />
       {:else if fc && fc.type === "select"}
@@ -129,12 +132,17 @@
           >
         {/each}
       {:else if fc?.ac === "career"}
-        <RestrictedSelect
-          value={item.field.value || ""}
+        <AwesompleteInput
+          value={CAREER_OPTIONS.find(
+            (opt) => opt[0] === item.field.value,
+          )?.[1] || ""}
           suggestions={CAREER_OPTIONS.map((opt) => opt[1])}
-          getCode={(label) =>
-            CAREER_OPTIONS.find((opt) => opt[1] === label)?.[0] ?? ""}
-          onchange={(v) => updateCondition(group, idx, "field", "value", v)}
+          restrict={true}
+          onchange={(label) => {
+            const code =
+              CAREER_OPTIONS.find((opt) => opt[1] === label)?.[0] ?? "";
+            updateCondition(group, idx, "field", "value", code);
+          }}
           placeholder="职业"
         />
       {:else}
@@ -176,7 +184,8 @@
     </select>
   {:else if condType === "meta_tag"}
     <span class="cond-type">公共标签</span>
-    <RestrictedSelect
+    <AwesompleteInput
+      restrict={true}
       value={item.meta_tag.value}
       suggestions={$schemaOptions.meta_tags || []}
       onchange={(v) => updateCondition(group, idx, "meta_tag", "value", v)}
@@ -217,7 +226,8 @@
     />
   {:else if condType === "count"}
     <span class="cond-type">数量</span>
-    <RestrictedSelect
+    <AwesompleteInput
+      restrict={true}
       value={item.count.what}
       suggestions={["ep"].concat($schemaOptions.relations || [])}
       onchange={(v) => updateCondition(group, idx, "count", "what", v)}
@@ -272,7 +282,8 @@
     {@const r = item.relation}
     <div class="cond-row-inner">
       <span class="cond-type">关系</span>
-      <RestrictedSelect
+      <AwesompleteInput
+        restrict={true}
         value={r.type}
         suggestions={["任意"].concat($schemaOptions.relations || [])}
         onchange={(v) => updateCondition(group, idx, "relation", "type", v)}
@@ -307,7 +318,8 @@
     {@const pr = item.person_relation}
     <div class="cond-row-inner">
       <span class="cond-type">人物关系</span>
-      <RestrictedSelect
+      <AwesompleteInput
+        restrict={true}
         value={pr.type}
         suggestions={["任意"].concat($schemaOptions.person_relations || [])}
         onchange={(v) =>
@@ -349,7 +361,8 @@
     {@const cr = item.character_relation}
     <div class="cond-row-inner">
       <span class="cond-type">角色关系</span>
-      <RestrictedSelect
+      <AwesompleteInput
+        restrict={true}
         value={cr.type}
         suggestions={["任意"].concat($schemaOptions.character_relations || [])}
         onchange={(v) =>
@@ -391,7 +404,8 @@
     {@const ch = item.character}
     <div class="cond-row-inner">
       <span class="cond-type">角色</span>
-      <RestrictedSelect
+      <AwesompleteInput
+        restrict={true}
         value={ch.type || ""}
         suggestions={["任意"].concat(
           $schemaOptions.character_assoc_types || [],
@@ -428,7 +442,8 @@
     {@const pc = item.person_character}
     <div class="cond-row-inner">
       <span class="cond-type">角色</span>
-      <RestrictedSelect
+      <AwesompleteInput
+        restrict={true}
         value={pc.type || ""}
         suggestions={["任意"].concat($schemaOptions.person_char_types || [])}
         onchange={(v) =>
@@ -498,7 +513,8 @@
     {@const cp = item.character_person}
     <div class="cond-row-inner">
       <span class="cond-type">人物</span>
-      <RestrictedSelect
+      <AwesompleteInput
+        restrict={true}
         value={cp.type || ""}
         suggestions={["任意"].concat($schemaOptions.person_char_types || [])}
         onchange={(v) =>
@@ -570,7 +586,8 @@
       <span class="cond-type"
         >{$queryTarget === "person" ? "关联" : "人物"}</span
       >
-      <RestrictedSelect
+      <AwesompleteInput
+        restrict={true}
         value={s.position}
         suggestions={["任意"].concat($schemaOptions.positions || [])}
         onchange={(v) => updateCondition(group, idx, "staff", "position", v)}
