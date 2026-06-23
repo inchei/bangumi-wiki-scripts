@@ -60,6 +60,14 @@
     newTypeSelectMap[$queryTarget] = val;
   }
 
+  // Reset newTypeSelect when options change and current value is no longer valid
+  const typeOptions = $derived(getNewTypeOptions(effectiveCtx, $queryTarget));
+  $effect(() => {
+    if (!typeOptions.some((opt) => opt.value === newTypeSelect)) {
+      newTypeSelectMap[$queryTarget] = typeOptions[0]?.value || "field";
+    }
+  });
+
   $effect(() => {
     const req = $focusRequest;
     if (!req || req.groupId !== logic._id || !containerEl) return;
@@ -192,7 +200,7 @@
       value={newTypeSelect}
       onchange={(e) => setNewTypeSelect(e.target.value)}
     >
-      {#each getNewTypeOptions(effectiveCtx, $queryTarget) as opt (opt.value)}
+      {#each typeOptions as opt (opt.value)}
         <option value={opt.value}>{opt.label}</option>
       {/each}
     </select>
