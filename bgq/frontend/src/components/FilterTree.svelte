@@ -43,7 +43,16 @@
   );
 
   let containerEl;
-  let newTypeSelect = $state("field");
+  // Per-target state for the "add condition" dropdown
+  let newTypeSelectMap = $state({
+    subject: "field",
+    person: "field",
+    character: "field",
+  });
+  let newTypeSelect = $derived(newTypeSelectMap[$queryTarget] || "field");
+  function setNewTypeSelect(val) {
+    newTypeSelectMap[$queryTarget] = val;
+  }
 
   $effect(() => {
     const req = $focusRequest;
@@ -167,7 +176,11 @@
   {/each}
 
   <div class="add-row">
-    <select class="select select-sm" bind:value={newTypeSelect}>
+    <select
+      class="select select-sm"
+      value={newTypeSelect}
+      onchange={(e) => setNewTypeSelect(e.target.value)}
+    >
       {#each getNewTypeOptions(effectiveCtx, $queryTarget) as opt (opt.value)}
         <option value={opt.value}>{opt.label}</option>
       {/each}
