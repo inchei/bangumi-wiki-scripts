@@ -104,11 +104,6 @@ func parseInteractiveCondition(input string) (config.Filter, error) {
 		return parseRelationCondition(input)
 	}
 
-	// Check for count: prefix
-	if strings.HasPrefix(input, "count:") {
-		return parseCountCondition(input)
-	}
-
 	// Check for *: prefix (global search)
 	if strings.HasPrefix(input, "*:") {
 		op, val := parseOperatorValue(input[2:])
@@ -250,22 +245,6 @@ func parseInlineRelationCondition(relName, rest string) (config.Filter, error) {
 	}, nil
 }
 
-func parseCountCondition(input string) (config.Filter, error) {
-	// Format: count:关系名:操作符:值  or count:ep:操作符:值
-	parts := strings.SplitN(input, ":", 4)
-	if len(parts) < 4 {
-		return config.Filter{}, fmt.Errorf("count格式: count:关系名|ep:操作符:值")
-	}
-
-	return config.Filter{
-		Count: &config.CountFilter{
-			What:     strings.TrimSpace(parts[1]),
-			Operator: strings.TrimSpace(parts[2]),
-			Value:    strings.TrimSpace(parts[3]),
-		},
-	}, nil
-}
-
 func parseMetaTagCondition(input string) (config.Filter, error) {
 	// Format: meta_tag:标签名  or  公共标签:标签名
 	rest := input
@@ -329,10 +308,6 @@ func printInteractiveHelp() {
   relation:关系名                             有该关系的条目
   relation:!关系名                            没有该关系的条目
   关系名:字段名:条件                           单行关系条件
-
-数量筛选:
-  count:ep:大于:数                           剧集数量统计
-  count:关系名:大于:数                         关系数量统计
 
 直接字段名: id, type, name, name_cn, score, rank, date, platform, summary, nsfw, series
 `)

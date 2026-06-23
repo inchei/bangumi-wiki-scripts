@@ -28,7 +28,6 @@
     if (item.tag) return "tag";
     if (item.meta_tag) return "meta_tag";
     if (item.global) return "global";
-    if (item.count) return "count";
     if (item.type) return "type";
     if (item.relation) return "relation";
     if (item.person_relation) return "person_relation";
@@ -224,32 +223,6 @@
       onchange={(e) =>
         updateCondition(group, idx, "global", "value", e.target.value)}
     />
-  {:else if condType === "count"}
-    <span class="cond-type">数量</span>
-    <AwesompleteInput
-      restrict={true}
-      value={item.count.what}
-      suggestions={["ep"].concat($schemaOptions.relations || [])}
-      onchange={(v) => updateCondition(group, idx, "count", "what", v)}
-      placeholder="关联/ep"
-    />
-    <select
-      class="select select-sm"
-      value={item.count.operator}
-      onchange={(e) =>
-        updateCondition(group, idx, "count", "operator", e.target.value)}
-    >
-      {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
-        <option value={op}>{opLabel(op)}</option>
-      {/each}
-    </select>
-    <input
-      class="input"
-      type="number"
-      value={item.count.value || ""}
-      onchange={(e) =>
-        updateCondition(group, idx, "count", "value", e.target.value)}
-    />
   {:else if condType === "type"}
     {@const typeOpts =
       ctx === CTX_PERSON
@@ -298,7 +271,33 @@
         <option value="any">任意</option>
         <option value="all">全部</option>
         <option value="none">排除</option>
+        <option value="count">数量</option>
       </select>
+      {#if r.mode === "count"}
+        <select
+          class="select select-sm"
+          value={r.count_op || "gte"}
+          onchange={(e) =>
+            updateCondition(group, idx, "relation", "count_op", e.target.value)}
+        >
+          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+            <option value={op}>{opLabel(op)}</option>
+          {/each}
+        </select>
+        <input
+          class="input"
+          type="number"
+          value={r.count_val || ""}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "relation",
+              "count_val",
+              e.target.value,
+            )}
+        />
+      {/if}
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
@@ -341,7 +340,39 @@
         <option value="any">任意</option>
         <option value="all">全部</option>
         <option value="none">排除</option>
+        <option value="count">数量</option>
       </select>
+      {#if pr.mode === "count"}
+        <select
+          class="select select-sm"
+          value={pr.count_op || "gte"}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "person_relation",
+              "count_op",
+              e.target.value,
+            )}
+        >
+          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+            <option value={op}>{opLabel(op)}</option>
+          {/each}
+        </select>
+        <input
+          class="input"
+          type="number"
+          value={pr.count_val || ""}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "person_relation",
+              "count_val",
+              e.target.value,
+            )}
+        />
+      {/if}
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
@@ -384,7 +415,39 @@
         <option value="any">任意</option>
         <option value="all">全部</option>
         <option value="none">排除</option>
+        <option value="count">数量</option>
       </select>
+      {#if cr.mode === "count"}
+        <select
+          class="select select-sm"
+          value={cr.count_op || "gte"}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "character_relation",
+              "count_op",
+              e.target.value,
+            )}
+        >
+          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+            <option value={op}>{opLabel(op)}</option>
+          {/each}
+        </select>
+        <input
+          class="input"
+          type="number"
+          value={cr.count_val || ""}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "character_relation",
+              "count_val",
+              e.target.value,
+            )}
+        />
+      {/if}
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
@@ -422,7 +485,39 @@
         <option value="any">任意</option>
         <option value="all">全部</option>
         <option value="none">排除</option>
+        <option value="count">数量</option>
       </select>
+      {#if ch.mode === "count"}
+        <select
+          class="select select-sm"
+          value={ch.count_op || "gte"}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "character",
+              "count_op",
+              e.target.value,
+            )}
+        >
+          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+            <option value={op}>{opLabel(op)}</option>
+          {/each}
+        </select>
+        <input
+          class="input"
+          type="number"
+          value={ch.count_val || ""}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "character",
+              "count_val",
+              e.target.value,
+            )}
+        />
+      {/if}
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
@@ -465,7 +560,39 @@
         <option value="any">任意</option>
         <option value="all">全部</option>
         <option value="none">排除</option>
+        <option value="count">数量</option>
       </select>
+      {#if pc.mode === "count"}
+        <select
+          class="select select-sm"
+          value={pc.count_op || "gte"}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "person_character",
+              "count_op",
+              e.target.value,
+            )}
+        >
+          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+            <option value={op}>{opLabel(op)}</option>
+          {/each}
+        </select>
+        <input
+          class="input"
+          type="number"
+          value={pc.count_val || ""}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "person_character",
+              "count_val",
+              e.target.value,
+            )}
+        />
+      {/if}
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
@@ -500,7 +627,39 @@
           >
             <option value="any">任意</option>
             <option value="all">全部</option>
+            <option value="count">数量</option>
           </select>
+          {#if (pc.subject_mode || "any") === "count"}
+            <select
+              class="select select-sm"
+              value={pc.subject_count_op || "gte"}
+              onchange={(e) =>
+                updateCondition(
+                  group,
+                  idx,
+                  "person_character",
+                  "subject_count_op",
+                  e.target.value,
+                )}
+            >
+              {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+                <option value={op}>{opLabel(op)}</option>
+              {/each}
+            </select>
+            <input
+              class="input"
+              type="number"
+              value={pc.subject_count_val || ""}
+              onchange={(e) =>
+                updateCondition(
+                  group,
+                  idx,
+                  "person_character",
+                  "subject_count_val",
+                  e.target.value,
+                )}
+            />
+          {/if}
         </div>
         <FilterTree
           lg={pc.subject_conditions[0].logic}
@@ -536,7 +695,39 @@
         <option value="any">任意</option>
         <option value="all">全部</option>
         <option value="none">排除</option>
+        <option value="count">数量</option>
       </select>
+      {#if cp.mode === "count"}
+        <select
+          class="select select-sm"
+          value={cp.count_op || "gte"}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "character_person",
+              "count_op",
+              e.target.value,
+            )}
+        >
+          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+            <option value={op}>{opLabel(op)}</option>
+          {/each}
+        </select>
+        <input
+          class="input"
+          type="number"
+          value={cp.count_val || ""}
+          onchange={(e) =>
+            updateCondition(
+              group,
+              idx,
+              "character_person",
+              "count_val",
+              e.target.value,
+            )}
+        />
+      {/if}
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
@@ -571,7 +762,39 @@
           >
             <option value="any">任意</option>
             <option value="all">全部</option>
+            <option value="count">数量</option>
           </select>
+          {#if (cp.subject_mode || "any") === "count"}
+            <select
+              class="select select-sm"
+              value={cp.subject_count_op || "gte"}
+              onchange={(e) =>
+                updateCondition(
+                  group,
+                  idx,
+                  "character_person",
+                  "subject_count_op",
+                  e.target.value,
+                )}
+            >
+              {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+                <option value={op}>{opLabel(op)}</option>
+              {/each}
+            </select>
+            <input
+              class="input"
+              type="number"
+              value={cp.subject_count_val || ""}
+              onchange={(e) =>
+                updateCondition(
+                  group,
+                  idx,
+                  "character_person",
+                  "subject_count_val",
+                  e.target.value,
+                )}
+            />
+          {/if}
         </div>
         <FilterTree
           lg={cp.subject_conditions[0].logic}
@@ -639,7 +862,27 @@
         <option value="any">任意</option>
         <option value="all">全部</option>
         <option value="none">排除</option>
+        <option value="count">数量</option>
       </select>
+      {#if s.mode === "count"}
+        <select
+          class="select select-sm"
+          value={s.count_op || "gte"}
+          onchange={(e) =>
+            updateCondition(group, idx, "staff", "count_op", e.target.value)}
+        >
+          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+            <option value={op}>{opLabel(op)}</option>
+          {/each}
+        </select>
+        <input
+          class="input"
+          type="number"
+          value={s.count_val || ""}
+          onchange={(e) =>
+            updateCondition(group, idx, "staff", "count_val", e.target.value)}
+        />
+      {/if}
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
@@ -664,7 +907,27 @@
       >
         <option value="any">任意</option>
         <option value="all">全部</option>
+        <option value="count">数量</option>
       </select>
+      {#if ep.mode === "count"}
+        <select
+          class="select select-sm"
+          value={ep.count_op || "gte"}
+          onchange={(e) =>
+            updateCondition(group, idx, "episode", "count_op", e.target.value)}
+        >
+          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+            <option value={op}>{opLabel(op)}</option>
+          {/each}
+        </select>
+        <input
+          class="input"
+          type="number"
+          value={ep.count_val || ""}
+          onchange={(e) =>
+            updateCondition(group, idx, "episode", "count_val", e.target.value)}
+        />
+      {/if}
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
