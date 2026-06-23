@@ -88,7 +88,9 @@ function cleanValue(val, key) {
     }
     return out;
   }
-  return { ...val };
+  const out = { ...val };
+  delete out._special;
+  return out;
 }
 
 /**
