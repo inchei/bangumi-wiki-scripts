@@ -40,11 +40,13 @@ export function newLogicGroup(op) {
 export const subjectRootLogic = writable(newLogicGroup("and"));
 export const personRootLogic = writable(newLogicGroup("and"));
 export const characterRootLogic = writable(newLogicGroup("and"));
+export const episodeRootLogic = writable(newLogicGroup("and"));
 
 export function getRootLogic() {
   const target = get(queryTarget);
   if (target === "person") return get(personRootLogic);
   if (target === "character") return get(characterRootLogic);
+  if (target === "episode") return get(episodeRootLogic);
   return get(subjectRootLogic);
 }
 
@@ -52,6 +54,7 @@ export function updateRootLogic(lg) {
   const target = get(queryTarget);
   if (target === "person") personRootLogic.set(lg);
   else if (target === "character") characterRootLogic.set(lg);
+  else if (target === "episode") episodeRootLogic.set(lg);
   else subjectRootLogic.set(lg);
   bumpVersion();
 }
@@ -61,6 +64,7 @@ export function resetLogicBuilder() {
   subjectRootLogic.set(newLogicGroup("and"));
   personRootLogic.set(newLogicGroup("and"));
   characterRootLogic.set(newLogicGroup("and"));
+  episodeRootLogic.set(newLogicGroup("and"));
 }
 
 // ---- Logic tree helpers ----
@@ -592,7 +596,9 @@ function applyMutation(targetGroupId, mutator) {
       ? personRootLogic
       : target === "character"
         ? characterRootLogic
-        : subjectRootLogic;
+        : target === "episode"
+          ? episodeRootLogic
+          : subjectRootLogic;
   store.update((root) => updateGroupInTree(root, targetGroupId, mutator));
 }
 
@@ -603,11 +609,35 @@ export function addToGroup(group, filter) {
   });
 }
 
+// Default operator for episode fields
+const EP_FIELD_DEFAULT_OP = {
+  airdate: "before",
+  sort: "gte",
+  type: "eq",
+  disc: "gte",
+  id: "eq",
+};
+
 export function addCondition(group, type, ctx) {
   if (type.startsWith("ep_")) {
-    addToGroup(group, {
-      field: { field: type.slice(3), operator: "contains", value: "" },
-    });
+    const fieldName = type.slice(3);
+    const fc = EPISODE_FIELD_CONFIGS[fieldName];
+    if (fc) {
+      const val = fc.type === "select" ? fc.options?.[0]?.[0] || "" : "";
+      addToGroup(group, {
+        field: {
+          field: fieldName,
+          operator: fc.ops[0],
+          value: val,
+          _special: true,
+        },
+      });
+    } else {
+      const op = EP_FIELD_DEFAULT_OP[fieldName] || "contains";
+      addToGroup(group, {
+        field: { field: fieldName, operator: op, value: "" },
+      });
+    }
   } else {
     ctx = ctx || group._ctx || "subject";
     const fc = ctxFieldConfigs(ctx)[type];
@@ -628,7 +658,14 @@ export function removeLogicGroup(groupId) {
   const root = getRootLogic();
   removeLogicItemById(root, groupId);
   const target = get(queryTarget);
-  const store = target === "person" ? personRootLogic : subjectRootLogic;
+  const store =
+    target === "person"
+      ? personRootLogic
+      : target === "character"
+        ? characterRootLogic
+        : target === "episode"
+          ? episodeRootLogic
+          : subjectRootLogic;
   store.update((v) => ({ ...v }));
 }
 
@@ -655,7 +692,9 @@ export function toggleLogicOp(group, val) {
       ? personRootLogic
       : target === "character"
         ? characterRootLogic
-        : subjectRootLogic;
+        : target === "episode"
+          ? episodeRootLogic
+          : subjectRootLogic;
   store.update((root) => {
     function cloneAndUpdate(node) {
       if (node._id === group._id) return { ...node, op: val };
@@ -944,6 +983,7 @@ export function applyFiltersFromAPI(apiFilters) {
   const target = get(queryTarget);
   if (target === "person") personRootLogic.set(newRoot);
   else if (target === "character") characterRootLogic.set(newRoot);
+  else if (target === "episode") episodeRootLogic.set(newRoot);
   else subjectRootLogic.set(newRoot);
 }
 
@@ -994,6 +1034,23 @@ export const EPISODE_FIELD_OPS = {
   type: ["gt", "gte", "lt", "lte", "eq"],
   disc: ["gt", "gte", "lt", "lte", "eq"],
   id: ["gt", "gte", "lt", "lte", "eq"],
+};
+
+export const EPISODE_FIELD_CONFIGS = {
+  type: {
+    label: "类型",
+    ops: ["eq"],
+    type: "select",
+    options: [
+      ["0", "本篇"],
+      ["1", "特别篇"],
+      ["2", "OP"],
+      ["3", "ED"],
+      ["4", "CM"],
+      ["5", "MAD"],
+      ["6", "其他"],
+    ],
+  },
 };
 
 export const PERSON_FIELDS = [
@@ -1140,6 +1197,7 @@ export const CHARACTER_FIELD_CONFIGS = {
 export function ctxFieldConfigs(ctx) {
   if (ctx === CTX_PERSON) return PERSON_FIELD_CONFIGS;
   if (ctx === CTX_CHARACTER) return CHARACTER_FIELD_CONFIGS;
+  if (ctx === CTX_EPISODE) return EPISODE_FIELD_CONFIGS;
   return SUBJECT_FIELD_CONFIGS;
 }
 
