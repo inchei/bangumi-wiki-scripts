@@ -4,6 +4,7 @@
     subjectRootLogic,
     personRootLogic,
     characterRootLogic,
+    episodeRootLogic,
     queryTarget,
     toggleLogicOp,
     addCondition,
@@ -30,7 +31,9 @@
         ? CTX_PERSON
         : $queryTarget === "character"
           ? CTX_CHARACTER
-          : CTX_SUBJECT
+          : $queryTarget === "episode"
+            ? CTX_EPISODE
+            : CTX_SUBJECT
       : ctx,
   );
   const logic = $derived(
@@ -39,7 +42,9 @@
         ? $personRootLogic
         : $queryTarget === "character"
           ? $characterRootLogic
-          : $subjectRootLogic),
+          : $queryTarget === "episode"
+            ? $episodeRootLogic
+            : $subjectRootLogic),
   );
 
   let containerEl;
@@ -48,6 +53,7 @@
     subject: "field",
     person: "field",
     character: "field",
+    episode: "field",
   });
   let newTypeSelect = $derived(newTypeSelectMap[$queryTarget] || "field");
   function setNewTypeSelect(val) {
@@ -85,7 +91,12 @@
 
   function getNewTypeOptions(currentCtx, qTarget) {
     const opts = [];
-    if (currentCtx === CTX_EPISODE) {
+    if (currentCtx === CTX_EPISODE && qTarget === "episode") {
+      // Episode as primary target: specific fields
+      for (const f of EPISODE_FIELDS)
+        opts.push({ value: "ep_" + f, label: EPISODE_FIELD_LABELS[f] });
+    } else if (currentCtx === CTX_EPISODE) {
+      // Episode as nested context (inside subject query)
       for (const f of EPISODE_FIELDS)
         opts.push({ value: "ep_" + f, label: EPISODE_FIELD_LABELS[f] });
     } else if (currentCtx === CTX_CHARACTER) {

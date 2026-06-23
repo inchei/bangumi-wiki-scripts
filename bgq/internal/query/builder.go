@@ -37,6 +37,8 @@ func NewSQLBuilder(cfg *config.Config, dataDir string) *SQLBuilder {
 		alias = "p"
 	} else if target == "character" {
 		alias = "c"
+	} else if target == "episode" {
+		alias = "e"
 	}
 	return &SQLBuilder{
 		cfg:       cfg,
@@ -88,6 +90,8 @@ func (b *SQLBuilder) Build() (string, error) {
 		sql.WriteString("\nFROM persons p\n")
 	case "character":
 		sql.WriteString("\nFROM characters c\n")
+	case "episode":
+		sql.WriteString("\nFROM episodes e\n")
 	default:
 		sql.WriteString("\nFROM subjects s\n")
 	}
@@ -261,7 +265,16 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	}
 
 	// Episodes CTE
-	if b.cfg.NeedsEpisodes() {
+	episodesLoaded := false
+	if b.target == "episode" {
+		epFile := b.dataDir + "/episode.jsonlines"
+		ctes = append(ctes, fmt.Sprintf(
+			`episodes AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
+			escapeSQLString(epFile),
+		))
+		episodesLoaded = true
+	}
+	if !episodesLoaded && b.cfg.NeedsEpisodes() {
 		epFile := b.dataDir + "/episode.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`episodes AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
@@ -365,6 +378,16 @@ func (b *SQLBuilder) episodeFilterForCtx(f config.Filter, idx int) (string, erro
 
 // filterToSQLMain dispatches a single filter using main-table handlers.
 func (b *SQLBuilder) filterToSQLMain(f config.Filter, idx int) (string, error) {
+	// Episode target: only field filters are supported
+	if b.target == "episode" {
+		switch {
+		case f.Field != nil:
+			return b.episodeFieldFilter(f.Field)
+		default:
+			return "", fmt.Errorf("剧集筛选不支持此条件类型 (index %d)", idx)
+		}
+	}
+
 	switch {
 	case f.Type != nil:
 		return b.typeFilter(f.Type)
@@ -1959,8 +1982,19 @@ func (b *SQLBuilder) episodeFilter(f *config.EpisodeFilter) (string, error) {
 func (b *SQLBuilder) episodeFieldFilter(f *config.FieldFilter) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
 	switch f.Field {
-	case "name", "name_cn", "description", "airdate", "duration", "sort", "type", "disc", "id":
+	case "name", "name_cn", "description", "airdate", "duration", "sort", "disc", "id", "subject_id":
 		return b.buildCondition("e."+quoteIdent(f.Field), f.Operator, valueStr)
+	case "type":
+		// Map Chinese episode type names to numbers
+		epTypes := map[string]int{
+			"本篇": 0, "特别篇": 1, "SP": 1, "sp": 1,
+			"OP": 2, "op": 2, "ED": 3, "ed": 3,
+			"CM": 4, "cm": 4, "MAD": 5, "mad": 5, "其他": 6,
+		}
+		if typeNum, ok := epTypes[valueStr]; ok {
+			return b.buildCondition("e.type", f.Operator, fmt.Sprintf("%d", typeNum))
+		}
+		return b.buildCondition("e.type", f.Operator, valueStr)
 	default:
 		return "", fmt.Errorf("unknown episode field: %s", f.Field)
 	}
@@ -2047,6 +2081,8 @@ func (b *SQLBuilder) buildSelect() []string {
 			return []string{a + ".person_id as id", a + ".name", a + ".career"}
 		case "character":
 			return []string{a + ".character_id as id", a + ".name", a + ".role"}
+		case "episode":
+			return []string{a + ".id", a + ".name", a + ".name_cn", a + ".type", a + ".airdate", a + ".duration", a + ".sort"}
 		default:
 			return []string{a + ".id", a + ".name", a + ".name_cn", a + ".type", a + ".score", a + ".date"}
 		}
@@ -2064,6 +2100,8 @@ func (b *SQLBuilder) buildSelect() []string {
 			default:
 				result = append(result, a+".id")
 			}
+		case col == "subject_id" && b.target == "episode":
+			result = append(result, a+".subject_id")
 		case isDirectField(col):
 			result = append(result, a+"."+quoteIdent(col))
 		case col == "name_cn":
@@ -2185,6 +2223,9 @@ func isDirectField(field string) bool {
 		return true
 	// Character direct fields
 	case "character_id", "role", "comments", "collects":
+		return true
+	// Episode direct fields
+	case "subject_id", "airdate", "duration", "sort", "disc", "desc":
 		return true
 	default:
 		return false

@@ -7,6 +7,7 @@
     faUser,
     faMasksTheater,
     faCircleHalfStroke,
+    faFilm,
   } from "@fortawesome/free-solid-svg-icons";
   import { loadSchema, loadSchemaOptions } from "./api.js";
   import { queryTarget, clearFilters } from "./stores.js";
@@ -62,6 +63,9 @@
       document.getElementById("outputColumns").value = "person_id,name,career";
     } else if (t === "character") {
       document.getElementById("outputColumns").value = "character_id,name,role";
+    } else if (t === "episode") {
+      document.getElementById("outputColumns").value =
+        "id,name,name_cn,type,airdate,duration,sort";
     } else {
       document.getElementById("outputColumns").value =
         "id,name,name_cn,type,score";
@@ -156,6 +160,12 @@
           class:active={$queryTarget === "character"}
           onclick={() => setTarget("character")}
           ><FontAwesomeIcon icon={faMasksTheater} /> 角色</button
+        >
+        <button
+          class="radio-pill"
+          class:active={$queryTarget === "episode"}
+          onclick={() => setTarget("episode")}
+          ><FontAwesomeIcon icon={faFilm} /> 剧集</button
         >
       </div>
       <FilterTree />
