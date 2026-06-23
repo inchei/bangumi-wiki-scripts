@@ -1,4 +1,11 @@
 <script>
+  import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
+  import {
+    faDownload,
+    faCopy,
+    faInbox,
+    faClipboardList,
+  } from "@fortawesome/free-solid-svg-icons";
   import {
     lastResult,
     sortState,
@@ -131,16 +138,16 @@
       >
       <span class="results-actions">
         <button class="btn btn-outline btn-sm" onclick={handleExportCSV}
-          >📥 下载 CSV</button
+          ><FontAwesomeIcon icon={faDownload} /> 下载 CSV</button
         >
         <button class="btn btn-default btn-sm" onclick={handleCopyTable}
-          >📋 复制表格</button
+          ><FontAwesomeIcon icon={faCopy} /> 复制表格</button
         >
       </span>
     </div>
     {#if res.rows.length === 0}
       <div class="results-empty">
-        <div class="icon">📭</div>
+        <div class="icon"><FontAwesomeIcon icon={faInbox} /></div>
         <div>没有找到符合条件的条目</div>
       </div>
     {:else}
@@ -178,7 +185,7 @@
     {/if}
   {:else}
     <div class="results-empty">
-      <div class="icon">📋</div>
+      <div class="icon"><FontAwesomeIcon icon={faClipboardList} /></div>
       <div>点击 <b>"执行查询"</b> 开始筛选</div>
       <div style="font-size:12px;margin-top:8px">
         或访问 <a href="/api/debug" target="_blank">/api/debug</a> 检查状态
