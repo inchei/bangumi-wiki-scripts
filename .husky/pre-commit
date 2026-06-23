@@ -7,7 +7,8 @@ if [ -n "$GO_FILES" ]; then
   gofmt -w $GO_FILES
   git add $GO_FILES
   cd bgq && go vet ./... 2>&1 || exit 1
-  go test ./internal/query/ -run TestBuild 2>&1 || exit 1
+  golangci-lint run ./... 2>&1 || exit 1
+  go test ./internal/query/ 2>&1 || exit 1
   cd ..
 fi
 
