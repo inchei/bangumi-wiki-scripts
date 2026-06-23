@@ -1,5 +1,13 @@
 <script>
   import { onMount } from "svelte";
+  import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
+  import {
+    faGear,
+    faBook,
+    faUser,
+    faMasksTheater,
+    faCircleHalfStroke,
+  } from "@fortawesome/free-solid-svg-icons";
   import { loadSchema, loadSchemaOptions } from "./api.js";
   import { queryTarget, clearFilters } from "./stores.js";
   import FilterTree from "./components/FilterTree.svelte";
@@ -10,15 +18,38 @@
   let showYaml = $state(false);
   let statusText = $state("连接中...");
   let statusOk = $state(false);
-  let themeBtn = $state("🌙");
+  const themeOrder = ["light", "dark", "system"];
+  let themeMode = $state("system");
 
-  function toggleTheme() {
-    const html = document.documentElement;
-    const next = html.getAttribute("data-theme") === "dark" ? "" : "dark";
-    if (next) html.setAttribute("data-theme", "dark");
-    else html.removeAttribute("data-theme");
-    localStorage.setItem("theme", next);
-    themeBtn = next === "dark" ? "☀️" : "🌙";
+  // Sprite logo: horizontal strip, only X changes
+  const spriteCols = 7;
+  const col = Math.floor(Math.random() * spriteCols);
+  let logoX = $state(-col * 40);
+  const logoY = 0;
+
+  function cycleLogo() {
+    const currentCol = Math.round(-logoX / 40);
+    const nextCol = (currentCol + 1) % spriteCols;
+    logoX = -nextCol * 40;
+  }
+
+  function applyTheme(mode) {
+    const isDark =
+      mode === "dark" ||
+      (mode === "system" &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+    if (isDark) {
+      document.documentElement.setAttribute("data-theme", "dark");
+    } else {
+      document.documentElement.removeAttribute("data-theme");
+    }
+  }
+
+  function cycleTheme() {
+    const idx = themeOrder.indexOf(themeMode);
+    themeMode = themeOrder[(idx + 1) % themeOrder.length];
+    localStorage.setItem("theme", themeMode);
+    applyTheme(themeMode);
   }
 
   function toggleYaml() {
@@ -30,8 +61,7 @@
     if (t === "person") {
       document.getElementById("outputColumns").value = "person_id,name,career";
     } else if (t === "character") {
-      document.getElementById("outputColumns").value =
-        "character_id,name,role";
+      document.getElementById("outputColumns").value = "character_id,name,role";
     } else {
       document.getElementById("outputColumns").value =
         "id,name,name_cn,type,score";
@@ -42,10 +72,16 @@
   onMount(async () => {
     // Restore theme
     const saved = localStorage.getItem("theme");
-    if (saved === "dark") {
-      document.documentElement.setAttribute("data-theme", "dark");
-      themeBtn = "☀️";
+    if (saved === "dark" || saved === "light") {
+      themeMode = saved;
     }
+    applyTheme(themeMode);
+    // Listen for system theme changes
+    window
+      .matchMedia("(prefers-color-scheme: dark)")
+      .addEventListener("change", () => {
+        if (themeMode === "system") applyTheme("system");
+      });
     // Connect
     try {
       const r = await fetch("/api/health");
@@ -66,7 +102,11 @@
 <!-- Header -->
 <div class="header">
   <div class="header-logo">
-    <div class="icon">🔍</div>
+    <div
+      class="logo-sprite"
+      style="background-position: {logoX}px {logoY}px"
+      onclick={cycleLogo}
+    ></div>
     <span>Bangumi Query</span>
   </div>
   <span class="spacer"></span>
@@ -74,19 +114,16 @@
     <span class="dot" class:ok={statusOk}></span>
     <span>{statusText}</span>
   </span>
-  <button
-    class="btn btn-outline btn-sm"
-    onclick={() => {
-      loadSchema();
-      loadSchemaOptions();
-    }}>🔄 刷新</button
+  <button class="btn btn-default btn-sm" onclick={toggleYaml}
+    ><FontAwesomeIcon icon={faGear} /> YAML</button
   >
-  <button class="btn btn-default btn-sm" onclick={toggleYaml}>⚙ YAML</button>
   <button
     class="btn btn-default btn-sm"
-    onclick={toggleTheme}
-    title="切换夜间模式">{themeBtn}</button
+    onclick={cycleTheme}
+    title="主题: {themeMode}"
   >
+    <FontAwesomeIcon icon={faCircleHalfStroke} />
+  </button>
 </div>
 
 <!-- Main Container -->
@@ -97,26 +134,28 @@
       <div class="card-header">
         <span class="dot-indicator"></span>筛选条件
         <span class="spacer"></span>
-        <button
-          class="btn btn-outline btn-xs"
-          onclick={clearFilters}>清除全部</button
+        <button class="btn btn-outline btn-xs" onclick={clearFilters}
+          >清除全部</button
         >
       </div>
       <div class="target-toggle">
         <button
           class="radio-pill"
           class:active={$queryTarget === "subject"}
-          onclick={() => setTarget("subject")}>📚 条目</button
+          onclick={() => setTarget("subject")}
+          ><FontAwesomeIcon icon={faBook} /> 条目</button
         >
         <button
           class="radio-pill"
           class:active={$queryTarget === "person"}
-          onclick={() => setTarget("person")}>👤 人物</button
+          onclick={() => setTarget("person")}
+          ><FontAwesomeIcon icon={faUser} /> 人物</button
         >
         <button
           class="radio-pill"
           class:active={$queryTarget === "character"}
-          onclick={() => setTarget("character")}>🎭 角色</button
+          onclick={() => setTarget("character")}
+          ><FontAwesomeIcon icon={faMasksTheater} /> 角色</button
         >
       </div>
       <FilterTree />
@@ -160,15 +199,12 @@
     gap: 8px;
   }
 
-  .header-logo .icon {
-    width: 28px;
-    height: 28px;
-    background: var(--accent);
+  .logo-sprite {
+    width: 40px;
+    height: 50px;
+    background: url("/img/bg_musume_2x.png") no-repeat;
+    background-size: 280px 75px;
     border-radius: var(--radius-xs);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
   }
 
   .spacer {

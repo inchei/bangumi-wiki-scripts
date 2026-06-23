@@ -19,6 +19,7 @@
     "eslint": "^10.5.0",
     "eslint-plugin-svelte": "^3.19.0",
     "globals": "^17.6.0",
+    "lint-staged": "^17.0.8",
     "postcss-html": "^1.8.1",
     "prettier": "^3.8.4",
     "prettier-plugin-svelte": "^4.1.1",
@@ -30,6 +31,20 @@
     "vite-plugin-singlefile": "^2.3.3"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^7.2.0",
+    "@fortawesome/free-solid-svg-icons": "^7.2.0",
+    "@fortawesome/svelte-fontawesome": "^0.2.4",
     "js-yaml": "^5.0.0"
+  },
+  "lint-staged": {
+    "*.{js,svelte}": [
+      "eslint --fix"
+    ],
+    "*.{css,svelte}": [
+      "stylelint --fix"
+    ],
+    "*.{js,svelte,css,json,md}": [
+      "prettier --write"
+    ]
   }
 }
