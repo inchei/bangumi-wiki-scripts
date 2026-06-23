@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -95,7 +96,7 @@ func downloadFile(url string) []byte {
 		fmt.Fprintf(os.Stderr, "Failed to download %s: %v\n", url, err)
 		os.Exit(1)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != 200 {
 		fmt.Fprintf(os.Stderr, "Failed to download %s: HTTP %d\n", url, resp.StatusCode)
 		os.Exit(1)
@@ -214,7 +215,9 @@ func generatePlatform(yamlData []byte, outDir, tmplDir string) {
 
 	tmpl := loadTemplate(tmplDir, "platform.go.tmpl")
 	var sb strings.Builder
-	tmpl.Execute(&sb, struct{ Platforms []platformData }{platforms})
+	if err := tmpl.Execute(&sb, struct{ Platforms []platformData }{platforms}); err != nil {
+		log.Fatal(err)
+	}
 	writeToFile(filepath.Join(outDir, "platform.go"), sb.String())
 }
 
@@ -280,7 +283,9 @@ func generateRelationData(subjectYAML, personYAML []byte, outDir, tmplDir string
 	}{relTypes, personEntries, charEntries}
 
 	var sb strings.Builder
-	tmpl.Execute(&sb, data)
+	if err := tmpl.Execute(&sb, data); err != nil {
+		log.Fatal(err)
+	}
 	writeToFile(filepath.Join(outDir, "relation_data.go"), sb.String())
 }
 
@@ -322,7 +327,9 @@ func generateStaffData(yamlData []byte, outDir, tmplDir string) {
 
 	tmpl := loadTemplate(tmplDir, "staff_data.go.tmpl")
 	var sb strings.Builder
-	tmpl.Execute(&sb, struct{ StaffTypes []staffType }{staffTypes})
+	if err := tmpl.Execute(&sb, struct{ StaffTypes []staffType }{staffTypes}); err != nil {
+		log.Fatal(err)
+	}
 	writeToFile(filepath.Join(outDir, "staff_data.go"), sb.String())
 }
 
@@ -335,7 +342,7 @@ func generateMetaTags(dataDir, outDir, tmplDir string) {
 		fmt.Fprintf(os.Stderr, "Failed to open %s: %v\n", subjectFile, err)
 		os.Exit(1)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	typeMetaTags := make(map[int]map[string]bool)
 	decoder := json.NewDecoder(file)
@@ -382,6 +389,8 @@ func generateMetaTags(dataDir, outDir, tmplDir string) {
 
 	tmpl := loadTemplate(tmplDir, "metatags.go.tmpl")
 	var sb strings.Builder
-	tmpl.Execute(&sb, struct{ Entries []tagEntry }{entries})
+	if err := tmpl.Execute(&sb, struct{ Entries []tagEntry }{entries}); err != nil {
+		log.Fatal(err)
+	}
 	writeToFile(filepath.Join(outDir, "metatags.go"), sb.String())
 }
