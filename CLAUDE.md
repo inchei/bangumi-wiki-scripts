@@ -21,8 +21,10 @@ bgq CSV output feeds directly into wikiBatch for batch editing.
 cd bgq
 
 go build -o bin/bgq ./cmd/bgq/            # Build
-go test ./internal/query/ -v               # Run tests (no DuckDB needed)
-go test ./internal/query/ -run TestBuildSQL -v  # Single test
+go test ./internal/query/ -v               # Run tests (~1s, snapshot-based, no DuckDB needed)
+go test ./internal/query/ -update          # Regenerate golden file after intentional SQL changes
+go test ./internal/query/ -execute         # Also execute SQL against DuckDB (slower, needs DuckDB)
+go test ./internal/query/ -run TestAllCombinations -v  # Single test
 
 gofmt -w .                                 # Format
 go vet ./...                               # Static analysis

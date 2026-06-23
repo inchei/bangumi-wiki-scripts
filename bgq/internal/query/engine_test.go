@@ -7,10 +7,10 @@ import (
 	"testing"
 )
 
-// testBinDir returns the absolute path to bgq/bin relative to the repo root.
+// testBinDir returns the absolute path to bgq/bin.
 func testBinDir() string {
 	_, filename, _, _ := runtime.Caller(0)
-	return filepath.Join(filepath.Dir(filename), "..", "..", "..", "bin")
+	return filepath.Join(filepath.Dir(filename), "..", "..", "bin")
 }
 
 func TestExecuteSimple(t *testing.T) {

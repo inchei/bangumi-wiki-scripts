@@ -1,0 +1,685 @@
+character_character_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+subject_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1) AND
+ (SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND CAST(rs.name AS VARCHAR) LIKE '%test%') =
+ (SELECT COUNT(*) FROM subject_characters subject_characters WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1)
+LIMIT 10
+character_character_any	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+subject_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND CAST(rs.name AS VARCHAR) LIKE '%test%')
+LIMIT 10
+character_character_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+subject_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE CAST((SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN subjects rs ON subject_characters.subject_id = rs.id WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1 AND CAST(rs.name AS VARCHAR) LIKE '%test%') AS DOUBLE) >= 1
+LIMIT 10
+character_character_none	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+subject_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE NOT EXISTS (SELECT 1 FROM subject_characters subject_characters WHERE subject_characters.character_id = c.character_id AND subject_characters.type = 1)
+LIMIT 10
+character_person_character_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND pc.type = 0) AND
+			 (SELECT COUNT(*) FROM (
+			   SELECT pc.person_id FROM person_characters pc 
+			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			   WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8
+			   GROUP BY pc.person_id
+			 ) t) =
+			 (SELECT COUNT(DISTINCT pc.person_id) FROM person_characters pc WHERE pc.character_id = c.character_id AND pc.type = 0)
+LIMIT 10
+character_person_character_all_subjall	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND pc.type = 0) AND
+			 NOT EXISTS (
+			   SELECT 1 FROM person_characters pc 
+			   WHERE pc.character_id = c.character_id AND pc.type = 0
+			   AND EXISTS (
+			     SELECT 1 FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
+			     AND NOT (CAST(rs.score AS DOUBLE) > 8)
+			   )
+			 )
+LIMIT 10
+character_person_character_all_subjany	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND pc.type = 0) AND
+			 (SELECT COUNT(*) FROM (
+			   SELECT pc.person_id FROM person_characters pc 
+			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			   WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8
+			   GROUP BY pc.person_id
+			 ) t) =
+			 (SELECT COUNT(DISTINCT pc.person_id) FROM person_characters pc WHERE pc.character_id = c.character_id AND pc.type = 0)
+LIMIT 10
+character_person_character_all_subjcount	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND pc.type = 0) AND
+			 NOT EXISTS (
+			   SELECT 1 FROM person_characters pc 
+			   WHERE pc.character_id = c.character_id AND pc.type = 0
+			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
+			     AND CAST(rs.score AS DOUBLE) > 8) >= 1)
+			 )
+LIMIT 10
+character_person_character_any	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM person_characters pc 
+			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			 WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8)
+LIMIT 10
+character_person_character_any_subjall	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (
+		   SELECT 1 FROM person_characters pc 
+		   WHERE pc.character_id = c.character_id AND pc.type = 0
+		   AND NOT EXISTS (
+		     SELECT 1 FROM person_characters pc2
+		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+		     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
+		     AND NOT (CAST(rs.score AS DOUBLE) > 8)
+		   )
+		 )
+LIMIT 10
+character_person_character_any_subjany	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM person_characters pc 
+			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			 WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8)
+LIMIT 10
+character_person_character_any_subjcount	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (
+		   SELECT 1 FROM person_characters pc 
+		   WHERE pc.character_id = c.character_id AND pc.type = 0
+		   AND (SELECT COUNT(*) FROM person_characters pc2
+		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+		     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
+		     AND CAST(rs.score AS DOUBLE) > 8) >= 1
+		 )
+LIMIT 10
+character_person_character_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE CAST((SELECT COUNT(DISTINCT pc.person_id) FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8) AS DOUBLE) >= 1
+LIMIT 10
+character_person_character_count_subjall	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE CAST((SELECT COUNT(DISTINCT pc.person_id) FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8) AS DOUBLE) >= 1
+LIMIT 10
+character_person_character_count_subjany	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE CAST((SELECT COUNT(DISTINCT pc.person_id) FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8) AS DOUBLE) >= 1
+LIMIT 10
+character_person_character_count_subjcount	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE CAST((SELECT COUNT(DISTINCT pc.person_id) FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8) AS DOUBLE) >= 1
+LIMIT 10
+character_person_character_none	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE NOT EXISTS (SELECT 1 FROM person_characters pc  WHERE pc.character_id = c.character_id AND pc.type = 0)
+LIMIT 10
+character_person_character_none_subjall	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE NOT EXISTS (
+			   SELECT 1 FROM person_characters pc 
+			   WHERE pc.character_id = c.character_id AND pc.type = 0
+			   AND NOT EXISTS (
+			     SELECT 1 FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
+			     AND NOT (CAST(rs.score AS DOUBLE) > 8)
+			   )
+			 )
+LIMIT 10
+character_person_character_none_subjany	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE NOT EXISTS (SELECT 1 FROM person_characters pc  WHERE pc.character_id = c.character_id AND pc.type = 0)
+LIMIT 10
+character_person_character_none_subjcount	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE NOT EXISTS (
+			   SELECT 1 FROM person_characters pc 
+			   WHERE pc.character_id = c.character_id AND pc.type = 0
+			   AND NOT EXISTS (
+			     SELECT 1 FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
+			     AND NOT (CAST(rs.score AS DOUBLE) > 8)
+			   )
+			 )
+LIMIT 10
+character_relation_character_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+character_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'crt')
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM character_relations cr WHERE cr.person_id = c.character_id AND cr.relation_type IN (2002)) AND
+ (SELECT COUNT(*) FROM character_relations cr  WHERE cr.person_id = c.character_id AND cr.relation_type IN (2002)) =
+ (SELECT COUNT(*) FROM character_relations cr WHERE cr.person_id = c.character_id AND cr.relation_type IN (2002))
+LIMIT 10
+character_relation_character_any	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+character_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'crt')
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM character_relations cr  WHERE cr.person_id = c.character_id AND cr.relation_type IN (2002))
+LIMIT 10
+character_relation_character_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+character_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'crt')
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE CAST((SELECT COUNT(*) FROM character_relations cr  WHERE cr.person_id = c.character_id AND cr.relation_type IN (2002)) AS DOUBLE) >= 1
+LIMIT 10
+character_relation_character_none	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+character_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'crt')
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE NOT EXISTS (SELECT 1 FROM character_relations cr WHERE cr.person_id = c.character_id AND cr.relation_type IN (2002))
+LIMIT 10
+character_subject_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1) AND
+ (SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND CAST(regexp_extract(c.infobox, '(?i)\|name\s*[:=]\s*([^|}\n]*)', 1) AS VARCHAR) LIKE '%test%') =
+ (SELECT COUNT(*) FROM subject_characters subject_characters WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1)
+LIMIT 10
+character_subject_any	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND CAST(regexp_extract(c.infobox, '(?i)\|name\s*[:=]\s*([^|}\n]*)', 1) AS VARCHAR) LIKE '%test%')
+LIMIT 10
+character_subject_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE CAST((SELECT COUNT(*) FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND CAST(regexp_extract(c.infobox, '(?i)\|name\s*[:=]\s*([^|}\n]*)', 1) AS VARCHAR) LIKE '%test%') AS DOUBLE) >= 1
+LIMIT 10
+character_subject_none	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE NOT EXISTS (SELECT 1 FROM subject_characters subject_characters WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1)
+LIMIT 10
+episode_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+episodes AS (SELECT * FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND CAST(e.name AS VARCHAR) LIKE '%test%')
+LIMIT 10
+field_character	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE CAST(c.name AS VARCHAR) LIKE '%test%'
+LIMIT 10
+field_episode	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+episodes AS (SELECT * FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
+SELECT e.id as id, e.name
+FROM episodes e
+WHERE CAST(e.name AS VARCHAR) LIKE '%test%'
+LIMIT 10
+field_person	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE CAST(p.name AS VARCHAR) LIKE '%test%'
+LIMIT 10
+field_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE CAST(s.name AS VARCHAR) LIKE '%test%'
+LIMIT 10
+global_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE s.infobox LIKE '%test%'
+LIMIT 10
+logic_or	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE (CAST(s.score AS DOUBLE) > 8 OR EXISTS (SELECT 1 FROM (SELECT UNNEST(s.tags) AS t) WHERE t.name = 'test'))
+LIMIT 10
+meta_tag_negate	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE NOT LIST_CONTAINS(COALESCE(s.meta_tags, []), 'TV')
+LIMIT 10
+meta_tag_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE LIST_CONTAINS(COALESCE(s.meta_tags, []), 'TV')
+LIMIT 10
+person_character_person_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0) AND
+			 (SELECT COUNT(*) FROM (
+			   SELECT pc.character_id FROM person_characters pc 
+			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			   WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8
+			   GROUP BY pc.character_id
+			 ) t) =
+			 (SELECT COUNT(DISTINCT pc.character_id) FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0)
+LIMIT 10
+person_character_person_all_subjall	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0) AND
+			 NOT EXISTS (
+			   SELECT 1 FROM person_characters pc 
+			   WHERE pc.person_id = p.person_id AND pc.type = 0
+			   AND EXISTS (
+			     SELECT 1 FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
+			     AND NOT (CAST(rs.score AS DOUBLE) > 8)
+			   )
+			 )
+LIMIT 10
+person_character_person_all_subjany	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0) AND
+			 (SELECT COUNT(*) FROM (
+			   SELECT pc.character_id FROM person_characters pc 
+			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			   WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8
+			   GROUP BY pc.character_id
+			 ) t) =
+			 (SELECT COUNT(DISTINCT pc.character_id) FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0)
+LIMIT 10
+person_character_person_all_subjcount	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0) AND
+			 NOT EXISTS (
+			   SELECT 1 FROM person_characters pc 
+			   WHERE pc.person_id = p.person_id AND pc.type = 0
+			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
+			     AND CAST(rs.score AS DOUBLE) > 8) >= 1)
+			 )
+LIMIT 10
+person_character_person_any	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_characters pc 
+			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			 WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8)
+LIMIT 10
+person_character_person_any_subjall	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (
+		   SELECT 1 FROM person_characters pc 
+		   WHERE pc.person_id = p.person_id AND pc.type = 0
+		   AND NOT EXISTS (
+		     SELECT 1 FROM person_characters pc2
+		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+		     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
+		     AND NOT (CAST(rs.score AS DOUBLE) > 8)
+		   )
+		 )
+LIMIT 10
+person_character_person_any_subjany	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_characters pc 
+			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			 WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8)
+LIMIT 10
+person_character_person_any_subjcount	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (
+		   SELECT 1 FROM person_characters pc 
+		   WHERE pc.person_id = p.person_id AND pc.type = 0
+		   AND (SELECT COUNT(*) FROM person_characters pc2
+		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+		     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
+		     AND CAST(rs.score AS DOUBLE) > 8) >= 1
+		 )
+LIMIT 10
+person_character_person_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE CAST((SELECT COUNT(DISTINCT pc.character_id) FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8) AS DOUBLE) >= 1
+LIMIT 10
+person_character_person_count_subjall	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE CAST((SELECT COUNT(DISTINCT pc.character_id) FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8) AS DOUBLE) >= 1
+LIMIT 10
+person_character_person_count_subjany	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE CAST((SELECT COUNT(DISTINCT pc.character_id) FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8) AS DOUBLE) >= 1
+LIMIT 10
+person_character_person_count_subjcount	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE CAST((SELECT COUNT(DISTINCT pc.character_id) FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs.score AS DOUBLE) > 8) AS DOUBLE) >= 1
+LIMIT 10
+person_character_person_none	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE NOT EXISTS (SELECT 1 FROM person_characters pc  WHERE pc.person_id = p.person_id AND pc.type = 0)
+LIMIT 10
+person_character_person_none_subjall	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE NOT EXISTS (
+			   SELECT 1 FROM person_characters pc 
+			   WHERE pc.person_id = p.person_id AND pc.type = 0
+			   AND NOT EXISTS (
+			     SELECT 1 FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
+			     AND NOT (CAST(rs.score AS DOUBLE) > 8)
+			   )
+			 )
+LIMIT 10
+person_character_person_none_subjany	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE NOT EXISTS (SELECT 1 FROM person_characters pc  WHERE pc.person_id = p.person_id AND pc.type = 0)
+LIMIT 10
+person_character_person_none_subjcount	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE NOT EXISTS (
+			   SELECT 1 FROM person_characters pc 
+			   WHERE pc.person_id = p.person_id AND pc.type = 0
+			   AND NOT EXISTS (
+			     SELECT 1 FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
+			     AND NOT (CAST(rs.score AS DOUBLE) > 8)
+			   )
+			 )
+LIMIT 10
+person_relation_person_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'prsn')
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id AND pr.relation_type IN (1015)) AND
+ (SELECT COUNT(*) FROM person_relations pr  WHERE pr.person_id = p.person_id AND pr.relation_type IN (1015)) =
+ (SELECT COUNT(*) FROM person_relations pr WHERE pr.person_id = p.person_id AND pr.relation_type IN (1015))
+LIMIT 10
+person_relation_person_any	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'prsn')
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_relations pr  WHERE pr.person_id = p.person_id AND pr.relation_type IN (1015))
+LIMIT 10
+person_relation_person_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'prsn')
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE CAST((SELECT COUNT(*) FROM person_relations pr  WHERE pr.person_id = p.person_id AND pr.relation_type IN (1015)) AS DOUBLE) >= 1
+LIMIT 10
+person_relation_person_none	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/person-relations.jsonlines', format='newline_delimited') WHERE person_type = 'prsn')
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE NOT EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id AND pr.relation_type IN (1015))
+LIMIT 10
+relation_subject_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-relations.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (1003)) AND
+ (SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND CAST(rs.score AS DOUBLE) > 8) =
+ (SELECT COUNT(*) FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (1003))
+LIMIT 10
+relation_subject_any	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-relations.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE EXISTS (SELECT 1 FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND CAST(rs.score AS DOUBLE) > 8)
+LIMIT 10
+relation_subject_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-relations.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE CAST((SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (1003) AND CAST(rs.score AS DOUBLE) > 8) AS DOUBLE) >= 1
+LIMIT 10
+relation_subject_none	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_relations AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-relations.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE NOT EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (1003))
+LIMIT 10
+staff_appear_eps	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons  WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(subject_persons.appear_eps AS VARCHAR) LIKE '%1,2,3%')
+LIMIT 10
+staff_person_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001)) AND
+ (SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(rs.name AS VARCHAR) LIKE '%test%') =
+ (SELECT COUNT(*) FROM subject_persons subject_persons WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001))
+LIMIT 10
+staff_person_any	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(rs.name AS VARCHAR) LIKE '%test%')
+LIMIT 10
+staff_person_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE CAST((SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN subjects rs ON subject_persons.subject_id = rs.id WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(rs.name AS VARCHAR) LIKE '%test%') AS DOUBLE) >= 1
+LIMIT 10
+staff_person_none	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE NOT EXISTS (SELECT 1 FROM subject_persons subject_persons WHERE subject_persons.person_id = p.person_id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001))
+LIMIT 10
+staff_subject_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001)) AND
+ (SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(regexp_extract(p.infobox, '(?i)\|name\s*[:=]\s*([^|}\n]*)', 1) AS VARCHAR) LIKE '%test%') =
+ (SELECT COUNT(*) FROM subject_persons subject_persons WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001))
+LIMIT 10
+staff_subject_any	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(regexp_extract(p.infobox, '(?i)\|name\s*[:=]\s*([^|}\n]*)', 1) AS VARCHAR) LIKE '%test%')
+LIMIT 10
+staff_subject_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE CAST((SELECT COUNT(*) FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(regexp_extract(p.infobox, '(?i)\|name\s*[:=]\s*([^|}\n]*)', 1) AS VARCHAR) LIKE '%test%') AS DOUBLE) >= 1
+LIMIT 10
+staff_subject_none	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE NOT EXISTS (SELECT 1 FROM subject_persons subject_persons WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001))
+LIMIT 10
+tag_negate	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE NOT EXISTS (SELECT 1 FROM (SELECT UNNEST(s.tags) AS t) WHERE t.name = 'test')
+LIMIT 10
+tag_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE EXISTS (SELECT 1 FROM (SELECT UNNEST(s.tags) AS t) WHERE t.name = 'test')
+LIMIT 10
+type_character	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT c.character_id as id, c.name
+FROM characters c
+WHERE c.role = 1
+LIMIT 10
+type_person	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT p.person_id as id, p.name
+FROM persons p
+WHERE p.person_type = 1
+LIMIT 10
+type_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited'))
+SELECT s.id as id, s.name
+FROM subjects s
+WHERE s.type = 1
+LIMIT 10
