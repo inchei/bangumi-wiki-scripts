@@ -351,9 +351,7 @@
       <span class="cond-type">角色关系</span>
       <RestrictedSelect
         value={cr.type}
-        suggestions={["任意"].concat(
-          $schemaOptions.character_relations || [],
-        )}
+        suggestions={["任意"].concat($schemaOptions.character_relations || [])}
         onchange={(v) =>
           updateCondition(group, idx, "character_relation", "type", v)}
         placeholder="关系名"
@@ -432,9 +430,7 @@
       <span class="cond-type">角色</span>
       <RestrictedSelect
         value={pc.type || ""}
-        suggestions={["任意"].concat(
-          $schemaOptions.person_char_types || [],
-        )}
+        suggestions={["任意"].concat($schemaOptions.person_char_types || [])}
         onchange={(v) =>
           updateCondition(group, idx, "person_character", "type", v)}
         placeholder="出演类型"
@@ -504,9 +500,7 @@
       <span class="cond-type">人物</span>
       <RestrictedSelect
         value={cp.type || ""}
-        suggestions={["任意"].concat(
-          $schemaOptions.person_char_types || [],
-        )}
+        suggestions={["任意"].concat($schemaOptions.person_char_types || [])}
         onchange={(v) =>
           updateCondition(group, idx, "character_person", "type", v)}
         placeholder="出演类型"
@@ -722,7 +716,6 @@
 
   .tag-remove:hover {
     color: var(--accent-hover);
-    transform: scale(1.2);
   }
 
   .nested {
