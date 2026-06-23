@@ -126,13 +126,15 @@ Each `config.Filter` holds exactly one non-nil pointer field:
 - `Field` — direct JSON or infobox field with operator (eq/contains/regex/gt/gte/lt/lte/before/after)
 - `Global` — full-text search across infobox
 - `Tag` / `MetaTag` — tag filtering with optional negation (requires explicit `operator`)
-- `Relation` — related-subject filtering with nested conditions (any/all/none)
-- `Staff` — person/staff filtering by position (any/all/none)
-- `Episode` — episode-level filtering
-- `Count` — count of relations or episodes
+- `Relation` — related-subject filtering with nested conditions (any/all/none/count)
+- `Staff` — person/staff filtering by position (any/all/none/count)
+- `Character` — character filtering (any/all/none/count)
+- `PersonCharacter` / `CharacterPerson` — person-character association filtering (any/all/none/count)
+- `Episode` — episode-level filtering (any/all/count)
 - `Logic` — combine child filters with AND/OR
 
 Nested conditions (relation/staff/episode) support the same filter types recursively.
+Sub-filter modes: `any` (exists), `all` (universal), `none` (negation), `count` (threshold with `count_op`/`count_val`).
 
 ### Web Server API
 

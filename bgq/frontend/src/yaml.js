@@ -49,7 +49,6 @@ function cleanFilter(f) {
     "person_character",
     "character_person",
     "episode",
-    "count",
   ]) {
     if (f[key]) {
       out[key] = cleanValue(f[key], key);
@@ -158,7 +157,6 @@ function normalizeFilter(f) {
     "person_character",
     "character_person",
     "episode",
-    "count",
   ]) {
     if (f[key] !== undefined && f[key] !== null) {
       out[key] = normalizeFilterValue(f[key], key);

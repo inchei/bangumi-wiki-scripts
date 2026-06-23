@@ -233,8 +233,6 @@ export function createEmptyCondition(type) {
       return { meta_tag: { operator: "contains", value: "", negate: false } };
     case "global":
       return { global: { operator: "contains", value: "" } };
-    case "count":
-      return { count: { what: "", operator: "gt", value: "" } };
     case "type":
       return { type: { value: "" } };
     case "relation":
@@ -436,7 +434,10 @@ function updateGroupInTree(node, targetId, mutator) {
       }
     }
     // person_character
-    if (item.person_character?.conditions || item.person_character?.subject_conditions) {
+    if (
+      item.person_character?.conditions ||
+      item.person_character?.subject_conditions
+    ) {
       let condChanged = false;
       const newConds = (item.person_character.conditions || []).map((c) => {
         if (c.logic && !condChanged) {
@@ -485,7 +486,10 @@ function updateGroupInTree(node, targetId, mutator) {
       }
     }
     // character_person
-    if (item.character_person?.conditions || item.character_person?.subject_conditions) {
+    if (
+      item.character_person?.conditions ||
+      item.character_person?.subject_conditions
+    ) {
       let condChanged = false;
       const newConds = (item.character_person.conditions || []).map((c) => {
         if (c.logic && !condChanged) {
@@ -767,7 +771,10 @@ export function toggleLogicOp(group, val) {
             return { ...node, items: newItems };
           }
         }
-        if (item.person_character?.conditions || item.person_character?.subject_conditions) {
+        if (
+          item.person_character?.conditions ||
+          item.person_character?.subject_conditions
+        ) {
           let condChanged = false;
           const newConds = (item.person_character.conditions || []).map((c) => {
             if (c.logic && !condChanged) {
@@ -811,7 +818,10 @@ export function toggleLogicOp(group, val) {
             return { ...node, items: newItems };
           }
         }
-        if (item.character_person?.conditions || item.character_person?.subject_conditions) {
+        if (
+          item.character_person?.conditions ||
+          item.character_person?.subject_conditions
+        ) {
           let condChanged = false;
           const newConds = (item.character_person.conditions || []).map((c) => {
             if (c.logic && !condChanged) {
@@ -905,7 +915,18 @@ export function updateCondition(group, idx, kind, field, value) {
   const oldTarget = oldItem[kind];
   if (!oldTarget || typeof oldTarget !== "object") return;
   // Create new item with updated field — immutable so Svelte detects the change
-  const newItem = { ...oldItem, [kind]: { ...oldTarget, [field]: value } };
+  const updated = { ...oldTarget, [field]: value };
+  // When switching to "count" mode, initialize count_op/count_val defaults
+  if (field === "mode" && value === "count") {
+    if (!updated.count_op) updated.count_op = "gte";
+    if (!updated.count_val) updated.count_val = "";
+  }
+  // When switching subject_mode to "count", initialize subject_count_op/subject_count_val defaults
+  if (field === "subject_mode" && value === "count") {
+    if (!updated.subject_count_op) updated.subject_count_op = "gte";
+    if (!updated.subject_count_val) updated.subject_count_val = "";
+  }
+  const newItem = { ...oldItem, [kind]: updated };
   applyMutation(group._id, (items) => {
     items[idx] = newItem;
     return items;

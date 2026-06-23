@@ -34,7 +34,6 @@ type Filter struct {
 	PersonCharacter   *PersonCharacterFilter   `yaml:"person_character,omitempty" json:"person_character,omitempty"`
 	CharacterPerson   *CharacterPersonFilter   `yaml:"character_person,omitempty" json:"character_person,omitempty"`
 	Episode           *EpisodeFilter           `yaml:"episode,omitempty" json:"episode,omitempty"`
-	Count             *CountFilter             `yaml:"count,omitempty" json:"count,omitempty"`
 	Logic             *LogicFilter             `yaml:"logic,omitempty" json:"logic,omitempty"`
 }
 
@@ -92,15 +91,12 @@ func (f *Filter) UnmarshalJSON(data []byte) error {
 		case "episode":
 			f.Episode = &EpisodeFilter{}
 			return json.Unmarshal(val, f.Episode)
-		case "count":
-			f.Count = &CountFilter{}
-			return json.Unmarshal(val, f.Count)
 		case "logic":
 			f.Logic = &LogicFilter{}
 			return json.Unmarshal(val, f.Logic)
 		}
 	}
-	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, person_relation, character_relation, staff, character, person_character, character_person, episode, count, logic")
+	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, person_relation, character_relation, staff, character, person_character, character_person, episode, logic")
 }
 
 // UnmarshalYAML implements custom YAML unmarshaling for Filter.
@@ -221,11 +217,6 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 			if err := val.Decode(f.Episode); err != nil {
 				return err
 			}
-		case "count":
-			f.Count = &CountFilter{}
-			if err := val.Decode(f.Count); err != nil {
-				return err
-			}
 		case "logic":
 			f.Logic = &LogicFilter{}
 			if val.Kind == yaml.MappingNode {
@@ -324,25 +315,31 @@ type TagFilter struct {
 // RelationFilter filters by subject relation.
 // Conditions support all filter types (nested), allowing full filtering on related subjects.
 type RelationFilter struct {
-	Type       string   `yaml:"type" json:"type"`             // Chinese relation name (e.g., "单行本")
-	Mode       string   `yaml:"mode" json:"mode"`             // any, all, none
-	Conditions []Filter `yaml:"conditions" json:"conditions"` // conditions on the related subject (full filter types)
+	Type       string      `yaml:"type" json:"type"`                               // Chinese relation name (e.g., "单行本")
+	Mode       string      `yaml:"mode" json:"mode"`                               // any, all, none, count
+	CountOp    string      `yaml:"count_op,omitempty" json:"count_op,omitempty"`   // count mode operator: gt, gte, lt, lte, eq
+	CountVal   interface{} `yaml:"count_val,omitempty" json:"count_val,omitempty"` // count mode threshold
+	Conditions []Filter    `yaml:"conditions" json:"conditions"`                   // conditions on the related subject (full filter types)
 }
 
 // PersonRelationFilter filters by person-to-person relation (person_type=prsn).
 // Conditions support person-level filter types on the related person.
 type PersonRelationFilter struct {
-	Type       string   `yaml:"type" json:"type"`             // Chinese relation name (e.g., "同事")
-	Mode       string   `yaml:"mode" json:"mode"`             // any, all, none
-	Conditions []Filter `yaml:"conditions" json:"conditions"` // conditions on the related person
+	Type       string      `yaml:"type" json:"type"`                               // Chinese relation name (e.g., "同事")
+	Mode       string      `yaml:"mode" json:"mode"`                               // any, all, none, count
+	CountOp    string      `yaml:"count_op,omitempty" json:"count_op,omitempty"`   // count mode operator
+	CountVal   interface{} `yaml:"count_val,omitempty" json:"count_val,omitempty"` // count mode threshold
+	Conditions []Filter    `yaml:"conditions" json:"conditions"`                   // conditions on the related person
 }
 
 // CharacterRelationFilter filters by character-to-character relation (person_type=crt).
 // Conditions support character-level filter types on the related character.
 type CharacterRelationFilter struct {
-	Type       string   `yaml:"type" json:"type"`             // Chinese relation name (e.g., "朋友")
-	Mode       string   `yaml:"mode" json:"mode"`             // any, all, none
-	Conditions []Filter `yaml:"conditions" json:"conditions"` // conditions on the related character
+	Type       string      `yaml:"type" json:"type"`                               // Chinese relation name (e.g., "朋友")
+	Mode       string      `yaml:"mode" json:"mode"`                               // any, all, none, count
+	CountOp    string      `yaml:"count_op,omitempty" json:"count_op,omitempty"`   // count mode operator
+	CountVal   interface{} `yaml:"count_val,omitempty" json:"count_val,omitempty"` // count mode threshold
+	Conditions []Filter    `yaml:"conditions" json:"conditions"`                   // conditions on the related character
 }
 
 // StaffFilter filters by staff/person.
@@ -350,50 +347,57 @@ type CharacterRelationFilter struct {
 type StaffFilter struct {
 	Position   string       `yaml:"position" json:"position"`                         // Chinese position name (e.g., "原作")
 	AppearEps  *FieldFilter `yaml:"appear_eps,omitempty" json:"appear_eps,omitempty"` // filter on appear_eps field
-	Mode       string       `yaml:"mode" json:"mode"`                                 // any, all, none
+	Mode       string       `yaml:"mode" json:"mode"`                                 // any, all, none, count
+	CountOp    string       `yaml:"count_op,omitempty" json:"count_op,omitempty"`     // count mode operator
+	CountVal   interface{}  `yaml:"count_val,omitempty" json:"count_val,omitempty"`   // count mode threshold
 	Conditions []Filter     `yaml:"conditions" json:"conditions"`                     // conditions on person (subject target) or subject (person target)
 }
 
 // CharacterFilter filters by character in a subject.
 // Conditions support character-level filter types on the associated character.
 type CharacterFilter struct {
-	Type       string   `yaml:"type,omitempty" json:"type,omitempty"` // association type name (e.g., "主角")
-	Mode       string   `yaml:"mode" json:"mode"`                     // any, all, none
-	Conditions []Filter `yaml:"conditions" json:"conditions"`         // conditions on the character
+	Type       string      `yaml:"type,omitempty" json:"type,omitempty"`           // association type name (e.g., "主角")
+	Mode       string      `yaml:"mode" json:"mode"`                               // any, all, none, count
+	CountOp    string      `yaml:"count_op,omitempty" json:"count_op,omitempty"`   // count mode operator
+	CountVal   interface{} `yaml:"count_val,omitempty" json:"count_val,omitempty"` // count mode threshold
+	Conditions []Filter    `yaml:"conditions" json:"conditions"`                   // conditions on the character
 }
 
 // PersonCharacterFilter filters persons by their associated characters (via person_characters).
 // Supports filtering by character conditions AND related subject conditions.
 type PersonCharacterFilter struct {
-	Type              string   `yaml:"type,omitempty" json:"type,omitempty"`                             // CV type name (e.g., "CV", "演员")
-	Mode              string   `yaml:"mode" json:"mode"`                                                 // any, all, none — character-level quantifier
-	SubjectMode       string   `yaml:"subject_mode,omitempty" json:"subject_mode,omitempty"`             // any, all — subject-level quantifier per character
-	Conditions        []Filter `yaml:"conditions" json:"conditions"`                                     // conditions on the character
-	SubjectConditions []Filter `yaml:"subject_conditions,omitempty" json:"subject_conditions,omitempty"` // conditions on the related subject
+	Type              string      `yaml:"type,omitempty" json:"type,omitempty"`                             // CV type name (e.g., "CV", "演员")
+	Mode              string      `yaml:"mode" json:"mode"`                                                 // any, all, none, count — character-level quantifier
+	CountOp           string      `yaml:"count_op,omitempty" json:"count_op,omitempty"`                     // count mode operator
+	CountVal          interface{} `yaml:"count_val,omitempty" json:"count_val,omitempty"`                   // count mode threshold
+	SubjectMode       string      `yaml:"subject_mode,omitempty" json:"subject_mode,omitempty"`             // any, all, count — subject-level quantifier per character
+	SubjectCountOp    string      `yaml:"subject_count_op,omitempty" json:"subject_count_op,omitempty"`     // subject count mode operator
+	SubjectCountVal   interface{} `yaml:"subject_count_val,omitempty" json:"subject_count_val,omitempty"`   // subject count mode threshold
+	Conditions        []Filter    `yaml:"conditions" json:"conditions"`                                     // conditions on the character
+	SubjectConditions []Filter    `yaml:"subject_conditions,omitempty" json:"subject_conditions,omitempty"` // conditions on the related subject
 }
 
 // CharacterPersonFilter filters characters by their associated persons (via person_characters).
 // Supports filtering by person conditions AND related subject conditions.
 type CharacterPersonFilter struct {
-	Type              string   `yaml:"type,omitempty" json:"type,omitempty"`                             // CV type name (e.g., "CV", "演员")
-	Mode              string   `yaml:"mode" json:"mode"`                                                 // any, all, none — person-level quantifier
-	SubjectMode       string   `yaml:"subject_mode,omitempty" json:"subject_mode,omitempty"`             // any, all — subject-level quantifier per person
-	Conditions        []Filter `yaml:"conditions" json:"conditions"`                                     // conditions on the person
-	SubjectConditions []Filter `yaml:"subject_conditions,omitempty" json:"subject_conditions,omitempty"` // conditions on the related subject
+	Type              string      `yaml:"type,omitempty" json:"type,omitempty"`                             // CV type name (e.g., "CV", "演员")
+	Mode              string      `yaml:"mode" json:"mode"`                                                 // any, all, none, count — person-level quantifier
+	CountOp           string      `yaml:"count_op,omitempty" json:"count_op,omitempty"`                     // count mode operator
+	CountVal          interface{} `yaml:"count_val,omitempty" json:"count_val,omitempty"`                   // count mode threshold
+	SubjectMode       string      `yaml:"subject_mode,omitempty" json:"subject_mode,omitempty"`             // any, all, count — subject-level quantifier per person
+	SubjectCountOp    string      `yaml:"subject_count_op,omitempty" json:"subject_count_op,omitempty"`     // subject count mode operator
+	SubjectCountVal   interface{} `yaml:"subject_count_val,omitempty" json:"subject_count_val,omitempty"`   // subject count mode threshold
+	Conditions        []Filter    `yaml:"conditions" json:"conditions"`                                     // conditions on the person
+	SubjectConditions []Filter    `yaml:"subject_conditions,omitempty" json:"subject_conditions,omitempty"` // conditions on the related subject
 }
 
 // EpisodeFilter filters by episode.
 type EpisodeFilter struct {
-	Mode       string        `yaml:"mode" json:"mode"`                       // any, all
-	Conditions []FieldFilter `yaml:"conditions" json:"conditions"`           // legacy: flat field conditions
-	Logic      *LogicFilter  `yaml:"logic,omitempty" json:"logic,omitempty"` // logic tree (new)
-}
-
-// CountFilter filters by count of relations or episodes.
-type CountFilter struct {
-	What     string      `yaml:"what" json:"what"`         // Chinese relation name or "ep"
-	Operator string      `yaml:"operator" json:"operator"` // gt, gte, lt, lte, eq
-	Value    interface{} `yaml:"value" json:"value"`
+	Mode       string        `yaml:"mode" json:"mode"`                               // any, all, count
+	CountOp    string        `yaml:"count_op,omitempty" json:"count_op,omitempty"`   // count mode operator
+	CountVal   interface{}   `yaml:"count_val,omitempty" json:"count_val,omitempty"` // count mode threshold
+	Conditions []FieldFilter `yaml:"conditions" json:"conditions"`                   // legacy: flat field conditions
+	Logic      *LogicFilter  `yaml:"logic,omitempty" json:"logic,omitempty"`         // logic tree (new)
 }
 
 // Output configures the query output.
@@ -478,9 +482,6 @@ func (c *Config) Validate() error {
 			set++
 		}
 		if f.Episode != nil {
-			set++
-		}
-		if f.Count != nil {
 			set++
 		}
 		if f.Logic != nil {
@@ -581,7 +582,7 @@ func (c *Config) NeedsRelations() bool {
 
 func filtersNeedRelations(filters []Filter) bool {
 	for _, f := range filters {
-		if f.Relation != nil || f.Count != nil && f.Count.What != "ep" {
+		if f.Relation != nil {
 			return true
 		}
 		if f.Logic != nil && filtersNeedRelations(f.Logic.Items) {
@@ -684,9 +685,6 @@ func (c *Config) NeedsEpisodes() bool {
 func filtersNeedEpisodes(filters []Filter) bool {
 	for _, f := range filters {
 		if f.Episode != nil {
-			return true
-		}
-		if f.Count != nil && f.Count.What == "ep" {
 			return true
 		}
 		if f.Logic != nil && filtersNeedEpisodes(f.Logic.Items) {

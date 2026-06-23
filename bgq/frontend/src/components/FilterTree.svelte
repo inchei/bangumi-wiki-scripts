@@ -110,7 +110,6 @@
         opts.push({ value: "relation", label: "关系" });
         opts.push({ value: "character", label: "角色" });
         opts.push({ value: "episode", label: "剧集" });
-        opts.push({ value: "count", label: "数量" });
       }
       opts.push({
         value: "staff",

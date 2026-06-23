@@ -358,8 +358,6 @@ func (b *SQLBuilder) episodeFilterForCtx(f config.Filter, idx int) (string, erro
 	switch {
 	case f.Field != nil:
 		return b.episodeFieldFilter(f.Field)
-	case f.Count != nil:
-		return b.countFilter(f.Count)
 	default:
 		return "", fmt.Errorf("剧集筛选不支持此条件类型 (index %d)", idx)
 	}
@@ -394,8 +392,6 @@ func (b *SQLBuilder) filterToSQLMain(f config.Filter, idx int) (string, error) {
 		return b.characterPersonFilter(f.CharacterPerson)
 	case f.Episode != nil:
 		return b.episodeFilter(f.Episode)
-	case f.Count != nil:
-		return b.countFilter(f.Count)
 	default:
 		return "", fmt.Errorf("unknown filter type at index %d", idx)
 	}
@@ -594,6 +590,25 @@ func (b *SQLBuilder) relationFilter(f *config.RelationFilter) (string, error) {
 			relIDList, relIDList, nestedWhere, relIDList), nil
 	}
 
+	// For "count" mode: count of matching relations <op> threshold
+	if f.Mode == "count" {
+		countWhere := subWhere
+		if countWhere == "" {
+			countWhere = "TRUE"
+		}
+		var countExpr string
+		if anyType {
+			countExpr = fmt.Sprintf(
+				"(SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND %s)",
+				countWhere)
+		} else {
+			countExpr = fmt.Sprintf(
+				"(SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (%s) AND %s)",
+				relIDList, countWhere)
+		}
+		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+	}
+
 	// For "any" mode: at least one matching relation
 	return fmt.Sprintf(
 		"EXISTS (SELECT 1 FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND %s)",
@@ -672,6 +687,25 @@ func (b *SQLBuilder) personRelationFilter(f *config.PersonRelationFilter) (strin
 			 (SELECT COUNT(*) FROM %s WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s) AND %s) =
 			 (SELECT COUNT(*) FROM person_relations pr WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s))`,
 			relIDList, personJoin, relIDList, nestedWhere, relIDList), nil
+	}
+
+	// For "count" mode: count of matching person relations <op> threshold
+	if f.Mode == "count" {
+		countWhere := subWhere
+		if countWhere == "" {
+			countWhere = "TRUE"
+		}
+		var countExpr string
+		if anyType {
+			countExpr = fmt.Sprintf(
+				"(SELECT COUNT(*) FROM %s WHERE pr.person_id = p.person_id AND %s)",
+				personJoin, countWhere)
+		} else {
+			countExpr = fmt.Sprintf(
+				"(SELECT COUNT(*) FROM %s WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s) AND %s)",
+				personJoin, relIDList, countWhere)
+		}
+		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
 	}
 
 	// For "any" mode
@@ -770,6 +804,25 @@ func (b *SQLBuilder) characterRelationFilter(f *config.CharacterRelationFilter) 
 			relIDList, charJoin, relIDList, nestedWhere, relIDList), nil
 	}
 
+	// For "count" mode: count of matching character relations <op> threshold
+	if f.Mode == "count" {
+		countWhere := subWhere
+		if countWhere == "" {
+			countWhere = "TRUE"
+		}
+		var countExpr string
+		if anyType {
+			countExpr = fmt.Sprintf(
+				"(SELECT COUNT(*) FROM %s WHERE cr.person_id = c.character_id AND %s)",
+				charJoin, countWhere)
+		} else {
+			countExpr = fmt.Sprintf(
+				"(SELECT COUNT(*) FROM %s WHERE cr.person_id = c.character_id AND cr.relation_type IN (%s) AND %s)",
+				charJoin, relIDList, countWhere)
+		}
+		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+	}
+
 	// For "any" mode
 	return fmt.Sprintf(
 		"EXISTS (SELECT 1 FROM %s WHERE cr.person_id = c.character_id AND %s)",
@@ -811,8 +864,6 @@ func (b *SQLBuilder) filterForAlias(f config.Filter, alias string, idx int) (str
 		return b.tagFilterForAlias(f.Tag, alias)
 	case f.MetaTag != nil:
 		return b.metaTagFilterForAlias(f.MetaTag, alias)
-	case f.Count != nil:
-		return b.countFilterForAlias(f.Count, alias)
 	default:
 		return "", fmt.Errorf("unsupported nested filter type at index %d", idx)
 	}
@@ -890,23 +941,6 @@ func (b *SQLBuilder) metaTagFilterForAlias(f *config.TagFilter, alias string) (s
 	return cond, nil
 }
 
-func (b *SQLBuilder) countFilterForAlias(f *config.CountFilter, alias string) (string, error) {
-	var countExpr string
-	if f.What == "ep" {
-		countExpr = fmt.Sprintf("(SELECT COUNT(*) FROM episodes e WHERE e.subject_id = %s.id)", alias)
-	} else {
-		relIDs := b.getRelationIDsForName(f.What)
-		if len(relIDs) == 0 {
-			return "", fmt.Errorf("未找到关系类型用于计数: %s", f.What)
-		}
-		countExpr = fmt.Sprintf(
-			"(SELECT COUNT(*) FROM subject_relations r WHERE r.subject_id = %s.id AND r.relation_type IN (%s))",
-			alias, intListToSQL(relIDs),
-		)
-	}
-	return b.buildCondition(countExpr, f.Operator, fmt.Sprintf("%v", f.Value))
-}
-
 // staffFilter handles staff/person-based filtering.
 func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 	// Resolve position name to IDs; empty or "任意" means any position
@@ -968,6 +1002,18 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 				 (SELECT COUNT(*) FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND sp.position IN (%s) AND %s) =
 				 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s))`,
 				posIDList, posIDList, condWhere, posIDList), nil
+		}
+
+		// count mode (person target)
+		if f.Mode == "count" {
+			countWhere := subWhere
+			if countWhere == "" {
+				countWhere = "TRUE"
+			}
+			countExpr := fmt.Sprintf(
+				"(SELECT COUNT(*) FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND %s)",
+				countWhere)
+			return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
 		}
 
 		return fmt.Sprintf(
@@ -1040,6 +1086,22 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 			posAppearCond, fromClause, posAppearCond, personWhere, posAppearCond), nil
 	}
 
+	// count mode (subject target)
+	if f.Mode == "count" {
+		countWhere := posAppearCond
+		if personWhere != "TRUE" {
+			if countWhere == "TRUE" {
+				countWhere = personWhere
+			} else {
+				countWhere = countWhere + " AND " + personWhere
+			}
+		}
+		countExpr := fmt.Sprintf(
+			"(SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND %s)",
+			fromClause, countWhere)
+		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+	}
+
 	if posAppearCond == "TRUE" {
 		return fmt.Sprintf(
 			"EXISTS (SELECT 1 FROM %s WHERE sp.subject_id = s.id AND %s)",
@@ -1108,6 +1170,14 @@ func (b *SQLBuilder) characterFilter(f *config.CharacterFilter) (string, error) 
 				typeCond, condWhere, typeCond), nil
 		}
 
+		// count mode (character target)
+		if f.Mode == "count" {
+			countExpr := fmt.Sprintf(
+				"(SELECT COUNT(*) FROM subject_characters sc LEFT JOIN subjects rs ON sc.subject_id = rs.id WHERE sc.character_id = c.character_id AND %s)",
+				subWhere)
+			return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+		}
+
 		// any mode
 		return fmt.Sprintf(
 			"EXISTS (SELECT 1 FROM subject_characters sc LEFT JOIN subjects rs ON sc.subject_id = rs.id WHERE sc.character_id = c.character_id AND %s)",
@@ -1149,6 +1219,14 @@ func (b *SQLBuilder) characterFilter(f *config.CharacterFilter) (string, error) 
 			 (SELECT COUNT(*) FROM %s WHERE sc.subject_id = s.id AND %s) =
 			 (SELECT COUNT(*) FROM subject_characters sc WHERE sc.subject_id = s.id AND %s)`,
 			typeCond, fromClause, subWhere, typeCond), nil
+	}
+
+	// count mode (subject target)
+	if f.Mode == "count" {
+		countExpr := fmt.Sprintf(
+			"(SELECT COUNT(*) FROM %s WHERE sc.subject_id = s.id AND %s)",
+			fromClause, subWhere)
+		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
 	}
 
 	// any mode
@@ -1287,6 +1365,12 @@ func (b *SQLBuilder) personCharacterFilter(f *config.PersonCharacterFilter) (str
 				 (SELECT COUNT(*) FROM person_characters pc WHERE pc.person_id = p.person_id AND %s)`,
 				typeCond, fromClause, cond, typeCond), nil
 		}
+		if f.Mode == "count" {
+			countExpr := fmt.Sprintf(
+				"(SELECT COUNT(*) FROM %s WHERE pc.person_id = p.person_id AND %s)",
+				fromClause, cond)
+			return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+		}
 		return fmt.Sprintf(
 			"EXISTS (SELECT 1 FROM %s WHERE pc.person_id = p.person_id AND %s)",
 			fromClause, cond), nil
@@ -1306,6 +1390,14 @@ func (b *SQLBuilder) personCharacterFilter(f *config.PersonCharacterFilter) (str
 
 	// Build "subject matches" predicate
 	subjPred := subjectWhere
+
+	// Count mode with subject conditions
+	if f.Mode == "count" {
+		countExpr := fmt.Sprintf(
+			"(SELECT COUNT(DISTINCT pc.character_id) FROM person_characters pc %s LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.person_id = p.person_id AND %s AND %s)",
+			charJoin, charPred, subjPred)
+		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+	}
 
 	switch {
 	case f.Mode == "any" && subjMode == "any":
@@ -1358,6 +1450,41 @@ func (b *SQLBuilder) personCharacterFilter(f *config.PersonCharacterFilter) (str
 			   )
 			 )`,
 			typeCond, charJoin, charPred, subjPred), nil
+
+	case f.Mode == "any" && subjMode == "count":
+		// EXISTS a character where count of matching subjects <op> threshold
+		subjCountOp := f.SubjectCountOp
+		if subjCountOp == "" {
+			subjCountOp = "gte"
+		}
+		return fmt.Sprintf(
+			`EXISTS (
+			   SELECT 1 FROM person_characters pc %s
+			   WHERE pc.person_id = p.person_id AND %s
+			   AND (SELECT COUNT(*) FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
+			     AND %s) %s %v
+			 )`,
+			charJoin, charPred, subjPred, subjCountOp, f.SubjectCountVal), nil
+
+	case f.Mode == "all" && subjMode == "count":
+		// ALL characters have count of matching subjects <op> threshold
+		subjCountOp := f.SubjectCountOp
+		if subjCountOp == "" {
+			subjCountOp = "gte"
+		}
+		return fmt.Sprintf(
+			`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND %s) AND
+			 NOT EXISTS (
+			   SELECT 1 FROM person_characters pc %s
+			   WHERE pc.person_id = p.person_id AND %s
+			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
+			     AND %s) %s %v)
+			 )`,
+			typeCond, charJoin, charPred, subjPred, subjCountOp, f.SubjectCountVal), nil
 	}
 
 	return "TRUE", nil
@@ -1481,6 +1608,12 @@ func (b *SQLBuilder) characterPersonFilter(f *config.CharacterPersonFilter) (str
 				 (SELECT COUNT(*) FROM person_characters pc WHERE pc.character_id = c.character_id AND %s)`,
 				typeCond, fromClause, cond, typeCond), nil
 		}
+		if f.Mode == "count" {
+			countExpr := fmt.Sprintf(
+				"(SELECT COUNT(*) FROM %s WHERE pc.character_id = c.character_id AND %s)",
+				fromClause, cond)
+			return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+		}
 		return fmt.Sprintf(
 			"EXISTS (SELECT 1 FROM %s WHERE pc.character_id = c.character_id AND %s)",
 			fromClause, cond), nil
@@ -1500,6 +1633,14 @@ func (b *SQLBuilder) characterPersonFilter(f *config.CharacterPersonFilter) (str
 
 	// Build "subject matches" predicate
 	subjPred := subjectWhere
+
+	// Count mode with subject conditions
+	if f.Mode == "count" {
+		countExpr := fmt.Sprintf(
+			"(SELECT COUNT(DISTINCT pc.person_id) FROM person_characters pc %s LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.character_id = c.character_id AND %s AND %s)",
+			personJoin, personPred, subjPred)
+		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+	}
 
 	switch {
 	case f.Mode == "any" && subjMode == "any":
@@ -1552,6 +1693,41 @@ func (b *SQLBuilder) characterPersonFilter(f *config.CharacterPersonFilter) (str
 			   )
 			 )`,
 			typeCond, personJoin, personPred, subjPred), nil
+
+	case f.Mode == "any" && subjMode == "count":
+		// EXISTS a person where count of matching subjects <op> threshold
+		subjCountOp := f.SubjectCountOp
+		if subjCountOp == "" {
+			subjCountOp = "gte"
+		}
+		return fmt.Sprintf(
+			`EXISTS (
+			   SELECT 1 FROM person_characters pc %s
+			   WHERE pc.character_id = c.character_id AND %s
+			   AND (SELECT COUNT(*) FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
+			     AND %s) %s %v
+			 )`,
+			personJoin, personPred, subjPred, subjCountOp, f.SubjectCountVal), nil
+
+	case f.Mode == "all" && subjMode == "count":
+		// ALL persons have count of matching subjects <op> threshold
+		subjCountOp := f.SubjectCountOp
+		if subjCountOp == "" {
+			subjCountOp = "gte"
+		}
+		return fmt.Sprintf(
+			`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND %s) AND
+			 NOT EXISTS (
+			   SELECT 1 FROM person_characters pc %s
+			   WHERE pc.character_id = c.character_id AND %s
+			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2
+			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
+			     AND %s) %s %v)
+			 )`,
+			typeCond, personJoin, personPred, subjPred, subjCountOp, f.SubjectCountVal), nil
 	}
 
 	return "TRUE", nil
@@ -1586,8 +1762,6 @@ func (b *SQLBuilder) personFilterForAlias(f config.Filter, idx int) (string, err
 		return b.personGlobalFilterForAlias(f.Global)
 	case f.Type != nil:
 		return b.personTypeFilterForAlias(f.Type)
-	case f.Count != nil:
-		return b.personCountFilterForAlias(f.Count)
 	default:
 		return "", fmt.Errorf("人物筛选不支持此条件类型 (index %d)", idx)
 	}
@@ -1638,23 +1812,6 @@ func (b *SQLBuilder) personTypeFilterForAlias(f *config.TypeFilter) (string, err
 	return fmt.Sprintf("p.person_type = '%s'", escapeSQLString(fmt.Sprintf("%v", f.Value))), nil
 }
 
-// personCountFilterForAlias builds a count filter on person appearances.
-func (b *SQLBuilder) personCountFilterForAlias(f *config.CountFilter) (string, error) {
-	var countExpr string
-	if f.What == "ep" {
-		countExpr = "(SELECT COUNT(*) FROM subject_persons sp2 WHERE sp2.person_id = p.person_id)"
-	} else {
-		posIDs := b.getPositionIDsForName(f.What)
-		if len(posIDs) == 0 {
-			return "", fmt.Errorf("未找到职位类型用于计数: %s", f.What)
-		}
-		countExpr = fmt.Sprintf(
-			"(SELECT COUNT(*) FROM subject_persons sp2 WHERE sp2.person_id = p.person_id AND sp2.position IN (%s))",
-			intListToSQL(posIDs))
-	}
-	return b.buildCondition(countExpr, f.Operator, fmt.Sprintf("%v", f.Value))
-}
-
 // characterFilterForAlias dispatches a single filter for character-level conditions.
 func (b *SQLBuilder) characterFilterForAlias(f config.Filter, idx int) (string, error) {
 	switch {
@@ -1662,8 +1819,6 @@ func (b *SQLBuilder) characterFilterForAlias(f config.Filter, idx int) (string, 
 		return b.characterFieldFilterForAlias(f.Field)
 	case f.Global != nil:
 		return b.characterGlobalFilterForAlias(f.Global)
-	case f.Count != nil:
-		return b.characterCountFilterForAlias(f.Count)
 	default:
 		return "", fmt.Errorf("角色筛选不支持此条件类型 (index %d)", idx)
 	}
@@ -1711,18 +1866,6 @@ func (b *SQLBuilder) characterGlobalFilterForAlias(f *config.GlobalFilter) (stri
 	}
 }
 
-// characterCountFilterForAlias builds a count filter on character appearances.
-func (b *SQLBuilder) characterCountFilterForAlias(f *config.CountFilter) (string, error) {
-	var countExpr string
-	if f.What == "ep" {
-		countExpr = "(SELECT COUNT(*) FROM subject_characters sc2 WHERE sc2.character_id = c.character_id)"
-	} else {
-		// Could be subject count or other metrics
-		countExpr = "(SELECT COUNT(*) FROM subject_characters sc2 WHERE sc2.character_id = c.character_id)"
-	}
-	return b.buildCondition(countExpr, f.Operator, fmt.Sprintf("%v", f.Value))
-}
-
 // episodeFilter handles episode-based filtering.
 func (b *SQLBuilder) episodeFilter(f *config.EpisodeFilter) (string, error) {
 	// New: logic tree mode
@@ -1737,6 +1880,12 @@ func (b *SQLBuilder) episodeFilter(f *config.EpisodeFilter) (string, error) {
 				 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND %s) =
 				 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id)`,
 				episodeWhere), nil
+		}
+		if f.Mode == "count" {
+			countExpr := fmt.Sprintf(
+				"(SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND %s)",
+				episodeWhere)
+			return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
 		}
 		return fmt.Sprintf(
 			"EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND %s)",
@@ -1790,6 +1939,17 @@ func (b *SQLBuilder) episodeFilter(f *config.EpisodeFilter) (string, error) {
 			strings.Join(normalConds, " AND ")), nil
 	}
 
+	if f.Mode == "count" {
+		countWhere := subWhere
+		if countWhere == "" {
+			countWhere = "TRUE"
+		}
+		countExpr := fmt.Sprintf(
+			"(SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND %s)",
+			countWhere)
+		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+	}
+
 	return fmt.Sprintf(
 		"EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND %s)",
 		subWhere), nil
@@ -1804,25 +1964,6 @@ func (b *SQLBuilder) episodeFieldFilter(f *config.FieldFilter) (string, error) {
 	default:
 		return "", fmt.Errorf("unknown episode field: %s", f.Field)
 	}
-}
-
-// countFilter handles count-based filtering (number of relations or episodes).
-func (b *SQLBuilder) countFilter(f *config.CountFilter) (string, error) {
-	var countExpr string
-	if f.What == "ep" {
-		countExpr = "(SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id)"
-	} else {
-		relIDs := b.getRelationIDsForName(f.What)
-		if len(relIDs) == 0 {
-			return "", fmt.Errorf("未找到关系类型用于计数: %s", f.What)
-		}
-		countExpr = fmt.Sprintf(
-			"(SELECT COUNT(*) FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (%s))",
-			intListToSQL(relIDs),
-		)
-	}
-
-	return b.buildCondition(countExpr, f.Operator, fmt.Sprintf("%v", f.Value))
 }
 
 // buildCondition generates a SQL comparison expression.
