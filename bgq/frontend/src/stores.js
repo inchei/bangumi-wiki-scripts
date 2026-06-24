@@ -1,6 +1,23 @@
 // State management using svelte/store
 import { writable, get } from "svelte/store";
 
+import { PLATFORMS } from "./schema-data.js";
+
+// Subject direct fields for autocomplete
+const SUBJECT_DIRECT_FIELDS = [
+  "id",
+  "type",
+  "name",
+  "name_cn",
+  "platform",
+  "summary",
+  "nsfw",
+  "score",
+  "rank",
+  "date",
+  "series",
+];
+
 // Version counter — incremented on every mutation to trigger reactivity
 export const logicVersion = writable(0);
 
@@ -9,21 +26,6 @@ export const focusRequest = writable(null);
 function bumpVersion() {
   logicVersion.update((n) => n + 1);
 }
-
-export const schema = writable({
-  direct_fields: [],
-  subject_types: {},
-  relation_types: {},
-  staff_positions: {},
-});
-
-export const schemaOptions = writable({
-  types: {},
-  platforms: [],
-  relations: [],
-  positions: [],
-  meta_tags: [],
-});
 
 export const lastResult = writable(null);
 export const queryLoading = writable(false);
@@ -42,20 +44,20 @@ export const personRootLogic = writable(newLogicGroup("and"));
 export const characterRootLogic = writable(newLogicGroup("and"));
 export const episodeRootLogic = writable(newLogicGroup("and"));
 
-export function getRootLogic() {
+function getTargetStore() {
   const target = get(queryTarget);
-  if (target === "person") return get(personRootLogic);
-  if (target === "character") return get(characterRootLogic);
-  if (target === "episode") return get(episodeRootLogic);
-  return get(subjectRootLogic);
+  if (target === "person") return personRootLogic;
+  if (target === "character") return characterRootLogic;
+  if (target === "episode") return episodeRootLogic;
+  return subjectRootLogic;
+}
+
+export function getRootLogic() {
+  return get(getTargetStore());
 }
 
 export function updateRootLogic(lg) {
-  const target = get(queryTarget);
-  if (target === "person") personRootLogic.set(lg);
-  else if (target === "character") characterRootLogic.set(lg);
-  else if (target === "episode") episodeRootLogic.set(lg);
-  else subjectRootLogic.set(lg);
+  getTargetStore().set(lg);
   bumpVersion();
 }
 
@@ -69,6 +71,91 @@ export function resetLogicBuilder() {
 
 // ---- Logic tree helpers ----
 
+// Iterate all condition arrays in an item (relation, staff, character, etc.)
+// Calls fn(conditions, key) for each `.conditions` and `.subject_conditions` array.
+function forEachCondArray(item, fn) {
+  for (const key of Object.keys(item)) {
+    const val = item[key];
+    if (val && typeof val === "object") {
+      if (Array.isArray(val.conditions)) fn(val.conditions, key);
+      if (Array.isArray(val.subject_conditions))
+        fn(val.subject_conditions, key);
+    }
+  }
+}
+
+// Immutable tree replacement: find node by `id`, apply `replacer`, propagate new refs up.
+function findAndReplace(node, id, replacer) {
+  if (node._id === id) return replacer(node);
+  const newItems = [];
+  let changed = false;
+  for (const item of node.items) {
+    let found = false;
+    // Direct logic group: { logic: { _id, op, items } }
+    if (
+      item.logic &&
+      typeof item.logic === "object" &&
+      !Array.isArray(item.logic)
+    ) {
+      const updated = findAndReplace(item.logic, id, replacer);
+      if (updated !== item.logic) {
+        newItems.push({ ...item, logic: updated });
+        found = true;
+        changed = true;
+      }
+    }
+    if (!found) {
+      // Nested conditions: { relation: { conditions: [{ logic: ... }] } }
+      forEachCondArray(item, (conds, key) => {
+        if (found) return;
+        const newConds = [];
+        let condChanged = false;
+        for (const c of conds) {
+          if (c.logic) {
+            const updated = findAndReplace(c.logic, id, replacer);
+            if (updated !== c.logic) {
+              condChanged = true;
+              newConds.push({ logic: updated });
+              continue;
+            }
+          }
+          newConds.push(c);
+        }
+        if (condChanged) {
+          const val = item[key];
+          const newVal = { ...val, conditions: newConds };
+          newItems.push({ ...item, [key]: newVal });
+          found = true;
+          changed = true;
+        }
+      });
+    }
+    if (!found) {
+      // Nested logic in other structures: { episode: { logic: ... } }
+      for (const key of Object.keys(item)) {
+        if (found) break;
+        const val = item[key];
+        if (
+          val &&
+          typeof val === "object" &&
+          val.logic &&
+          typeof val.logic === "object" &&
+          !Array.isArray(val.logic)
+        ) {
+          const updated = findAndReplace(val.logic, id, replacer);
+          if (updated !== val.logic) {
+            newItems.push({ ...item, [key]: { ...val, logic: updated } });
+            found = true;
+            changed = true;
+          }
+        }
+      }
+    }
+    if (!found) newItems.push(item);
+  }
+  return changed ? { ...node, items: newItems } : node;
+}
+
 export function findLogicGroup(node, id) {
   if (node._id === id) return node;
   for (const item of node.items) {
@@ -76,77 +163,31 @@ export function findLogicGroup(node, id) {
       const r = findLogicGroup(item.logic, id);
       if (r) return r;
     }
-    if (item.relation?.conditions) {
-      for (const c of item.relation.conditions) {
+    let found = null;
+    forEachCondArray(item, (conds) => {
+      if (found) return;
+      for (const c of conds) {
         if (c.logic) {
-          const r = findLogicGroup(c.logic, id);
-          if (r) return r;
+          found = findLogicGroup(c.logic, id);
+          if (found) return;
         }
       }
-    }
-    if (item.person_relation?.conditions) {
-      for (const c of item.person_relation.conditions) {
-        if (c.logic) {
-          const r = findLogicGroup(c.logic, id);
-          if (r) return r;
-        }
+    });
+    if (found) return found;
+    // episode.logic (direct, not in conditions array)
+    for (const key of Object.keys(item)) {
+      const val = item[key];
+      if (
+        val &&
+        typeof val === "object" &&
+        val.logic &&
+        typeof val.logic === "object" &&
+        !Array.isArray(val.logic) &&
+        !val.conditions
+      ) {
+        const r = findLogicGroup(val.logic, id);
+        if (r) return r;
       }
-    }
-    if (item.character_relation?.conditions) {
-      for (const c of item.character_relation.conditions) {
-        if (c.logic) {
-          const r = findLogicGroup(c.logic, id);
-          if (r) return r;
-        }
-      }
-    }
-    if (item.character?.conditions) {
-      for (const c of item.character.conditions) {
-        if (c.logic) {
-          const r = findLogicGroup(c.logic, id);
-          if (r) return r;
-        }
-      }
-    }
-    if (item.person_character?.conditions) {
-      for (const c of item.person_character.conditions) {
-        if (c.logic) {
-          const r = findLogicGroup(c.logic, id);
-          if (r) return r;
-        }
-      }
-      for (const c of item.person_character.subject_conditions || []) {
-        if (c.logic) {
-          const r = findLogicGroup(c.logic, id);
-          if (r) return r;
-        }
-      }
-    }
-    if (item.character_person?.conditions) {
-      for (const c of item.character_person.conditions) {
-        if (c.logic) {
-          const r = findLogicGroup(c.logic, id);
-          if (r) return r;
-        }
-      }
-      for (const c of item.character_person.subject_conditions || []) {
-        if (c.logic) {
-          const r = findLogicGroup(c.logic, id);
-          if (r) return r;
-        }
-      }
-    }
-    if (item.staff?.conditions) {
-      for (const c of item.staff.conditions) {
-        if (c.logic) {
-          const r = findLogicGroup(c.logic, id);
-          if (r) return r;
-        }
-      }
-    }
-    if (item.episode?.logic) {
-      const r = findLogicGroup(item.episode.logic, id);
-      if (r) return r;
     }
   }
   return null;
@@ -162,49 +203,31 @@ export function removeLogicItemById(node, id) {
       }
       if (removeLogicItemById(item.logic, id)) return true;
     }
-    if (item.relation?.conditions) {
-      for (const c of item.relation.conditions) {
-        if (c.logic && removeLogicItemById(c.logic, id)) return true;
+    let found = false;
+    forEachCondArray(item, (conds) => {
+      if (found) return;
+      for (const c of conds) {
+        if (c.logic && removeLogicItemById(c.logic, id)) {
+          found = true;
+          return;
+        }
+      }
+    });
+    if (found) return true;
+    // episode.logic (direct, not in conditions array)
+    for (const key of Object.keys(item)) {
+      const val = item[key];
+      if (
+        val &&
+        typeof val === "object" &&
+        val.logic &&
+        typeof val.logic === "object" &&
+        !Array.isArray(val.logic) &&
+        !val.conditions
+      ) {
+        if (removeLogicItemById(val.logic, id)) return true;
       }
     }
-    if (item.person_relation?.conditions) {
-      for (const c of item.person_relation.conditions) {
-        if (c.logic && removeLogicItemById(c.logic, id)) return true;
-      }
-    }
-    if (item.character_relation?.conditions) {
-      for (const c of item.character_relation.conditions) {
-        if (c.logic && removeLogicItemById(c.logic, id)) return true;
-      }
-    }
-    if (item.character?.conditions) {
-      for (const c of item.character.conditions) {
-        if (c.logic && removeLogicItemById(c.logic, id)) return true;
-      }
-    }
-    if (item.person_character?.conditions) {
-      for (const c of item.person_character.conditions) {
-        if (c.logic && removeLogicItemById(c.logic, id)) return true;
-      }
-      for (const c of item.person_character.subject_conditions || []) {
-        if (c.logic && removeLogicItemById(c.logic, id)) return true;
-      }
-    }
-    if (item.character_person?.conditions) {
-      for (const c of item.character_person.conditions) {
-        if (c.logic && removeLogicItemById(c.logic, id)) return true;
-      }
-      for (const c of item.character_person.subject_conditions || []) {
-        if (c.logic && removeLogicItemById(c.logic, id)) return true;
-      }
-    }
-    if (item.staff?.conditions) {
-      for (const c of item.staff.conditions) {
-        if (c.logic && removeLogicItemById(c.logic, id)) return true;
-      }
-    }
-    if (item.episode?.logic && removeLogicItemById(item.episode.logic, id))
-      return true;
   }
   return false;
 }
@@ -309,297 +332,16 @@ export function createEmptyCondition(type) {
 // Clone the tree path to `targetId`, applying `mutator` to the target group's new items array.
 // Returns a new root with new references at every level — Svelte detects the change.
 function updateGroupInTree(node, targetId, mutator) {
-  // Target is this node itself
-  if (node._id === targetId) {
-    return { ...node, items: mutator([...node.items]) };
-  }
-  const newItems = [...node.items];
-  for (let i = 0; i < newItems.length; i++) {
-    const item = newItems[i];
-    if (item.logic) {
-      if (item.logic._id === targetId) {
-        // Spread all group properties (op, _id, _ctx) + new items from mutator
-        const newLogic = {
-          ...item.logic,
-          items: mutator([...item.logic.items]),
-        };
-        newItems[i] = { logic: newLogic };
-        return { ...node, items: newItems };
-      }
-      const updated = updateGroupInTree(item.logic, targetId, mutator);
-      if (updated !== item.logic) {
-        newItems[i] = { logic: updated };
-        return { ...node, items: newItems };
-      }
-    }
-    // relation
-    if (item.relation?.conditions) {
-      let changed = false;
-      const newConds = item.relation.conditions.map((c) => {
-        if (c.logic && !changed) {
-          if (c.logic._id === targetId) {
-            changed = true;
-            return {
-              logic: { ...c.logic, items: mutator([...c.logic.items]) },
-            };
-          }
-          const updated = updateGroupInTree(c.logic, targetId, mutator);
-          if (updated !== c.logic) {
-            changed = true;
-            return { logic: updated };
-          }
-        }
-        return c;
-      });
-      if (changed) {
-        newItems[i] = { relation: { ...item.relation, conditions: newConds } };
-        return { ...node, items: newItems };
-      }
-    }
-    // person_relation
-    if (item.person_relation?.conditions) {
-      let changed = false;
-      const newConds = item.person_relation.conditions.map((c) => {
-        if (c.logic && !changed) {
-          if (c.logic._id === targetId) {
-            changed = true;
-            return {
-              logic: { ...c.logic, items: mutator([...c.logic.items]) },
-            };
-          }
-          const updated = updateGroupInTree(c.logic, targetId, mutator);
-          if (updated !== c.logic) {
-            changed = true;
-            return { logic: updated };
-          }
-        }
-        return c;
-      });
-      if (changed) {
-        newItems[i] = {
-          person_relation: { ...item.person_relation, conditions: newConds },
-        };
-        return { ...node, items: newItems };
-      }
-    }
-    // character_relation
-    if (item.character_relation?.conditions) {
-      let changed = false;
-      const newConds = item.character_relation.conditions.map((c) => {
-        if (c.logic && !changed) {
-          if (c.logic._id === targetId) {
-            changed = true;
-            return {
-              logic: { ...c.logic, items: mutator([...c.logic.items]) },
-            };
-          }
-          const updated = updateGroupInTree(c.logic, targetId, mutator);
-          if (updated !== c.logic) {
-            changed = true;
-            return { logic: updated };
-          }
-        }
-        return c;
-      });
-      if (changed) {
-        newItems[i] = {
-          character_relation: {
-            ...item.character_relation,
-            conditions: newConds,
-          },
-        };
-        return { ...node, items: newItems };
-      }
-    }
-    // character
-    if (item.character?.conditions) {
-      let changed = false;
-      const newConds = item.character.conditions.map((c) => {
-        if (c.logic && !changed) {
-          if (c.logic._id === targetId) {
-            changed = true;
-            return {
-              logic: { ...c.logic, items: mutator([...c.logic.items]) },
-            };
-          }
-          const updated = updateGroupInTree(c.logic, targetId, mutator);
-          if (updated !== c.logic) {
-            changed = true;
-            return { logic: updated };
-          }
-        }
-        return c;
-      });
-      if (changed) {
-        newItems[i] = {
-          character: { ...item.character, conditions: newConds },
-        };
-        return { ...node, items: newItems };
-      }
-    }
-    // person_character
-    if (
-      item.person_character?.conditions ||
-      item.person_character?.subject_conditions
-    ) {
-      let condChanged = false;
-      const newConds = (item.person_character.conditions || []).map((c) => {
-        if (c.logic && !condChanged) {
-          if (c.logic._id === targetId) {
-            condChanged = true;
-            return {
-              logic: { ...c.logic, items: mutator([...c.logic.items]) },
-            };
-          }
-          const updated = updateGroupInTree(c.logic, targetId, mutator);
-          if (updated !== c.logic) {
-            condChanged = true;
-            return { logic: updated };
-          }
-        }
-        return c;
-      });
-      let subjChanged = false;
-      const newSubjConds = (item.person_character.subject_conditions || []).map(
-        (c) => {
-          if (c.logic && !subjChanged) {
-            if (c.logic._id === targetId) {
-              subjChanged = true;
-              return {
-                logic: { ...c.logic, items: mutator([...c.logic.items]) },
-              };
-            }
-            const updated = updateGroupInTree(c.logic, targetId, mutator);
-            if (updated !== c.logic) {
-              subjChanged = true;
-              return { logic: updated };
-            }
-          }
-          return c;
-        },
-      );
-      if (condChanged || subjChanged) {
-        newItems[i] = {
-          person_character: {
-            ...item.person_character,
-            conditions: newConds,
-            subject_conditions: newSubjConds,
-          },
-        };
-        return { ...node, items: newItems };
-      }
-    }
-    // character_person
-    if (
-      item.character_person?.conditions ||
-      item.character_person?.subject_conditions
-    ) {
-      let condChanged = false;
-      const newConds = (item.character_person.conditions || []).map((c) => {
-        if (c.logic && !condChanged) {
-          if (c.logic._id === targetId) {
-            condChanged = true;
-            return {
-              logic: { ...c.logic, items: mutator([...c.logic.items]) },
-            };
-          }
-          const updated = updateGroupInTree(c.logic, targetId, mutator);
-          if (updated !== c.logic) {
-            condChanged = true;
-            return { logic: updated };
-          }
-        }
-        return c;
-      });
-      let subjChanged = false;
-      const newSubjConds = (item.character_person.subject_conditions || []).map(
-        (c) => {
-          if (c.logic && !subjChanged) {
-            if (c.logic._id === targetId) {
-              subjChanged = true;
-              return {
-                logic: { ...c.logic, items: mutator([...c.logic.items]) },
-              };
-            }
-            const updated = updateGroupInTree(c.logic, targetId, mutator);
-            if (updated !== c.logic) {
-              subjChanged = true;
-              return { logic: updated };
-            }
-          }
-          return c;
-        },
-      );
-      if (condChanged || subjChanged) {
-        newItems[i] = {
-          character_person: {
-            ...item.character_person,
-            conditions: newConds,
-            subject_conditions: newSubjConds,
-          },
-        };
-        return { ...node, items: newItems };
-      }
-    }
-    // staff
-    if (item.staff?.conditions) {
-      let changed = false;
-      const newConds = item.staff.conditions.map((c) => {
-        if (c.logic && !changed) {
-          if (c.logic._id === targetId) {
-            changed = true;
-            return {
-              logic: { ...c.logic, items: mutator([...c.logic.items]) },
-            };
-          }
-          const updated = updateGroupInTree(c.logic, targetId, mutator);
-          if (updated !== c.logic) {
-            changed = true;
-            return { logic: updated };
-          }
-        }
-        return c;
-      });
-      if (changed) {
-        newItems[i] = { staff: { ...item.staff, conditions: newConds } };
-        return { ...node, items: newItems };
-      }
-    }
-    // episode
-    if (item.episode?.logic) {
-      if (item.episode.logic._id === targetId) {
-        newItems[i] = {
-          episode: {
-            ...item.episode,
-            logic: {
-              ...item.episode.logic,
-              items: mutator([...item.episode.logic.items]),
-            },
-          },
-        };
-        return { ...node, items: newItems };
-      }
-      const updated = updateGroupInTree(item.episode.logic, targetId, mutator);
-      if (updated !== item.episode.logic) {
-        newItems[i] = { episode: { ...item.episode, logic: updated } };
-        return { ...node, items: newItems };
-      }
-    }
-  }
-  return node; // not found
+  return findAndReplace(node, targetId, (n) => ({
+    ...n,
+    items: mutator([...n.items]),
+  }));
 }
 
 function applyMutation(targetGroupId, mutator) {
-  const target = get(queryTarget);
-  const store =
-    target === "person"
-      ? personRootLogic
-      : target === "character"
-        ? characterRootLogic
-        : target === "episode"
-          ? episodeRootLogic
-          : subjectRootLogic;
-  store.update((root) => updateGroupInTree(root, targetGroupId, mutator));
+  getTargetStore().update((root) =>
+    updateGroupInTree(root, targetGroupId, mutator),
+  );
 }
 
 export function addToGroup(group, filter) {
@@ -654,19 +396,59 @@ export function addCondition(group, type, ctx) {
 }
 
 export function removeLogicGroup(groupId) {
-  // Remove from parent — needs tree search
-  const root = getRootLogic();
-  removeLogicItemById(root, groupId);
-  const target = get(queryTarget);
-  const store =
-    target === "person"
-      ? personRootLogic
-      : target === "character"
-        ? characterRootLogic
-        : target === "episode"
-          ? episodeRootLogic
-          : subjectRootLogic;
-  store.update((v) => ({ ...v }));
+  getTargetStore().update((root) => removeItemById(root, groupId));
+}
+
+// Immutable removal: returns a new tree with the item removed.
+function removeItemById(node, id) {
+  // Check if any direct child matches
+  const newItems = [];
+  let changed = false;
+  for (const item of node.items) {
+    if (item.logic && item.logic._id === id) {
+      changed = true;
+      continue; // skip this item
+    }
+    // Recurse into nested logic groups
+    if (
+      item.logic &&
+      typeof item.logic === "object" &&
+      !Array.isArray(item.logic)
+    ) {
+      const updated = removeItemById(item.logic, id);
+      if (updated !== item.logic) {
+        newItems.push({ ...item, logic: updated });
+        changed = true;
+        continue;
+      }
+    }
+    // Recurse into condition arrays
+    let found = false;
+    forEachCondArray(item, (conds, key) => {
+      if (found) return;
+      const newConds = [];
+      let condChanged = false;
+      for (const c of conds) {
+        if (c.logic) {
+          const updated = removeItemById(c.logic, id);
+          if (updated !== c.logic) {
+            condChanged = true;
+            newConds.push({ logic: updated });
+            continue;
+          }
+        }
+        newConds.push(c);
+      }
+      if (condChanged) {
+        const val = item[key];
+        newItems.push({ ...item, [key]: { ...val, conditions: newConds } });
+        found = true;
+        changed = true;
+      }
+    });
+    if (!found) newItems.push(item);
+  }
+  return changed ? { ...node, items: newItems } : node;
 }
 
 export function removeLogicLeaf(group, idx) {
@@ -686,266 +468,9 @@ export function addLogicGroupTo(group) {
 }
 
 export function toggleLogicOp(group, val) {
-  const target = get(queryTarget);
-  const store =
-    target === "person"
-      ? personRootLogic
-      : target === "character"
-        ? characterRootLogic
-        : target === "episode"
-          ? episodeRootLogic
-          : subjectRootLogic;
-  store.update((root) => {
-    function cloneAndUpdate(node) {
-      if (node._id === group._id) return { ...node, op: val };
-      const newItems = [...node.items];
-      for (let i = 0; i < newItems.length; i++) {
-        const item = newItems[i];
-        if (item.logic) {
-          if (item.logic._id === group._id) {
-            newItems[i] = { logic: { ...item.logic, op: val } };
-            return { ...node, items: newItems };
-          }
-          const updated = cloneAndUpdate(item.logic);
-          if (updated !== item.logic) {
-            newItems[i] = { logic: updated };
-            return { ...node, items: newItems };
-          }
-        }
-        if (item.relation?.conditions) {
-          let changed = false;
-          const newConds = item.relation.conditions.map((c) => {
-            if (c.logic && !changed) {
-              if (c.logic._id === group._id) {
-                changed = true;
-                return { logic: { ...c.logic, op: val } };
-              }
-              const updated = cloneAndUpdate(c.logic);
-              if (updated !== c.logic) {
-                changed = true;
-                return { logic: updated };
-              }
-            }
-            return c;
-          });
-          if (changed) {
-            newItems[i] = {
-              relation: { ...item.relation, conditions: newConds },
-            };
-            return { ...node, items: newItems };
-          }
-        }
-        if (item.person_relation?.conditions) {
-          let changed = false;
-          const newConds = item.person_relation.conditions.map((c) => {
-            if (c.logic && !changed) {
-              if (c.logic._id === group._id) {
-                changed = true;
-                return { logic: { ...c.logic, op: val } };
-              }
-              const updated = cloneAndUpdate(c.logic);
-              if (updated !== c.logic) {
-                changed = true;
-                return { logic: updated };
-              }
-            }
-            return c;
-          });
-          if (changed) {
-            newItems[i] = {
-              person_relation: {
-                ...item.person_relation,
-                conditions: newConds,
-              },
-            };
-            return { ...node, items: newItems };
-          }
-        }
-        if (item.character_relation?.conditions) {
-          let changed = false;
-          const newConds = item.character_relation.conditions.map((c) => {
-            if (c.logic && !changed) {
-              if (c.logic._id === group._id) {
-                changed = true;
-                return { logic: { ...c.logic, op: val } };
-              }
-              const updated = cloneAndUpdate(c.logic);
-              if (updated !== c.logic) {
-                changed = true;
-                return { logic: updated };
-              }
-            }
-            return c;
-          });
-          if (changed) {
-            newItems[i] = {
-              character_relation: {
-                ...item.character_relation,
-                conditions: newConds,
-              },
-            };
-            return { ...node, items: newItems };
-          }
-        }
-        if (item.character?.conditions) {
-          let changed = false;
-          const newConds = item.character.conditions.map((c) => {
-            if (c.logic && !changed) {
-              if (c.logic._id === group._id) {
-                changed = true;
-                return { logic: { ...c.logic, op: val } };
-              }
-              const updated = cloneAndUpdate(c.logic);
-              if (updated !== c.logic) {
-                changed = true;
-                return { logic: updated };
-              }
-            }
-            return c;
-          });
-          if (changed) {
-            newItems[i] = {
-              character: { ...item.character, conditions: newConds },
-            };
-            return { ...node, items: newItems };
-          }
-        }
-        if (
-          item.person_character?.conditions ||
-          item.person_character?.subject_conditions
-        ) {
-          let condChanged = false;
-          const newConds = (item.person_character.conditions || []).map((c) => {
-            if (c.logic && !condChanged) {
-              if (c.logic._id === group._id) {
-                condChanged = true;
-                return { logic: { ...c.logic, op: val } };
-              }
-              const updated = cloneAndUpdate(c.logic);
-              if (updated !== c.logic) {
-                condChanged = true;
-                return { logic: updated };
-              }
-            }
-            return c;
-          });
-          let subjChanged = false;
-          const newSubjConds = (
-            item.person_character.subject_conditions || []
-          ).map((c) => {
-            if (c.logic && !subjChanged) {
-              if (c.logic._id === group._id) {
-                subjChanged = true;
-                return { logic: { ...c.logic, op: val } };
-              }
-              const updated = cloneAndUpdate(c.logic);
-              if (updated !== c.logic) {
-                subjChanged = true;
-                return { logic: updated };
-              }
-            }
-            return c;
-          });
-          if (condChanged || subjChanged) {
-            newItems[i] = {
-              person_character: {
-                ...item.person_character,
-                conditions: newConds,
-                subject_conditions: newSubjConds,
-              },
-            };
-            return { ...node, items: newItems };
-          }
-        }
-        if (
-          item.character_person?.conditions ||
-          item.character_person?.subject_conditions
-        ) {
-          let condChanged = false;
-          const newConds = (item.character_person.conditions || []).map((c) => {
-            if (c.logic && !condChanged) {
-              if (c.logic._id === group._id) {
-                condChanged = true;
-                return { logic: { ...c.logic, op: val } };
-              }
-              const updated = cloneAndUpdate(c.logic);
-              if (updated !== c.logic) {
-                condChanged = true;
-                return { logic: updated };
-              }
-            }
-            return c;
-          });
-          let subjChanged = false;
-          const newSubjConds = (
-            item.character_person.subject_conditions || []
-          ).map((c) => {
-            if (c.logic && !subjChanged) {
-              if (c.logic._id === group._id) {
-                subjChanged = true;
-                return { logic: { ...c.logic, op: val } };
-              }
-              const updated = cloneAndUpdate(c.logic);
-              if (updated !== c.logic) {
-                subjChanged = true;
-                return { logic: updated };
-              }
-            }
-            return c;
-          });
-          if (condChanged || subjChanged) {
-            newItems[i] = {
-              character_person: {
-                ...item.character_person,
-                conditions: newConds,
-                subject_conditions: newSubjConds,
-              },
-            };
-            return { ...node, items: newItems };
-          }
-        }
-        if (item.staff?.conditions) {
-          let changed = false;
-          const newConds = item.staff.conditions.map((c) => {
-            if (c.logic && !changed) {
-              if (c.logic._id === group._id) {
-                changed = true;
-                return { logic: { ...c.logic, op: val } };
-              }
-              const updated = cloneAndUpdate(c.logic);
-              if (updated !== c.logic) {
-                changed = true;
-                return { logic: updated };
-              }
-            }
-            return c;
-          });
-          if (changed) {
-            newItems[i] = { staff: { ...item.staff, conditions: newConds } };
-            return { ...node, items: newItems };
-          }
-        }
-        if (item.episode?.logic) {
-          if (item.episode.logic._id === group._id) {
-            newItems[i] = {
-              episode: {
-                ...item.episode,
-                logic: { ...item.episode.logic, op: val },
-              },
-            };
-            return { ...node, items: newItems };
-          }
-          const updated = cloneAndUpdate(item.episode.logic);
-          if (updated !== item.episode.logic) {
-            newItems[i] = { episode: { ...item.episode, logic: updated } };
-            return { ...node, items: newItems };
-          }
-        }
-      }
-      return node;
-    }
-    return cloneAndUpdate(root);
-  });
+  getTargetStore().update((root) =>
+    findAndReplace(root, group._id, (n) => ({ ...n, op: val })),
+  );
 }
 
 export function updateCondition(group, idx, kind, field, value) {
@@ -980,11 +505,7 @@ export function applyFiltersFromAPI(apiFilters) {
   } else {
     newRoot = { op: "and", items: apiFilters, _id: ++_logicIdCounter };
   }
-  const target = get(queryTarget);
-  if (target === "person") personRootLogic.set(newRoot);
-  else if (target === "character") characterRootLogic.set(newRoot);
-  else if (target === "episode") episodeRootLogic.set(newRoot);
-  else subjectRootLogic.set(newRoot);
+  getTargetStore().set(newRoot);
 }
 
 function assignLogicIds(lg) {
@@ -1205,8 +726,7 @@ export function ctxFields(ctx) {
   if (ctx === CTX_EPISODE) return EPISODE_FIELDS;
   if (ctx === CTX_PERSON) return PERSON_FIELDS;
   if (ctx === CTX_CHARACTER) return CHARACTER_FIELDS;
-  const s = get(schema);
-  return s.direct_fields || [];
+  return SUBJECT_DIRECT_FIELDS;
 }
 
 export function ctxTypeOpts(ctx) {
@@ -1228,25 +748,18 @@ export function ctxTypeOpts(ctx) {
   ];
 }
 
-export function getTypeOptions() {
-  const s = get(schema);
-  const types = s.subject_types || {};
-  return Object.entries(types).map(([name, val]) => [String(val), name]);
-}
-
-export function getPlatformOptions() {
-  const opts = get(schemaOptions);
-  return (opts.platforms || []).map((p) => [String(p.code), p.name]);
-}
-
-export function fieldSelectOptions(fc, schemaVal) {
+export function fieldSelectOptions(fc) {
   if (fc.dynamic === "type") {
-    const types = (schemaVal || get(schema)).subject_types || {};
-    return Object.entries(types).map(([name, val]) => [String(val), name]);
+    return [
+      ["1", "书籍"],
+      ["2", "动画"],
+      ["3", "音乐"],
+      ["4", "游戏"],
+      ["6", "三次元"],
+    ];
   }
   if (fc.dynamic === "platform") {
-    const opts = get(schemaOptions);
-    return (opts.platforms || []).map((p) => [String(p.code), p.name]);
+    return PLATFORMS.map((p) => [String(p.code), p.name]);
   }
   return fc.options || [];
 }

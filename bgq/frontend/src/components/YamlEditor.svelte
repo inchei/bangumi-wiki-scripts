@@ -4,7 +4,6 @@
     applyFiltersFromAPI,
     logicVersion,
   } from "../stores.js";
-  import { loadSchemaOptions } from "../api.js";
   import { filtersToYAML, parseYAML } from "../yaml.js";
 
   let yamlText = $state("");
@@ -37,7 +36,6 @@
         document.getElementById("outputColumns").value =
           data.output.columns.join(",");
       if (data.limit) document.getElementById("resultLimit").value = data.limit;
-      loadSchemaOptions();
     } catch (e) {
       alert("解析失败: " + e.message);
     }
