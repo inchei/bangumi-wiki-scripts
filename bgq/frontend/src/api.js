@@ -9,7 +9,14 @@ export async function runQuery(filters, columns, target, limit) {
   });
   if (!r.ok) {
     const text = await r.text().catch(() => "");
-    throw new Error(text || `HTTP ${r.status}`);
+    let message;
+    try {
+      const err = JSON.parse(text);
+      message = err.error || err.message;
+    } catch {
+      // non-JSON error response
+    }
+    throw new Error(message || text || `HTTP ${r.status}`);
   }
   return r.json();
 }
