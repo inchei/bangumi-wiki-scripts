@@ -1,5 +1,6 @@
 <script>
   import { onMount } from "svelte";
+  import Awesomplete from "awesomplete";
 
   /**
    * @type {{
@@ -20,7 +21,10 @@
 
   let inputEl;
   let aw = $state(null);
-  let lastValidValue = value;
+  let lastValidValue = $state("");
+  $effect(() => {
+    lastValidValue = value;
+  });
 
   // Keep Awesomplete list in sync when suggestions prop changes
   $effect(() => {
@@ -30,7 +34,7 @@
   });
 
   onMount(() => {
-    if (typeof Awesomplete === "undefined" || !inputEl) return;
+    if (!inputEl) return;
     aw = new Awesomplete(inputEl, {
       list: suggestions,
       minChars: 0,

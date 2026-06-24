@@ -6,6 +6,9 @@ tmp/
 frontend/node_modules/
 frontend/dist/
 
+# Embedded frontend build
+internal/server/static/app.html
+
 # Binaries
 bgq
 bin/bgq

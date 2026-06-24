@@ -17,6 +17,9 @@ importers:
       '@fortawesome/svelte-fontawesome':
         specifier: ^0.2.4
         version: 0.2.4(@fortawesome/fontawesome-svg-core@7.2.0)(svelte@5.56.3)
+      awesomplete:
+        specifier: ^1.1.7
+        version: 1.1.7
       js-yaml:
         specifier: ^5.0.0
         version: 5.0.0
@@ -434,6 +437,9 @@ packages:
   astral-regex@2.0.0:
     resolution: {integrity: sha512-Z7tMw1ytTXt5jqMcOP+OQteU1VuNK9Y02uuJtKQ1Sv69jXQKKg5cibLwGJow8yzZP+eAc18EmLGPal0bp36rvQ==}
     engines: {node: '>=8'}
+
+  awesomplete@1.1.7:
+    resolution: {integrity: sha512-hwClzFReIIfheoMWpoJ7juLp1o6Q7YjTtEdZIGfXvhRHA9ewKM03VS4ZoK+OEFIKM066PfQt9pzRIGV1TguRBw==}
 
   axobject-query@4.1.0:
     resolution: {integrity: sha512-qIj0G9wZbMGNLjLmg1PT6v2mE9AH2zlnADJD/2tC6E00hgmhUOfEB6greHPAfLRSufHqROIUTkw6E+M3lH0PTQ==}
@@ -1692,6 +1698,8 @@ snapshots:
   aria-query@5.3.1: {}
 
   astral-regex@2.0.0: {}
+
+  awesomplete@1.1.7: {}
 
   axobject-query@4.1.0: {}
 

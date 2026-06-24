@@ -34,6 +34,7 @@
     "@fortawesome/fontawesome-svg-core": "^7.2.0",
     "@fortawesome/free-solid-svg-icons": "^7.2.0",
     "@fortawesome/svelte-fontawesome": "^0.2.4",
+    "awesomplete": "^1.1.7",
     "js-yaml": "^5.0.0"
   },
   "lint-staged": {
