@@ -22,6 +22,12 @@ cd bgq
 
 ```bash
 cd bgq
+
+# 编译前端（需要 pnpm）
+cd frontend && pnpm install && pnpm build && cd ..
+cp frontend/dist/index.html internal/server/static/app.html
+
+# 编译 Go 二进制
 go build -o bin/bgq ./cmd/bgq/
 
 # 下载 DuckDB CLI

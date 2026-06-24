@@ -58,8 +58,6 @@ func startServer(dataDir, listenAddr string) {
 	mux.HandleFunc("/api/health", s.handleHealth)
 	mux.HandleFunc("/api/debug", s.handleDebug)
 
-	// Static files (frontend or placeholder)
-	mux.Handle("/static/", srv.StaticHandler())
 	mux.HandleFunc("/", s.handleStatic)
 
 	// CORS middleware wrapper
