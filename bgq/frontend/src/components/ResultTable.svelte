@@ -2,6 +2,7 @@
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import {
     faDownload,
+    faCheck,
     faCopy,
     faInbox,
     faClipboardList,
@@ -108,6 +109,9 @@
     apiExportCSV(getFiltersForAPI(), cols, get(queryTarget), limit);
   }
 
+  let copiedTable = $state(false);
+  let copiedError = $state(false);
+
   function handleCopyTable() {
     const res = $lastResult;
     if (!res?.rows) return;
@@ -115,14 +119,37 @@
     let text = cols.join("\t") + "\n";
     for (const row of res.rows)
       text += row.map((v) => v ?? "").join("\t") + "\n";
-    navigator.clipboard.writeText(text).catch(() => alert("复制失败"));
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        copiedTable = true;
+        setTimeout(() => (copiedTable = false), 2000);
+      })
+      .catch(() => alert("复制失败"));
+  }
+
+  function handleCopyError() {
+    const text = $lastResult?.error;
+    if (!text) return;
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        copiedError = true;
+        setTimeout(() => (copiedError = false), 2000);
+      })
+      .catch(() => alert("复制失败"));
   }
 </script>
 
 <div class="results-panel">
   {#if $lastResult?.error}
     <div class="error-card">
-      <div class="error-title">查询失败</div>
+      <div class="error-header">
+        <div class="error-title">查询失败</div>
+        <button class="btn btn-outline btn-sm" onclick={handleCopyError}
+          >{#if copiedError}<FontAwesomeIcon icon={faCheck} />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
+          {copiedError ? "复制成功" : "复制"}</button>
+      </div>
       <pre>{$lastResult.error}</pre>
     </div>
   {:else if $queryLoading}
@@ -143,8 +170,8 @@
           ><FontAwesomeIcon icon={faDownload} /> 下载 CSV</button
         >
         <button class="btn btn-default btn-sm" onclick={handleCopyTable}
-          ><FontAwesomeIcon icon={faCopy} /> 复制表格</button
-        >
+          >{#if copiedTable}<FontAwesomeIcon icon={faCheck} />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
+          {copiedTable ? "复制成功" : "复制表格"}</button>
       </span>
     </div>
     {#if res.rows.length === 0}
@@ -379,9 +406,15 @@
     font-size: 14px;
   }
 
+  .error-card .error-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
   .error-card .error-title {
     font-weight: 600;
-    margin-bottom: 8px;
   }
 
   .error-card pre {
