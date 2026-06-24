@@ -1,8 +1,9 @@
 services:
   bgq:
     build: .
+    env_file: .env
     ports:
-      - "7860:7860"
+      - "${PORT:-7860}:7860"
     volumes:
       - bgq-data:/data/bangumi_archive
     restart: always

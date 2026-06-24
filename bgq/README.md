@@ -39,6 +39,7 @@ unzip duckdb.zip -d bin/
 
 ```bash
 cd bgq
+cp .env.example .env   # 按需编辑
 docker-compose up -d --build
 ```
 
