@@ -67,6 +67,13 @@ func main() {
 	fmt.Println("  Generating metatags.go...")
 	generateMetaTags(dataDir, outDir, tmplDir)
 
+	// Generate frontend schema data
+	frontendDir := "../../frontend/src"
+	if _, err := os.Stat(frontendDir); err == nil {
+		fmt.Println("  Generating schema-data.js...")
+		generateSchemaData(platformsYAML, subjectRelationsYAML, personRelationsYAML, staffYAML, dataDir, frontendDir, tmplDir)
+	}
+
 	fmt.Println("Done!")
 }
 
@@ -142,6 +149,15 @@ type StaffYAML struct {
 
 // --- Helpers ---
 
+func sortedStringKeys[V any](m map[string]V) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
 func sortedIntKeys[V any](m map[int]V) []int {
 	keys := make([]int, 0, len(m))
 	for k := range m {
@@ -192,8 +208,10 @@ func generatePlatform(yamlData []byte, outDir, tmplDir string) {
 		"1": "Book", "2": "Anime", "3": "Music", "4": "Game", "6": "Real",
 	}
 
+	yamlKeys := sortedStringKeys(yamlToGo)
 	var platforms []platformData
-	for yamlKey, goType := range yamlToGo {
+	for _, yamlKey := range yamlKeys {
+		goType := yamlToGo[yamlKey]
 		var entries []entry
 		if ps, ok := data.Platforms[yamlKey]; ok {
 			ids := make([]int, 0, len(ps))
@@ -246,8 +264,10 @@ func generateRelationData(subjectYAML, personYAML []byte, outDir, tmplDir string
 		"game": "Game", "real": "Real",
 	}
 
+	ytKeys := sortedStringKeys(yamlToGo)
 	var relTypes []relType
-	for yt, gt := range yamlToGo {
+	for _, yt := range ytKeys {
+		gt := yamlToGo[yt]
 		var entries []relEntry
 		if rels, ok := subjectData.Define.Types[yt]; ok {
 			codes := sortedIntKeys(rels)
@@ -313,8 +333,10 @@ func generateStaffData(yamlData []byte, outDir, tmplDir string) {
 		"game": "游戏", "real": "三次元",
 	}
 
+	ytKeys2 := sortedStringKeys(yamlToVar)
 	var staffTypes []staffType
-	for yt, vp := range yamlToVar {
+	for _, yt := range ytKeys2 {
+		vp := yamlToVar[yt]
 		var entries []staffEntry
 		if ps, ok := data.Define.Types[yt]; ok {
 			codes := sortedIntKeys(ps)
@@ -393,4 +415,208 @@ func generateMetaTags(dataDir, outDir, tmplDir string) {
 		log.Fatal(err)
 	}
 	writeToFile(filepath.Join(outDir, "metatags.go"), sb.String())
+}
+
+// --- Frontend Schema Data ---
+
+func generateSchemaData(platformsYAML, subjectRelationsYAML, personRelationsYAML, staffYAML []byte, dataDir, frontendDir, tmplDir string) {
+	// --- Platforms ---
+	var pData PlatformYAML
+	if err := yaml.Unmarshal(platformsYAML, &pData); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse subject_platforms.yml: %v\n", err)
+		os.Exit(1)
+	}
+	type jsEntry struct{ Code, Name string }
+	type platformType struct {
+		GoType   string
+		TypeCode string
+		Entries  []jsEntry
+	}
+	yamlPlatToGo := map[string]string{
+		"1": "BOOK", "2": "ANIME", "3": "MUSIC",
+		"4": "GAME", "6": "REAL",
+	}
+	yplatKeys := sortedStringKeys(yamlPlatToGo)
+	var platformTypes []platformType
+	for _, yamlKey := range yplatKeys {
+		goType := yamlPlatToGo[yamlKey]
+		var entries []jsEntry
+		if ps, ok := pData.Platforms[yamlKey]; ok {
+			ids := make([]int, 0, len(ps))
+			for _, p := range ps {
+				ids = append(ids, p.ID)
+			}
+			sort.Ints(ids)
+			for _, id := range ids {
+				for _, p := range ps {
+					if p.ID == id {
+						entries = append(entries, jsEntry{fmt.Sprint(p.ID), p.TypeCN})
+						break
+					}
+				}
+			}
+		}
+		platformTypes = append(platformTypes, platformType{goType, yamlKey, entries})
+	}
+
+	// --- Relations ---
+	var sRelData RelationYAML
+	if err := yaml.Unmarshal(subjectRelationsYAML, &sRelData); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse subject_relations.yml: %v\n", err)
+		os.Exit(1)
+	}
+	type relType struct {
+		GoType   string
+		TypeCode string
+		Entries  []jsEntry
+	}
+	yamlToGo := map[string]string{
+		"book": "BOOK", "anime": "ANIME", "music": "MUSIC",
+		"game": "GAME", "real": "REAL",
+	}
+	yamlToCode := map[string]string{
+		"book": "1", "anime": "2", "music": "3",
+		"game": "4", "real": "6",
+	}
+	ytKeys3 := sortedStringKeys(yamlToGo)
+	var relTypes []relType
+	for _, yt := range ytKeys3 {
+		gt := yamlToGo[yt]
+		var entries []jsEntry
+		if rels, ok := sRelData.Define.Types[yt]; ok {
+			codes := sortedIntKeys(rels)
+			for _, c := range codes {
+				entries = append(entries, jsEntry{fmt.Sprint(c), rels[c].CN})
+			}
+		}
+		relTypes = append(relTypes, relType{gt, yamlToCode[yt], entries})
+	}
+	// Fallback: 三次元 uses anime relations when it has no dedicated ones
+	for i, rt := range relTypes {
+		if rt.GoType == "REAL" && len(rt.Entries) == 0 {
+			for _, art := range relTypes {
+				if art.GoType == "ANIME" {
+					relTypes[i].Entries = art.Entries
+					break
+				}
+			}
+			break
+		}
+	}
+
+	// Person & Character relations
+	var pData2 RelationYAML
+	if err := yaml.Unmarshal(personRelationsYAML, &pData2); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse person_relations.yml: %v\n", err)
+		os.Exit(1)
+	}
+	var personEntries, charEntries []jsEntry
+	if pt, ok := pData2.Define.Types["person"]; ok {
+		codes := sortedIntKeys(pt)
+		for _, c := range codes {
+			personEntries = append(personEntries, jsEntry{fmt.Sprint(c), pt[c].CN})
+		}
+	}
+	if ct, ok := pData2.Define.Types["character"]; ok {
+		codes := sortedIntKeys(ct)
+		for _, c := range codes {
+			charEntries = append(charEntries, jsEntry{fmt.Sprint(c), ct[c].CN})
+		}
+	}
+
+	// Character association types & Person-character types (hardcoded)
+	charAssocTypes := []string{"主角", "配角", "客串", "闲角", "旁白", "声库"}
+	personCharTypes := []string{"CV", "译配", "演员", "中配", "日配", "英配", "韩配"}
+
+	// --- Staff positions ---
+	var staffData StaffYAML
+	if err := yaml.Unmarshal(staffYAML, &staffData); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse subject_staffs.yml: %v\n", err)
+		os.Exit(1)
+	}
+	type staffType struct {
+		GoType   string
+		TypeCode string
+		Entries  []jsEntry
+	}
+	ytKeys4 := sortedStringKeys(yamlToGo)
+	var staffTypes []staffType
+	for _, yt := range ytKeys4 {
+		gt := yamlToGo[yt]
+		var entries []jsEntry
+		if ps, ok := staffData.Define.Types[yt]; ok {
+			codes := sortedIntKeys(ps)
+			for _, c := range codes {
+				entries = append(entries, jsEntry{fmt.Sprint(c), ps[c].CN})
+			}
+		}
+		staffTypes = append(staffTypes, staffType{gt, yamlToCode[yt], entries})
+	}
+
+	// --- Meta tags ---
+	subjectFile := filepath.Join(dataDir, "subject.jsonlines")
+	file, err := os.Open(subjectFile)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to open %s: %v\n", subjectFile, err)
+		os.Exit(1)
+	}
+	defer func() { _ = file.Close() }()
+
+	typeMetaTags := make(map[int]map[string]bool)
+	decoder := json.NewDecoder(file)
+	for decoder.More() {
+		var subject struct {
+			Type     int      `json:"type"`
+			MetaTags []string `json:"meta_tags"`
+		}
+		if err := decoder.Decode(&subject); err != nil {
+			break
+		}
+		if subject.MetaTags == nil {
+			continue
+		}
+		if typeMetaTags[subject.Type] == nil {
+			typeMetaTags[subject.Type] = make(map[string]bool)
+		}
+		for _, tag := range subject.MetaTags {
+			typeMetaTags[subject.Type][tag] = true
+		}
+	}
+
+	type metaTagEntry struct {
+		TypeCode string
+		Tags     []string
+	}
+	var metaTagEntries []metaTagEntry
+	for _, tc := range []int{1, 2, 3, 4, 6} {
+		tags := typeMetaTags[tc]
+		if tags == nil {
+			continue
+		}
+		var tagList []string
+		for tag := range tags {
+			tagList = append(tagList, tag)
+		}
+		sort.Strings(tagList)
+		metaTagEntries = append(metaTagEntries, metaTagEntry{fmt.Sprint(tc), tagList})
+	}
+
+	// --- Render template ---
+	tmpl := loadTemplate(tmplDir, "schema_data.js.tmpl")
+	data := struct {
+		PlatformTypes   []platformType
+		RelTypes        []relType
+		PersonEntries   []jsEntry
+		CharEntries     []jsEntry
+		CharAssocTypes  []string
+		PersonCharTypes []string
+		StaffTypes      []staffType
+		MetaTagEntries  []metaTagEntry
+	}{platformTypes, relTypes, personEntries, charEntries, charAssocTypes, personCharTypes, staffTypes, metaTagEntries}
+
+	var sb strings.Builder
+	if err := tmpl.Execute(&sb, data); err != nil {
+		log.Fatal(err)
+	}
+	writeToFile(filepath.Join(frontendDir, "schema-data.js"), sb.String())
 }

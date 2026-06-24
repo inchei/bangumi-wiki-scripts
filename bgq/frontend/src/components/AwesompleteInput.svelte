@@ -19,15 +19,22 @@
   } = $props();
 
   let inputEl;
-  let aw;
+  let aw = $state(null);
   let lastValidValue = value;
+
+  // Keep Awesomplete list in sync when suggestions prop changes
+  $effect(() => {
+    if (aw) {
+      aw.list = suggestions;
+    }
+  });
 
   onMount(() => {
     if (typeof Awesomplete === "undefined" || !inputEl) return;
     aw = new Awesomplete(inputEl, {
       list: suggestions,
       minChars: 0,
-      maxItems: 20,
+      maxItems: Infinity,
       autoFirst: true,
       filter(text, input) {
         return Awesomplete.FILTER_CONTAINS(
@@ -37,17 +44,7 @@
       },
     });
     inputEl.addEventListener("focus", () => {
-      aw.list = suggestions;
       aw.evaluate();
-      if (inputEl.value.trim() === "" && suggestions.length) {
-        aw.ul.innerHTML = "";
-        for (const s of suggestions) {
-          const li = document.createElement("li");
-          li.textContent = s;
-          aw.ul.appendChild(li);
-        }
-        aw.open();
-      }
     });
     inputEl.addEventListener("awesomplete-selectcomplete", (e) => {
       lastValidValue = e.text.value;
@@ -56,6 +53,7 @@
     inputEl.addEventListener("blur", () => {
       setTimeout(() => {
         aw?.close();
+        if (!inputEl) return;
         if (restrict) {
           const trimmed = inputEl.value.trim();
           if (trimmed && suggestions.includes(trimmed)) {

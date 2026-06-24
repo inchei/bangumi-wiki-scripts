@@ -97,6 +97,15 @@
     });
   });
 
+  function handleAdd(e) {
+    e.stopPropagation();
+    addCondition(logic, newTypeSelect, effectiveCtx);
+  }
+  function handleAddGroup(e) {
+    e.stopPropagation();
+    addLogicGroupTo(logic);
+  }
+
   function getNewTypeOptions(currentCtx, qTarget) {
     const opts = [];
     if (currentCtx === CTX_EPISODE && qTarget === "episode") {
@@ -146,17 +155,6 @@
     }
     return opts;
   }
-
-  // Capture logic reference at render time for event handlers
-  function handleAddCondition(lg, ctx) {
-    return () => addCondition(lg, newTypeSelect, ctx);
-  }
-  function handleAddGroup(lg) {
-    return () => addLogicGroupTo(lg);
-  }
-  function handleToggleOp(lg, val) {
-    return () => toggleLogicOp(lg, val);
-  }
 </script>
 
 <div class="logic-group" class:root={isRoot} bind:this={containerEl}>
@@ -165,18 +163,27 @@
       <button
         class="op-btn"
         class:active={logic.op === "and"}
-        onclick={handleToggleOp(logic, "and")}>AND</button
+        onclick={(e) => {
+          e.stopPropagation();
+          toggleLogicOp(logic, "and");
+        }}>AND</button
       >
       <button
         class="op-btn"
         class:active={logic.op === "or"}
-        onclick={handleToggleOp(logic, "or")}>OR</button
+        onclick={(e) => {
+          e.stopPropagation();
+          toggleLogicOp(logic, "or");
+        }}>OR</button
       >
     </div>
     {#if !isRoot}
       <button
         class="tag-remove"
-        onclick={() => removeLogicGroup(logic._id)}
+        onclick={(e) => {
+          e.stopPropagation();
+          removeLogicGroup(logic._id);
+        }}
         title="删除此组">&times;</button
       >
     {/if}
@@ -204,11 +211,10 @@
         <option value={opt.value}>{opt.label}</option>
       {/each}
     </select>
-    <button
-      class="btn btn-outline btn-xs"
-      onclick={handleAddCondition(logic, effectiveCtx)}>+ 添加条件</button
+    <button class="btn btn-outline btn-xs" onclick={handleAdd}
+      >+ 添加条件</button
     >
-    <button class="btn btn-outline btn-xs" onclick={handleAddGroup(logic)}
+    <button class="btn btn-outline btn-xs" onclick={handleAddGroup}
       >+ 嵌套组</button
     >
   </div>

@@ -69,22 +69,30 @@ Path resolution: `DUCKDB_PATH` env → `bin/duckdb` (relative to executable) →
 
 ```
 bgq/
-├── cmd/bgq/
-│   ├── main.go           # CLI entry + subcommands (query, serve, ingest, interactive, version)
-│   ├── interactive.go    # Interactive REPL mode
-│   ├── server.go         # HTTP server + API handlers
-│   └── dev.go            # Air hot-reload dev mode
+├── cmd/
+│   ├── bgq/
+│   │   ├── main.go           # CLI entry + subcommands (query, serve, ingest, interactive, version)
+│   │   ├── interactive.go    # Interactive REPL mode
+│   │   ├── server.go         # HTTP server + API handlers
+│   │   └── dev.go            # Air hot-reload dev mode
+│   └── gen-model/
+│       ├── main.go           # Code generator (platforms, relations, staff, meta tags)
+│       └── templates/        # Go + JS templates for code generation
 ├── internal/
 │   ├── model/            # Bangumi domain constants
 │   │   ├── model.go          # Go structs matching JSONLines schema
-│   │   ├── platform.go       # Platform codes (1001=漫画, 1002=小说, etc.)
+│   │   ├── helpers.go        # Lookup helpers (PlatformsByType, RelationsByType, etc.)
+│   │   ├── generate.go       # go generate directive
+│   │   ├── platform.go       # Platform codes (auto-generated)
 │   │   ├── relation_data.go  # Relation type maps (auto-generated)
 │   │   ├── staff_data.go     # Staff position maps (auto-generated)
-│   │   └── metatags.go       # Meta tag lists per subject type
+│   │   └── metatags.go       # Meta tag lists per subject type (auto-generated)
 │   ├── config/           # YAML/JSON config parsing + filter types
 │   │   └── config.go
 │   ├── query/            # SQL generation + DuckDB execution
-│   │   ├── builder.go        # Config → DuckDB SQL
+│   │   ├── builder.go        # Config → DuckDB SQL (shared logic)
+│   │   ├── builder_generic.go # Generic filter SQL generation
+│   │   ├── builder_target.go  # Target-specific SQL (subject/person/character/episode)
 │   │   └── engine.go         # DuckDB subprocess wrapper
 │   └── server/           # Embedded SPA
 │       └── webui.go          # HTML/CSS/JS as Go string constant
@@ -92,13 +100,23 @@ bgq/
 │   ├── src/
 │   │   ├── main.js           # Entry point
 │   │   ├── App.svelte        # Root component
-│   │   ├── api.js            # Backend API calls
-│   │   ├── stores.js         # Global state (schema, filters)
+│   │   ├── api.js            # Backend API calls (query only)
+│   │   ├── schema-data.js    # Auto-generated schema constants (go generate)
+│   │   ├── stores.js         # Global state (filters, conditions)
 │   │   ├── yaml.js           # YAML parse/generate (js-yaml)
-│   │   └── components/       # UI components
-│   ├── eslint.config.js      # ESLint config
-│   ├── .stylelintrc.json     # Stylelint config
-│   ├── .prettierrc           # Prettier config
+│   │   └── components/
+│   │       ├── FilterTree.svelte      # Recursive filter tree
+│   │       ├── ConditionRow.svelte    # Single condition row
+│   │       ├── AwesompleteInput.svelte # Autocomplete input
+│   │       ├── ResultTable.svelte     # Query results table
+│   │       ├── QuerySettings.svelte   # Output columns, limit, sort
+│   │       ├── YamlEditor.svelte      # YAML import/export
+│   │       └── conditions/
+│   │           └── RelationCondition.svelte  # Reusable relation-like condition
+│   ├── eslint.config.js
+│   ├── .stylelintrc.json
+│   ├── .prettierrc
+│   ├── .prettierignore
 │   ├── vite.config.js
 │   └── package.json
 ├── Dockerfile
@@ -127,6 +145,7 @@ Four query targets supported via `config.Config.Target`:
 - **Data source flexibility.** JSONLines via `read_json_auto()` CTEs, or pre-built DuckDB database (`bgq ingest`).
 - **Infobox fields are wiki-text.** `|key: value` template string, extracted via `regexp_extract()`.
 - **Chinese field names as primary keys.** Relations and positions referenced by Chinese names (e.g., `单行本`, `原作`), resolved to numeric IDs via maps in `internal/model/`.
+- **Schema data auto-generated to frontend.** `go generate` in `internal/model/` produces `schema-data.js` (platforms, relations, positions, meta tags) from bangumi/common YAML + archive data. Frontend imports these constants directly — no runtime API calls for schema.
 - **Frontend embedded in Go binary.** `pnpm build` outputs to `dist/`, which is embedded as a string constant in `internal/server/webui.go`.
 
 ### Filter Types (exactly-one union pattern)
@@ -150,8 +169,6 @@ Sub-filter modes: `any` (exists), `all` (universal), `none` (negation), `count` 
 
 `bgq serve` exposes:
 - `POST /api/query` — accepts `filters` (JSON), `yaml` (string), or `conditions` (legacy string array)
-- `GET /api/schema/fields` — direct fields, subject types, relation types, staff positions
-- `GET /api/schema/options?type=N` — per-type relations, positions, meta tags
 - `GET /api/health` — health check
 - `GET /api/debug` — DuckDB/data diagnostics
 - `/` — embedded SPA; `/static/` — static assets
@@ -187,13 +204,18 @@ Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
 ## Key Files
 
 - `bgq/internal/config/config.go` — Filter type definitions + YAML/JSON parsing
-- `bgq/internal/query/builder.go` — SQL generation (WHERE, CTEs, infobox extraction)
+- `bgq/internal/query/builder.go` — SQL generation (shared logic)
+- `bgq/internal/query/builder_generic.go` — Generic filter SQL generation
+- `bgq/internal/query/builder_target.go` — Target-specific SQL (subject/person/character/episode)
 - `bgq/internal/query/engine.go` — DuckDB subprocess, CSV parsing
+- `bgq/internal/model/helpers.go` — Lookup helpers (PlatformsByType, RelationsByType, etc.)
+- `bgq/cmd/gen-model/main.go` — Code generator for schema constants (run via `go generate`)
 - `bgq/cmd/bgq/main.go` — CLI dispatch + ingest logic
 - `bgq/cmd/bgq/interactive.go` — Interactive REPL (shared parser with web API)
 - `bgq/cmd/bgq/server.go` — HTTP server + API handlers
 - `bgq/internal/server/webui.go` — Embedded SPA HTML (auto-generated from frontend build)
-- `bgq/frontend/src/stores.js` — Frontend global state (schema, filters, logic tree)
+- `bgq/frontend/src/schema-data.js` — Auto-generated schema constants (platforms, relations, positions, meta tags)
+- `bgq/frontend/src/stores.js` — Frontend global state (filters, conditions, logic tree)
 - `wikiBatch/` — Batch wiki editor userscript (separate project, see its own README)
 
 ## Docker
