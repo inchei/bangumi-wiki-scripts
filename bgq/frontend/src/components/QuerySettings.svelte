@@ -13,6 +13,7 @@
   async function handleRun() {
     loading = true;
     queryLoading.set(true);
+    lastResult.set(null);
     const cols =
       document
         .getElementById("outputColumns")
