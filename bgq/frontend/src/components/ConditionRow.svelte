@@ -7,17 +7,26 @@
     fieldSelectOptions,
     opLabel,
     opInputType,
+    ctxFields,
     CTX_SUBJECT,
     CTX_PERSON,
     CTX_CHARACTER,
     CTX_EPISODE,
     EPISODE_FIELD_LABELS,
-    schemaOptions,
-    schema,
     CAREER_OPTIONS,
   } from "../stores.js";
+  import {
+    relationsByType,
+    positionsByType,
+    META_TAGS,
+    PERSON_RELATIONS,
+    CHARACTER_RELATIONS,
+    CHARACTER_ASSOC_TYPES,
+    PERSON_CHAR_TYPES,
+  } from "../schema-data.js";
   import FilterTree from "./FilterTree.svelte";
   import AwesompleteInput from "./AwesompleteInput.svelte";
+  import RelationCondition from "./conditions/RelationCondition.svelte";
 
   /** @type {{ item: object, group: object, idx: number, ctx: string }} */
   let { item, group, idx, ctx } = $props();
@@ -64,9 +73,12 @@
         ],
   );
 
-  // Reactive field select options — depends on $schema so it updates when schema loads
+  // Context-aware field suggestions for autocomplete
+  const fieldSuggestions = $derived(ctxFields(ctx));
+
+  // Reactive field select options
   const selectOpts = $derived(
-    fc && fc.type === "select" ? fieldSelectOptions(fc, $schema) : [],
+    fc && fc.type === "select" ? fieldSelectOptions(fc) : [],
   );
 </script>
 
@@ -82,7 +94,7 @@
       <span class="cond-type">字段</span>
       <AwesompleteInput
         value={item.field.field}
-        suggestions={$schema.direct_fields || []}
+        suggestions={fieldSuggestions}
         onchange={(v) => updateCondition(group, idx, "field", "field", v)}
         placeholder="字段名"
       />
@@ -180,7 +192,7 @@
     <AwesompleteInput
       restrict={true}
       value={item.meta_tag.value}
-      suggestions={$schemaOptions.meta_tags || []}
+      suggestions={META_TAGS}
       onchange={(v) => updateCondition(group, idx, "meta_tag", "value", v)}
       placeholder="公共标签"
     />
@@ -246,328 +258,121 @@
       {/each}
     </select>
   {:else if condType === "relation"}
-    {@const r = item.relation}
-    <div class="cond-row-inner">
-      <span class="cond-type">关系</span>
-      <AwesompleteInput
-        restrict={true}
-        value={r.type}
-        suggestions={["任意"].concat($schemaOptions.relations || [])}
-        onchange={(v) => updateCondition(group, idx, "relation", "type", v)}
-        placeholder="关系名"
-      />
-      <select
-        class="select select-sm"
-        value={r.mode}
-        onchange={(e) =>
-          updateCondition(group, idx, "relation", "mode", e.target.value)}
-      >
-        <option value="any">任意</option>
-        <option value="all">全部</option>
-        <option value="none">排除</option>
-        <option value="count">数量</option>
-      </select>
-      {#if r.mode === "count"}
-        <select
-          class="select select-sm"
-          value={r.count_op || "gte"}
-          onchange={(e) =>
-            updateCondition(group, idx, "relation", "count_op", e.target.value)}
-        >
-          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
-            <option value={op}>{opLabel(op)}</option>
-          {/each}
-        </select>
-        <input
-          class="input"
-          type="number"
-          value={r.count_val || ""}
-          onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "relation",
-              "count_val",
-              e.target.value,
-            )}
-        />
-      {/if}
-      <button
-        class="tag-remove"
-        onclick={() => removeLogicLeaf(group, idx)}
-        title="删除">&times;</button
-      >
-    </div>
-    {#if r.conditions?.length > 0 && r.conditions[0].logic}
-      <div class="nested">
-        <FilterTree
-          lg={r.conditions[0].logic}
-          isRoot={false}
-          ctx={CTX_SUBJECT}
-        />
-      </div>
-    {/if}
+    <RelationCondition
+      label="关系"
+      typeValue={item.relation.type}
+      typeSuggestions={["任意"].concat(relationsByType(0))}
+      onTypeChange={(v) => updateCondition(group, idx, "relation", "type", v)}
+      mode={item.relation.mode}
+      onModeChange={(v) => updateCondition(group, idx, "relation", "mode", v)}
+      countOp={item.relation.count_op}
+      onCountOpChange={(v) =>
+        updateCondition(group, idx, "relation", "count_op", v)}
+      countVal={item.relation.count_val}
+      onCountValChange={(v) =>
+        updateCondition(group, idx, "relation", "count_val", v)}
+      onDelete={() => removeLogicLeaf(group, idx)}
+      logic={item.relation}
+      nestedCtx={CTX_SUBJECT}
+    />
   {:else if condType === "person_relation"}
-    {@const pr = item.person_relation}
-    <div class="cond-row-inner">
-      <span class="cond-type">人物关系</span>
-      <AwesompleteInput
-        restrict={true}
-        value={pr.type}
-        suggestions={["任意"].concat($schemaOptions.person_relations || [])}
-        onchange={(v) =>
-          updateCondition(group, idx, "person_relation", "type", v)}
-        placeholder="关系名"
-      />
-      <select
-        class="select select-sm"
-        value={pr.mode}
-        onchange={(e) =>
-          updateCondition(
-            group,
-            idx,
-            "person_relation",
-            "mode",
-            e.target.value,
-          )}
-      >
-        <option value="any">任意</option>
-        <option value="all">全部</option>
-        <option value="none">排除</option>
-        <option value="count">数量</option>
-      </select>
-      {#if pr.mode === "count"}
-        <select
-          class="select select-sm"
-          value={pr.count_op || "gte"}
-          onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "person_relation",
-              "count_op",
-              e.target.value,
-            )}
-        >
-          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
-            <option value={op}>{opLabel(op)}</option>
-          {/each}
-        </select>
-        <input
-          class="input"
-          type="number"
-          value={pr.count_val || ""}
-          onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "person_relation",
-              "count_val",
-              e.target.value,
-            )}
-        />
-      {/if}
-      <button
-        class="tag-remove"
-        onclick={() => removeLogicLeaf(group, idx)}
-        title="删除">&times;</button
-      >
-    </div>
-    {#if pr.conditions?.length > 0 && pr.conditions[0].logic}
-      <div class="nested">
-        <FilterTree
-          lg={pr.conditions[0].logic}
-          isRoot={false}
-          ctx={CTX_PERSON}
-        />
-      </div>
-    {/if}
+    <RelationCondition
+      label="人物关系"
+      typeValue={item.person_relation.type}
+      typeSuggestions={["任意"].concat(PERSON_RELATIONS)}
+      onTypeChange={(v) =>
+        updateCondition(group, idx, "person_relation", "type", v)}
+      mode={item.person_relation.mode}
+      onModeChange={(v) =>
+        updateCondition(group, idx, "person_relation", "mode", v)}
+      countOp={item.person_relation.count_op}
+      onCountOpChange={(v) =>
+        updateCondition(group, idx, "person_relation", "count_op", v)}
+      countVal={item.person_relation.count_val}
+      onCountValChange={(v) =>
+        updateCondition(group, idx, "person_relation", "count_val", v)}
+      onDelete={() => removeLogicLeaf(group, idx)}
+      logic={item.person_relation}
+      nestedCtx={CTX_PERSON}
+    />
   {:else if condType === "character_relation"}
-    {@const cr = item.character_relation}
-    <div class="cond-row-inner">
-      <span class="cond-type">角色关系</span>
-      <AwesompleteInput
-        restrict={true}
-        value={cr.type}
-        suggestions={["任意"].concat($schemaOptions.character_relations || [])}
-        onchange={(v) =>
-          updateCondition(group, idx, "character_relation", "type", v)}
-        placeholder="关系名"
-      />
-      <select
-        class="select select-sm"
-        value={cr.mode}
-        onchange={(e) =>
-          updateCondition(
-            group,
-            idx,
-            "character_relation",
-            "mode",
-            e.target.value,
-          )}
-      >
-        <option value="any">任意</option>
-        <option value="all">全部</option>
-        <option value="none">排除</option>
-        <option value="count">数量</option>
-      </select>
-      {#if cr.mode === "count"}
-        <select
-          class="select select-sm"
-          value={cr.count_op || "gte"}
-          onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "character_relation",
-              "count_op",
-              e.target.value,
-            )}
-        >
-          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
-            <option value={op}>{opLabel(op)}</option>
-          {/each}
-        </select>
-        <input
-          class="input"
-          type="number"
-          value={cr.count_val || ""}
-          onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "character_relation",
-              "count_val",
-              e.target.value,
-            )}
-        />
-      {/if}
-      <button
-        class="tag-remove"
-        onclick={() => removeLogicLeaf(group, idx)}
-        title="删除">&times;</button
-      >
-    </div>
-    {#if cr.conditions?.length > 0 && cr.conditions[0].logic}
-      <div class="nested">
-        <FilterTree
-          lg={cr.conditions[0].logic}
-          isRoot={false}
-          ctx={CTX_CHARACTER}
-        />
-      </div>
-    {/if}
+    <RelationCondition
+      label="角色关系"
+      typeValue={item.character_relation.type}
+      typeSuggestions={["任意"].concat(CHARACTER_RELATIONS)}
+      onTypeChange={(v) =>
+        updateCondition(group, idx, "character_relation", "type", v)}
+      mode={item.character_relation.mode}
+      onModeChange={(v) =>
+        updateCondition(group, idx, "character_relation", "mode", v)}
+      countOp={item.character_relation.count_op}
+      onCountOpChange={(v) =>
+        updateCondition(group, idx, "character_relation", "count_op", v)}
+      countVal={item.character_relation.count_val}
+      onCountValChange={(v) =>
+        updateCondition(group, idx, "character_relation", "count_val", v)}
+      onDelete={() => removeLogicLeaf(group, idx)}
+      logic={item.character_relation}
+      nestedCtx={CTX_CHARACTER}
+    />
   {:else if condType === "character"}
-    {@const ch = item.character}
+    <RelationCondition
+      label="角色"
+      typeValue={item.character.type}
+      typeSuggestions={["任意"].concat(CHARACTER_ASSOC_TYPES)}
+      onTypeChange={(v) => updateCondition(group, idx, "character", "type", v)}
+      mode={item.character.mode}
+      onModeChange={(v) => updateCondition(group, idx, "character", "mode", v)}
+      countOp={item.character.count_op}
+      onCountOpChange={(v) =>
+        updateCondition(group, idx, "character", "count_op", v)}
+      countVal={item.character.count_val}
+      onCountValChange={(v) =>
+        updateCondition(group, idx, "character", "count_val", v)}
+      onDelete={() => removeLogicLeaf(group, idx)}
+      logic={item.character}
+      nestedCtx={$queryTarget === "character" ? CTX_SUBJECT : CTX_CHARACTER}
+    />
+  {:else if condType === "person_character" || condType === "character_person"}
+    {@const ca = item[condType]}
+    {@const caCfg =
+      condType === "person_character"
+        ? {
+            label: "角色",
+            condLabel: "角色条件",
+            condCtx: CTX_CHARACTER,
+          }
+        : {
+            label: "人物",
+            condLabel: "人物条件",
+            condCtx: CTX_PERSON,
+          }}
     <div class="cond-row-inner">
-      <span class="cond-type">角色</span>
+      <span class="cond-type">{caCfg.label}</span>
       <AwesompleteInput
         restrict={true}
-        value={ch.type || ""}
-        suggestions={["任意"].concat(
-          $schemaOptions.character_assoc_types || [],
-        )}
-        onchange={(v) => updateCondition(group, idx, "character", "type", v)}
-        placeholder="关联类型"
-      />
-      <select
-        class="select select-sm"
-        value={ch.mode}
-        onchange={(e) =>
-          updateCondition(group, idx, "character", "mode", e.target.value)}
-      >
-        <option value="any">任意</option>
-        <option value="all">全部</option>
-        <option value="none">排除</option>
-        <option value="count">数量</option>
-      </select>
-      {#if ch.mode === "count"}
-        <select
-          class="select select-sm"
-          value={ch.count_op || "gte"}
-          onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "character",
-              "count_op",
-              e.target.value,
-            )}
-        >
-          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
-            <option value={op}>{opLabel(op)}</option>
-          {/each}
-        </select>
-        <input
-          class="input"
-          type="number"
-          value={ch.count_val || ""}
-          onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "character",
-              "count_val",
-              e.target.value,
-            )}
-        />
-      {/if}
-      <button
-        class="tag-remove"
-        onclick={() => removeLogicLeaf(group, idx)}
-        title="删除">&times;</button
-      >
-    </div>
-    {#if ch.conditions?.length > 0 && ch.conditions[0].logic}
-      <div class="nested">
-        <FilterTree
-          lg={ch.conditions[0].logic}
-          isRoot={false}
-          ctx={$queryTarget === "character" ? CTX_SUBJECT : CTX_CHARACTER}
-        />
-      </div>
-    {/if}
-  {:else if condType === "person_character"}
-    {@const pc = item.person_character}
-    <div class="cond-row-inner">
-      <span class="cond-type">角色</span>
-      <AwesompleteInput
-        restrict={true}
-        value={pc.type || ""}
-        suggestions={["任意"].concat($schemaOptions.person_char_types || [])}
-        onchange={(v) =>
-          updateCondition(group, idx, "person_character", "type", v)}
+        value={ca.type || ""}
+        suggestions={["任意"].concat(PERSON_CHAR_TYPES)}
+        onchange={(v) => updateCondition(group, idx, condType, "type", v)}
         placeholder="出演类型"
       />
       <select
         class="select select-sm"
-        value={pc.mode}
+        value={ca.mode}
         onchange={(e) =>
-          updateCondition(
-            group,
-            idx,
-            "person_character",
-            "mode",
-            e.target.value,
-          )}
+          updateCondition(group, idx, condType, "mode", e.target.value)}
       >
         <option value="any">任意</option>
         <option value="all">全部</option>
         <option value="none">排除</option>
         <option value="count">数量</option>
       </select>
-      {#if pc.mode === "count"}
+      {#if ca.mode === "count"}
         <select
           class="select select-sm"
-          value={pc.count_op || "gte"}
+          value={ca.count_op || "gte"}
           onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "person_character",
-              "count_op",
-              e.target.value,
-            )}
+            updateCondition(group, idx, condType, "count_op", e.target.value)}
         >
           {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
             <option value={op}>{opLabel(op)}</option>
@@ -576,15 +381,9 @@
         <input
           class="input"
           type="number"
-          value={pc.count_val || ""}
+          value={ca.count_val || ""}
           onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "person_character",
-              "count_val",
-              e.target.value,
-            )}
+            updateCondition(group, idx, condType, "count_val", e.target.value)}
         />
       {/if}
       <button
@@ -593,28 +392,28 @@
         title="删除">&times;</button
       >
     </div>
-    {#if pc.conditions?.length > 0 && pc.conditions[0].logic}
+    {#if ca.conditions?.length > 0 && ca.conditions[0].logic}
       <div class="nested">
-        <span class="cond-type">角色条件</span>
+        <span class="cond-type">{caCfg.condLabel}</span>
         <FilterTree
-          lg={pc.conditions[0].logic}
+          lg={ca.conditions[0].logic}
           isRoot={false}
-          ctx={CTX_CHARACTER}
+          ctx={caCfg.condCtx}
         />
       </div>
     {/if}
-    {#if pc.subject_conditions?.length > 0 && pc.subject_conditions[0].logic}
+    {#if ca.subject_conditions?.length > 0 && ca.subject_conditions[0].logic}
       <div class="nested">
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
           <span class="cond-type">相关条目</span>
           <select
             class="select select-sm"
-            value={pc.subject_mode || "any"}
+            value={ca.subject_mode || "any"}
             onchange={(e) =>
               updateCondition(
                 group,
                 idx,
-                "person_character",
+                condType,
                 "subject_mode",
                 e.target.value,
               )}
@@ -623,15 +422,15 @@
             <option value="all">全部</option>
             <option value="count">数量</option>
           </select>
-          {#if (pc.subject_mode || "any") === "count"}
+          {#if (ca.subject_mode || "any") === "count"}
             <select
               class="select select-sm"
-              value={pc.subject_count_op || "gte"}
+              value={ca.subject_count_op || "gte"}
               onchange={(e) =>
                 updateCondition(
                   group,
                   idx,
-                  "person_character",
+                  condType,
                   "subject_count_op",
                   e.target.value,
                 )}
@@ -643,12 +442,12 @@
             <input
               class="input"
               type="number"
-              value={pc.subject_count_val || ""}
+              value={ca.subject_count_val || ""}
               onchange={(e) =>
                 updateCondition(
                   group,
                   idx,
-                  "person_character",
+                  condType,
                   "subject_count_val",
                   e.target.value,
                 )}
@@ -656,142 +455,7 @@
           {/if}
         </div>
         <FilterTree
-          lg={pc.subject_conditions[0].logic}
-          isRoot={false}
-          ctx={CTX_SUBJECT}
-        />
-      </div>
-    {/if}
-  {:else if condType === "character_person"}
-    {@const cp = item.character_person}
-    <div class="cond-row-inner">
-      <span class="cond-type">人物</span>
-      <AwesompleteInput
-        restrict={true}
-        value={cp.type || ""}
-        suggestions={["任意"].concat($schemaOptions.person_char_types || [])}
-        onchange={(v) =>
-          updateCondition(group, idx, "character_person", "type", v)}
-        placeholder="出演类型"
-      />
-      <select
-        class="select select-sm"
-        value={cp.mode}
-        onchange={(e) =>
-          updateCondition(
-            group,
-            idx,
-            "character_person",
-            "mode",
-            e.target.value,
-          )}
-      >
-        <option value="any">任意</option>
-        <option value="all">全部</option>
-        <option value="none">排除</option>
-        <option value="count">数量</option>
-      </select>
-      {#if cp.mode === "count"}
-        <select
-          class="select select-sm"
-          value={cp.count_op || "gte"}
-          onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "character_person",
-              "count_op",
-              e.target.value,
-            )}
-        >
-          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
-            <option value={op}>{opLabel(op)}</option>
-          {/each}
-        </select>
-        <input
-          class="input"
-          type="number"
-          value={cp.count_val || ""}
-          onchange={(e) =>
-            updateCondition(
-              group,
-              idx,
-              "character_person",
-              "count_val",
-              e.target.value,
-            )}
-        />
-      {/if}
-      <button
-        class="tag-remove"
-        onclick={() => removeLogicLeaf(group, idx)}
-        title="删除">&times;</button
-      >
-    </div>
-    {#if cp.conditions?.length > 0 && cp.conditions[0].logic}
-      <div class="nested">
-        <span class="cond-type">人物条件</span>
-        <FilterTree
-          lg={cp.conditions[0].logic}
-          isRoot={false}
-          ctx={CTX_PERSON}
-        />
-      </div>
-    {/if}
-    {#if cp.subject_conditions?.length > 0 && cp.subject_conditions[0].logic}
-      <div class="nested">
-        <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
-          <span class="cond-type">相关条目</span>
-          <select
-            class="select select-sm"
-            value={cp.subject_mode || "any"}
-            onchange={(e) =>
-              updateCondition(
-                group,
-                idx,
-                "character_person",
-                "subject_mode",
-                e.target.value,
-              )}
-          >
-            <option value="any">任意</option>
-            <option value="all">全部</option>
-            <option value="count">数量</option>
-          </select>
-          {#if (cp.subject_mode || "any") === "count"}
-            <select
-              class="select select-sm"
-              value={cp.subject_count_op || "gte"}
-              onchange={(e) =>
-                updateCondition(
-                  group,
-                  idx,
-                  "character_person",
-                  "subject_count_op",
-                  e.target.value,
-                )}
-            >
-              {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
-                <option value={op}>{opLabel(op)}</option>
-              {/each}
-            </select>
-            <input
-              class="input"
-              type="number"
-              value={cp.subject_count_val || ""}
-              onchange={(e) =>
-                updateCondition(
-                  group,
-                  idx,
-                  "character_person",
-                  "subject_count_val",
-                  e.target.value,
-                )}
-            />
-          {/if}
-        </div>
-        <FilterTree
-          lg={cp.subject_conditions[0].logic}
+          lg={ca.subject_conditions[0].logic}
           isRoot={false}
           ctx={CTX_SUBJECT}
         />
@@ -799,17 +463,23 @@
     {/if}
   {:else if condType === "staff"}
     {@const s = item.staff}
-    <div class="cond-row-inner">
-      <span class="cond-type"
-        >{$queryTarget === "person" ? "关联" : "人物"}</span
-      >
-      <AwesompleteInput
-        restrict={true}
-        value={s.position}
-        suggestions={["任意"].concat($schemaOptions.positions || [])}
-        onchange={(v) => updateCondition(group, idx, "staff", "position", v)}
-        placeholder="职位名"
-      />
+    <RelationCondition
+      label={$queryTarget === "person" ? "关联" : "人物"}
+      typeValue={s.position}
+      typeSuggestions={["任意"].concat(positionsByType(0))}
+      onTypeChange={(v) => updateCondition(group, idx, "staff", "position", v)}
+      mode={s.mode}
+      onModeChange={(v) => updateCondition(group, idx, "staff", "mode", v)}
+      countOp={s.count_op}
+      onCountOpChange={(v) =>
+        updateCondition(group, idx, "staff", "count_op", v)}
+      countVal={s.count_val}
+      onCountValChange={(v) =>
+        updateCondition(group, idx, "staff", "count_val", v)}
+      onDelete={() => removeLogicLeaf(group, idx)}
+      logic={s}
+      nestedCtx={$queryTarget === "person" ? CTX_SUBJECT : CTX_PERSON}
+    >
       {#if $queryTarget === "subject"}
         <span class="cond-type">参与</span>
         <select
@@ -847,48 +517,7 @@
           />
         {/if}
       {/if}
-      <select
-        class="select select-sm"
-        value={s.mode}
-        onchange={(e) =>
-          updateCondition(group, idx, "staff", "mode", e.target.value)}
-      >
-        <option value="any">任意</option>
-        <option value="all">全部</option>
-        <option value="none">排除</option>
-        <option value="count">数量</option>
-      </select>
-      {#if s.mode === "count"}
-        <select
-          class="select select-sm"
-          value={s.count_op || "gte"}
-          onchange={(e) =>
-            updateCondition(group, idx, "staff", "count_op", e.target.value)}
-        >
-          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
-            <option value={op}>{opLabel(op)}</option>
-          {/each}
-        </select>
-        <input
-          class="input"
-          type="number"
-          value={s.count_val || ""}
-          onchange={(e) =>
-            updateCondition(group, idx, "staff", "count_val", e.target.value)}
-        />
-      {/if}
-      <button
-        class="tag-remove"
-        onclick={() => removeLogicLeaf(group, idx)}
-        title="删除">&times;</button
-      >
-    </div>
-    {#if s.conditions?.length > 0 && s.conditions[0].logic}
-      {@const staffCtx = $queryTarget === "person" ? CTX_SUBJECT : CTX_PERSON}
-      <div class="nested">
-        <FilterTree lg={s.conditions[0].logic} isRoot={false} ctx={staffCtx} />
-      </div>
-    {/if}
+    </RelationCondition>
   {:else if condType === "episode"}
     {@const ep = item.episode}
     <div class="cond-row-inner">

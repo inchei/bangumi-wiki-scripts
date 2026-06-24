@@ -9,7 +9,6 @@
     faCircleHalfStroke,
     faFilm,
   } from "@fortawesome/free-solid-svg-icons";
-  import { loadSchema, loadSchemaOptions } from "./api.js";
   import { queryTarget, clearFilters } from "./stores.js";
   import FilterTree from "./components/FilterTree.svelte";
   import ResultTable from "./components/ResultTable.svelte";
@@ -70,7 +69,6 @@
       document.getElementById("outputColumns").value =
         "id,name,name_cn,type,score";
     }
-    loadSchemaOptions();
   }
 
   onMount(async () => {
@@ -93,8 +91,6 @@
       if (d.status === "ok") {
         statusOk = true;
         statusText = "已连接";
-        await loadSchema();
-        await loadSchemaOptions();
       }
     } catch {
       statusOk = false;

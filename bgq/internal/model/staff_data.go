@@ -12,23 +12,6 @@ var StaffPositions = map[int]map[int]string{
 	6: realStaffPositions,
 }
 
-// Staff position constants — 书籍 (book)
-var bookStaffPositions = map[int]string{
-	2001: "作者",
-	2002: "作画",
-	2003: "插图",
-	2004: "出版社",
-	2005: "连载杂志",
-	2006: "译者",
-	2007: "原作",
-	2008: "客串",
-	2009: "人物原案",
-	2010: "脚本",
-	2011: "书系",
-	2012: "出品方",
-	2013: "图书品牌",
-}
-
 // Staff position constants — 动画 (anime)
 var animeStaffPositions = map[int]string{
 	1:   "原作",
@@ -196,23 +179,21 @@ var animeStaffPositions = map[int]string{
 	168: "设定制作助理",
 }
 
-// Staff position constants — 音乐 (music)
-var musicStaffPositions = map[int]string{
-	3001: "艺术家",
-	3002: "制作人",
-	3003: "作曲",
-	3004: "厂牌",
-	3005: "原作",
-	3006: "作词",
-	3007: "录音",
-	3008: "编曲",
-	3009: "插图",
-	3010: "脚本",
-	3011: "出版方",
-	3012: "母带制作",
-	3013: "混音",
-	3014: "乐器",
-	3015: "声乐",
+// Staff position constants — 书籍 (book)
+var bookStaffPositions = map[int]string{
+	2001: "作者",
+	2002: "作画",
+	2003: "插图",
+	2004: "出版社",
+	2005: "连载杂志",
+	2006: "译者",
+	2007: "原作",
+	2008: "客串",
+	2009: "人物原案",
+	2010: "脚本",
+	2011: "书系",
+	2012: "出品方",
+	2013: "图书品牌",
 }
 
 // Staff position constants — 游戏 (game)
@@ -250,6 +231,25 @@ var gameStaffPositions = map[int]string{
 	1031: "作画监督",
 	1032: "制作人",
 	1033: "海报",
+}
+
+// Staff position constants — 音乐 (music)
+var musicStaffPositions = map[int]string{
+	3001: "艺术家",
+	3002: "制作人",
+	3003: "作曲",
+	3004: "厂牌",
+	3005: "原作",
+	3006: "作词",
+	3007: "录音",
+	3008: "编曲",
+	3009: "插图",
+	3010: "脚本",
+	3011: "出版方",
+	3012: "母带制作",
+	3013: "混音",
+	3014: "乐器",
+	3015: "声乐",
 }
 
 // Staff position constants — 三次元 (real)

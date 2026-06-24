@@ -4,25 +4,6 @@ package model
 // Source: https://github.com/bangumi/common/blob/master/person_relations.yml
 // Run `go generate` or update manually when upstream changes.
 
-// Relation type constants — Book
-var BookRelations = map[int]string{
-	1:    "改编",
-	1002: "系列",
-	1003: "单行本",
-	1004: "画集",
-	1005: "前传",
-	1006: "续集",
-	1007: "番外篇",
-	1008: "主线故事",
-	1010: "不同版本",
-	1011: "角色出演",
-	1012: "相同世界观",
-	1013: "不同世界观",
-	1014: "联动",
-	1015: "不同演绎",
-	1099: "其他",
-}
-
 // Relation type constants — Anime
 var AnimeRelations = map[int]string{
 	1:  "改编",
@@ -41,16 +22,23 @@ var AnimeRelations = map[int]string{
 	99: "其他",
 }
 
-// Relation type constants — Music
-var MusicRelations = map[int]string{
-	3001: "原声集",
-	3002: "角色歌",
-	3003: "片头曲",
-	3004: "片尾曲",
-	3005: "插入歌",
-	3006: "印象曲",
-	3007: "广播剧",
-	3099: "其他",
+// Relation type constants — Book
+var BookRelations = map[int]string{
+	1:    "改编",
+	1002: "系列",
+	1003: "单行本",
+	1004: "画集",
+	1005: "前传",
+	1006: "续集",
+	1007: "番外篇",
+	1008: "主线故事",
+	1010: "不同版本",
+	1011: "角色出演",
+	1012: "相同世界观",
+	1013: "不同世界观",
+	1014: "联动",
+	1015: "不同演绎",
+	1099: "其他",
 }
 
 // Relation type constants — Game
@@ -71,6 +59,18 @@ var GameRelations = map[int]string{
 	4018: "合集",
 	4019: "收录作品",
 	4099: "其他",
+}
+
+// Relation type constants — Music
+var MusicRelations = map[int]string{
+	3001: "原声集",
+	3002: "角色歌",
+	3003: "片头曲",
+	3004: "片尾曲",
+	3005: "插入歌",
+	3006: "印象曲",
+	3007: "广播剧",
+	3099: "其他",
 }
 
 // Relation type constants — Real

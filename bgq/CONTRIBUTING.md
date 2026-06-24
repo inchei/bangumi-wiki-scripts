@@ -141,8 +141,6 @@ bgq/
 | 端点 | 方法 | 说明 |
 |------|------|------|
 | `/api/query` | POST | 执行查询（支持 yaml / filters / conditions 三种输入） |
-| `/api/schema/fields` | GET | 获取可用字段、条目类型、关系、职位 |
-| `/api/schema/options` | GET | 按条目类型获取关系、职位、公共标签等选项 |
 | `/api/health` | GET | 健康检查 |
 
 **查询请求示例**：

@@ -16,6 +16,7 @@ type SQLBuilder struct {
 	useDB     bool   // if true, reference tables directly instead of JSON CTEs
 	target    string // "subject", "person", or "character"
 	mainAlias string // "s", "p", or "c"
+	tc        *targetConfig
 }
 
 // clauseContext controls how filters are generated in different SQL contexts.
@@ -32,20 +33,14 @@ func NewSQLBuilder(cfg *config.Config, dataDir string) *SQLBuilder {
 	if target == "" {
 		target = "subject"
 	}
-	alias := "s"
-	if target == "person" {
-		alias = "p"
-	} else if target == "character" {
-		alias = "c"
-	} else if target == "episode" {
-		alias = "e"
-	}
+	tc := newTargetConfig(target)
 	return &SQLBuilder{
 		cfg:       cfg,
 		dataDir:   dataDir,
 		useDB:     cfg.HasDatabase(),
 		target:    target,
-		mainAlias: alias,
+		mainAlias: tc.mainAlias,
+		tc:        tc,
 	}
 }
 
@@ -85,16 +80,7 @@ func (b *SQLBuilder) Build() (string, error) {
 
 	sql.WriteString("SELECT ")
 	sql.WriteString(strings.Join(selectCols, ", "))
-	switch b.target {
-	case "person":
-		sql.WriteString("\nFROM persons p\n")
-	case "character":
-		sql.WriteString("\nFROM characters c\n")
-	case "episode":
-		sql.WriteString("\nFROM episodes e\n")
-	default:
-		sql.WriteString("\nFROM subjects s\n")
-	}
+	fmt.Fprintf(&sql, "\nFROM %s %s\n", b.tc.mainTable, b.mainAlias)
 
 	// Add JOINs for relations, persons, episodes
 	joins := b.buildJoins()
@@ -251,7 +237,6 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 				`characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('%s', format='newline_delimited'))`,
 				escapeSQLString(charFile),
 			))
-			charactersLoaded = true
 		}
 		// Ensure persons table is loaded
 		if !personsLoaded {
@@ -260,7 +245,6 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('%s', format='newline_delimited'))`,
 				escapeSQLString(personFile),
 			))
-			personsLoaded = true
 		}
 	}
 
@@ -422,13 +406,7 @@ func (b *SQLBuilder) filterToSQLMain(f config.Filter, idx int) (string, error) {
 
 // typeFilter handles type-based filtering.
 func (b *SQLBuilder) typeFilter(f *config.TypeFilter) (string, error) {
-	a := b.mainAlias
-	col := a + ".type"
-	if b.target == "person" {
-		col = a + ".person_type"
-	} else if b.target == "character" {
-		col = a + ".role"
-	}
+	col := b.mainAlias + "." + b.tc.typeColumn
 	switch v := f.Value.(type) {
 	case int:
 		return fmt.Sprintf("%s = %d", col, v), nil
@@ -485,7 +463,7 @@ func (b *SQLBuilder) fieldFilter(f *config.FieldFilter, tableAlias string) (stri
 	}
 
 	// Determine if this is a direct JSON field or infobox field
-	if isDirectField(fieldName) {
+	if b.isDirectField(fieldName) {
 		return b.buildCondition(tableAlias+"."+quoteIdent(fieldName), f.Operator, valueStr)
 	}
 
@@ -555,186 +533,90 @@ func (b *SQLBuilder) metaTagFilter(f *config.TagFilter) (string, error) {
 
 // relationFilter handles relation-based filtering.
 func (b *SQLBuilder) relationFilter(f *config.RelationFilter) (string, error) {
-	// Resolve relation type name to IDs; empty or "任意" means any relation type
 	anyType := f.Type == "" || f.Type == "任意"
-	var relIDList string
+	extra := "TRUE"
 	if !anyType {
 		relIDs := b.getRelationIDsForName(f.Type)
 		if len(relIDs) == 0 {
 			return "", fmt.Errorf("未找到关系类型: %s", f.Type)
 		}
-		relIDList = intListToSQL(relIDs)
+		extra = fmt.Sprintf("r.relation_type IN (%s)", intListToSQL(relIDs))
 	}
 
-	// For "none" mode: no matching relations should exist
-	if f.Mode == "none" {
-		if anyType {
-			return "NOT EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id)", nil
+	var relatedWhere string
+	var relatedJoin string
+	if len(f.Conditions) > 0 {
+		var err error
+		relatedWhere, err = b.buildWhereForAlias(f.Conditions, "rs")
+		if err != nil {
+			return "", fmt.Errorf("relation condition: %w", err)
 		}
-		return fmt.Sprintf(
-			"NOT EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (%s))",
-			relIDList), nil
+		relatedJoin = "LEFT JOIN subjects rs ON r.related_subject_id = rs.id"
 	}
 
-	// Build subquery for related subjects
-	var subClauses []string
-	if !anyType {
-		subClauses = append(subClauses, fmt.Sprintf("r.relation_type IN (%s)", relIDList))
-	}
-
-	// Filter by conditions on the related subject (support all filter types = nested)
-	relatedWhere, err := b.buildWhereForAlias(f.Conditions, "rs")
-	if err != nil {
-		return "", fmt.Errorf("relation condition: %w", err)
-	}
-	if relatedWhere != "" {
-		subClauses = append(subClauses, relatedWhere)
-	}
-
-	subWhere := strings.Join(subClauses, " AND ")
-	if subWhere == "" {
-		subWhere = "TRUE"
-	}
-
-	// For "all" mode: count of matching relations = count of all relations of this type
-	if f.Mode == "all" {
-		nestedWhere, _ := b.buildWhereForAlias(f.Conditions, "rs")
-		if anyType {
-			return fmt.Sprintf(
-				`EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id) AND
-				 (SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND %s) =
-				 (SELECT COUNT(*) FROM subject_relations r WHERE r.subject_id = s.id)`,
-				nestedWhere), nil
-		}
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (%s)) AND
-			 (SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (%s) AND %s) =
-			 (SELECT COUNT(*) FROM subject_relations r WHERE r.subject_id = s.id AND r.relation_type IN (%s))`,
-			relIDList, relIDList, nestedWhere, relIDList), nil
-	}
-
-	// For "count" mode: count of matching relations <op> threshold
-	if f.Mode == "count" {
-		countWhere := subWhere
-		if countWhere == "" {
-			countWhere = "TRUE"
-		}
-		var countExpr string
-		if anyType {
-			countExpr = fmt.Sprintf(
-				"(SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND %s)",
-				countWhere)
-		} else {
-			countExpr = fmt.Sprintf(
-				"(SELECT COUNT(*) FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND r.relation_type IN (%s) AND %s)",
-				relIDList, countWhere)
-		}
-		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-	}
-
-	// For "any" mode: at least one matching relation
-	return fmt.Sprintf(
-		"EXISTS (SELECT 1 FROM subject_relations r LEFT JOIN subjects rs ON r.related_subject_id = rs.id WHERE r.subject_id = s.id AND %s)",
-		subWhere), nil
+	return b.manyToManyFilter(manyToManyConfig{
+		junction:       "subject_relations",
+		alias:          "r",
+		mainAlias:      b.mainAlias,
+		mainPK:         "id",
+		junctionMainFK: "subject_id",
+		relatedAlias:   "rs",
+		relatedTable:   "subjects",
+		relatedPK:      "id",
+		relatedFK:      "related_subject_id",
+		extraCond:      extra,
+		relatedWhere:   relatedWhere,
+		relatedJoin:    relatedJoin,
+		mode:           f.Mode,
+		countOp:        f.CountOp,
+		countVal:       f.CountVal,
+	})
 }
 
 // personRelationFilter handles person-to-person relation filtering (person_type=prsn).
 func (b *SQLBuilder) personRelationFilter(f *config.PersonRelationFilter) (string, error) {
-	// Only valid for person target
 	if b.target != "person" {
 		return "", fmt.Errorf("person_relation filter only supported for person target")
 	}
 
-	// Resolve relation type name to IDs; empty or "任意" means any type
 	anyType := f.Type == "" || f.Type == "任意"
-	var relIDList string
+	extra := "TRUE"
 	if !anyType {
 		relIDs := b.getPersonRelationIDsForName(f.Type)
 		if len(relIDs) == 0 {
 			return "", fmt.Errorf("未找到人物关系类型: %s", f.Type)
 		}
-		relIDList = intListToSQL(relIDs)
+		extra = fmt.Sprintf("pr.relation_type IN (%s)", intListToSQL(relIDs))
 	}
 
-	// For "none" mode: no matching person relations should exist
-	if f.Mode == "none" {
-		if anyType {
-			return "NOT EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id)", nil
-		}
-		return fmt.Sprintf(
-			"NOT EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s))",
-			relIDList), nil
-	}
-
-	// Build subquery for related person
-	var subClauses []string
-	if !anyType {
-		subClauses = append(subClauses, fmt.Sprintf("pr.relation_type IN (%s)", relIDList))
-	}
-
-	// Filter by conditions on the related person
-	relatedWhere := "TRUE"
+	var relatedWhere string
+	var relatedJoin string
 	if len(f.Conditions) > 0 {
 		var err error
 		relatedWhere, err = b.buildPersonRelationWhereForAlias(f.Conditions)
 		if err != nil {
 			return "", fmt.Errorf("person_relation condition: %w", err)
 		}
-	}
-	if relatedWhere != "TRUE" {
-		subClauses = append(subClauses, relatedWhere)
+		relatedJoin = "LEFT JOIN persons rp ON pr.related_person_id = rp.person_id"
 	}
 
-	subWhere := strings.Join(subClauses, " AND ")
-	if subWhere == "" {
-		subWhere = "TRUE"
-	}
-
-	personJoin := "person_relations pr LEFT JOIN persons rp ON pr.related_person_id = rp.person_id"
-
-	// For "all" mode: count of matching = count of all
-	if f.Mode == "all" {
-		nestedWhere := "TRUE"
-		if len(f.Conditions) > 0 {
-			nestedWhere, _ = b.buildPersonRelationWhereForAlias(f.Conditions)
-		}
-		if anyType {
-			return fmt.Sprintf(
-				`EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id) AND
-				 (SELECT COUNT(*) FROM %s WHERE pr.person_id = p.person_id AND %s) =
-				 (SELECT COUNT(*) FROM person_relations pr WHERE pr.person_id = p.person_id)`,
-				personJoin, nestedWhere), nil
-		}
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s)) AND
-			 (SELECT COUNT(*) FROM %s WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s) AND %s) =
-			 (SELECT COUNT(*) FROM person_relations pr WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s))`,
-			relIDList, personJoin, relIDList, nestedWhere, relIDList), nil
-	}
-
-	// For "count" mode: count of matching person relations <op> threshold
-	if f.Mode == "count" {
-		countWhere := subWhere
-		if countWhere == "" {
-			countWhere = "TRUE"
-		}
-		var countExpr string
-		if anyType {
-			countExpr = fmt.Sprintf(
-				"(SELECT COUNT(*) FROM %s WHERE pr.person_id = p.person_id AND %s)",
-				personJoin, countWhere)
-		} else {
-			countExpr = fmt.Sprintf(
-				"(SELECT COUNT(*) FROM %s WHERE pr.person_id = p.person_id AND pr.relation_type IN (%s) AND %s)",
-				personJoin, relIDList, countWhere)
-		}
-		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-	}
-
-	// For "any" mode
-	return fmt.Sprintf(
-		"EXISTS (SELECT 1 FROM %s WHERE pr.person_id = p.person_id AND %s)",
-		personJoin, subWhere), nil
+	return b.manyToManyFilter(manyToManyConfig{
+		junction:       "person_relations",
+		alias:          "pr",
+		mainAlias:      b.mainAlias,
+		mainPK:         "person_id",
+		junctionMainFK: "person_id",
+		relatedAlias:   "rp",
+		relatedTable:   "persons",
+		relatedPK:      "person_id",
+		relatedFK:      "related_person_id",
+		extraCond:      extra,
+		relatedWhere:   relatedWhere,
+		relatedJoin:    relatedJoin,
+		mode:           f.Mode,
+		countOp:        f.CountOp,
+		countVal:       f.CountVal,
+	})
 }
 
 // getPersonRelationIDsForName returns all person relation type IDs for a given Chinese name.
@@ -755,101 +637,48 @@ func (b *SQLBuilder) buildPersonRelationWhereForAlias(filters []config.Filter) (
 
 // characterRelationFilter handles character-to-character relation filtering (person_type=crt).
 func (b *SQLBuilder) characterRelationFilter(f *config.CharacterRelationFilter) (string, error) {
-	// Only valid for character target
 	if b.target != "character" {
 		return "", fmt.Errorf("character_relation filter only supported for character target")
 	}
 
-	// Resolve relation type name to IDs; empty or "任意" means any type
 	anyType := f.Type == "" || f.Type == "任意"
-	var relIDList string
+	extra := "TRUE"
 	if !anyType {
 		relIDs := b.getCharacterRelationIDsForName(f.Type)
 		if len(relIDs) == 0 {
 			return "", fmt.Errorf("未找到角色关系类型: %s", f.Type)
 		}
-		relIDList = intListToSQL(relIDs)
+		extra = fmt.Sprintf("cr.relation_type IN (%s)", intListToSQL(relIDs))
 	}
 
-	// For "none" mode: no matching character relations should exist
-	if f.Mode == "none" {
-		if anyType {
-			return "NOT EXISTS (SELECT 1 FROM character_relations cr WHERE cr.person_id = c.character_id)", nil
-		}
-		return fmt.Sprintf(
-			"NOT EXISTS (SELECT 1 FROM character_relations cr WHERE cr.person_id = c.character_id AND cr.relation_type IN (%s))",
-			relIDList), nil
-	}
-
-	// Build subquery for related character
-	var subClauses []string
-	if !anyType {
-		subClauses = append(subClauses, fmt.Sprintf("cr.relation_type IN (%s)", relIDList))
-	}
-
-	// Filter by conditions on the related character
-	relatedWhere := "TRUE"
+	var relatedWhere string
+	var relatedJoin string
 	if len(f.Conditions) > 0 {
 		var err error
 		relatedWhere, err = b.buildCharacterRelationWhereForAlias(f.Conditions)
 		if err != nil {
 			return "", fmt.Errorf("character_relation condition: %w", err)
 		}
-	}
-	if relatedWhere != "TRUE" {
-		subClauses = append(subClauses, relatedWhere)
+		relatedJoin = "LEFT JOIN characters rc ON cr.related_person_id = rc.character_id"
 	}
 
-	subWhere := strings.Join(subClauses, " AND ")
-	if subWhere == "" {
-		subWhere = "TRUE"
-	}
-
-	charJoin := "character_relations cr LEFT JOIN characters rc ON cr.related_person_id = rc.character_id"
-
-	// For "all" mode: count of matching = count of all
-	if f.Mode == "all" {
-		nestedWhere := "TRUE"
-		if len(f.Conditions) > 0 {
-			nestedWhere, _ = b.buildCharacterRelationWhereForAlias(f.Conditions)
-		}
-		if anyType {
-			return fmt.Sprintf(
-				`EXISTS (SELECT 1 FROM character_relations cr WHERE cr.person_id = c.character_id) AND
-				 (SELECT COUNT(*) FROM %s WHERE cr.person_id = c.character_id AND %s) =
-				 (SELECT COUNT(*) FROM character_relations cr WHERE cr.person_id = c.character_id)`,
-				charJoin, nestedWhere), nil
-		}
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM character_relations cr WHERE cr.person_id = c.character_id AND cr.relation_type IN (%s)) AND
-			 (SELECT COUNT(*) FROM %s WHERE cr.person_id = c.character_id AND cr.relation_type IN (%s) AND %s) =
-			 (SELECT COUNT(*) FROM character_relations cr WHERE cr.person_id = c.character_id AND cr.relation_type IN (%s))`,
-			relIDList, charJoin, relIDList, nestedWhere, relIDList), nil
-	}
-
-	// For "count" mode: count of matching character relations <op> threshold
-	if f.Mode == "count" {
-		countWhere := subWhere
-		if countWhere == "" {
-			countWhere = "TRUE"
-		}
-		var countExpr string
-		if anyType {
-			countExpr = fmt.Sprintf(
-				"(SELECT COUNT(*) FROM %s WHERE cr.person_id = c.character_id AND %s)",
-				charJoin, countWhere)
-		} else {
-			countExpr = fmt.Sprintf(
-				"(SELECT COUNT(*) FROM %s WHERE cr.person_id = c.character_id AND cr.relation_type IN (%s) AND %s)",
-				charJoin, relIDList, countWhere)
-		}
-		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-	}
-
-	// For "any" mode
-	return fmt.Sprintf(
-		"EXISTS (SELECT 1 FROM %s WHERE cr.person_id = c.character_id AND %s)",
-		charJoin, subWhere), nil
+	return b.manyToManyFilter(manyToManyConfig{
+		junction:       "character_relations",
+		alias:          "cr",
+		mainAlias:      b.mainAlias,
+		mainPK:         "character_id",
+		junctionMainFK: "person_id",
+		relatedAlias:   "rc",
+		relatedTable:   "characters",
+		relatedPK:      "character_id",
+		relatedFK:      "related_person_id",
+		extraCond:      extra,
+		relatedWhere:   relatedWhere,
+		relatedJoin:    relatedJoin,
+		mode:           f.Mode,
+		countOp:        f.CountOp,
+		countVal:       f.CountVal,
+	})
 }
 
 // getCharacterRelationIDsForName returns all character relation type IDs for a given Chinese name.
@@ -925,7 +754,7 @@ func (b *SQLBuilder) fieldFilterForAlias(f *config.FieldFilter, alias string) (s
 			return fmt.Sprintf("%s != 0 AND %s", col, cond), nil
 		}
 	}
-	if isDirectField(f.Field) {
+	if b.isDirectField(f.Field) {
 		return b.buildCondition(alias+"."+quoteIdent(f.Field), f.Operator, valueStr)
 	}
 	fieldExpr := b.infoboxExtractExpr(f.Field, alias)
@@ -966,296 +795,152 @@ func (b *SQLBuilder) metaTagFilterForAlias(f *config.TagFilter, alias string) (s
 
 // staffFilter handles staff/person-based filtering.
 func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
+	nested := getNestedConfig(b.target, "staff")
+	if nested == nil {
+		return "", fmt.Errorf("staff filter not supported for target %s", b.target)
+	}
+	ja := nested.junctionTable // junction alias (use full table name)
+
 	// Resolve position name to IDs; empty or "任意" means any position
 	anyPos := f.Position == "" || f.Position == "任意"
-	var posIDList string
-	if !anyPos {
+	var posCond string
+	if anyPos {
+		posCond = "TRUE"
+	} else {
 		posIDs := b.getPositionIDsForName(f.Position)
 		if len(posIDs) == 0 {
 			return "", fmt.Errorf("未找到职位类型: %s", f.Position)
 		}
-		posIDList = intListToSQL(posIDs)
+		posCond = fmt.Sprintf("%s.position IN (%s)", ja, intListToSQL(posIDs))
 	}
 
-	// For person target: conditions on associated subjects (like relation filter)
-	if b.target == "person" {
-		// none mode: exclude persons with this position
-		if f.Mode == "none" {
-			if anyPos {
-				return "NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id)", nil
-			}
-			return fmt.Sprintf(
-				"NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s))",
-				posIDList), nil
-		}
-
-		// Build conditions on associated subjects using buildWhereForAlias (same as relation filter)
-		var subClauses []string
-		if !anyPos {
-			subClauses = append(subClauses, fmt.Sprintf("sp.position IN (%s)", posIDList))
-		}
-		if len(f.Conditions) > 0 {
-			relatedWhere, err := b.buildWhereForAlias(f.Conditions, "rs")
-			if err != nil {
-				return "", fmt.Errorf("staff condition: %w", err)
-			}
-			if relatedWhere != "TRUE" {
-				subClauses = append(subClauses, relatedWhere)
-			}
-		}
-		subWhere := strings.Join(subClauses, " AND ")
-		if subWhere == "" {
-			subWhere = "TRUE"
-		}
-
-		if f.Mode == "all" {
-			condWhere := "TRUE"
-			if len(f.Conditions) > 0 {
-				condWhere, _ = b.buildWhereForAlias(f.Conditions, "rs")
-			}
-			if anyPos {
-				return fmt.Sprintf(
-					`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id) AND
-					 (SELECT COUNT(*) FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND %s) =
-					 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.person_id = p.person_id)`,
-					condWhere), nil
-			}
-			return fmt.Sprintf(
-				`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s)) AND
-				 (SELECT COUNT(*) FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND sp.position IN (%s) AND %s) =
-				 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.person_id = p.person_id AND sp.position IN (%s))`,
-				posIDList, posIDList, condWhere, posIDList), nil
-		}
-
-		// count mode (person target)
-		if f.Mode == "count" {
-			countWhere := subWhere
-			if countWhere == "" {
-				countWhere = "TRUE"
-			}
-			countExpr := fmt.Sprintf(
-				"(SELECT COUNT(*) FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND %s)",
-				countWhere)
-			return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-		}
-
-		return fmt.Sprintf(
-			"EXISTS (SELECT 1 FROM subject_persons sp LEFT JOIN subjects rs ON sp.subject_id = rs.id WHERE sp.person_id = p.person_id AND %s)",
-			subWhere), nil
-	}
-
-	// Subject target: conditions on persons
-
-	// Build appear_eps condition
+	// Build appear_eps condition (subject target only)
 	appearEpsCond := "TRUE"
 	if f.AppearEps != nil {
 		var epsErr error
-		appearEpsCond, epsErr = b.buildCondition("sp.appear_eps", f.AppearEps.Operator, fmt.Sprintf("%v", f.AppearEps.Value))
+		appearEpsCond, epsErr = b.buildCondition(ja+".appear_eps", f.AppearEps.Operator, fmt.Sprintf("%v", f.AppearEps.Value))
 		if epsErr != nil {
 			return "", fmt.Errorf("appear_eps condition: %w", epsErr)
 		}
 	}
 
-	// none mode: exclude subjects with this position
-	if f.Mode == "none" {
-		if anyPos && appearEpsCond == "TRUE" {
-			return "NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id)", nil
-		}
-		cond := "TRUE"
-		if !anyPos {
-			cond = fmt.Sprintf("sp.position IN (%s)", posIDList)
-		}
-		if appearEpsCond != "TRUE" {
-			cond = cond + " AND " + appearEpsCond
-		}
-		return fmt.Sprintf(
-			"NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id AND %s)",
-			cond), nil
-	}
-
-	// Build person-specific conditions
-	personWhere, err := b.buildPersonWhereForAlias(f.Conditions)
-	if err != nil {
-		return "", fmt.Errorf("staff condition: %w", err)
-	}
-
-	// Always join persons table when there are conditions
-	fromClause := "subject_persons sp"
-	if len(f.Conditions) > 0 {
-		fromClause = "subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id"
-	}
-
-	// Build combined position + appear_eps condition
-	posAppearCond := "TRUE"
-	if !anyPos {
-		posAppearCond = fmt.Sprintf("sp.position IN (%s)", posIDList)
-	}
+	// Combine extra conditions
+	extra := posCond
 	if appearEpsCond != "TRUE" {
-		posAppearCond = posAppearCond + " AND " + appearEpsCond
-	}
-
-	if f.Mode == "all" {
-		if posAppearCond == "TRUE" {
-			return fmt.Sprintf(
-				`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id) AND
-				 (SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND %s) =
-				 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.subject_id = s.id)`,
-				fromClause, personWhere), nil
+		if extra == "TRUE" {
+			extra = appearEpsCond
+		} else {
+			extra = extra + " AND " + appearEpsCond
 		}
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.subject_id = s.id AND %s) AND
-			 (SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND %s AND %s) =
-			 (SELECT COUNT(*) FROM subject_persons sp WHERE sp.subject_id = s.id AND %s)`,
-			posAppearCond, fromClause, posAppearCond, personWhere, posAppearCond), nil
 	}
 
-	// count mode (subject target)
-	if f.Mode == "count" {
-		countWhere := posAppearCond
-		if personWhere != "TRUE" {
-			if countWhere == "TRUE" {
-				countWhere = personWhere
-			} else {
-				countWhere = countWhere + " AND " + personWhere
+	// Build related entity conditions
+	var relatedWhere string
+	var relatedJoin string
+	if b.target == "person" {
+		// Person target: conditions on associated subjects
+		if len(f.Conditions) > 0 {
+			var err error
+			relatedWhere, err = b.buildWhereForAlias(f.Conditions, "rs")
+			if err != nil {
+				return "", fmt.Errorf("staff condition: %w", err)
 			}
 		}
-		countExpr := fmt.Sprintf(
-			"(SELECT COUNT(*) FROM %s WHERE sp.subject_id = s.id AND %s)",
-			fromClause, countWhere)
-		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+		relatedJoin = fmt.Sprintf("LEFT JOIN %s %s ON %s.%s = %s.%s",
+			nested.relatedTable, nested.relatedAlias, ja, nested.relatedFK, nested.relatedAlias, nested.relatedPK)
+	} else {
+		// Subject target: conditions on associated persons
+		if len(f.Conditions) > 0 {
+			var err error
+			relatedWhere, err = b.buildPersonWhereForAlias(f.Conditions)
+			if err != nil {
+				return "", fmt.Errorf("staff condition: %w", err)
+			}
+			relatedJoin = fmt.Sprintf("LEFT JOIN %s %s ON %s.%s = %s.%s",
+				nested.relatedTable, nested.relatedAlias, ja, nested.relatedFK, nested.relatedAlias, nested.relatedPK)
+		}
 	}
 
-	if posAppearCond == "TRUE" {
-		return fmt.Sprintf(
-			"EXISTS (SELECT 1 FROM %s WHERE sp.subject_id = s.id AND %s)",
-			fromClause, personWhere), nil
-	}
-	return fmt.Sprintf(
-		"EXISTS (SELECT 1 FROM %s WHERE sp.subject_id = s.id AND %s AND %s)",
-		fromClause, posAppearCond, personWhere), nil
+	return b.manyToManyFilter(manyToManyConfig{
+		junction:       nested.junctionTable,
+		mainAlias:      b.mainAlias,
+		mainPK:         nested.mainPK,
+		junctionMainFK: nested.junctionMainFK,
+		relatedAlias:   nested.relatedAlias,
+		relatedTable:   nested.relatedTable,
+		relatedFK:      nested.relatedFK,
+		extraCond:      extra,
+		relatedWhere:   relatedWhere,
+		relatedJoin:    relatedJoin,
+		mode:           f.Mode,
+		countOp:        f.CountOp,
+		countVal:       f.CountVal,
+	})
 }
 
 // characterFilter handles character-based filtering for subject queries.
 func (b *SQLBuilder) characterFilter(f *config.CharacterFilter) (string, error) {
+	nested := getNestedConfig(b.target, "character")
+	if nested == nil {
+		return "", fmt.Errorf("character filter not supported for target %s", b.target)
+	}
+	ja := nested.junctionTable // junction alias (use full table name)
+
 	// Resolve association type name to ID; empty or "任意" means any type
 	anyType := f.Type == "" || f.Type == "任意"
-	var typeID int
-	if !anyType {
-		var found bool
-		typeID, found = b.getCharacterAssociationTypeID(f.Type)
+	var typeCond string
+	if anyType {
+		typeCond = "TRUE"
+	} else {
+		typeID, found := b.getCharacterAssociationTypeID(f.Type)
 		if !found {
 			return "", fmt.Errorf("未找到角色关联类型: %s", f.Type)
 		}
+		typeCond = fmt.Sprintf("%s.type = %d", ja, typeID)
 	}
 
-	// Build type condition
-	typeCond := "TRUE"
-	if !anyType {
-		typeCond = fmt.Sprintf("sc.type = %d", typeID)
-	}
-
-	// For character target: filter characters by their associated subjects
+	// Build related entity conditions
+	var relatedWhere string
+	var relatedJoin string
 	if b.target == "character" {
-		// none mode: exclude characters with this association
-		if f.Mode == "none" {
-			if anyType {
-				return "NOT EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.character_id = c.character_id)", nil
-			}
-			return fmt.Sprintf(
-				"NOT EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.character_id = c.character_id AND %s)",
-				typeCond), nil
-		}
-
-		// Build subject-level conditions
-		subWhere := typeCond
+		// Character target: conditions on associated subjects
 		if len(f.Conditions) > 0 {
-			subjectWhere, err := b.buildWhereForAlias(f.Conditions, "rs")
+			var err error
+			relatedWhere, err = b.buildWhereForAlias(f.Conditions, "rs")
 			if err != nil {
 				return "", fmt.Errorf("character condition: %w", err)
 			}
-			if subjectWhere != "TRUE" {
-				subWhere = strings.Join([]string{typeCond, subjectWhere}, " AND ")
+		}
+		relatedJoin = fmt.Sprintf("LEFT JOIN %s %s ON %s.%s = %s.%s",
+			nested.relatedTable, nested.relatedAlias, ja, nested.relatedFK, nested.relatedAlias, nested.relatedPK)
+	} else {
+		// Subject target: conditions on associated characters
+		if len(f.Conditions) > 0 {
+			var err error
+			relatedWhere, err = b.buildCharacterWhereForAlias(f.Conditions)
+			if err != nil {
+				return "", fmt.Errorf("character condition: %w", err)
 			}
-		}
-
-		if f.Mode == "all" {
-			condWhere := typeCond
-			if len(f.Conditions) > 0 {
-				subjectWhere, _ := b.buildWhereForAlias(f.Conditions, "rs")
-				if subjectWhere != "TRUE" {
-					condWhere = strings.Join([]string{typeCond, subjectWhere}, " AND ")
-				}
-			}
-			return fmt.Sprintf(
-				`EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.character_id = c.character_id AND %s) AND
-				 (SELECT COUNT(*) FROM subject_characters sc LEFT JOIN subjects rs ON sc.subject_id = rs.id WHERE sc.character_id = c.character_id AND %s) =
-				 (SELECT COUNT(*) FROM subject_characters sc WHERE sc.character_id = c.character_id AND %s)`,
-				typeCond, condWhere, typeCond), nil
-		}
-
-		// count mode (character target)
-		if f.Mode == "count" {
-			countExpr := fmt.Sprintf(
-				"(SELECT COUNT(*) FROM subject_characters sc LEFT JOIN subjects rs ON sc.subject_id = rs.id WHERE sc.character_id = c.character_id AND %s)",
-				subWhere)
-			return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-		}
-
-		// any mode
-		return fmt.Sprintf(
-			"EXISTS (SELECT 1 FROM subject_characters sc LEFT JOIN subjects rs ON sc.subject_id = rs.id WHERE sc.character_id = c.character_id AND %s)",
-			subWhere), nil
-	}
-
-	// For subject target: filter subjects by their associated characters
-
-	// For "none" mode: no matching characters should exist
-	if f.Mode == "none" {
-		if anyType {
-			return "NOT EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.subject_id = s.id)", nil
-		}
-		return fmt.Sprintf(
-			"NOT EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.subject_id = s.id AND %s)",
-			typeCond), nil
-	}
-
-	// Build character-level conditions
-	charWhere := "TRUE"
-	if len(f.Conditions) > 0 {
-		var err error
-		charWhere, err = b.buildCharacterWhereForAlias(f.Conditions)
-		if err != nil {
-			return "", fmt.Errorf("character condition: %w", err)
+			relatedJoin = fmt.Sprintf("LEFT JOIN %s %s ON %s.%s = %s.%s",
+				nested.relatedTable, nested.relatedAlias, ja, nested.relatedFK, nested.relatedAlias, nested.relatedPK)
 		}
 	}
 
-	fromClause := "subject_characters sc"
-	if len(f.Conditions) > 0 {
-		fromClause = "subject_characters sc LEFT JOIN characters c ON sc.character_id = c.character_id"
-	}
-
-	subWhere := strings.Join([]string{typeCond, charWhere}, " AND ")
-
-	if f.Mode == "all" {
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM subject_characters sc WHERE sc.subject_id = s.id AND %s) AND
-			 (SELECT COUNT(*) FROM %s WHERE sc.subject_id = s.id AND %s) =
-			 (SELECT COUNT(*) FROM subject_characters sc WHERE sc.subject_id = s.id AND %s)`,
-			typeCond, fromClause, subWhere, typeCond), nil
-	}
-
-	// count mode (subject target)
-	if f.Mode == "count" {
-		countExpr := fmt.Sprintf(
-			"(SELECT COUNT(*) FROM %s WHERE sc.subject_id = s.id AND %s)",
-			fromClause, subWhere)
-		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-	}
-
-	// any mode
-	return fmt.Sprintf(
-		"EXISTS (SELECT 1 FROM %s WHERE sc.subject_id = s.id AND %s)",
-		fromClause, subWhere), nil
+	return b.manyToManyFilter(manyToManyConfig{
+		junction:       nested.junctionTable,
+		mainAlias:      b.mainAlias,
+		mainPK:         nested.mainPK,
+		junctionMainFK: nested.junctionMainFK,
+		relatedAlias:   nested.relatedAlias,
+		relatedTable:   nested.relatedTable,
+		relatedFK:      nested.relatedFK,
+		extraCond:      typeCond,
+		relatedWhere:   relatedWhere,
+		relatedJoin:    relatedJoin,
+		mode:           f.Mode,
+		countOp:        f.CountOp,
+		countVal:       f.CountVal,
+	})
 }
 
 // getCharacterAssociationTypeID returns the ID for a Chinese association type name.
@@ -1275,12 +960,10 @@ func (b *SQLBuilder) buildCharacterWhereForAlias(filters []config.Filter) (strin
 
 // personCharacterFilter filters persons by their associated characters (via person_characters).
 func (b *SQLBuilder) personCharacterFilter(f *config.PersonCharacterFilter) (string, error) {
-	// Only valid for person target
 	if b.target != "person" {
 		return "", fmt.Errorf("person_character filter only supported for person target")
 	}
 
-	// Resolve CV type name to ID; empty or "任意" means any type
 	anyType := f.Type == "" || f.Type == "任意"
 	var typeCond string
 	if anyType {
@@ -1294,19 +977,18 @@ func (b *SQLBuilder) personCharacterFilter(f *config.PersonCharacterFilter) (str
 	}
 
 	// Build character-level conditions
-	charWhere := "TRUE"
+	sideWhere := "TRUE"
 	if len(f.Conditions) > 0 {
 		var err error
-		charWhere, err = b.buildPersonCharCharacterWhere(f.Conditions)
+		sideWhere, err = b.buildPersonCharCharacterWhere(f.Conditions)
 		if err != nil {
 			return "", fmt.Errorf("person_character condition: %w", err)
 		}
 	}
 
 	// Build subject-level conditions (相关条目)
-	hasSubjConds := len(f.SubjectConditions) > 0
 	subjectWhere := "TRUE"
-	if hasSubjConds {
+	if len(f.SubjectConditions) > 0 {
 		var err error
 		subjectWhere, err = b.buildWhereForAlias(f.SubjectConditions, "rs")
 		if err != nil {
@@ -1314,203 +996,31 @@ func (b *SQLBuilder) personCharacterFilter(f *config.PersonCharacterFilter) (str
 		}
 	}
 
-	subjMode := f.SubjectMode
-	if subjMode == "" {
-		subjMode = "any"
+	// Build side join
+	sideJoin := ""
+	if sideWhere != "TRUE" {
+		sideJoin = "LEFT JOIN characters c ON pc.character_id = c.character_id"
 	}
 
-	// For "none" mode
-	if f.Mode == "none" {
-		charJoin := ""
-		if charWhere != "TRUE" {
-			charJoin = "LEFT JOIN characters c ON pc.character_id = c.character_id"
-		}
-		charPred := typeCond
-		if charWhere != "TRUE" {
-			charPred = typeCond + " AND " + charWhere
-		}
-
-		if !hasSubjConds || subjMode == "any" {
-			// No character has any matching subject (or no subject conditions at all)
-			if anyType && charWhere == "TRUE" {
-				return "NOT EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id)", nil
-			}
-			return fmt.Sprintf(
-				"NOT EXISTS (SELECT 1 FROM person_characters pc %s WHERE pc.person_id = p.person_id AND %s)",
-				charJoin, charPred), nil
-		}
-
-		// subject_mode=all: No character has ALL its subjects matching
-		// I.e., for every character that matches, at least one subject doesn't match
-		if anyType && charWhere == "TRUE" {
-			// No character exists where all its subjects match
-			return fmt.Sprintf(
-				`NOT EXISTS (
-				   SELECT 1 FROM person_characters pc
-				   WHERE pc.person_id = p.person_id
-				   AND NOT EXISTS (
-				     SELECT 1 FROM person_characters pc2
-				     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-				     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
-				     AND NOT (%s)
-				   )
-				 )`, subjectWhere), nil
-		}
-		return fmt.Sprintf(
-			`NOT EXISTS (
-			   SELECT 1 FROM person_characters pc %s
-			   WHERE pc.person_id = p.person_id AND %s
-			   AND NOT EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
-			     AND NOT (%s)
-			   )
-			 )`, charJoin, charPred, subjectWhere), nil
-	}
-
-	// When no subject conditions, treat as simple flat query
-	if !hasSubjConds {
-		fromClause := "person_characters pc"
-		joins := []string{}
-		if charWhere != "TRUE" {
-			joins = append(joins, "LEFT JOIN characters c ON pc.character_id = c.character_id")
-		}
-		if len(joins) > 0 {
-			fromClause = "person_characters pc " + strings.Join(joins, " ")
-		}
-		cond := strings.Join([]string{typeCond, charWhere}, " AND ")
-
-		if f.Mode == "all" {
-			return fmt.Sprintf(
-				`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND %s) AND
-				 (SELECT COUNT(*) FROM %s WHERE pc.person_id = p.person_id AND %s) =
-				 (SELECT COUNT(*) FROM person_characters pc WHERE pc.person_id = p.person_id AND %s)`,
-				typeCond, fromClause, cond, typeCond), nil
-		}
-		if f.Mode == "count" {
-			countExpr := fmt.Sprintf(
-				"(SELECT COUNT(*) FROM %s WHERE pc.person_id = p.person_id AND %s)",
-				fromClause, cond)
-			return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-		}
-		return fmt.Sprintf(
-			"EXISTS (SELECT 1 FROM %s WHERE pc.person_id = p.person_id AND %s)",
-			fromClause, cond), nil
-	}
-
-	// Has subject conditions — use two-level quantifier
-	charJoin := ""
-	if charWhere != "TRUE" {
-		charJoin = "LEFT JOIN characters c ON pc.character_id = c.character_id"
-	}
-
-	// Build "character matches" predicate: type + char conditions
-	charPred := typeCond
-	if charWhere != "TRUE" {
-		charPred = typeCond + " AND " + charWhere
-	}
-
-	// Build "subject matches" predicate
-	subjPred := subjectWhere
-
-	// Count mode with subject conditions
-	if f.Mode == "count" {
-		countExpr := fmt.Sprintf(
-			"(SELECT COUNT(DISTINCT pc.character_id) FROM person_characters pc %s LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.person_id = p.person_id AND %s AND %s)",
-			charJoin, charPred, subjPred)
-		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-	}
-
-	switch {
-	case f.Mode == "any" && subjMode == "any":
-		// EXISTS a row where character AND subject both match
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM person_characters pc %s
-			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
-			 WHERE pc.person_id = p.person_id AND %s AND %s)`,
-			charJoin, charPred, subjPred), nil
-
-	case f.Mode == "any" && subjMode == "all":
-		// EXISTS a character where ALL its subjects match
-		return fmt.Sprintf(
-			`EXISTS (
-		   SELECT 1 FROM person_characters pc %s
-		   WHERE pc.person_id = p.person_id AND %s
-		   AND NOT EXISTS (
-		     SELECT 1 FROM person_characters pc2
-		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-		     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
-		     AND NOT (%s)
-		   )
-		 )`, charJoin, charPred, subjPred), nil
-
-	case f.Mode == "all" && subjMode == "any":
-		// ALL characters have at least one matching subject
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND %s) AND
-			 (SELECT COUNT(*) FROM (
-			   SELECT pc.character_id FROM person_characters pc %s
-			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
-			   WHERE pc.person_id = p.person_id AND %s AND %s
-			   GROUP BY pc.character_id
-			 ) t) =
-			 (SELECT COUNT(DISTINCT pc.character_id) FROM person_characters pc WHERE pc.person_id = p.person_id AND %s)`,
-			typeCond, charJoin, charPred, subjPred, typeCond), nil
-
-	case f.Mode == "all" && subjMode == "all":
-		// ALL characters have ALL subjects matching
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND %s) AND
-			 NOT EXISTS (
-			   SELECT 1 FROM person_characters pc %s
-			   WHERE pc.person_id = p.person_id AND %s
-			   AND EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
-			     AND NOT (%s)
-			   )
-			 )`,
-			typeCond, charJoin, charPred, subjPred), nil
-
-	case f.Mode == "any" && subjMode == "count":
-		// EXISTS a character where count of matching subjects <op> threshold
-		subjCountOp := f.SubjectCountOp
-		if subjCountOp == "" {
-			subjCountOp = "gte"
-		}
-		return fmt.Sprintf(
-			`EXISTS (
-			   SELECT 1 FROM person_characters pc %s
-			   WHERE pc.person_id = p.person_id AND %s
-			   AND (SELECT COUNT(*) FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
-			     AND %s) %s %v
-			 )`,
-			charJoin, charPred, subjPred, subjCountOp, f.SubjectCountVal), nil
-
-	case f.Mode == "all" && subjMode == "count":
-		// ALL characters have count of matching subjects <op> threshold
-		subjCountOp := f.SubjectCountOp
-		if subjCountOp == "" {
-			subjCountOp = "gte"
-		}
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND %s) AND
-			 NOT EXISTS (
-			   SELECT 1 FROM person_characters pc %s
-			   WHERE pc.person_id = p.person_id AND %s
-			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
-			     AND %s) %s %v)
-			 )`,
-			typeCond, charJoin, charPred, subjPred, subjCountOp, f.SubjectCountVal), nil
-	}
-
-	return "TRUE", nil
+	return b.threeWayFilter(threeWayConfig{
+		mainAlias:        "p",
+		mainFK:           "person_id",
+		sideAlias:        "c",
+		sideTable:        "characters",
+		sideFK:           "character_id",
+		sideCtx:          clauseContext{alias: "c", isCharacterCtx: true},
+		typeCond:         typeCond,
+		mode:             f.Mode,
+		countOp:          f.CountOp,
+		countVal:         f.CountVal,
+		sideWhere:        sideWhere,
+		sideJoin:         sideJoin,
+		subjectMode:      f.SubjectMode,
+		subjectCountOp:   f.SubjectCountOp,
+		subjectCountVal:  f.SubjectCountVal,
+		subjectWhere:     subjectWhere,
+		countDistinctCol: "character_id",
+	})
 }
 
 // buildPersonCharCharacterWhere generates WHERE clauses for character conditions in person_characters context.
@@ -1520,12 +1030,10 @@ func (b *SQLBuilder) buildPersonCharCharacterWhere(filters []config.Filter) (str
 
 // characterPersonFilter filters characters by their associated persons (via person_characters).
 func (b *SQLBuilder) characterPersonFilter(f *config.CharacterPersonFilter) (string, error) {
-	// Only valid for character target
 	if b.target != "character" {
 		return "", fmt.Errorf("character_person filter only supported for character target")
 	}
 
-	// Resolve CV type name to ID; empty or "任意" means any type
 	anyType := f.Type == "" || f.Type == "任意"
 	var typeCond string
 	if anyType {
@@ -1539,19 +1047,18 @@ func (b *SQLBuilder) characterPersonFilter(f *config.CharacterPersonFilter) (str
 	}
 
 	// Build person-level conditions
-	personWhere := "TRUE"
+	sideWhere := "TRUE"
 	if len(f.Conditions) > 0 {
 		var err error
-		personWhere, err = b.buildCharPersonPersonWhere(f.Conditions)
+		sideWhere, err = b.buildCharPersonPersonWhere(f.Conditions)
 		if err != nil {
 			return "", fmt.Errorf("character_person condition: %w", err)
 		}
 	}
 
 	// Build subject-level conditions (相关条目)
-	hasSubjConds := len(f.SubjectConditions) > 0
 	subjectWhere := "TRUE"
-	if hasSubjConds {
+	if len(f.SubjectConditions) > 0 {
 		var err error
 		subjectWhere, err = b.buildWhereForAlias(f.SubjectConditions, "rs")
 		if err != nil {
@@ -1559,201 +1066,31 @@ func (b *SQLBuilder) characterPersonFilter(f *config.CharacterPersonFilter) (str
 		}
 	}
 
-	subjMode := f.SubjectMode
-	if subjMode == "" {
-		subjMode = "any"
+	// Build side join
+	sideJoin := ""
+	if sideWhere != "TRUE" {
+		sideJoin = "LEFT JOIN persons p ON pc.person_id = p.person_id"
 	}
 
-	// For "none" mode
-	if f.Mode == "none" {
-		personJoin := ""
-		if personWhere != "TRUE" {
-			personJoin = "LEFT JOIN persons p ON pc.person_id = p.person_id"
-		}
-		personPred := typeCond
-		if personWhere != "TRUE" {
-			personPred = typeCond + " AND " + personWhere
-		}
-
-		if !hasSubjConds || subjMode == "any" {
-			// No person has any matching subject (or no subject conditions at all)
-			if anyType && personWhere == "TRUE" {
-				return "NOT EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id)", nil
-			}
-			return fmt.Sprintf(
-				"NOT EXISTS (SELECT 1 FROM person_characters pc %s WHERE pc.character_id = c.character_id AND %s)",
-				personJoin, personPred), nil
-		}
-
-		// subject_mode=all: No person has ALL its subjects matching
-		if anyType && personWhere == "TRUE" {
-			return fmt.Sprintf(
-				`NOT EXISTS (
-				   SELECT 1 FROM person_characters pc
-				   WHERE pc.character_id = c.character_id
-				   AND NOT EXISTS (
-				     SELECT 1 FROM person_characters pc2
-				     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-				     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
-				     AND NOT (%s)
-				   )
-				 )`, subjectWhere), nil
-		}
-		return fmt.Sprintf(
-			`NOT EXISTS (
-			   SELECT 1 FROM person_characters pc %s
-			   WHERE pc.character_id = c.character_id AND %s
-			   AND NOT EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
-			     AND NOT (%s)
-			   )
-			 )`, personJoin, personPred, subjectWhere), nil
-	}
-
-	// When no subject conditions, treat as simple flat query
-	if !hasSubjConds {
-		fromClause := "person_characters pc"
-		joins := []string{}
-		if personWhere != "TRUE" {
-			joins = append(joins, "LEFT JOIN persons p ON pc.person_id = p.person_id")
-		}
-		if len(joins) > 0 {
-			fromClause = "person_characters pc " + strings.Join(joins, " ")
-		}
-		cond := strings.Join([]string{typeCond, personWhere}, " AND ")
-
-		if f.Mode == "all" {
-			return fmt.Sprintf(
-				`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND %s) AND
-				 (SELECT COUNT(*) FROM %s WHERE pc.character_id = c.character_id AND %s) =
-				 (SELECT COUNT(*) FROM person_characters pc WHERE pc.character_id = c.character_id AND %s)`,
-				typeCond, fromClause, cond, typeCond), nil
-		}
-		if f.Mode == "count" {
-			countExpr := fmt.Sprintf(
-				"(SELECT COUNT(*) FROM %s WHERE pc.character_id = c.character_id AND %s)",
-				fromClause, cond)
-			return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-		}
-		return fmt.Sprintf(
-			"EXISTS (SELECT 1 FROM %s WHERE pc.character_id = c.character_id AND %s)",
-			fromClause, cond), nil
-	}
-
-	// Has subject conditions — use two-level quantifier
-	personJoin := ""
-	if personWhere != "TRUE" {
-		personJoin = "LEFT JOIN persons p ON pc.person_id = p.person_id"
-	}
-
-	// Build "person matches" predicate: type + person conditions
-	personPred := typeCond
-	if personWhere != "TRUE" {
-		personPred = typeCond + " AND " + personWhere
-	}
-
-	// Build "subject matches" predicate
-	subjPred := subjectWhere
-
-	// Count mode with subject conditions
-	if f.Mode == "count" {
-		countExpr := fmt.Sprintf(
-			"(SELECT COUNT(DISTINCT pc.person_id) FROM person_characters pc %s LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.character_id = c.character_id AND %s AND %s)",
-			personJoin, personPred, subjPred)
-		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-	}
-
-	switch {
-	case f.Mode == "any" && subjMode == "any":
-		// EXISTS a row where person AND subject both match
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM person_characters pc %s
-			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
-			 WHERE pc.character_id = c.character_id AND %s AND %s)`,
-			personJoin, personPred, subjPred), nil
-
-	case f.Mode == "any" && subjMode == "all":
-		// EXISTS a person where ALL its subjects match
-		return fmt.Sprintf(
-			`EXISTS (
-		   SELECT 1 FROM person_characters pc %s
-		   WHERE pc.character_id = c.character_id AND %s
-		   AND NOT EXISTS (
-		     SELECT 1 FROM person_characters pc2
-		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-		     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
-		     AND NOT (%s)
-		   )
-		 )`, personJoin, personPred, subjPred), nil
-
-	case f.Mode == "all" && subjMode == "any":
-		// ALL persons have at least one matching subject
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND %s) AND
-			 (SELECT COUNT(*) FROM (
-			   SELECT pc.person_id FROM person_characters pc %s
-			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
-			   WHERE pc.character_id = c.character_id AND %s AND %s
-			   GROUP BY pc.person_id
-			 ) t) =
-			 (SELECT COUNT(DISTINCT pc.person_id) FROM person_characters pc WHERE pc.character_id = c.character_id AND %s)`,
-			typeCond, personJoin, personPred, subjPred, typeCond), nil
-
-	case f.Mode == "all" && subjMode == "all":
-		// ALL persons have ALL subjects matching
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND %s) AND
-			 NOT EXISTS (
-			   SELECT 1 FROM person_characters pc %s
-			   WHERE pc.character_id = c.character_id AND %s
-			   AND EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
-			     AND NOT (%s)
-			   )
-			 )`,
-			typeCond, personJoin, personPred, subjPred), nil
-
-	case f.Mode == "any" && subjMode == "count":
-		// EXISTS a person where count of matching subjects <op> threshold
-		subjCountOp := f.SubjectCountOp
-		if subjCountOp == "" {
-			subjCountOp = "gte"
-		}
-		return fmt.Sprintf(
-			`EXISTS (
-			   SELECT 1 FROM person_characters pc %s
-			   WHERE pc.character_id = c.character_id AND %s
-			   AND (SELECT COUNT(*) FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
-			     AND %s) %s %v
-			 )`,
-			personJoin, personPred, subjPred, subjCountOp, f.SubjectCountVal), nil
-
-	case f.Mode == "all" && subjMode == "count":
-		// ALL persons have count of matching subjects <op> threshold
-		subjCountOp := f.SubjectCountOp
-		if subjCountOp == "" {
-			subjCountOp = "gte"
-		}
-		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND %s) AND
-			 NOT EXISTS (
-			   SELECT 1 FROM person_characters pc %s
-			   WHERE pc.character_id = c.character_id AND %s
-			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
-			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
-			     AND %s) %s %v)
-			 )`,
-			typeCond, personJoin, personPred, subjPred, subjCountOp, f.SubjectCountVal), nil
-	}
-
-	return "TRUE", nil
+	return b.threeWayFilter(threeWayConfig{
+		mainAlias:        "c",
+		mainFK:           "character_id",
+		sideAlias:        "p",
+		sideTable:        "persons",
+		sideFK:           "person_id",
+		sideCtx:          clauseContext{alias: "p", isPersonCtx: true},
+		typeCond:         typeCond,
+		mode:             f.Mode,
+		countOp:          f.CountOp,
+		countVal:         f.CountVal,
+		sideWhere:        sideWhere,
+		sideJoin:         sideJoin,
+		subjectMode:      f.SubjectMode,
+		subjectCountOp:   f.SubjectCountOp,
+		subjectCountVal:  f.SubjectCountVal,
+		subjectWhere:     subjectWhere,
+		countDistinctCol: "person_id",
+	})
 }
 
 // buildCharPersonPersonWhere generates WHERE clauses for person conditions in character_person context.
@@ -1777,116 +1114,75 @@ func (b *SQLBuilder) buildPersonWhereForAlias(filters []config.Filter) (string, 
 }
 
 // personFilterForAlias dispatches a single filter for person-level conditions.
-func (b *SQLBuilder) personFilterForAlias(f config.Filter, idx int) (string, error) {
+// filterForNestedContext dispatches a single filter for nested entity conditions (person/character).
+func (b *SQLBuilder) filterForNestedContext(f config.Filter, idx int, nestedAlias string, fieldMap map[string]string, typeCol string) (string, error) {
 	switch {
 	case f.Field != nil:
-		return b.personFieldFilterForAlias(f.Field)
+		return b.fieldFilterForNested(f.Field, nestedAlias, fieldMap)
 	case f.Global != nil:
-		return b.personGlobalFilterForAlias(f.Global)
+		return b.globalFilterForNested(f.Global, nestedAlias)
 	case f.Type != nil:
-		return b.personTypeFilterForAlias(f.Type)
+		if typeCol == "" {
+			return "", fmt.Errorf("此上下文不支持类型筛选 (index %d)", idx)
+		}
+		return fmt.Sprintf("%s = '%s'", typeCol, escapeSQLString(fmt.Sprintf("%v", f.Type.Value))), nil
 	default:
-		return "", fmt.Errorf("人物筛选不支持此条件类型 (index %d)", idx)
+		return "", fmt.Errorf("此上下文不支持此条件类型 (index %d)", idx)
 	}
 }
 
-// personFieldFilterForAlias builds a field filter on person data (supports all operators).
-func (b *SQLBuilder) personFieldFilterForAlias(f *config.FieldFilter) (string, error) {
+// fieldFilterForNested builds a field filter for a nested entity context using a field map.
+func (b *SQLBuilder) fieldFilterForNested(f *config.FieldFilter, nestedAlias string, fieldMap map[string]string) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
-	switch f.Field {
-	case "name":
-		return b.buildCondition("p.name", f.Operator, valueStr)
-	case "id", "person_id":
-		return b.buildCondition("sp.person_id", f.Operator, valueStr)
-	case "type":
-		return b.buildCondition("p.person_type", f.Operator, valueStr)
-	case "career":
-		if f.Operator == "regex" {
-			return fmt.Sprintf("regexp_matches(p.career::VARCHAR, '%s')", escapeRegex(valueStr)), nil
-		}
-		return fmt.Sprintf("LIST_CONTAINS(COALESCE(p.career, []), '%s')", escapeSQLString(valueStr)), nil
-	case "appear_eps":
-		return b.buildCondition("sp.appear_eps", f.Operator, valueStr)
-	default:
-		// Try person infobox field
-		fieldExpr := b.infoboxExtractExpr(f.Field, "p")
-		if isNumericOp(f.Operator) {
-			fieldExpr = extractNum(fieldExpr)
-		}
-		return b.buildCondition(fieldExpr, f.Operator, valueStr)
+
+	// Check field map for direct column mapping
+	if expr, ok := fieldMap[f.Field]; ok {
+		return b.buildCondition(expr, f.Operator, valueStr)
 	}
+
+	// Special case: career field (person only) — LIST_CONTAINS
+	if f.Field == "career" {
+		if f.Operator == "regex" {
+			return fmt.Sprintf("regexp_matches(%s.career::VARCHAR, '%s')", nestedAlias, escapeRegex(valueStr)), nil
+		}
+		return fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.career, []), '%s')", nestedAlias, escapeSQLString(valueStr)), nil
+	}
+
+	// Special case: 性别=其他
+	if f.Field == "性别" && valueStr == "其他" && f.Operator == "contains" {
+		expr := b.infoboxExtractExpr("性别", nestedAlias)
+		return fmt.Sprintf("COALESCE(%s, '') != '' AND %s NOT LIKE '%%男%%' AND %s NOT LIKE '%%♂%%' AND %s NOT LIKE '%%女%%' AND %s NOT LIKE '%%♀%%'", expr, expr, expr, expr, expr), nil
+	}
+
+	// Default: infobox field extraction
+	fieldExpr := b.infoboxExtractExpr(f.Field, nestedAlias)
+	if isNumericOp(f.Operator) {
+		fieldExpr = extractNum(fieldExpr)
+	}
+	return b.buildCondition(fieldExpr, f.Operator, valueStr)
 }
 
-// personGlobalFilterForAlias builds a global search on person infobox.
-func (b *SQLBuilder) personGlobalFilterForAlias(f *config.GlobalFilter) (string, error) {
+// globalFilterForNested builds a global search on a nested entity's infobox.
+func (b *SQLBuilder) globalFilterForNested(f *config.GlobalFilter, nestedAlias string) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
 	switch f.Operator {
 	case "regex":
-		return fmt.Sprintf("regexp_matches(p.infobox, '%s')", escapeRegex(valueStr)), nil
+		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", nestedAlias, escapeRegex(valueStr)), nil
 	case "contains":
-		return fmt.Sprintf("p.infobox LIKE '%%%s%%'", escapeLike(valueStr)), nil
+		return fmt.Sprintf("%s.infobox LIKE '%%%s%%'", nestedAlias, escapeLike(valueStr)), nil
 	default:
 		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
 	}
 }
 
-// personTypeFilterForAlias builds a person type filter.
-func (b *SQLBuilder) personTypeFilterForAlias(f *config.TypeFilter) (string, error) {
-	return fmt.Sprintf("p.person_type = '%s'", escapeSQLString(fmt.Sprintf("%v", f.Value))), nil
+// personFilterForAlias dispatches a single filter for person-level conditions.
+func (b *SQLBuilder) personFilterForAlias(f config.Filter, idx int) (string, error) {
+	return b.filterForNestedContext(f, idx, "p", b.tc.nestedFieldMap, b.tc.nestedTypeCol)
 }
 
 // characterFilterForAlias dispatches a single filter for character-level conditions.
 func (b *SQLBuilder) characterFilterForAlias(f config.Filter, idx int) (string, error) {
-	switch {
-	case f.Field != nil:
-		return b.characterFieldFilterForAlias(f.Field)
-	case f.Global != nil:
-		return b.characterGlobalFilterForAlias(f.Global)
-	default:
-		return "", fmt.Errorf("角色筛选不支持此条件类型 (index %d)", idx)
-	}
-}
-
-// characterFieldFilterForAlias builds a field filter on character data (supports all operators).
-func (b *SQLBuilder) characterFieldFilterForAlias(f *config.FieldFilter) (string, error) {
-	valueStr := fmt.Sprintf("%v", f.Value)
-	switch f.Field {
-	case "name":
-		return b.buildCondition("c.name", f.Operator, valueStr)
-	case "id", "character_id":
-		return b.buildCondition("sc.character_id", f.Operator, valueStr)
-	case "role":
-		return b.buildCondition("c.role", f.Operator, valueStr)
-	case "comments":
-		return b.buildCondition("c.comments", f.Operator, valueStr)
-	case "collects":
-		return b.buildCondition("c.collects", f.Operator, valueStr)
-	default:
-		// Special case: 性别=其他 means gender exists and is not 男/♀
-		if f.Field == "性别" && valueStr == "其他" && f.Operator == "contains" {
-			expr := b.infoboxExtractExpr("性别", "c")
-			return fmt.Sprintf("COALESCE(%s, '') != '' AND %s NOT LIKE '%%男%%' AND %s NOT LIKE '%%♂%%' AND %s NOT LIKE '%%女%%' AND %s NOT LIKE '%%♀%%'", expr, expr, expr, expr, expr), nil
-		}
-		// Try character infobox field
-		fieldExpr := b.infoboxExtractExpr(f.Field, "c")
-		if isNumericOp(f.Operator) {
-			fieldExpr = extractNum(fieldExpr)
-		}
-		return b.buildCondition(fieldExpr, f.Operator, valueStr)
-	}
-}
-
-// characterGlobalFilterForAlias builds a global search on character infobox.
-func (b *SQLBuilder) characterGlobalFilterForAlias(f *config.GlobalFilter) (string, error) {
-	valueStr := fmt.Sprintf("%v", f.Value)
-	switch f.Operator {
-	case "regex":
-		return fmt.Sprintf("regexp_matches(c.infobox, '%s')", escapeRegex(valueStr)), nil
-	case "contains":
-		return fmt.Sprintf("c.infobox LIKE '%%%s%%'", escapeLike(valueStr)), nil
-	default:
-		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
-	}
+	return b.filterForNestedContext(f, idx, "c", b.tc.nestedFieldMap, b.tc.nestedTypeCol)
 }
 
 // episodeFilter handles episode-based filtering.
@@ -2075,41 +1371,29 @@ func (b *SQLBuilder) buildSelect() []string {
 		cols = b.cfg.Output.Columns
 	}
 	a := b.mainAlias
+	tc := b.tc
+
 	if len(cols) == 0 {
-		switch b.target {
-		case "person":
-			return []string{a + ".person_id as id", a + ".name", a + ".career"}
-		case "character":
-			return []string{a + ".character_id as id", a + ".name", a + ".role"}
-		case "episode":
-			return []string{a + ".id", a + ".name", a + ".name_cn", a + ".type", a + ".airdate", a + ".duration", a + ".sort"}
-		default:
-			return []string{a + ".id", a + ".name", a + ".name_cn", a + ".type", a + ".score", a + ".date"}
+		result := make([]string, len(tc.defaultCols))
+		for i, c := range tc.defaultCols {
+			result[i] = a + "." + c
 		}
+		return result
 	}
 
 	var result []string
 	for _, col := range cols {
 		switch {
 		case col == "id" || col == "ID":
-			switch b.target {
-			case "person":
-				result = append(result, a+".person_id as id")
-			case "character":
-				result = append(result, a+".character_id as id")
-			default:
-				result = append(result, a+".id")
-			}
+			result = append(result, a+"."+tc.idColumn+" as id")
 		case col == "subject_id" && b.target == "episode":
 			result = append(result, a+".subject_id")
-		case isDirectField(col):
+		case col == "type" && tc.typeColumn != "type":
+			result = append(result, a+"."+quoteIdent(tc.typeColumn)+" AS type")
+		case b.isDirectField(col):
 			result = append(result, a+"."+quoteIdent(col))
-		case col == "name_cn":
-			if b.target == "person" {
-				result = append(result, a+".name AS name_cn")
-			} else {
-				result = append(result, a+".name_cn AS name_cn")
-			}
+		case col == "name_cn" && b.target == "person":
+			result = append(result, a+".name AS name_cn")
 		default:
 			expr := b.infoboxExtractExpr(col, a)
 			result = append(result, fmt.Sprintf("%s AS \"%s\"", expr, col))
@@ -2138,7 +1422,7 @@ func (b *SQLBuilder) buildOrderBy() string {
 		}
 
 		var expr string
-		if isDirectField(s.Field) {
+		if b.isDirectField(s.Field) {
 			expr = a + "." + quoteIdent(s.Field)
 		} else {
 			expr = b.infoboxExtractExpr(s.Field, a)
@@ -2213,23 +1497,14 @@ func (b *SQLBuilder) getPositionIDsForName(name string) []int {
 }
 
 // isDirectField returns true if the field is a direct JSON column (not infobox).
-func isDirectField(field string) bool {
-	switch field {
-	case "id", "type", "name", "name_cn", "platform", "summary",
-		"nsfw", "score", "rank", "date", "series", "infobox":
-		return true
-	// Person direct fields
-	case "person_id", "person_type", "career":
-		return true
-	// Character direct fields
-	case "character_id", "role", "comments", "collects":
-		return true
-	// Episode direct fields
-	case "subject_id", "airdate", "duration", "sort", "disc", "desc":
-		return true
-	default:
-		return false
+// Uses the target config's directFields map when available, falls back to checking all fields.
+func (b *SQLBuilder) isDirectField(field string) bool {
+	if b.tc != nil {
+		return b.tc.directFields[field]
 	}
+	// Fallback for when tc is not set (should not happen in practice)
+	return subjectDirectFields[field] || personDirectFields[field] ||
+		characterDirectFields[field] || episodeDirectFields[field]
 }
 
 // Helper functions
@@ -2242,6 +1517,24 @@ func quoteIdent(s string) string {
 		return `"` + s + `"`
 	}
 	return s
+}
+
+// toSQLOp converts a config operator (gt, gte, lt, lte, eq) to a SQL operator.
+func toSQLOp(op string) string {
+	switch op {
+	case "gt":
+		return ">"
+	case "gte":
+		return ">="
+	case "lt":
+		return "<"
+	case "lte":
+		return "<="
+	case "eq":
+		return "="
+	default:
+		return ">="
+	}
 }
 
 func intListToSQL(ids []int) string {

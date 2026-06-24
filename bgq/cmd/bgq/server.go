@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/inchei/bangumi-query/internal/config"
-	"github.com/inchei/bangumi-query/internal/model"
 	"github.com/inchei/bangumi-query/internal/query"
 	srv "github.com/inchei/bangumi-query/internal/server"
 )
@@ -36,13 +35,6 @@ type apiError struct {
 	Message string `json:"message,omitempty"`
 }
 
-type apiSchemaFields struct {
-	DirectFields  []string            `json:"direct_fields"`
-	SubjectTypes  map[string]int      `json:"subject_types"`
-	RelationTypes map[string][]string `json:"relation_types"`  // type -> relation names
-	StaffPosition map[string][]string `json:"staff_positions"` // type -> position names
-}
-
 func startServer(dataDir, listenAddr string) {
 	// Resolve dataDir to absolute path
 	absDataDir := dataDir
@@ -63,8 +55,6 @@ func startServer(dataDir, listenAddr string) {
 
 	// API endpoints
 	mux.HandleFunc("/api/query", s.handleQuery)
-	mux.HandleFunc("/api/schema/fields", s.handleSchemaFields)
-	mux.HandleFunc("/api/schema/options", s.handleSchemaOptions)
 	mux.HandleFunc("/api/health", s.handleHealth)
 	mux.HandleFunc("/api/debug", s.handleDebug)
 
@@ -207,48 +197,6 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, response)
 }
 
-func (s *server) handleSchemaOptions(w http.ResponseWriter, r *http.Request) {
-	typeCode := 0
-	if t := r.URL.Query().Get("type"); t != "" {
-		_, _ = fmt.Sscanf(t, "%d", &typeCode)
-	}
-
-	resp := map[string]interface{}{
-		"platforms":             model.PlatformsByType(typeCode),
-		"relations":             model.RelationsByType(typeCode),
-		"person_relations":      model.PersonRelationNames(),
-		"character_relations":   model.CharacterRelationNames(),
-		"character_assoc_types": model.CharacterAssociationTypeNames(),
-		"person_char_types":     model.PersonCharacterTypeNames(),
-		"positions":             model.PositionsByType(typeCode),
-		"meta_tags":             model.MetaTagsForType(typeCode),
-		"types":                 model.TypeCNToNum,
-		"type_names":            model.TypeNumToCN,
-	}
-	writeJSON(w, http.StatusOK, resp)
-}
-
-func (s *server) handleSchemaFields(w http.ResponseWriter, r *http.Request) {
-	directFields := []string{
-		"id", "type", "name", "name_cn", "platform", "summary",
-		"nsfw", "score", "rank", "date", "series",
-	}
-
-	typeMap := make(map[string]int)
-	for cn, num := range model.TypeCNToNum {
-		typeMap[cn] = num
-	}
-
-	resp := apiSchemaFields{
-		DirectFields:  directFields,
-		SubjectTypes:  typeMap,
-		RelationTypes: getRelationTypesBySubjectType(),
-		StaffPosition: getStaffPositionsBySubjectType(),
-	}
-
-	writeJSON(w, http.StatusOK, resp)
-}
-
 func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 }
@@ -316,32 +264,6 @@ func (s *server) listDataFiles() []map[string]string {
 		}
 	}
 	return files
-}
-
-func getRelationTypesBySubjectType() map[string][]string {
-	result := make(map[string][]string)
-	for typeCode, relMap := range model.RelationTypes {
-		typeName := model.TypeNumToCN[typeCode]
-		var names []string
-		for _, name := range relMap {
-			names = append(names, name)
-		}
-		result[typeName] = names
-	}
-	return result
-}
-
-func getStaffPositionsBySubjectType() map[string][]string {
-	result := make(map[string][]string)
-	for typeCode, posMap := range model.StaffPositions {
-		typeName := model.TypeNumToCN[typeCode]
-		var names []string
-		for _, name := range posMap {
-			names = append(names, name)
-		}
-		result[typeName] = names
-	}
-	return result
 }
 
 // writeJSON writes a JSON response.
