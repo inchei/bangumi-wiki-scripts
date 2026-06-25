@@ -242,7 +242,6 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-
 func getCWD() string {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -259,7 +258,7 @@ func (s *server) handleStatic(w http.ResponseWriter, r *http.Request) {
 	// Try to open the requested file
 	name := strings.TrimPrefix(r.URL.Path, "/")
 	if f, err := staticFS.Open(name); err == nil {
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 		if info, _ := f.Stat(); info != nil && !info.IsDir() {
 			fileServer.ServeHTTP(w, r)
 			return
