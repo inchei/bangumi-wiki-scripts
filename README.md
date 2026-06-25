@@ -54,20 +54,18 @@ CSV 中的 `id` 列对应条目 ID，其他列名对应要更新的字段（如 
 
 ### 自动筛选查询
 
-CI 使用 bgq 执行 `filters/*.yaml` 中的查询，结果以 CSV 上传到 Release：
+CI 使用 bgq 执行 `filters/*.yaml` 中的查询，结果以 CSV 上传到 [data-latest Release](https://github.com/inchei/bangumi-wiki-scripts/releases/tag/data-latest)：
 
-| 筛选文件 | 说明 |
-|----------|------|
-| [小说系列关联漫画单行本](filters/小说系列关联漫画单行本.yaml) | 小说平台的系列关联了漫画平台的单行本 |
-| [漫画系列关联小说单行本](filters/漫画系列关联小说单行本.yaml) | 漫画平台的系列关联了小说平台的单行本 |
-| [标题有序号而标记为系列](filters/标题有序号而标记为系列.yaml) | 标题含序号如 `(1)` 却被标记为系列 |
-| [非系列关联单行本](filters/非系列关联单行本.yaml) | 非系列条目却关联了单行本 |
-| [写了ISBN的系列](filters/写了ISBN的系列.yaml) | 系列条目不应有 ISBN，有则说明填写错误 |
-| [连载结束无已完结标签](filters/连载结束无已完结标签.yaml) | 已填写连载结束但缺少已完结标签 |
-| [有序号的单行本未关联系列](filters/有序号的单行本未关联系列.yaml) | 标题含序号的单行本但未关联系列 |
-| [小说缺小说标签](filters/小说缺小说标签.yaml) | platform 为小说但没有"小说"标签 |
-| [漫画缺漫画标签](filters/漫画缺漫画标签.yaml) | platform 为漫画但没有"漫画"标签 |
-| [未填写作者](filters/未填写作者.yaml) | 有原作但 infobox 中"作者"字段为空 |
+- [小说系列关联漫画单行本](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/novel-series-manga-volumes.csv)
+- [漫画系列关联小说单行本](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/manga-series-novel-volumes.csv)
+- [标题有序号而标记为系列](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/numbered-title-marked-series.csv)
+- [非系列关联单行本](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/non-series-linked-volumes.csv)
+- [写了ISBN的系列](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/series-with-isbn.csv)
+- [连载结束无已完结标签](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/serialization-ended-no-complete-tag.csv)
+- [有序号的单行本未关联系列](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/numbered-volumes-no-series.csv)
+- [小说缺小说标签](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/novel-missing-novel-tag.csv)
+- [漫画缺漫画标签](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/manga-missing-manga-tag.csv)
+- [未填写作者](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/missing-author.csv)
 
 输出的 CSV 含 `id` 列，可直接上传到 [wikiBatch](wikiBatch/README.md) 批量审核编辑。
 
