@@ -181,16 +181,16 @@ YAML filter configs executed in CI. Each produces a CSV with an `id` column, usa
 
 | Filter | Description |
 |--------|-------------|
-| 小说系列关联漫画单行本 | Novel series with manga-format volumes |
-| 漫画系列关联小说单行本 | Manga series with novel-format volumes |
-| 标题有序号而标记为系列 | Numbered titles incorrectly marked as series |
-| 非系列关联单行本 | Non-series subjects linked to volumes |
-| 写了ISBN的系列 | Series with ISBN (9784-prefix only) |
-| 连载结束无已完结标签 | Has serialization end date but missing 已完结 meta tag |
-| 有序号的单行本未关联系列 | Numbered volumes not linked to a series |
-| 小说缺小说标签 | Novel platform without 小说 meta tag (no series relation) |
-| 漫画缺漫画标签 | Manga platform without 漫画 meta tag (no series relation) |
-| 未填写作者 | Has 原作 staff but infobox 作者 field empty |
+| novel-series-manga-volumes | Novel series with manga-format volumes |
+| manga-series-novel-volumes | Manga series with novel-format volumes |
+| numbered-title-marked-series | Numbered titles incorrectly marked as series |
+| non-series-linked-volumes | Non-series subjects linked to volumes |
+| series-with-isbn | Series with ISBN (9784-prefix only) |
+| serialization-ended-no-complete-tag | Has serialization end date but missing 已完结 meta tag |
+| numbered-volumes-no-series | Numbered volumes not linked to a series |
+| novel-missing-novel-tag | Novel platform without 小说 meta tag (no series relation) |
+| manga-missing-manga-tag | Manga platform without 漫画 meta tag (no series relation) |
+| missing-author | Has 作者 staff but infobox 作者 field empty |
 
 Run all filters: see `README.md` for the batch command.
 
