@@ -49,12 +49,8 @@ CSV 中的 `id` 列对应条目 ID，其他列名对应要更新的字段（如 
 
 ## GitHub Actions
 
-每周二自动运行（Archive 更新后约半小时）：
-
-- 重复 ISBN 检查 → [duplicate_check_results.txt](duplicate_check_results.txt)
-- 人物别名生成 → Release 中的 `person_alias.json.gz`
-- bgq 筛选查询 → Release 中的 `results/*.csv`（见下方）
-- bgq 跨平台二进制构建 → Release 中各平台压缩包
+- **数据更新**（每周二自动运行）→ `data-latest` Release：重复 ISBN 检查、人物别名、筛选结果
+- **二进制构建**（bgq 代码变更时触发）→ `latest` Release：跨平台压缩包
 
 ### 自动筛选查询
 

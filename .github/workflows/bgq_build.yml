@@ -1,0 +1,148 @@
+name: bgq 构建发布
+
+on:
+  push:
+    paths:
+      - 'bgq/**'
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  DUCKDB_VERSION: "1.2.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+            duckdb_suffix: linux-amd64
+            archive_suffix: tar.gz
+          - goos: darwin
+            goarch: arm64
+            duckdb_suffix: osx-universal
+            archive_suffix: tar.gz
+          - goos: darwin
+            goarch: amd64
+            duckdb_suffix: osx-universal
+            archive_suffix: tar.gz
+          - goos: windows
+            goarch: amd64
+            duckdb_suffix: windows-amd64
+            archive_suffix: zip
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 构建前端
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          cd bgq/frontend
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm build
+          mkdir -p ../internal/server/dist
+          cp -r dist/* ../internal/server/dist/
+
+      - name: 设置 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: bgq/go.mod
+          cache-dependency-path: bgq/go.sum
+
+      - name: 构建 bgq
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          cd bgq
+          EXT=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            EXT=".exe"
+          fi
+          go build -o "bgq-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" ./cmd/bgq/
+
+      - name: 下载 DuckDB
+        run: |
+          curl -fsSL "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-${{ matrix.duckdb_suffix }}.zip" -o /tmp/duckdb.zip
+          python3 -c "import zipfile; zipfile.ZipFile('/tmp/duckdb.zip').extractall('/tmp/duckdb-extract/')"
+          ls -la /tmp/duckdb-extract/
+
+      - name: 打包
+        run: |
+          PKG_NAME="bgq-${{ matrix.goos }}-${{ matrix.goarch }}"
+          mkdir -p "/tmp/${PKG_NAME}"
+
+          EXT=""
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            EXT=".exe"
+          fi
+          cp "bgq/${PKG_NAME}${EXT}" "/tmp/${PKG_NAME}/"
+
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            cp /tmp/duckdb-extract/duckdb.exe "/tmp/${PKG_NAME}/"
+          else
+            cp /tmp/duckdb-extract/duckdb "/tmp/${PKG_NAME}/"
+            chmod +x "/tmp/${PKG_NAME}/duckdb"
+          fi
+
+          cp bgq/README.md "/tmp/${PKG_NAME}/"
+
+          cd /tmp
+          if [ "${{ matrix.archive_suffix }}" = "zip" ]; then
+            zip -r "${GITHUB_WORKSPACE}/${PKG_NAME}.zip" "${PKG_NAME}/"
+          else
+            tar czf "${GITHUB_WORKSPACE}/${PKG_NAME}.tar.gz" "${PKG_NAME}/"
+          fi
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: bgq-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            bgq-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz
+            bgq-${{ matrix.goos }}-${{ matrix.goarch }}.zip
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: 下载所有产物
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          pattern: bgq-*
+          merge-multiple: true
+
+      - name: 清理旧 Release 资产
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release delete latest --yes --cleanup-tag 2>/dev/null || true
+
+      - name: 发布 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: bgq Release
+          body: |
+            | 平台 | 文件 |
+            |------|------|
+            | Linux x86_64 | `bgq-linux-amd64.tar.gz` |
+            | macOS ARM | `bgq-darwin-arm64.tar.gz` |
+            | macOS Intel | `bgq-darwin-amd64.tar.gz` |
+            | Windows x86_64 | `bgq-windows-amd64.zip` |
+          files: |
+            release-assets/*.tar.gz
+            release-assets/*.zip
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
