@@ -10,9 +10,6 @@ frontend/dist/
 internal/server/dist/
 
 # Binaries
-bgq
-bin/bgq
-bin/duckdb
-bin/duckdb.zip
+bin/
 
 .env
