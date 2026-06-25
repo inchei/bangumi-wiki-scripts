@@ -218,6 +218,7 @@ func cmdInteractive(args []string) {
 func cmdServe(args []string) {
 	dataDir := "bangumi_archive"
 	listen := ":8080"
+	dbPath := ""
 	dev := false
 
 	for i := 0; i < len(args); i++ {
@@ -230,6 +231,11 @@ func cmdServe(args []string) {
 		case "--listen", "-l":
 			if i+1 < len(args) {
 				listen = args[i+1]
+				i++
+			}
+		case "--db":
+			if i+1 < len(args) {
+				dbPath = args[i+1]
 				i++
 			}
 		case "--dev":
@@ -248,10 +254,7 @@ func cmdServe(args []string) {
 		return
 	}
 
-	fmt.Printf("启动Web服务器 http://localhost%s ...\n", listen)
-	fmt.Printf("数据目录: %s\n", dataDir)
-
-	startServer(dataDir, listen)
+	startServer(dataDir, listen, dbPath)
 }
 
 func cmdIngest(args []string) {
@@ -381,11 +384,20 @@ func runIngest(dataDir, dbPath string) error {
 CREATE TABLE IF NOT EXISTS subjects AS
   SELECT * FROM read_json_auto('%s/subject.jsonlines', format='newline_delimited');
 
+CREATE TABLE IF NOT EXISTS persons AS
+  SELECT * FROM read_json_auto('%s/person.jsonlines', format='newline_delimited');
+
+CREATE TABLE IF NOT EXISTS characters AS
+  SELECT * FROM read_json_auto('%s/character.jsonlines', format='newline_delimited');
+
 CREATE TABLE IF NOT EXISTS subject_relations AS
   SELECT * FROM read_json_auto('%s/subject-relations.jsonlines', format='newline_delimited');
 
 CREATE TABLE IF NOT EXISTS subject_persons AS
   SELECT * FROM read_json_auto('%s/subject-persons.jsonlines', format='newline_delimited');
+
+CREATE TABLE IF NOT EXISTS subject_characters AS
+  SELECT * FROM read_json_auto('%s/subject-characters.jsonlines', format='newline_delimited');
 
 CREATE TABLE IF NOT EXISTS episodes AS
   SELECT * FROM read_json_auto('%s/episode.jsonlines', format='newline_delimited');
@@ -409,7 +421,7 @@ CREATE INDEX IF NOT EXISTS idx_person_relations_type ON person_relations(relatio
 CREATE INDEX IF NOT EXISTS idx_person_characters_person ON person_characters(person_id);
 CREATE INDEX IF NOT EXISTS idx_person_characters_character ON person_characters(character_id);
 CREATE INDEX IF NOT EXISTS idx_person_characters_subject ON person_characters(subject_id);
-`, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir)
+`, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir)
 
 	return query.ExecuteDuckDBSQL(ctx, dbPath, sql)
 }

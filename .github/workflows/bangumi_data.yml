@@ -1,0 +1,153 @@
+name: Bangumi 数据更新
+
+on:
+  schedule:
+    - cron: '30 21 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  REPORT_PAGES: >-
+    https://bgm.tv/group/topic/454229,
+    https://bgm.tv/group/topic/461956
+  AUTO_MODE: "true"
+  ALIAS_JSON: "person_alias.json"
+  ALIAS_GZ: "person_alias.json.gz"
+  DUCKDB_VERSION: "1.2.0"
+
+jobs:
+  check_and_filter:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 安装 Python 依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests tqdm beautifulsoup4 bgm-tv-wiki
+
+      - name: 构建前端
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: |
+          cd bgq/frontend
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm build
+          mkdir -p ../internal/server/dist
+          cp -r dist/* ../internal/server/dist/
+
+      - name: 设置 Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: bgq/go.mod
+          cache-dependency-path: bgq/go.sum
+
+      - name: 下载 DuckDB
+        run: |
+          curl -fsSL "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-linux-amd64.zip" -o /tmp/duckdb.zip
+          python3 -c "import zipfile; zipfile.ZipFile('/tmp/duckdb.zip').extractall('bgq/bin/')"
+          chmod +x bgq/bin/duckdb
+
+      - name: 构建 bgq
+        run: |
+          cd bgq
+          go build -o bin/bgq ./cmd/bgq/
+
+      - name: 下载 Bangumi 归档
+        run: python download_bangumi_archive.py
+
+      - name: 检查重复条目
+        run: python find_duplicate_isbns.py
+
+      - name: 生成别名 JSON
+        run: python person_alias.py
+
+      - name: gzip 压缩
+        run: gzip -9 -c ${{ env.ALIAS_JSON }} > ${{ env.ALIAS_GZ }}
+
+      - name: 执行筛选查询
+        env:
+          DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
+        run: |
+          mkdir -p results
+          DATA_DIR="${GITHUB_WORKSPACE}/bangumi_archive"
+          BIN="${GITHUB_WORKSPACE}/bgq/bin/bgq"
+
+          success=0
+          fail=0
+
+          for yaml_file in filters/*.yaml; do
+            if [ ! -f "$yaml_file" ]; then
+              echo "⚠ 没有找到 YAML 配置文件"
+              continue
+            fi
+
+            name=$(basename "$yaml_file" .yaml)
+            echo ""
+            echo "========================================"
+            echo "  处理: $name"
+            echo "========================================"
+
+            if "${BIN}" query \
+                --config "$yaml_file" \
+                --data-dir "${DATA_DIR}" \
+                --format csv \
+                --output "results/${name}.csv" \
+                2>&1; then
+              lines=$(wc -l < "results/${name}.csv" 2>/dev/null || echo 0)
+              echo "✅ ${name} 完成 (${lines} 行)"
+              success=$((success + 1))
+            else
+              echo "❌ ${name} 失败"
+              fail=$((fail + 1))
+            fi
+          done
+
+          echo ""
+          echo "  筛选完成: ${success} 成功, ${fail} 失败"
+
+      - name: 更新 data-latest Tag
+        run: |
+          git fetch --tags
+          git tag -d data-latest 2>/dev/null || true
+          git push origin :refs/tags/data-latest 2>/dev/null || true
+          git tag data-latest
+          git push origin data-latest
+
+      - name: 清理旧 Release 资产
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 删除旧 release（保留 tag 由上面步骤管理）
+          gh release delete data-latest --yes --cleanup-tag 2>/dev/null || true
+
+      - name: 发布数据 Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: data-latest
+          name: Bangumi 数据更新
+          body: |
+            每周自动更新的人物别名和筛选结果。
+
+            - `person_alias.json.gz` — 人物别名数据
+            - `duplicate_check_results.txt` — 重复 ISBN 检查结果
+            - `results/*.csv` — 本周筛选结果
+          files: |
+            ${{ env.ALIAS_GZ }}
+            duplicate_check_results.txt
+            results/*.csv
+          draft: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

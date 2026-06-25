@@ -1,6 +1,6 @@
 package server
 
-import _ "embed"
+import "embed"
 
-//go:embed static/app.html
-var WebUIHTML string
+//go:embed dist/*
+var StaticFS embed.FS
