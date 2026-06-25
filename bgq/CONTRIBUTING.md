@@ -64,7 +64,7 @@ pnpm format             # Prettier 格式化
 pnpm format:check       # 检查格式
 ```
 
-构建产物嵌入到 Go 二进制中（`internal/server/webui.go`），`go build` 时自动包含。
+构建产物（`frontend/dist/`）通过 `cp -r frontend/dist internal/server/dist` 复制后，由 `//go:embed dist/*` 嵌入 Go 二进制，`go build` 时自动包含。
 
 ## Pre-commit Hook
 
@@ -114,7 +114,8 @@ bgq/
 │   │   └── testdata/             # 快照文件
 │   │       └── all_combinations.sql
 │   └── server/           # 内嵌 Web UI（SPA）
-│       └── webui.go
+│       ├── webui.go          # //go:embed dist/*
+│       └── dist/             # 前端构建产物（从 frontend/dist 复制）
 ├── frontend/
 │   ├── src/
 │   │   ├── main.js
@@ -163,26 +164,3 @@ bgq/
   "yaml": "filters:\n  - type: { value: 2 }\n  - field: { field: score, operator: gt, value: 8.5 }"
 }
 ```
-
-## 数据导入（可选）
-
-将 JSONLines 数据导入 DuckDB 持久化数据库，后续查询更快：
-
-```bash
-./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
-```
-
-导入后的查询使用 `database` 字段替代 `data_dir`：
-
-```yaml
-database: "./bangumi.db"
-filters:
-  - field: { field: "出版社", operator: "contains", value: "角川" }
-```
-
-导入会创建以下表并建立索引：
-- `subjects` — 条目主表
-- `subject_relations` — 条目关联
-- `subject_persons` — 人物-条目关系
-- `person_characters` — 人物-角色-条目三向关联
-- `episodes` — 剧集

@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -17,6 +18,7 @@ import (
 
 type server struct {
 	dataDir string
+	dbPath  string
 }
 
 type apiQueryRequest struct {
@@ -35,7 +37,7 @@ type apiError struct {
 	Message string `json:"message,omitempty"`
 }
 
-func startServer(dataDir, listenAddr string) {
+func startServer(dataDir, listenAddr, dbPath string) {
 	// Resolve dataDir to absolute path
 	absDataDir := dataDir
 	if !strings.HasPrefix(dataDir, "/") {
@@ -49,6 +51,7 @@ func startServer(dataDir, listenAddr string) {
 
 	s := &server{
 		dataDir: dataDir,
+		dbPath:  dbPath,
 	}
 
 	mux := http.NewServeMux()
@@ -67,7 +70,11 @@ func startServer(dataDir, listenAddr string) {
 	fmt.Printf("  ────────────────────\n")
 	fmt.Printf("  URL:      http://localhost%s\n", listenAddr)
 	fmt.Printf("  DuckDB:   %s\n", query.GetDuckDBPath())
-	fmt.Printf("  DataDir:  %s\n", absDataDir)
+	if dbPath != "" {
+		fmt.Printf("  Database: %s\n", dbPath)
+	} else {
+		fmt.Printf("  DataDir:  %s\n", absDataDir)
+	}
 	fmt.Printf("\n  按 Ctrl+C 停止服务器\n\n")
 
 	server := &http.Server{
@@ -159,6 +166,11 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 		cfg.Limit = 1000
 	}
 
+	// Use database if configured
+	if s.dbPath != "" && cfg.Database == "" {
+		cfg.Database = s.dbPath
+	}
+
 	if len(req.Columns) > 0 {
 		cfg.Output.Columns = req.Columns
 	}
@@ -168,7 +180,7 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 
 	// Execute query
 	ctx := r.Context()
-	engine := query.NewEngine("", s.dataDir)
+	engine := query.NewEngine(s.dbPath, s.dataDir)
 	result, err := engine.Execute(ctx, cfg)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, apiError{Error: "查询执行失败: " + err.Error()})
@@ -216,6 +228,7 @@ func (s *server) handleDebug(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]interface{}{
 		"duckdb_path":     query.GetDuckDBPath(),
 		"duckdb_exists":   fileExists(query.GetDuckDBPath()),
+		"db_path":         s.dbPath,
 		"data_dir":        absDataDir,
 		"data_dir_exists": dataDirExists,
 		"data_files":      files,
@@ -229,6 +242,7 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
+
 func getCWD() string {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -238,9 +252,22 @@ func getCWD() string {
 }
 
 func (s *server) handleStatic(w http.ResponseWriter, r *http.Request) {
-	// Serve the embedded SPA
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	_, _ = w.Write([]byte(srv.WebUIHTML))
+	// Serve embedded static files, fallback to index.html for SPA
+	staticFS, _ := fs.Sub(srv.StaticFS, "dist")
+	fileServer := http.FileServer(http.FS(staticFS))
+
+	// Try to open the requested file
+	name := strings.TrimPrefix(r.URL.Path, "/")
+	if f, err := staticFS.Open(name); err == nil {
+		defer f.Close()
+		if info, _ := f.Stat(); info != nil && !info.IsDir() {
+			fileServer.ServeHTTP(w, r)
+			return
+		}
+	}
+	// Not a real file → serve index.html (SPA fallback)
+	r.URL.Path = "/"
+	fileServer.ServeHTTP(w, r)
 }
 
 func (s *server) listDataFiles() []map[string]string {

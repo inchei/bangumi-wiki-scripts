@@ -20,7 +20,8 @@ bgq CSV output feeds directly into wikiBatch for batch editing.
 ```bash
 cd bgq
 
-go build -o bin/bgq ./cmd/bgq/            # Build
+# Build (requires frontend dist: cd frontend && pnpm build, then cp -r frontend/dist internal/server/dist)
+go build -o bin/bgq ./cmd/bgq/
 go test ./internal/query/ -v               # Run tests (~1s, snapshot-based, no DuckDB needed)
 go test ./internal/query/ -update          # Regenerate golden file after intentional SQL changes
 go test ./internal/query/ -execute         # Also execute SQL against DuckDB (slower, needs DuckDB)
@@ -95,7 +96,8 @@ bgq/
 │   │   ├── builder_target.go  # Target-specific SQL (subject/person/character/episode)
 │   │   └── engine.go         # DuckDB subprocess wrapper
 │   └── server/           # Embedded SPA
-│       └── webui.go          # HTML/CSS/JS as Go string constant
+│       ├── webui.go          # //go:embed dist/* (static files)
+│       └── dist/             # Frontend build output (copied from frontend/dist)
 ├── frontend/             # Svelte SPA source
 │   ├── src/
 │   │   ├── main.js           # Entry point
@@ -146,7 +148,7 @@ Four query targets supported via `config.Config.Target`:
 - **Infobox fields are wiki-text.** `|key: value` template string, extracted via `regexp_extract()`.
 - **Chinese field names as primary keys.** Relations and positions referenced by Chinese names (e.g., `单行本`, `原作`), resolved to numeric IDs via maps in `internal/model/`.
 - **Schema data auto-generated to frontend.** `go generate` in `internal/model/` produces `schema-data.js` (platforms, relations, positions, meta tags) from bangumi/common YAML + archive data. Frontend imports these constants directly — no runtime API calls for schema.
-- **Frontend embedded in Go binary.** `pnpm build` outputs to `dist/`, which is embedded as a string constant in `internal/server/webui.go`.
+- **Frontend embedded in Go binary.** `pnpm build` outputs to `frontend/dist/`, which is copied to `internal/server/dist/` and embedded via `//go:embed dist/*`.
 
 ### Filter Types (exactly-one union pattern)
 
@@ -171,7 +173,7 @@ Sub-filter modes: `any` (exists), `all` (universal), `none` (negation), `count` 
 - `POST /api/query` — accepts `filters` (JSON), `yaml` (string), or `conditions` (legacy string array)
 - `GET /api/health` — health check
 - `GET /api/debug` — DuckDB/data diagnostics
-- `/` — embedded SPA; `/static/` — static assets
+- `/` — embedded SPA; static files (images, CSS) served from embedded `dist/`
 
 ## Filters (`filters/`)
 
@@ -192,12 +194,12 @@ YAML filter configs executed in CI. Each produces a CSV with an `id` column, usa
 
 Run all filters: see `README.md` for the batch command.
 
-## CI (`.github/workflows/bangumi_duplicate_check.yml`)
+## CI
 
-Weekly Tuesday cron, 3 jobs:
-1. **check_and_filter** — download archive, duplicate ISBN check, person alias, run filters, commit results, create tag
-2. **build_binaries** — cross-compile bgq for linux/amd64, darwin/arm64, darwin/amd64, windows/amd64 + bundle DuckDB CLI
-3. **release** — collect artifacts, publish GitHub Release with binaries + alias + CSV results
+Two separate workflows:
+
+1. **`bangumi_data.yml`** — Weekly Tuesday cron. Downloads archive, runs duplicate ISBN check, generates person alias, executes filters. Uploads results to `data-latest` Release.
+2. **`bgq_build.yml`** — Triggered on push to `bgq/**`. Cross-compiles bgq for linux/amd64, darwin/arm64, darwin/amd64, windows/amd64 + bundles DuckDB CLI. Publishes to `latest` Release.
 
 Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
 
@@ -213,7 +215,7 @@ Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
 - `bgq/cmd/bgq/main.go` — CLI dispatch + ingest logic
 - `bgq/cmd/bgq/interactive.go` — Interactive REPL (shared parser with web API)
 - `bgq/cmd/bgq/server.go` — HTTP server + API handlers
-- `bgq/internal/server/webui.go` — Embedded SPA HTML (auto-generated from frontend build)
+- `bgq/internal/server/webui.go` — Embedded static files via `//go:embed dist/*`
 - `bgq/frontend/src/schema-data.js` — Auto-generated schema constants (platforms, relations, positions, meta tags)
 - `bgq/frontend/src/stores.js` — Frontend global state (filters, conditions, logic tree)
 - `wikiBatch/` — Batch wiki editor userscript (separate project, see its own README)
@@ -222,9 +224,8 @@ Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
 
 ```bash
 cd bgq
-go build -o bin/bgq ./cmd/bgq/    # Required: Dockerfile copies pre-built binary
 docker build -t bgq .
 docker run -p 7860:7860 -v bgq-data:/data bgq
 ```
 
-Entrypoint auto-downloads archive data on first run. `DATA_DIR` env var defaults to `/data/bangumi_archive`.
+Dockerfile builds frontend and Go binary in separate stages. Entrypoint auto-downloads archive data on first run. `DATA_DIR` env var defaults to `/data/bangumi_archive`.

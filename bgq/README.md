@@ -23,9 +23,9 @@ cd bgq
 ```bash
 cd bgq
 
-# 编译前端（需要 pnpm）
+# 编译前端（产物嵌入 Go 二进制）
 cd frontend && pnpm install && pnpm build && cd ..
-cp frontend/dist/index.html internal/server/static/app.html
+cp -r frontend/dist internal/server/dist
 
 # 编译 Go 二进制
 go build -o bin/bgq ./cmd/bgq/
@@ -35,7 +35,7 @@ curl -L https://github.com/duckdb/duckdb/releases/download/v1.2.0/duckdb_cli-lin
 unzip duckdb.zip -d bin/
 ```
 
-## 部署
+## 部署 Web 界面
 
 ```bash
 cd bgq
@@ -43,7 +43,7 @@ cp .env.example .env   # 按需编辑
 docker-compose up -d --build
 ```
 
-访问 `http://localhost:7860`。首次运行自动下载数据到卷中，后续数据更新可参考上一节。
+访问 `http://localhost:7860`。首次运行自动下载数据到卷中，后续数据更新可参考准备数据一节。
 
 ## 使用
 
@@ -78,6 +78,35 @@ YAML 格式说明见 [YAML 筛选条件参考](docs/yaml-guide.md)。
 ```
 
 使用说明见 [交互模式说明](docs/interactive-guide.md)。
+
+### 使用数据库加速查询
+
+将 JSONLines 导入 DuckDB 数据库，建立索引，加速重复查询：
+
+```bash
+./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
+
+# 定期更新数据（cron）
+0 3 * * 1 /path/to/download-archive.sh /path/to/data && \
+  /path/to/bgq ingest --data-dir /path/to/data --db /path/to/data/bangumi.db.tmp && \
+  mv /path/to/data/bangumi.db.tmp /path/to/data/bangumi.db
+```
+
+命令行查询时在配置文件中用 `database` 替代 `data_dir`：
+
+```yaml
+database: "./bangumi.db"
+filters:
+  - field: { field: "出版社", operator: "contains", value: "角川" }
+```
+
+Web 界面使用 `--db` 参数：
+
+```bash
+./bin/bgq serve --data-dir ./bangumi_archive --db ./bangumi.db
+```
+
+Docker 部署在 `.env` 中设置 `DB_PATH`。
 
 ## 开发
 
