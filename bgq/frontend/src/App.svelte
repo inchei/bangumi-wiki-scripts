@@ -9,7 +9,7 @@
     faCircleHalfStroke,
     faFilm,
   } from "@fortawesome/free-solid-svg-icons";
-  import { queryTarget, clearFilters } from "./stores.js";
+  import { queryTarget, clearFilters, outputColumns } from "./stores.js";
   import FilterTree from "./components/FilterTree.svelte";
   import ResultTable from "./components/ResultTable.svelte";
   import YamlEditor from "./components/YamlEditor.svelte";
@@ -58,17 +58,13 @@
 
   function setTarget(t) {
     queryTarget.set(t);
-    if (t === "person") {
-      document.getElementById("outputColumns").value = "person_id,name,career";
-    } else if (t === "character") {
-      document.getElementById("outputColumns").value = "character_id,name,role";
-    } else if (t === "episode") {
-      document.getElementById("outputColumns").value =
-        "id,name,name_cn,type,airdate,duration,sort";
-    } else {
-      document.getElementById("outputColumns").value =
-        "id,name,name_cn,type,score";
-    }
+    const defaults = {
+      person: "person_id,name,简体中文名,",
+      character: "character_id,name,简体中文名,",
+      episode: "id,name,name_cn,",
+      subject: "id,name,name_cn,type,",
+    };
+    outputColumns.set(defaults[t] || defaults.subject);
   }
 
   onMount(async () => {

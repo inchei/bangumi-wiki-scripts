@@ -31,6 +31,7 @@ export const lastResult = writable(null);
 export const queryLoading = writable(false);
 export const sortState = writable({ col: -1, asc: true });
 export const queryTarget = writable("subject");
+export const outputColumns = writable("id,name,name_cn,type,");
 
 // Logic tree ID counter
 let _logicIdCounter = 0;

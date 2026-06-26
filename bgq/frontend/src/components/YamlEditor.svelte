@@ -3,8 +3,10 @@
     getFiltersForAPI,
     applyFiltersFromAPI,
     logicVersion,
+    outputColumns,
   } from "../stores.js";
   import { filtersToYAML, parseYAML } from "../yaml.js";
+  import { get } from "svelte/store";
 
   let yamlText = $state("");
   let error = $state("");
@@ -14,7 +16,7 @@
 
   function syncFromFilters() {
     error = "";
-    const cols = document.getElementById("outputColumns")?.value || "";
+    const cols = get(outputColumns) || "";
     const limit = parseInt(document.getElementById("resultLimit")?.value) || 0;
     try {
       yamlText = filtersToYAML(getFiltersForAPI(), cols, limit);
@@ -33,8 +35,7 @@
       const data = parseYAML(yamlText);
       if (data.filters?.length > 0) applyFiltersFromAPI(data.filters);
       if (data.output?.columns)
-        document.getElementById("outputColumns").value =
-          data.output.columns.join(",");
+        outputColumns.set(data.output.columns.join(","));
       if (data.limit) document.getElementById("resultLimit").value = data.limit;
     } catch (e) {
       alert("解析失败: " + e.message);

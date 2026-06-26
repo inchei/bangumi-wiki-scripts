@@ -147,8 +147,11 @@
       <div class="error-header">
         <div class="error-title">查询失败</div>
         <button class="btn btn-outline btn-sm" onclick={handleCopyError}
-          >{#if copiedError}<FontAwesomeIcon icon={faCheck} />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
-          {copiedError ? "复制成功" : "复制"}</button>
+          >{#if copiedError}<FontAwesomeIcon
+              icon={faCheck}
+            />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
+          {copiedError ? "复制成功" : "复制"}</button
+        >
       </div>
       <pre>{$lastResult.error}</pre>
     </div>
@@ -170,8 +173,11 @@
           ><FontAwesomeIcon icon={faDownload} /> 下载 CSV</button
         >
         <button class="btn btn-default btn-sm" onclick={handleCopyTable}
-          >{#if copiedTable}<FontAwesomeIcon icon={faCheck} />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
-          {copiedTable ? "复制成功" : "复制表格"}</button>
+          >{#if copiedTable}<FontAwesomeIcon
+              icon={faCheck}
+            />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
+          {copiedTable ? "复制成功" : "复制表格"}</button
+        >
       </span>
     </div>
     {#if res.rows.length === 0}

@@ -8,7 +8,9 @@
    *   suggestions?: string[],
    *   onchange?: (v: string) => void,
    *   placeholder?: string,
-   *   restrict?: boolean
+   *   restrict?: boolean,
+   *   multiple?: boolean,
+   *   separator?: string
    * }}
    */
   let {
@@ -17,14 +19,13 @@
     onchange = () => {},
     placeholder = "",
     restrict = false,
+    multiple = false,
+    separator = ",",
   } = $props();
 
   let inputEl;
   let aw = $state(null);
-  let lastValidValue = $state("");
-  $effect(() => {
-    lastValidValue = value;
-  });
+  let lastValidValue = $state(value);
 
   // Keep Awesomplete list in sync when suggestions prop changes
   $effect(() => {
@@ -35,29 +36,43 @@
 
   onMount(() => {
     if (!inputEl) return;
-    aw = new Awesomplete(inputEl, {
+    const opts = {
       list: suggestions,
       minChars: 0,
       maxItems: Infinity,
       autoFirst: true,
-      filter(text, input) {
-        return Awesomplete.FILTER_CONTAINS(
-          text,
-          input.match(/^\s*/)[0] + input.trim(),
-        );
-      },
-    });
+    };
+    if (multiple) {
+      const sep = separator;
+      const lastRe = new RegExp(`[^${sep}]*$`);
+      const beforeRe = new RegExp(`^.+${sep}\\s*|`);
+      opts.filter = (text, input) =>
+        Awesomplete.FILTER_CONTAINS(text, input.match(lastRe)[0]);
+      opts.item = (text, input) =>
+        Awesomplete.ITEM(text, input.match(lastRe)[0]);
+      opts.replace = (text) => {
+        inputEl.value = inputEl.value.match(beforeRe)[0] + text + sep;
+      };
+    }
+    aw = new Awesomplete(inputEl, opts);
     inputEl.addEventListener("focus", () => {
       aw.evaluate();
     });
-    inputEl.addEventListener("awesomplete-selectcomplete", (e) => {
-      lastValidValue = e.text.value;
-      onchange(e.text.value);
-    });
     inputEl.addEventListener("blur", () => {
       setTimeout(() => {
-        aw?.close();
         if (!inputEl) return;
+        if (multiple) {
+          const clean = inputEl.value
+            .split(separator)
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .join(separator);
+          const val = clean ? clean + separator : "";
+          inputEl.value = val;
+          onchange(val);
+          lastValidValue = val;
+          return;
+        }
         if (restrict) {
           const trimmed = inputEl.value.trim();
           if (trimmed && suggestions.includes(trimmed)) {
