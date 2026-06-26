@@ -1,7 +1,7 @@
 // API client — all fetch calls to the Go backend
 
-export async function runQuery(filters, columns, target, limit) {
-  const body = JSON.stringify({ target, filters, columns, limit });
+export async function runQuery(filters, columns, target, limit, sort) {
+  const body = JSON.stringify({ target, filters, columns, limit, sort });
   const r = await fetch("/api/query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },

@@ -115,76 +115,230 @@ a:hover {
   background: var(--scrollbar-hover);
 }
 
-/* ===== Awesomplete theme override ===== */
-.awesomplete {
-  position: relative !important;
-  display: inline-block !important;
+/* ===== Shared: tag-remove button ===== */
+.tag-remove {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: var(--transition);
+  background: none;
+  border: none;
+  font-family: inherit;
+  padding: 0;
 }
 
-.awesomplete > ul {
-  position: absolute !important;
-  left: 0 !important;
-  z-index: 100 !important;
-  min-width: 140px !important;
-  max-height: 200px !important;
-  overflow-y: auto !important;
-  background: var(--dropdown-bg) !important;
-  backdrop-filter: blur(10px) !important;
-  -webkit-backdrop-filter: blur(10px) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px !important;
-  box-shadow: var(--dropdown-shadow) !important;
-  list-style: none !important;
-  padding: 4px 0 !important;
-  margin: 2px 0 0 !important;
-  font-size: 12px !important;
-  transition: none !important;
-  animation: none !important;
+.tag-remove:hover {
+  color: var(--accent-hover);
 }
 
-.awesomplete > ul > li {
-  padding: 5px 10px !important;
-  cursor: pointer !important;
-  white-space: nowrap !important;
-  color: var(--text) !important;
-  background: transparent !important;
-  transition: none !important;
+/* ===== Cards ===== */
+.card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border-light);
+  padding: 20px;
 }
 
-.awesomplete > ul > li:hover {
-  background: var(--accent-light) !important;
-  color: var(--text) !important;
+.card-header {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.awesomplete > ul > li[aria-selected="true"] {
-  background: var(--accent) !important;
-  color: #fff !important;
+.card-header .dot-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
 }
 
-.awesomplete > ul > li:hover mark {
-  background: transparent !important;
-  color: var(--accent) !important;
-  font-weight: 600 !important;
+.target-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
 }
 
-.awesomplete > ul > li[aria-selected="true"] mark {
-  background: transparent !important;
-  color: #fff !important;
-  font-weight: 600 !important;
+/* ===== Form Controls ===== */
+.form-group {
+  margin-bottom: 12px;
 }
 
-.awesomplete > ul > li mark {
-  background: transparent !important;
-  color: var(--accent) !important;
-  font-weight: 600 !important;
-  padding: 0 !important;
+.form-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+  display: block;
 }
 
-.awesomplete > ul:empty {
-  display: none !important;
+.input,
+.select {
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--white);
+  transition: var(--transition);
+  outline: none;
+  width: 100%;
 }
 
-.awesomplete .visually-hidden {
-  position: absolute !important;
-  clip-path: inset(50%) !important;
+.input:focus,
+.select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
+}
+
+.input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23909399' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+}
+
+.select-sm {
+  height: 32px;
+  font-size: 12px;
+  padding: 0 8px;
+  min-width: auto;
+  width: auto;
+}
+
+/* ===== Buttons ===== */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 20px;
+  border: none;
+  border-radius: var(--radius-xs);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: var(--transition);
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--white);
+}
+
+.btn-primary:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 2px 8px rgb(240 145 153 / 30%);
+}
+
+.btn-outline {
+  background: var(--white);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+.btn-outline:hover {
+  background: var(--accent-light);
+}
+
+.btn-default {
+  background: var(--white);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-default:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.btn-sm {
+  height: 30px;
+  padding: 0 12px;
+  font-size: 12px;
+  border-radius: var(--radius-xs);
+}
+
+.btn-xs {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 11px;
+  border-radius: 4px;
+}
+
+.btn-block {
+  width: 100%;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ===== Radio Pill ===== */
+.radio-pill {
+  cursor: pointer;
+  font-size: 12px;
+  padding: 3px 10px;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  background: var(--white);
+  color: var(--text);
+  transition: var(--transition);
+  user-select: none;
+  display: inline-block;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.radio-pill:hover {
+  border-color: var(--accent);
+}
+
+.radio-pill.active {
+  background: var(--accent);
+  color: var(--white);
+  border-color: var(--accent);
+}
+
+/* ===== Condition Row ===== */
+.cond-type {
+  font-size: 13px;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.cond-row-inner {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.nested {
+  margin-left: 12px;
+  margin-top: 2px;
+}
+
+/* ===== Form Group Awesomplete ===== */
+.form-group .awesomplete {
+  display: block;
+  width: 100%;
 }
