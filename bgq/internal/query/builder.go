@@ -1408,6 +1408,11 @@ func (b *SQLBuilder) buildJoins() []string {
 	return nil
 }
 
+var dateFields = map[string]bool{
+	"date": true, "airdate": true,
+	"生日": true, "播出日期": true, "播放开始": true, "播放结束": true, "发售日": true,
+}
+
 func (b *SQLBuilder) buildOrderBy() string {
 	if len(b.cfg.Sort) == 0 {
 		return ""
@@ -1426,6 +1431,9 @@ func (b *SQLBuilder) buildOrderBy() string {
 			expr = a + "." + quoteIdent(s.Field)
 		} else {
 			expr = b.infoboxExtractExpr(s.Field, a)
+		}
+		if dateFields[s.Field] {
+			expr = normalizeDate(expr)
 		}
 		parts = append(parts, fmt.Sprintf("%s %s", expr, dir))
 	}
