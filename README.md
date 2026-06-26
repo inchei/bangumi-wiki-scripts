@@ -79,6 +79,36 @@ for f in filters/*.yaml; do
 done
 ```
 
+### 目录同步
+
+`sync_index.py` 可将 bgq 筛选结果同步到 [Bangumi 目录](https://bgm.tv/index)，支持 subject/person/character/episode 四种类型。使用 `next.bgm.tv` 私有 API。
+
+```bash
+# 管道模式（类型自动从 CSV 列名推断：person_id→person, character_id→character, id→subject）
+export BANGUMI_TOKEN=your_token
+./bgq/bin/bgq query --config index_filters/example.yaml --data-dir bangumi_archive --format csv \
+  | python sync_index.py --index 12345
+
+# 文件模式
+python sync_index.py --index 12345 --csv results/some-filter.csv
+
+# 预览（不执行）
+python sync_index.py --index 12345 --csv results/some-filter.csv --dry-run
+```
+
+**描述规则**：
+- 存在 `index_desc` 列 → 用其值作为条目描述
+- 否则 → 非 ID 列以 `列名：值` 拼接（排除 `id` 和 `*_id` 列）
+- 行序即目录排序
+
+**目录过滤器**：`index_filters/` 目录下的 YAML 需包含 `target_index` 和 `target` 字段。CI 中设置 `BANGUMI_TOKEN` secret 即可自动同步。
+
+批量同步所有目录（或用于 cron）：
+
+```bash
+BANGUMI_TOKEN=xxx ./sync_indices.sh --data-dir bangumi_archive --bgq bgq/bin/bgq
+```
+
 **尚无法用 bgq 自动检查的项目**：
 - 过于便宜/昂贵的书籍（价格币种格式不统一）
 - 发售日比连载开始还早（需跨字段比较，当前仅支持字段与常量比较）

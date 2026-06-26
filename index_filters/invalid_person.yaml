@@ -1,0 +1,36 @@
+# 光杆人物
+target_index: 100350
+target: person
+filters:
+ -
+  logic:
+   op: and
+   items:
+    -
+     staff:
+      position: ''
+      mode: none
+      conditions:
+       -
+        logic:
+         op: and
+         items: []
+    -
+     person_character:
+      type: ''
+      mode: none
+      subject_mode: any
+      conditions:
+       -
+        logic:
+         op: and
+         items: []
+      subject_conditions:
+       -
+        logic:
+         op: and
+         items: []
+output:
+ columns:
+  - person_id
+limit: 2000

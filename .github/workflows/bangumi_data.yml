@@ -118,6 +118,13 @@ jobs:
           echo ""
           echo "  筛选完成: ${success} 成功, ${fail} 失败"
 
+      - name: 同步目录
+        if: ${{ env.BANGUMI_TOKEN != '' }}
+        env:
+          BANGUMI_TOKEN: ${{ secrets.BANGUMI_TOKEN }}
+          DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
+        run: ./sync_indices.sh --data-dir bangumi_archive --bgq bgq/bin/bgq
+
       - name: 更新 data-latest Tag
         run: |
           git fetch --tags
