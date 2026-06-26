@@ -6,6 +6,7 @@
     outputColumns,
     sortRules,
     resultLimit,
+    queryTarget,
   } from "../stores.js";
   import { filtersToYAML, parseYAML } from "../yaml.js";
   import { get } from "svelte/store";
@@ -24,7 +25,13 @@
     const cols = get(outputColumns) || "";
     const limit = get(resultLimit) || 0;
     try {
-      yamlText = filtersToYAML(getFiltersForAPI(), cols, limit, get(sortRules));
+      yamlText = filtersToYAML(
+        get(queryTarget),
+        getFiltersForAPI(),
+        cols,
+        limit,
+        get(sortRules),
+      );
     } catch (e) {
       error = "导出失败: " + e.message;
     }
@@ -38,6 +45,7 @@
     error = "";
     try {
       const data = parseYAML(yamlText);
+      if (data.target) queryTarget.set(data.target);
       if (data.filters?.length > 0) applyFiltersFromAPI(data.filters);
       if (data.output?.columns)
         outputColumns.set(data.output.columns.join(","));
