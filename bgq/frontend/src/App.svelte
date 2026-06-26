@@ -9,7 +9,12 @@
     faCircleHalfStroke,
     faFilm,
   } from "@fortawesome/free-solid-svg-icons";
-  import { queryTarget, clearFilters, outputColumns } from "./stores.js";
+  import {
+    queryTarget,
+    clearFilters,
+    saveTargetSettings,
+    restoreTargetSettings,
+  } from "./stores.js";
   import FilterTree from "./components/FilterTree.svelte";
   import ResultTable from "./components/ResultTable.svelte";
   import YamlEditor from "./components/YamlEditor.svelte";
@@ -57,14 +62,9 @@
   }
 
   function setTarget(t) {
+    saveTargetSettings();
     queryTarget.set(t);
-    const defaults = {
-      person: "person_id,name,简体中文名,",
-      character: "character_id,name,简体中文名,",
-      episode: "id,name,name_cn,",
-      subject: "id,name,name_cn,type,",
-    };
-    outputColumns.set(defaults[t] || defaults.subject);
+    restoreTargetSettings(t);
   }
 
   onMount(async () => {
@@ -260,188 +260,10 @@
     padding: 20px 24px;
   }
 
-  /* ===== Cards ===== */
-  :global(.card) {
-    background: var(--white);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border-light);
-    padding: 20px;
-  }
-
-  :global(.card-header) {
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  :global(.card-header .dot-indicator) {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-  }
-
   :global(.target-toggle) {
     display: flex;
     gap: 6px;
     margin-bottom: 12px;
-  }
-
-  /* ===== Form Controls ===== */
-  :global(.form-group) {
-    margin-bottom: 12px;
-  }
-
-  :global(.form-label) {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-bottom: 4px;
-    display: block;
-  }
-
-  :global(.input),
-  :global(.select) {
-    height: 36px;
-    padding: 0 12px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-xs);
-    font-size: 13px;
-    font-family: var(--font);
-    color: var(--text);
-    background: var(--white);
-    transition: var(--transition);
-    outline: none;
-    width: 100%;
-  }
-
-  :global(.input:focus),
-  :global(.select:focus) {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
-  }
-
-  :global(.input::placeholder) {
-    color: var(--text-placeholder);
-  }
-
-  :global(.select) {
-    cursor: pointer;
-    appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23909399' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    padding-right: 28px;
-  }
-
-  :global(.select-sm) {
-    height: 32px;
-    font-size: 12px;
-    padding: 0 8px;
-    min-width: auto;
-    width: auto;
-  }
-
-  /* ===== Buttons ===== */
-  :global(.btn) {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    height: 36px;
-    padding: 0 20px;
-    border: none;
-    border-radius: var(--radius-xs);
-    font-size: 13px;
-    font-weight: 500;
-    font-family: var(--font);
-    cursor: pointer;
-    transition: var(--transition);
-    white-space: nowrap;
-  }
-
-  :global(.btn-primary) {
-    background: var(--accent);
-    color: var(--white);
-  }
-
-  :global(.btn-primary:hover) {
-    background: var(--accent-hover);
-    box-shadow: 0 2px 8px rgb(240 145 153 / 30%);
-  }
-
-  :global(.btn-outline) {
-    background: var(--white);
-    color: var(--accent);
-    border: 1px solid var(--accent);
-  }
-
-  :global(.btn-outline:hover) {
-    background: var(--accent-light);
-  }
-
-  :global(.btn-default) {
-    background: var(--white);
-    color: var(--text);
-    border: 1px solid var(--border);
-  }
-
-  :global(.btn-default:hover) {
-    color: var(--accent);
-    border-color: var(--accent);
-  }
-
-  :global(.btn-sm) {
-    height: 30px;
-    padding: 0 12px;
-    font-size: 12px;
-    border-radius: var(--radius-xs);
-  }
-
-  :global(.btn-xs) {
-    height: 24px;
-    padding: 0 8px;
-    font-size: 11px;
-    border-radius: 4px;
-  }
-
-  :global(.btn-block) {
-    width: 100%;
-  }
-
-  :global(.btn:disabled) {
-    opacity: 0.5;
-    cursor: not-allowed;
-  }
-
-  /* ===== Radio Pill ===== */
-  :global(.radio-pill) {
-    cursor: pointer;
-    font-size: 12px;
-    padding: 3px 10px;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    background: var(--white);
-    color: var(--text);
-    transition: var(--transition);
-    user-select: none;
-    display: inline-block;
-    font-family: inherit;
-    white-space: nowrap;
-  }
-
-  :global(.radio-pill:hover) {
-    border-color: var(--accent);
-  }
-
-  :global(.radio-pill.active) {
-    background: var(--accent);
-    color: var(--white);
-    border-color: var(--accent);
   }
 
   /* ===== Responsive ===== */

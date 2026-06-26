@@ -89,7 +89,7 @@
         if (lastRow)
           lastRow
             .querySelector(
-              'input, select, button.op-btn, [tabindex]:not([tabindex="-1"])',
+              'input, select, button, [tabindex]:not([tabindex="-1"])',
             )
             ?.focus();
       }
@@ -267,30 +267,16 @@
     color: #fff;
   }
 
-  .tag-remove {
-    cursor: pointer;
-    color: var(--accent);
-    font-size: 18px;
-    line-height: 1;
-    margin-left: auto;
-    transition: var(--transition);
-    background: none;
-    border: none;
-    font-family: inherit;
-    padding: 0;
-  }
-
-  .tag-remove:hover {
-    color: var(--accent-hover);
-    transform: scale(1.2);
-  }
-
   .add-row {
     display: flex;
     gap: 4px;
     align-items: center;
     margin-top: 4px;
     flex-wrap: wrap;
+  }
+
+  .tag-remove {
+    margin-left: auto;
   }
 
   .logic-group :global(select),

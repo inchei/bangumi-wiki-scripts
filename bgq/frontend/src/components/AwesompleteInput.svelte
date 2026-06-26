@@ -93,4 +93,76 @@
   });
 </script>
 
-<input bind:this={inputEl} class="input" {value} {placeholder} />
+<div class="aw-wrap">
+  <input bind:this={inputEl} class="input aw-input" {value} {placeholder} />
+</div>
+
+<style>
+  .aw-wrap :global(.awesomplete) {
+    position: relative;
+    display: inline-block;
+  }
+
+  .aw-input :global(~ ul) {
+    position: absolute;
+    left: 0;
+    z-index: 100;
+    min-width: 140px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: var(--dropdown-bg);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--dropdown-shadow);
+    list-style: none;
+    padding: 4px 0;
+    margin: 2px 0 0;
+    font-size: 12px;
+    transition: none;
+    animation: none;
+  }
+
+  .aw-input :global(~ ul > li) {
+    padding: 5px 10px;
+    cursor: pointer;
+    white-space: nowrap;
+    color: var(--text);
+    background: transparent;
+    transition: none;
+  }
+
+  .aw-input :global(~ ul > li:hover) {
+    background: var(--accent-light);
+    color: var(--text);
+  }
+
+  .aw-input :global(~ ul > li[aria-selected="true"]) {
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .aw-input :global(~ ul > li:hover mark) {
+    background: transparent;
+    color: var(--accent);
+    font-weight: 600;
+  }
+
+  .aw-input :global(~ ul > li[aria-selected="true"] mark) {
+    background: transparent;
+    color: #fff;
+    font-weight: 600;
+  }
+
+  .aw-input :global(~ ul > li mark) {
+    background: transparent;
+    color: var(--accent);
+    font-weight: 600;
+    padding: 0;
+  }
+
+  .aw-input :global(~ ul:empty) {
+    display: none;
+  }
+</style>

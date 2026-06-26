@@ -32,6 +32,53 @@ export const queryLoading = writable(false);
 export const sortState = writable({ col: -1, asc: true });
 export const queryTarget = writable("subject");
 export const outputColumns = writable("id,name,name_cn,type,");
+export const sortRules = writable([]); // [{field: string, direction: "asc"|"desc"}]
+export const resultLimit = writable(500);
+
+// Per-target output settings: { [target]: { outputColumns, sortRules, resultLimit } }
+const _targetSettings = {};
+
+const DEFAULT_SETTINGS = {
+  subject: {
+    outputColumns: "id,name,name_cn,type,",
+    sortRules: [],
+    resultLimit: 500,
+  },
+  person: {
+    outputColumns: "person_id,name,简体中文名,",
+    sortRules: [],
+    resultLimit: 500,
+  },
+  character: {
+    outputColumns: "character_id,name,简体中文名,",
+    sortRules: [],
+    resultLimit: 500,
+  },
+  episode: {
+    outputColumns: "id,name,name_cn,",
+    sortRules: [],
+    resultLimit: 500,
+  },
+};
+
+export function saveTargetSettings() {
+  const target = get(queryTarget);
+  _targetSettings[target] = {
+    outputColumns: get(outputColumns),
+    sortRules: get(sortRules),
+    resultLimit: get(resultLimit),
+  };
+}
+
+export function restoreTargetSettings(target) {
+  const saved =
+    _targetSettings[target] ||
+    DEFAULT_SETTINGS[target] ||
+    DEFAULT_SETTINGS.subject;
+  outputColumns.set(saved.outputColumns);
+  sortRules.set(saved.sortRules);
+  resultLimit.set(saved.resultLimit);
+}
 
 // Logic tree ID counter
 let _logicIdCounter = 0;
