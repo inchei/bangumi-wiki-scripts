@@ -6,6 +6,9 @@
     faCopy,
     faInbox,
     faClipboardList,
+    faArrowDownWideShort,
+    faArrowDownShortWide,
+    faSort,
   } from "@fortawesome/free-solid-svg-icons";
   import {
     lastResult,
@@ -197,8 +200,15 @@
                   class:sort-desc={$sortState.col === i && !$sortState.asc}
                   onclick={() => sortTable(i)}
                   title={col}
-                  >{col.length > 20 ? col.substring(0, 18) + "…" : col}</th
-                >
+                  >{col.length > 20 ? col.substring(0, 18) + "…" : col}
+                  {#if $sortState.col === i && $sortState.asc}
+                    <FontAwesomeIcon icon={faArrowDownShortWide} />
+                  {:else if $sortState.col === i && !$sortState.asc}
+                    <FontAwesomeIcon icon={faArrowDownWideShort} />
+                  {:else}
+                    <FontAwesomeIcon icon={faSort} class="sort-placeholder" />
+                  {/if}
+                </th>
               {/each}
             </tr>
           </thead>
@@ -340,21 +350,16 @@
     color: var(--text);
   }
 
-  .results-table th.sortable::after {
-    content: "⇅";
+  .results-table th :global(svg) {
+    font-size: 10px;
+    margin-left: 4px;
+    opacity: 0.7;
+  }
+
+  .results-table th :global(.sort-placeholder) {
     font-size: 10px;
     margin-left: 4px;
     opacity: 0.35;
-  }
-
-  .results-table th.sort-asc::after {
-    content: "▲";
-    opacity: 0.7;
-  }
-
-  .results-table th.sort-desc::after {
-    content: "▼";
-    opacity: 0.7;
   }
 
   .results-table td {
