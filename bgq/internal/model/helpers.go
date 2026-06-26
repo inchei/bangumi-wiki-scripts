@@ -1,5 +1,7 @@
 package model
 
+import "strconv"
+
 // --- Platform ---
 
 // PlatformEntry represents a platform option for the UI.
@@ -9,24 +11,31 @@ type PlatformEntry struct {
 }
 
 // PlatformsByType returns platform codes and names for a given subject type.
-// typeCode 0 returns all platforms across all types.
+// typeCode 0 returns all platforms across all types, deduplicating by
+// (code, name) pair — the same code with different names across types
+// (e.g. code 1 = "TV" for anime vs "日剧" for real) are both preserved.
 func PlatformsByType(typeCode int) []PlatformEntry {
-	var entries []PlatformEntry
-	seen := make(map[int]bool)
-	collect := func(m map[int]string) {
-		for code, name := range m {
-			if !seen[code] {
-				seen[code] = true
-				entries = append(entries, PlatformEntry{Code: code, Name: name})
+	if typeCode == 0 {
+		var entries []PlatformEntry
+		seen := make(map[string]bool)
+		for _, m := range TypePlatforms {
+			for code, name := range m {
+				key := strconv.Itoa(code) + ":" + name
+				if !seen[key] {
+					seen[key] = true
+					entries = append(entries, PlatformEntry{Code: code, Name: name})
+				}
 			}
 		}
+		return entries
 	}
-	if typeCode == 0 {
-		for _, m := range TypePlatforms {
-			collect(m)
-		}
-	} else if m, ok := TypePlatforms[typeCode]; ok {
-		collect(m)
+	m, ok := TypePlatforms[typeCode]
+	if !ok {
+		return nil
+	}
+	entries := make([]PlatformEntry, 0, len(m))
+	for code, name := range m {
+		entries = append(entries, PlatformEntry{Code: code, Name: name})
 	}
 	return entries
 }

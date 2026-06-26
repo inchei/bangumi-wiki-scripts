@@ -11,7 +11,7 @@ const {{.GoType}}_PLATFORMS = [
 ];
 {{end}}
 const PLATFORMS_BY_TYPE = {
-  0: [...new Map([{{range .PlatformTypes}}...{{.GoType}}_PLATFORMS.map(p => [p.code, p]), {{end}}]).values()],
+  0: (() => { const seen = new Set(); return [{{range .PlatformTypes}}...{{.GoType}}_PLATFORMS, {{end}}].filter(p => { const k = p.code + ':' + p.name; if (seen.has(k)) return false; seen.add(k); return true; }); })(),
 {{- range .PlatformTypes}}
   {{.TypeCode}}: {{.GoType}}_PLATFORMS,
 {{- end}}
