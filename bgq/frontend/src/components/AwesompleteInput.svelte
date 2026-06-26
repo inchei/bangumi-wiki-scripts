@@ -38,26 +38,6 @@
     }
   });
 
-  // Measure caret pixel position in <input> using canvas
-  let canvas;
-  function getCaretLeft() {
-    if (!canvas) canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    const style = getComputedStyle(inputEl);
-    ctx.font = `${style.fontSize} ${style.fontFamily}`;
-    const text = inputEl.value.substring(0, inputEl.selectionStart);
-    const metrics = ctx.measureText(text);
-    const padding = parseFloat(style.paddingLeft) || 0;
-    return metrics.width + padding;
-  }
-
-  function positionDropdown() {
-    const ul = inputEl.parentElement?.querySelector("ul");
-    if (!ul) return;
-    const left = getCaretLeft();
-    ul.style.left = `${Math.max(0, left)}px`;
-  }
-
   onMount(() => {
     if (!inputEl) return;
     const opts = {
@@ -79,12 +59,7 @@
       };
     }
     aw = new Awesomplete(inputEl, opts);
-    inputEl.addEventListener("focus", () => {
-      aw.evaluate();
-      positionDropdown();
-    });
-    inputEl.addEventListener("input", positionDropdown);
-    inputEl.addEventListener("keyup", positionDropdown);
+    inputEl.addEventListener("focus", () => aw.evaluate());
     inputEl.addEventListener("blur", () => {
       setTimeout(() => {
         if (!inputEl) return;
@@ -133,8 +108,8 @@
   .aw-input :global(~ ul) {
     position: absolute;
     left: 0;
+    width: auto;
     z-index: 100;
-    min-width: 140px;
     max-height: 200px;
     overflow-y: auto;
     background: var(--dropdown-bg);
@@ -149,6 +124,7 @@
     font-size: 12px;
     transition: none;
     animation: none;
+    scrollbar-width: thin;
   }
 
   .aw-input :global(~ ul > li) {
