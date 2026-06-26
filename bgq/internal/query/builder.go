@@ -1137,7 +1137,29 @@ func (b *SQLBuilder) fieldFilterForNested(f *config.FieldFilter, nestedAlias str
 
 	// Check field map for direct column mapping
 	if expr, ok := fieldMap[f.Field]; ok {
+		// Special case: rank 0 means no ranking
+		if f.Field == "rank" {
+			switch f.Operator {
+			case "empty":
+				return fmt.Sprintf("(%s = 0 OR %s IS NULL)", expr, expr), nil
+			case "gt", "gte", "lt", "lte":
+				cond, _ := b.buildCondition(expr, f.Operator, valueStr)
+				return fmt.Sprintf("%s != 0 AND %s", expr, cond), nil
+			}
+		}
 		return b.buildCondition(expr, f.Operator, valueStr)
+	}
+
+	// Special case: rank on infobox fields (not in fieldMap)
+	if f.Field == "rank" {
+		col := nestedAlias + "." + quoteIdent("rank")
+		switch f.Operator {
+		case "empty":
+			return fmt.Sprintf("(%s = 0 OR %s IS NULL)", col, col), nil
+		case "gt", "gte", "lt", "lte":
+			cond, _ := b.buildCondition(col, f.Operator, valueStr)
+			return fmt.Sprintf("%s != 0 AND %s", col, cond), nil
+		}
 	}
 
 	// Special case: career field (person only) — LIST_CONTAINS
