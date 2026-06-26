@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -152,33 +153,45 @@ func min(a, b int) int {
 	return b
 }
 
-// WriteCSV writes the query results to a CSV file.
+// WriteCSVTo writes CSV output to w (without BOM).
+func (r *QueryResult) WriteCSVTo(w io.Writer) error {
+	cw := csv.NewWriter(w)
+	if err := cw.Write(r.Columns); err != nil {
+		return fmt.Errorf("写入CSV表头失败: %w", err)
+	}
+	for _, row := range r.Rows {
+		if err := cw.Write(row); err != nil {
+			return fmt.Errorf("写入CSV行失败: %w", err)
+		}
+	}
+	cw.Flush()
+	return cw.Error()
+}
+
+// WriteCSV writes the query results to a CSV file (with BOM for Excel).
 func (r *QueryResult) WriteCSV(path string) error {
 	f, err := os.Create(path)
 	if err != nil {
 		return fmt.Errorf("创建CSV文件失败: %w", err)
 	}
 	defer func() { _ = f.Close() }()
-
-	// Write BOM for Excel compatibility
 	_, _ = f.Write([]byte{0xEF, 0xBB, 0xBF})
+	return r.WriteCSVTo(f)
+}
 
-	w := csv.NewWriter(f)
-	defer w.Flush()
-
-	// Header
-	if err := w.Write(r.Columns); err != nil {
-		return fmt.Errorf("写入CSV表头失败: %w", err)
-	}
-
-	// Rows
+// WriteJSONTo writes JSON output to w.
+func (r *QueryResult) WriteJSONTo(w io.Writer) error {
+	var objs []map[string]string
 	for _, row := range r.Rows {
-		if err := w.Write(row); err != nil {
-			return fmt.Errorf("写入CSV行失败: %w", err)
+		obj := make(map[string]string)
+		for i, col := range r.Columns {
+			obj[col] = row[i]
 		}
+		objs = append(objs, obj)
 	}
-
-	return nil
+	enc := json.NewEncoder(w)
+	enc.SetIndent("", "  ")
+	return enc.Encode(objs)
 }
 
 // WriteJSON writes the query results to a JSON file.
@@ -188,20 +201,7 @@ func (r *QueryResult) WriteJSON(path string) error {
 		return fmt.Errorf("创建JSON文件失败: %w", err)
 	}
 	defer func() { _ = f.Close() }()
-
-	// Build array of objects
-	var objs []map[string]string
-	for _, row := range r.Rows {
-		obj := make(map[string]string)
-		for i, col := range r.Columns {
-			obj[col] = row[i]
-		}
-		objs = append(objs, obj)
-	}
-
-	enc := json.NewEncoder(f)
-	enc.SetIndent("", "  ")
-	return enc.Encode(objs)
+	return r.WriteJSONTo(f)
 }
 
 // ExecuteDuckDBSQL executes raw SQL against a DuckDB database (for ingest).

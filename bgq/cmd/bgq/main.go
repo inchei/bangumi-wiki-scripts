@@ -328,7 +328,7 @@ func runQuery(cfg *config.Config, dataDir, outputFile string, verbose bool) {
 	ctx := context.Background()
 	engine := query.NewEngine(cfg.Database, dataDir)
 
-	fmt.Printf("正在执行查询...\n")
+	fmt.Fprintf(os.Stderr, "正在执行查询...\n")
 
 	result, err := engine.Execute(ctx, cfg)
 	if err != nil {
@@ -348,28 +348,38 @@ func runQuery(cfg *config.Config, dataDir, outputFile string, verbose bool) {
 			path = cfg.Output.Path
 		}
 		if path == "" {
-			path = "results.csv"
+			// No output path: write CSV to stdout
+			if err := result.WriteCSVTo(os.Stdout); err != nil {
+				fmt.Fprintf(os.Stderr, "写入CSV失败: %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			if err := result.WriteCSV(path); err != nil {
+				fmt.Fprintf(os.Stderr, "写入CSV失败: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Fprintf(os.Stderr, "结果保存至: %s\n", path)
 		}
-		if err := result.WriteCSV(path); err != nil {
-			fmt.Fprintf(os.Stderr, "写入CSV失败: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Printf("结果保存至: %s\n", path)
-		fmt.Printf("共 %d 行, 耗时 %v\n", result.TotalRows, result.Duration.Round(time.Millisecond))
+		fmt.Fprintf(os.Stderr, "共 %d 行, 耗时 %v\n", result.TotalRows, result.Duration.Round(time.Millisecond))
 	case "json":
 		path := outputFile
 		if path == "" {
 			path = cfg.Output.Path
 		}
 		if path == "" {
-			path = "results.json"
+			// No output path: write JSON to stdout
+			if err := result.WriteJSONTo(os.Stdout); err != nil {
+				fmt.Fprintf(os.Stderr, "写入JSON失败: %v\n", err)
+				os.Exit(1)
+			}
+		} else {
+			if err := result.WriteJSON(path); err != nil {
+				fmt.Fprintf(os.Stderr, "写入JSON失败: %v\n", err)
+				os.Exit(1)
+			}
+			fmt.Fprintf(os.Stderr, "结果保存至: %s\n", path)
 		}
-		if err := result.WriteJSON(path); err != nil {
-			fmt.Fprintf(os.Stderr, "写入JSON失败: %v\n", err)
-			os.Exit(1)
-		}
-		fmt.Printf("结果保存至: %s\n", path)
-		fmt.Printf("共 %d 行, 耗时 %v\n", result.TotalRows, result.Duration.Round(time.Millisecond))
+		fmt.Fprintf(os.Stderr, "共 %d 行, 耗时 %v\n", result.TotalRows, result.Duration.Round(time.Millisecond))
 	default:
 		fmt.Print(result.FormatTable(50))
 	}
