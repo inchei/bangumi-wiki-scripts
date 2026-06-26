@@ -108,6 +108,27 @@ Web 界面使用 `--db` 参数：
 
 Docker 部署在 `.env` 中设置 `DB_PATH`。
 
+## AI Agent Skill
+
+bgq 提供 AI Agent skill，支持用自然语言查询 Bangumi 数据。
+
+安装（Hermes Agent）：
+
+```bash
+cp -r skills/bgq-query ~/.hermes/skills/data-science/
+```
+
+或通过 `npx skills add`（适用于支持 skills CLI 的 agent）。
+
+使用方式：直接用自然语言描述查询需求，agent 会自动生成 YAML 并执行。例如：
+
+- "找评分8分以上的动画，按评分降序"
+- "找出角川出版的已完结轻小说"
+- "导演过高分动画的年轻导演有哪些"
+- "排名最高的漫画中哪些还没改编成动画"
+
+详细用法见 [skills/bgq-query/SKILL.md](skills/bgq-query/SKILL.md)。
+
 ## 开发
 
 见 [CONTRIBUTING.md](CONTRIBUTING.md)。
