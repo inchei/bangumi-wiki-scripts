@@ -6,8 +6,9 @@ import { load, dump } from "js-yaml";
  * The API format uses `{ logic: { op, items } }` wrapper; the YAML format
  * uses the same structure but without the `_id` / `_ctx` internal fields.
  */
-export function filtersToYAML(filters, columns, limit, sort) {
+export function filtersToYAML(target, filters, columns, limit, sort) {
   const cfg = {};
+  if (target && target !== "subject") cfg.target = target;
   if (filters && filters.length > 0) {
     cfg.filters = cleanFilters(filters);
   }
@@ -121,6 +122,7 @@ export function parseYAML(raw) {
   }
 
   const result = {};
+  if (cfg.target) result.target = cfg.target;
   if (cfg.filters) result.filters = normalizeFilters(cfg.filters);
   if (cfg.output) result.output = cfg.output;
   if (cfg.sort) result.sort = cfg.sort;

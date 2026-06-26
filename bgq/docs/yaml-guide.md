@@ -2,6 +2,23 @@
 
 所有筛选条件是 **AND** 关系。每个条件对象只能包含一种筛选类型。
 
+## 查询目标
+
+`target` 指定查询的数据类型，默认为 `subject`（条目）：
+
+```yaml
+target: person          # subject | person | character | episode
+```
+
+| 值 | 说明 |
+|----|------|
+| `subject` | 条目（书籍、动画、音乐、游戏、三次元）—— 默认 |
+| `person` | 人物 |
+| `character` | 角色 |
+| `episode` | 剧集 |
+
+不同 target 支持的筛选条件不同。例如 `type`、`relation`、`staff` 仅适用于 `subject`，`person_relation` 仅适用于 `person`，`character_relation` 仅适用于 `character`。
+
 ## 类型筛选
 
 ```yaml
@@ -184,7 +201,7 @@ data_dir: "/path/to/bangumi_archive"    # JSONLines 数据目录
 database: "/path/to/bangumi.db"         # 或已导入的 DuckDB 数据库
 
 # === 查询目标 ===
-target: subject                         # subject（默认）| person
+target: subject                         # subject（默认）| person | character | episode
 
 # === 筛选条件 ===
 filters:
