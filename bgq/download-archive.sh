@@ -5,12 +5,17 @@ DATA_DIR="${1:-./bangumi_archive}"
 
 echo "=== Downloading Bangumi Archive ==="
 mkdir -p "$DATA_DIR"
+
+# Resolve to absolute path (handle relative paths before cd)
+DATA_DIR=$(cd "$DATA_DIR" && pwd)
+
 cd /tmp
 
 # Get download info from latest.json
 LATEST_JSON=$(curl -s https://raw.githubusercontent.com/bangumi/Archive/master/aux/latest.json)
 ZIP_URL=$(echo "$LATEST_JSON" | grep -o '"browser_download_url": *"[^"]*"' | head -1 | cut -d'"' -f4)
 EXPECTED_HASH=$(echo "$LATEST_JSON" | grep -o '"digest": *"[^"]*"' | head -1 | cut -d'"' -f4 | sed 's/sha256://')
+CREATED_AT=$(echo "$LATEST_JSON" | grep -o '"created_at": *"[^"]*"' | head -1 | cut -d'"' -f4)
 
 if [ -z "$ZIP_URL" ]; then
   echo "Failed to get download URL"
@@ -37,5 +42,11 @@ fi
 echo "Extracting to ${DATA_DIR}..."
 unzip -o archive.zip -d "$DATA_DIR"
 rm -f archive.zip
+
+# Save data version metadata
+if [ -n "$CREATED_AT" ]; then
+  echo "{\"created_at\":\"$CREATED_AT\"}" > "$DATA_DIR/data_version.json"
+  echo "Data version: $CREATED_AT"
+fi
 
 echo "Done! Archive saved to ${DATA_DIR}"
