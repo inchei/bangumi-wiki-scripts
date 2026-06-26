@@ -585,68 +585,8 @@
     width: 100%;
   }
 
-  .cond-row-inner {
-    display: flex;
-    gap: 3px;
-    align-items: center;
-    flex-wrap: wrap;
-    width: 100%;
-  }
-
-  .cond-type {
-    font-size: 13px;
-    color: var(--accent);
-    font-weight: 600;
-  }
-
   .cond-unknown {
     font-size: 12px;
     flex: 1;
-  }
-
-  .tag-remove {
-    cursor: pointer;
-    color: var(--accent);
-    font-size: 18px;
-    line-height: 1;
-    flex-shrink: 0;
-    transition: var(--transition);
-    background: none;
-    border: none;
-    font-family: inherit;
-    padding: 0;
-  }
-
-  .tag-remove:hover {
-    color: var(--accent-hover);
-  }
-
-  .nested {
-    margin-left: 12px;
-    margin-top: 2px;
-  }
-
-  .radio-pill {
-    cursor: pointer;
-    font-size: 12px;
-    padding: 3px 10px;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    background: var(--white);
-    color: var(--text);
-    transition: var(--transition);
-    user-select: none;
-    display: inline-block;
-    font-family: inherit;
-  }
-
-  .radio-pill:hover {
-    border-color: var(--accent);
-  }
-
-  .radio-pill.active {
-    background: var(--accent);
-    color: var(--white);
-    border-color: var(--accent);
   }
 </style>
