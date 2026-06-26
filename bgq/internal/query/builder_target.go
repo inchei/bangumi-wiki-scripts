@@ -50,7 +50,7 @@ func newTargetConfig(target string) *targetConfig {
 			mainTable:    "persons",
 			idColumn:     "person_id",
 			typeColumn:   "person_type",
-			defaultCols:  []string{"person_id as id", "name", "career"},
+			defaultCols:  []string{"person_id", "name", "career"},
 			directFields: mergeMaps(subjectDirectFields, personDirectFields),
 		}
 	case "character":
@@ -60,7 +60,7 @@ func newTargetConfig(target string) *targetConfig {
 			mainTable:    "characters",
 			idColumn:     "character_id",
 			typeColumn:   "role",
-			defaultCols:  []string{"character_id as id", "name", "role"},
+			defaultCols:  []string{"character_id", "name", "role"},
 			directFields: mergeMaps(subjectDirectFields, characterDirectFields),
 		}
 	case "episode":
