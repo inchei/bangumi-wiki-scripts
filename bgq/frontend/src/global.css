@@ -36,8 +36,6 @@
   --error-border: #fde2e2;
   --error-text: #f56c6c;
   --error-pre-bg: #fff5f5;
-  --scrollbar: #ddd;
-  --scrollbar-hover: #ccc;
   --dropdown-bg: rgb(254 254 254 / 82%);
   --dropdown-shadow: 0 4px 24px rgb(80 80 80 / 12%);
   --font:
@@ -71,8 +69,6 @@
   --error-border: rgb(245 108 108 / 20%);
   --error-text: #f56c6c;
   --error-pre-bg: rgb(245 108 108 / 6%);
-  --scrollbar: #555;
-  --scrollbar-hover: #666;
   --dropdown-bg: rgb(40 40 40 / 80%);
   --dropdown-shadow: 0 5px 30px 10px rgb(0 0 0 / 20%);
 }
@@ -94,25 +90,6 @@ a {
 a:hover {
   color: var(--link-hover);
   text-decoration: underline;
-}
-
-/* ===== Scrollbar ===== */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-hover);
 }
 
 /* ===== Shared: tag-remove button ===== */
@@ -240,6 +217,8 @@ a:hover {
 .btn-primary {
   background: var(--accent);
   color: var(--white);
+  display: flex;
+  gap: 6px;
 }
 
 .btn-primary:hover {
