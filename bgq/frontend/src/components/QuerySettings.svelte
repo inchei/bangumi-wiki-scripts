@@ -22,6 +22,7 @@
   import {
     faArrowDownWideShort,
     faArrowDownShortWide,
+    faMagnifyingGlass,
   } from "@fortawesome/free-solid-svg-icons";
 
   let loading = $state(false);
@@ -112,7 +113,7 @@
     />
   </div>
   <div class="form-group">
-    <label class="form-label">排序</label>
+    <span class="form-label">排序</span>
     {#each $sortRules as rule, i (i)}
       <div class="sort-row">
         <div style="flex:1">
@@ -143,9 +144,7 @@
         </button>
       </div>
     {/each}
-    <button class="btn btn-outline btn-xs" onclick={addSortRule}
-      >+ 添加排序</button
-    >
+    <button class="btn btn-outline btn-xs" onclick={addSortRule}>+ 排序</button>
   </div>
   <div class="form-group">
     <label class="form-label" for="resultLimit">结果数量上限</label>
@@ -160,12 +159,17 @@
     />
   </div>
   <button
+    id="btn-run"
     class="btn btn-primary btn-block"
     onclick={handleRun}
     disabled={loading}
     style="height:42px;font-size:15px"
   >
-    {loading ? "查询中..." : "▶ 执行查询"}
+    {#if loading}
+      查询中...
+    {:else}
+      <FontAwesomeIcon icon={faMagnifyingGlass} /> 执行查询
+    {/if}
   </button>
 </div>
 

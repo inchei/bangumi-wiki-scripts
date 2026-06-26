@@ -211,9 +211,7 @@
         <option value={opt.value}>{opt.label}</option>
       {/each}
     </select>
-    <button class="btn btn-outline btn-xs" onclick={handleAdd}
-      >+ 添加条件</button
-    >
+    <button class="btn btn-outline btn-xs" onclick={handleAdd}>+ 条件</button>
     <button class="btn btn-outline btn-xs" onclick={handleAddGroup}
       >+ 嵌套组</button
     >

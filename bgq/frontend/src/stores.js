@@ -729,7 +729,7 @@ export const PERSON_FIELD_CONFIGS = {
 
 export const CHARACTER_FIELD_CONFIGS = {
   role: {
-    label: "角色类型",
+    label: "类型",
     ops: ["eq"],
     type: "select",
     options: [
@@ -821,7 +821,7 @@ export function opLabel(op) {
     eq: "=",
     contains: "包含",
     not_contains: "不包含",
-    regex: "~=",
+    regex: "正则",
     gt: ">",
     gte: ">=",
     lt: "<",

@@ -2,13 +2,15 @@
   import { onMount } from "svelte";
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import {
-    faGear,
     faBook,
     faUser,
     faMasksTheater,
     faCircleHalfStroke,
+    faSun,
+    faMoon,
     faFilm,
   } from "@fortawesome/free-solid-svg-icons";
+  import { faGithub } from "@fortawesome/free-brands-svg-icons";
   import {
     queryTarget,
     clearFilters,
@@ -20,9 +22,6 @@
   import YamlEditor from "./components/YamlEditor.svelte";
   import QuerySettings from "./components/QuerySettings.svelte";
 
-  let showYaml = $state(false);
-  let statusText = $state("连接中...");
-  let statusOk = $state(false);
   const themeOrder = ["light", "dark", "system"];
   let themeMode = $state("system");
 
@@ -57,10 +56,6 @@
     applyTheme(themeMode);
   }
 
-  function toggleYaml() {
-    showYaml = !showYaml;
-  }
-
   function setTarget(t) {
     saveTargetSettings();
     queryTarget.set(t);
@@ -80,18 +75,6 @@
       .addEventListener("change", () => {
         if (themeMode === "system") applyTheme("system");
       });
-    // Connect
-    try {
-      const r = await fetch("/api/health");
-      const d = await r.json();
-      if (d.status === "ok") {
-        statusOk = true;
-        statusText = "已连接";
-      }
-    } catch {
-      statusOk = false;
-      statusText = "连接失败";
-    }
   });
 </script>
 
@@ -106,19 +89,27 @@
     <span>Bangumi Query</span>
   </div>
   <span class="spacer"></span>
-  <span class="status">
-    <span class="dot" class:ok={statusOk}></span>
-    <span>{statusText}</span>
-  </span>
-  <button class="btn btn-default btn-sm" onclick={toggleYaml}
-    ><FontAwesomeIcon icon={faGear} /> YAML</button
+  <a
+    class="btn btn-default"
+    href="https://github.com/inchei/bangumi-query"
+    target="_blank"
+    rel="noopener"
+    title="GitHub"
   >
+    <FontAwesomeIcon icon={faGithub} />
+  </a>
   <button
-    class="btn btn-default btn-sm"
+    class="btn btn-default"
     onclick={cycleTheme}
     title="主题: {themeMode}"
   >
-    <FontAwesomeIcon icon={faCircleHalfStroke} />
+    {#if themeMode === "light"}
+      <FontAwesomeIcon icon={faSun} />
+    {:else if themeMode === "dark"}
+      <FontAwesomeIcon icon={faMoon} />
+    {:else}
+      <FontAwesomeIcon icon={faCircleHalfStroke} />
+    {/if}
   </button>
 </div>
 
@@ -163,11 +154,8 @@
       <FilterTree />
     </div>
 
-    {#if showYaml}
-      <YamlEditor />
-    {/if}
-
     <QuerySettings />
+    <YamlEditor />
   </div>
 
   <!-- Right Panel -->
@@ -185,11 +173,17 @@
     height: 56px;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 20px;
     box-shadow: var(--shadow);
     position: sticky;
     top: 0;
     z-index: 100;
+
+    .btn {
+      padding: 0;
+      border: none;
+      font-size: 16px;
+    }
   }
 
   .header-logo {
@@ -198,7 +192,6 @@
     color: var(--text);
     display: flex;
     align-items: center;
-    gap: 8px;
   }
 
   .logo-sprite {
@@ -211,26 +204,6 @@
 
   .spacer {
     flex: 1;
-  }
-
-  .dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--status-err);
-    margin-right: 4px;
-    display: inline-block;
-  }
-
-  .dot.ok {
-    background: var(--status-ok);
-  }
-
-  .status {
-    font-size: 12px;
-    color: var(--text-secondary);
-    display: flex;
-    align-items: center;
   }
 
   /* ===== Layout ===== */
