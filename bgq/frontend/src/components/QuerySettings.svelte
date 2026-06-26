@@ -7,6 +7,7 @@
     queryLoading,
     outputColumns,
     sortRules,
+    sortState,
     resultLimit,
     ctxFields,
     CTX_SUBJECT,
@@ -90,6 +91,13 @@
         sort.length > 0 ? sort : undefined,
       );
       lastResult.set(data);
+      // Sync sort state to match the first sort rule if its field is in the result columns
+      if (sort.length > 0 && data?.columns) {
+        const colIdx = data.columns.indexOf(sort[0].field);
+        if (colIdx >= 0) {
+          sortState.set({ col: colIdx, asc: sort[0].direction === "asc" });
+        }
+      }
     } catch (e) {
       lastResult.set({ error: e.message });
     } finally {
