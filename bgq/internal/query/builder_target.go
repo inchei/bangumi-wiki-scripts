@@ -2,15 +2,13 @@ package query
 
 // targetConfig centralizes all target-specific data for SQL generation.
 type targetConfig struct {
-	target         string
-	mainAlias      string
-	mainTable      string // FROM clause table name
-	idColumn       string // primary key column name (without alias)
-	typeColumn     string // type/role column name (without alias)
-	defaultCols    []string
-	directFields   map[string]bool
-	nestedFieldMap map[string]string // field name → physical expression for nested context (e.g. "id" → "sp.person_id")
-	nestedTypeCol  string            // type column in nested context (e.g. "p.person_type"), empty if not supported
+	target       string
+	mainAlias    string
+	mainTable    string // FROM clause table name
+	idColumn     string // primary key column name (without alias)
+	typeColumn   string // type/role column name (without alias)
+	defaultCols  []string
+	directFields map[string]bool
 }
 
 // nestedEntityConfig describes the many-to-many relationship between the main entity and a related entity.
@@ -54,14 +52,6 @@ func newTargetConfig(target string) *targetConfig {
 			typeColumn:   "person_type",
 			defaultCols:  []string{"person_id as id", "name", "career"},
 			directFields: mergeMaps(subjectDirectFields, personDirectFields),
-			nestedFieldMap: map[string]string{
-				"name":       "p.name",
-				"id":         "sp.person_id",
-				"person_id":  "sp.person_id",
-				"type":       "p.person_type",
-				"appear_eps": "sp.appear_eps",
-			},
-			nestedTypeCol: "p.person_type",
 		}
 	case "character":
 		return &targetConfig{
@@ -72,15 +62,6 @@ func newTargetConfig(target string) *targetConfig {
 			typeColumn:   "role",
 			defaultCols:  []string{"character_id as id", "name", "role"},
 			directFields: mergeMaps(subjectDirectFields, characterDirectFields),
-			nestedFieldMap: map[string]string{
-				"name":         "c.name",
-				"id":           "sc.character_id",
-				"character_id": "sc.character_id",
-				"role":         "c.role",
-				"comments":     "c.comments",
-				"collects":     "c.collects",
-			},
-			nestedTypeCol: "", // character doesn't support type filter in nested context
 		}
 	case "episode":
 		return &targetConfig{

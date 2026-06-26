@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"strings"
 )
 
 // manyToManyConfig configures a generic many-to-many filter.
@@ -46,12 +47,25 @@ func (b *SQLBuilder) manyToManyFilter(cfg manyToManyConfig) (string, error) {
 
 	// none mode
 	if cfg.mode == "none" {
-		if extra == "TRUE" {
+		// Build combined predicate including related entity conditions
+		nonePred := extra
+		if relWhere != "TRUE" {
+			if nonePred == "TRUE" {
+				nonePred = relWhere
+			} else {
+				nonePred = nonePred + " AND " + relWhere
+			}
+		}
+		if nonePred == "TRUE" {
 			return fmt.Sprintf("NOT EXISTS (SELECT 1 FROM %s %s WHERE %s.%s = %s.%s)",
 				jc, ja, ja, jmf, ma, mp), nil
 		}
-		return fmt.Sprintf("NOT EXISTS (SELECT 1 FROM %s %s WHERE %s.%s = %s.%s AND %s)",
-			jc, ja, ja, jmf, ma, mp, extra), nil
+		joinClause := strings.TrimSpace(relJoin)
+		if joinClause != "" {
+			joinClause = " " + joinClause
+		}
+		return fmt.Sprintf("NOT EXISTS (SELECT 1 FROM %s %s%s WHERE %s.%s = %s.%s AND %s)",
+			jc, ja, joinClause, ja, jmf, ma, mp, nonePred), nil
 	}
 
 	// Build subquery predicates

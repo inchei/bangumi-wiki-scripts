@@ -1197,14 +1197,35 @@ func (b *SQLBuilder) globalFilterForNested(f *config.GlobalFilter, nestedAlias s
 	}
 }
 
+// personEntityFieldMap maps person field names to direct columns on the persons table (alias "p").
+// Used when filtering person attributes inside staff/relation subqueries,
+// where the junction table alias is NOT "sp".
+var personEntityFieldMap = map[string]string{
+	"person_id": "p.person_id",
+	"id":        "p.person_id",
+	"name":      "p.name",
+	"type":      "p.person_type",
+	"career":    "p.career",
+}
+
+// characterEntityFieldMap maps character field names to direct columns on the characters table (alias "c").
+var characterEntityFieldMap = map[string]string{
+	"character_id": "c.character_id",
+	"id":           "c.character_id",
+	"name":         "c.name",
+	"role":         "c.role",
+	"comments":     "c.comments",
+	"collects":     "c.collects",
+}
+
 // personFilterForAlias dispatches a single filter for person-level conditions.
 func (b *SQLBuilder) personFilterForAlias(f config.Filter, idx int) (string, error) {
-	return b.filterForNestedContext(f, idx, "p", b.tc.nestedFieldMap, b.tc.nestedTypeCol)
+	return b.filterForNestedContext(f, idx, "p", personEntityFieldMap, "p.person_type")
 }
 
 // characterFilterForAlias dispatches a single filter for character-level conditions.
 func (b *SQLBuilder) characterFilterForAlias(f config.Filter, idx int) (string, error) {
-	return b.filterForNestedContext(f, idx, "c", b.tc.nestedFieldMap, b.tc.nestedTypeCol)
+	return b.filterForNestedContext(f, idx, "c", characterEntityFieldMap, "")
 }
 
 // episodeFilter handles episode-based filtering.
