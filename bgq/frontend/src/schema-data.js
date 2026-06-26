@@ -46,7 +46,7 @@ const REAL_PLATFORMS = [
 ];
 
 const PLATFORMS_BY_TYPE = {
-  0: [...new Map([...BOOK_PLATFORMS.map(p => [p.code, p]), ...ANIME_PLATFORMS.map(p => [p.code, p]), ...MUSIC_PLATFORMS.map(p => [p.code, p]), ...GAME_PLATFORMS.map(p => [p.code, p]), ...REAL_PLATFORMS.map(p => [p.code, p]), ]).values()],
+  0: (() => { const seen = new Set(); return [...BOOK_PLATFORMS, ...ANIME_PLATFORMS, ...MUSIC_PLATFORMS, ...GAME_PLATFORMS, ...REAL_PLATFORMS].filter(p => { const k = p.code + ':' + p.name; if (seen.has(k)) return false; seen.add(k); return true; }); })(),
   1: BOOK_PLATFORMS,
   2: ANIME_PLATFORMS,
   3: MUSIC_PLATFORMS,
