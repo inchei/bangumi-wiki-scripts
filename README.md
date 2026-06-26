@@ -42,7 +42,6 @@ CSV 中的 `id` 列对应条目 ID，其他列名对应要更新的字段（如 
 
 | 脚本 | 说明 |
 |------|------|
-| [download_bangumi_archive.py](download_bangumi_archive.py) | 下载最新 Bangumi Archive 数据 |
 | [find_duplicate_isbns.py](find_duplicate_isbns.py) | 查找重复 ISBN 的条目（限 9784 开头的日本出版物） |
 | [person_alias.py](person_alias.py) | 生成人物别名 JSON 数据 |
 | [check_volume_order.py](check_volume_order.py) | 检查单行本卷序一致性 |
