@@ -115,6 +115,7 @@
       value={$outputColumns}
       {suggestions}
       onchange={(v) => outputColumns.set(v)}
+      oninput={(v) => outputColumns.set(v)}
       placeholder="id/name/infobox字段名/..."
       multiple={true}
       separator=","
@@ -129,6 +130,7 @@
             value={rule.field}
             {suggestions}
             onchange={(v) => updateSortField(i, v)}
+            oninput={(v) => updateSortField(i, v)}
             placeholder="字段名"
           />
         </div>

@@ -17,6 +17,7 @@
     value = "",
     suggestions = [],
     onchange = () => {},
+    oninput = () => {},
     placeholder = "",
     restrict = false,
     multiple = false,
@@ -60,6 +61,7 @@
     }
     aw = new Awesomplete(inputEl, opts);
     inputEl.addEventListener("focus", () => aw.evaluate());
+    inputEl.addEventListener("input", () => oninput(inputEl.value));
     inputEl.addEventListener("blur", () => {
       setTimeout(() => {
         if (!inputEl) return;
