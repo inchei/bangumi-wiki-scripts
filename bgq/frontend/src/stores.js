@@ -362,6 +362,10 @@ export function createEmptyCondition(type) {
           subject_conditions: [{ logic: newLogicGroup("and") }],
         },
       };
+    case "appear_eps":
+      return {
+        field: { field: "appear_eps", operator: "contains", value: "" },
+      };
     case "staff":
       return {
         staff: {
@@ -568,8 +572,13 @@ function assignLogicIds(lg) {
 
 export const CTX_SUBJECT = "subject";
 export const CTX_PERSON = "person";
+export const CTX_STAFF_PERSON = "person_in_staff";
 export const CTX_CHARACTER = "character";
 export const CTX_EPISODE = "episode";
+
+export function isPersonCtx(ctx) {
+  return ctx === CTX_PERSON || ctx === CTX_STAFF_PERSON;
+}
 
 export const EPISODE_FIELDS = [
   "name",
@@ -627,7 +636,6 @@ export const PERSON_FIELDS = [
   "id",
   "type",
   "career",
-  "appear_eps",
   "简体中文名",
   "别名",
   "性别",
@@ -764,7 +772,7 @@ export const CHARACTER_FIELD_CONFIGS = {
 };
 
 export function ctxFieldConfigs(ctx) {
-  if (ctx === CTX_PERSON) return PERSON_FIELD_CONFIGS;
+  if (isPersonCtx(ctx)) return PERSON_FIELD_CONFIGS;
   if (ctx === CTX_CHARACTER) return CHARACTER_FIELD_CONFIGS;
   if (ctx === CTX_EPISODE) return EPISODE_FIELD_CONFIGS;
   return SUBJECT_FIELD_CONFIGS;
@@ -772,13 +780,13 @@ export function ctxFieldConfigs(ctx) {
 
 export function ctxFields(ctx) {
   if (ctx === CTX_EPISODE) return EPISODE_FIELDS;
-  if (ctx === CTX_PERSON) return PERSON_FIELDS;
+  if (isPersonCtx(ctx)) return PERSON_FIELDS;
   if (ctx === CTX_CHARACTER) return CHARACTER_FIELDS;
   return SUBJECT_DIRECT_FIELDS;
 }
 
 export function ctxTypeOpts(ctx) {
-  if (ctx === CTX_PERSON)
+  if (isPersonCtx(ctx))
     return [
       ["", "全部"],
       ["1", "个人"],

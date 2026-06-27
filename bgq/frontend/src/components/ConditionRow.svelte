@@ -10,10 +10,12 @@
     ctxFields,
     CTX_SUBJECT,
     CTX_PERSON,
+    CTX_STAFF_PERSON,
     CTX_CHARACTER,
     CTX_EPISODE,
     EPISODE_FIELD_LABELS,
     CAREER_OPTIONS,
+    isPersonCtx,
   } from "../stores.js";
   import {
     relationsByType,
@@ -230,22 +232,21 @@
         updateCondition(group, idx, "global", "value", e.target.value)}
     />
   {:else if condType === "type"}
-    {@const typeOpts =
-      ctx === CTX_PERSON
-        ? [
-            ["", "全部"],
-            ["1", "个人"],
-            ["2", "公司"],
-            ["3", "组合"],
-          ]
-        : [
-            ["", "全部"],
-            ["1", "书籍"],
-            ["2", "动画"],
-            ["3", "音乐"],
-            ["4", "游戏"],
-            ["6", "三次元"],
-          ]}
+    {@const typeOpts = isPersonCtx(ctx)
+      ? [
+          ["", "全部"],
+          ["1", "个人"],
+          ["2", "公司"],
+          ["3", "组合"],
+        ]
+      : [
+          ["", "全部"],
+          ["1", "书籍"],
+          ["2", "动画"],
+          ["3", "音乐"],
+          ["4", "游戏"],
+          ["6", "三次元"],
+        ]}
     <span class="cond-type">分类</span>
     <select
       class="select select-sm"
@@ -478,46 +479,8 @@
         updateCondition(group, idx, "staff", "count_val", v)}
       onDelete={() => removeLogicLeaf(group, idx)}
       logic={s}
-      nestedCtx={$queryTarget === "person" ? CTX_SUBJECT : CTX_PERSON}
-    >
-      {#if $queryTarget === "subject"}
-        <span class="cond-type">参与</span>
-        <select
-          class="select select-sm"
-          value={s.appear_eps?.operator || "contains"}
-          onchange={(e) => {
-            const op = e.target.value;
-            const cur = s.appear_eps || { operator: "contains", value: "" };
-            updateCondition(group, idx, "staff", "appear_eps", {
-              ...cur,
-              operator: op,
-            });
-          }}
-        >
-          <option value="contains">包含</option>
-          <option value="not_contains">不包含</option>
-          <option value="regex">正则</option>
-          <option value="empty">为空</option>
-        </select>
-        {#if (s.appear_eps?.operator || "contains") !== "empty"}
-          <input
-            class="input"
-            value={s.appear_eps?.value || ""}
-            onchange={(e) => {
-              const cur = s.appear_eps || {
-                operator: "contains",
-                value: "",
-              };
-              updateCondition(group, idx, "staff", "appear_eps", {
-                ...cur,
-                value: e.target.value,
-              });
-            }}
-            placeholder="剧集ID"
-          />
-        {/if}
-      {/if}
-    </RelationCondition>
+      nestedCtx={$queryTarget === "person" ? CTX_SUBJECT : CTX_STAFF_PERSON}
+    ></RelationCondition>
   {:else if condType === "episode"}
     {@const ep = item.episode}
     <div class="cond-row-inner">

@@ -594,7 +594,7 @@ subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.json
 persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT s.id as id, s.name
 FROM subjects s
-WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons  WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(subject_persons.appear_eps AS VARCHAR) LIKE '%1,2,3%')
+WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons LEFT JOIN persons p ON subject_persons.person_id = p.person_id WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001) AND CAST(subject_persons.appear_eps AS VARCHAR) LIKE '%1,2,3%')
 LIMIT 10
 staff_person_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
