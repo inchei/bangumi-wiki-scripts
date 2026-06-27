@@ -269,10 +269,6 @@
 </div>
 
 <style>
-  .results-panel {
-    height: 100%;
-  }
-
   .results-empty {
     text-align: center;
     padding: 60px 20px;
