@@ -25,6 +25,7 @@ type clauseContext struct {
 	isPersonCtx    bool   // true when filtering person-level conditions (uses personFilterForAlias)
 	isCharacterCtx bool   // true when filtering character-level conditions (uses characterFilterForAlias)
 	isEpisodeCtx   bool   // true when filtering episode conditions (direct fields only, no infobox)
+	junctionAlias  string // junction table alias for appear_eps in staff person context
 }
 
 // NewSQLBuilder creates a new SQL builder.
@@ -333,7 +334,7 @@ func (b *SQLBuilder) filterToCtx(f config.Filter, ctx clauseContext, idx int) (s
 
 	// Person context: use person-specific handlers
 	if ctx.isPersonCtx {
-		return b.personFilterForAlias(f, idx)
+		return b.personFilterForAlias(f, idx, ctx.junctionAlias)
 	}
 
 	// Character context: use character-specific handlers
@@ -814,26 +815,6 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 		posCond = fmt.Sprintf("%s.position IN (%s)", ja, intListToSQL(posIDs))
 	}
 
-	// Build appear_eps condition (subject target only)
-	appearEpsCond := "TRUE"
-	if f.AppearEps != nil {
-		var epsErr error
-		appearEpsCond, epsErr = b.buildCondition(ja+".appear_eps", f.AppearEps.Operator, fmt.Sprintf("%v", f.AppearEps.Value))
-		if epsErr != nil {
-			return "", fmt.Errorf("appear_eps condition: %w", epsErr)
-		}
-	}
-
-	// Combine extra conditions
-	extra := posCond
-	if appearEpsCond != "TRUE" {
-		if extra == "TRUE" {
-			extra = appearEpsCond
-		} else {
-			extra = extra + " AND " + appearEpsCond
-		}
-	}
-
 	// Build related entity conditions
 	var relatedWhere string
 	var relatedJoin string
@@ -852,7 +833,7 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 		// Subject target: conditions on associated persons
 		if len(f.Conditions) > 0 {
 			var err error
-			relatedWhere, err = b.buildPersonWhereForAlias(f.Conditions)
+			relatedWhere, err = b.buildPersonWhereForAlias(f.Conditions, ja)
 			if err != nil {
 				return "", fmt.Errorf("staff condition: %w", err)
 			}
@@ -869,7 +850,7 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 		relatedAlias:   nested.relatedAlias,
 		relatedTable:   nested.relatedTable,
 		relatedFK:      nested.relatedFK,
-		extraCond:      extra,
+		extraCond:      posCond,
 		relatedWhere:   relatedWhere,
 		relatedJoin:    relatedJoin,
 		mode:           f.Mode,
@@ -1109,16 +1090,16 @@ func (b *SQLBuilder) getPersonCharacterTypeID(name string) (int, bool) {
 }
 
 // buildPersonWhereForAlias generates WHERE clauses for person-level nested conditions.
-func (b *SQLBuilder) buildPersonWhereForAlias(filters []config.Filter) (string, error) {
-	return b.buildClauses(filters, clauseContext{alias: "p", isPersonCtx: true})
+func (b *SQLBuilder) buildPersonWhereForAlias(filters []config.Filter, junctionAlias string) (string, error) {
+	return b.buildClauses(filters, clauseContext{alias: "p", isPersonCtx: true, junctionAlias: junctionAlias})
 }
 
 // personFilterForAlias dispatches a single filter for person-level conditions.
 // filterForNestedContext dispatches a single filter for nested entity conditions (person/character).
-func (b *SQLBuilder) filterForNestedContext(f config.Filter, idx int, nestedAlias string, fieldMap map[string]string, typeCol string) (string, error) {
+func (b *SQLBuilder) filterForNestedContext(f config.Filter, idx int, nestedAlias string, fieldMap map[string]string, typeCol string, junctionAlias string) (string, error) {
 	switch {
 	case f.Field != nil:
-		return b.fieldFilterForNested(f.Field, nestedAlias, fieldMap)
+		return b.fieldFilterForNested(f.Field, nestedAlias, fieldMap, junctionAlias)
 	case f.Global != nil:
 		return b.globalFilterForNested(f.Global, nestedAlias)
 	case f.Type != nil:
@@ -1132,8 +1113,13 @@ func (b *SQLBuilder) filterForNestedContext(f config.Filter, idx int, nestedAlia
 }
 
 // fieldFilterForNested builds a field filter for a nested entity context using a field map.
-func (b *SQLBuilder) fieldFilterForNested(f *config.FieldFilter, nestedAlias string, fieldMap map[string]string) (string, error) {
+func (b *SQLBuilder) fieldFilterForNested(f *config.FieldFilter, nestedAlias string, fieldMap map[string]string, junctionAlias string) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
+
+	// Special case: appear_eps in staff person context references junction table
+	if f.Field == "appear_eps" && junctionAlias != "" {
+		return b.buildCondition(junctionAlias+".appear_eps", f.Operator, valueStr)
+	}
 
 	// Check field map for direct column mapping
 	if expr, ok := fieldMap[f.Field]; ok {
@@ -1219,13 +1205,13 @@ var characterEntityFieldMap = map[string]string{
 }
 
 // personFilterForAlias dispatches a single filter for person-level conditions.
-func (b *SQLBuilder) personFilterForAlias(f config.Filter, idx int) (string, error) {
-	return b.filterForNestedContext(f, idx, "p", personEntityFieldMap, "p.person_type")
+func (b *SQLBuilder) personFilterForAlias(f config.Filter, idx int, junctionAlias string) (string, error) {
+	return b.filterForNestedContext(f, idx, "p", personEntityFieldMap, "p.person_type", junctionAlias)
 }
 
 // characterFilterForAlias dispatches a single filter for character-level conditions.
 func (b *SQLBuilder) characterFilterForAlias(f config.Filter, idx int) (string, error) {
-	return b.filterForNestedContext(f, idx, "c", characterEntityFieldMap, "")
+	return b.filterForNestedContext(f, idx, "c", characterEntityFieldMap, "", "")
 }
 
 // episodeFilter handles episode-based filtering.

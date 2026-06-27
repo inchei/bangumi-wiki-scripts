@@ -195,7 +195,9 @@ func generateAllSQL() map[string]string {
 	}{
 		{"staff_appear_eps", config.Filter{Staff: &config.StaffFilter{
 			Position: "原作", Mode: "any",
-			AppearEps: &config.FieldFilter{Field: "appear_eps", Operator: "contains", Value: "1,2,3"},
+			Conditions: []config.Filter{
+				{Field: &config.FieldFilter{Field: "appear_eps", Operator: "contains", Value: "1,2,3"}},
+			},
 		}}},
 		{"logic_or", config.Filter{Logic: &config.LogicFilter{Op: "or", Items: []config.Filter{
 			{Field: &config.FieldFilter{Field: "score", Operator: "gt", Value: "8"}},
