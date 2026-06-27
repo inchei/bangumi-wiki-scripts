@@ -202,6 +202,12 @@
     border-radius: var(--radius-xs);
   }
 
+  @media (width <= 320px) {
+    .logo-sprite {
+      display: none;
+    }
+  }
+
   .spacer {
     flex: 1;
   }
