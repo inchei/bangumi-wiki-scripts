@@ -55,7 +55,7 @@ const DEFAULT_SETTINGS = {
     resultLimit: 500,
   },
   episode: {
-    outputColumns: "id,name,name_cn,",
+    outputColumns: "episode_id,name,name_cn,",
     sortRules: [],
     resultLimit: 500,
   },
@@ -409,7 +409,7 @@ const EP_FIELD_DEFAULT_OP = {
   sort: "gte",
   type: "eq",
   disc: "gte",
-  id: "eq",
+  episode_id: "eq",
 };
 
 export function addCondition(group, type, ctx) {
@@ -589,7 +589,7 @@ export const EPISODE_FIELDS = [
   "sort",
   "type",
   "disc",
-  "id",
+  "episode_id",
 ];
 export const EPISODE_FIELD_LABELS = {
   name: "名称",
@@ -600,7 +600,7 @@ export const EPISODE_FIELD_LABELS = {
   sort: "排序",
   type: "类型",
   disc: "碟片",
-  id: "ID",
+  episode_id: "ID",
 };
 export const EPISODE_FIELD_OPS = {
   name: ["contains", "not_contains", "eq", "regex"],
@@ -611,7 +611,7 @@ export const EPISODE_FIELD_OPS = {
   sort: ["gt", "gte", "lt", "lte", "eq"],
   type: ["gt", "gte", "lt", "lte", "eq"],
   disc: ["gt", "gte", "lt", "lte", "eq"],
-  id: ["gt", "gte", "lt", "lte", "eq"],
+  episode_id: ["gt", "gte", "lt", "lte", "eq"],
 };
 
 export const EPISODE_FIELD_CONFIGS = {
