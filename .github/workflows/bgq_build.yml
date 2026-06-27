@@ -24,6 +24,10 @@ jobs:
             goarch: amd64
             duckdb_suffix: linux-amd64
             archive_suffix: tar.gz
+          - goos: linux
+            goarch: arm64
+            duckdb_suffix: linux-aarch64
+            archive_suffix: tar.gz
           - goos: darwin
             goarch: arm64
             duckdb_suffix: osx-universal
@@ -69,7 +73,7 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             EXT=".exe"
           fi
-          go build -o "bgq-${{ matrix.goos }}-${{ matrix.goarch }}${EXT}" ./cmd/bgq/
+          go build -o "bgq${EXT}" ./cmd/bgq/
 
       - name: 下载 DuckDB
         run: |
@@ -86,7 +90,7 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             EXT=".exe"
           fi
-          cp "bgq/${PKG_NAME}${EXT}" "/tmp/${PKG_NAME}/"
+          cp "bgq/bgq${EXT}" "/tmp/${PKG_NAME}/"
 
           if [ "${{ matrix.goos }}" = "windows" ]; then
             cp /tmp/duckdb-extract/duckdb.exe "/tmp/${PKG_NAME}/"
@@ -137,6 +141,7 @@ jobs:
             | 平台 | 文件 |
             |------|------|
             | Linux x86_64 | `bgq-linux-amd64.tar.gz` |
+            | Linux ARM | `bgq-linux-arm64.tar.gz` |
             | macOS ARM | `bgq-darwin-arm64.tar.gz` |
             | macOS Intel | `bgq-darwin-amd64.tar.gz` |
             | Windows x86_64 | `bgq-windows-amd64.zip` |
