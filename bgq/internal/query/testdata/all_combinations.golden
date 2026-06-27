@@ -287,7 +287,7 @@ FROM subjects s
 WHERE NOT EXISTS (SELECT 1 FROM subject_characters subject_characters LEFT JOIN characters c ON subject_characters.character_id = c.character_id WHERE subject_characters.subject_id = s.id AND subject_characters.type = 1 AND CAST(c.name AS VARCHAR) LIKE '%test%')
 LIMIT 10
 episode_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
-episodes AS (SELECT * FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
+episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
 SELECT s.id as id, s.name
 FROM subjects s
 WHERE EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND CAST(e.name AS VARCHAR) LIKE '%test%')
@@ -299,8 +299,8 @@ FROM characters c
 WHERE CAST(c.name AS VARCHAR) LIKE '%test%'
 LIMIT 10
 field_episode	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
-episodes AS (SELECT * FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
-SELECT e.id as id, e.name
+episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
+SELECT e.episode_id as id, e.name
 FROM episodes e
 WHERE CAST(e.name AS VARCHAR) LIKE '%test%'
 LIMIT 10

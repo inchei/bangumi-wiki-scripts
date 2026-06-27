@@ -254,7 +254,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	if b.target == "episode" {
 		epFile := b.dataDir + "/episode.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
-			`episodes AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
+			`episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('%s', format='newline_delimited'))`,
 			escapeSQLString(epFile),
 		))
 		episodesLoaded = true
@@ -262,7 +262,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	if !episodesLoaded && b.cfg.NeedsEpisodes() {
 		epFile := b.dataDir + "/episode.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
-			`episodes AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
+			`episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('%s', format='newline_delimited'))`,
 			escapeSQLString(epFile),
 		))
 	}
@@ -1307,7 +1307,9 @@ func (b *SQLBuilder) episodeFilter(f *config.EpisodeFilter) (string, error) {
 func (b *SQLBuilder) episodeFieldFilter(f *config.FieldFilter) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
 	switch f.Field {
-	case "name", "name_cn", "description", "airdate", "duration", "sort", "disc", "id", "subject_id":
+	case "id", "episode_id":
+		return b.buildCondition("e.episode_id", f.Operator, valueStr)
+	case "name", "name_cn", "description", "airdate", "duration", "sort", "disc", "subject_id":
 		return b.buildCondition("e."+quoteIdent(f.Field), f.Operator, valueStr)
 	case "type":
 		// Map Chinese episode type names to numbers
