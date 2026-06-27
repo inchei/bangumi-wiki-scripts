@@ -4,6 +4,7 @@
     getFiltersForAPI,
     queryTarget,
     lastResult,
+    lastQueryTarget,
     queryLoading,
     outputColumns,
     sortRules,
@@ -83,13 +84,15 @@
     const limit = parseInt($resultLimit) || 500;
     const sort = $sortRules.filter((r) => r.field);
     try {
+      const savedTarget = get(queryTarget);
       const data = await runQuery(
         getFiltersForAPI(),
         cols,
-        get(queryTarget),
+        savedTarget,
         limit,
         sort.length > 0 ? sort : undefined,
       );
+      lastQueryTarget.set(savedTarget);
       lastResult.set(data);
       // Sync sort state to match the first sort rule if its field is in the result columns
       if (sort.length > 0 && data?.columns) {

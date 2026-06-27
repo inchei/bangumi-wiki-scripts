@@ -14,6 +14,7 @@
     lastResult,
     sortState,
     queryTarget,
+    lastQueryTarget,
     queryLoading,
     getFiltersForAPI,
   } from "../stores.js";
@@ -41,7 +42,7 @@
       return escapeHtml(String(id));
     const s = String(id);
     const cn = colName.toLowerCase();
-    const target = get(queryTarget);
+    const target = get(lastQueryTarget);
     let type = "subject";
     if (target === "person" || cn.includes("person")) type = "person";
     else if (target === "character" || cn.includes("character"))

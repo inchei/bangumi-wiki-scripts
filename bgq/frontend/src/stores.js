@@ -31,6 +31,7 @@ export const lastResult = writable(null);
 export const queryLoading = writable(false);
 export const sortState = writable({ col: -1, asc: true });
 export const queryTarget = writable("subject");
+export const lastQueryTarget = writable("subject");
 export const outputColumns = writable("id,name,name_cn,type,");
 export const sortRules = writable([]); // [{field: string, direction: "asc"|"desc"}]
 export const resultLimit = writable(500);
