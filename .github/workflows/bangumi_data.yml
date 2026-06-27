@@ -36,18 +36,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests tqdm beautifulsoup4 bgm-tv-wiki
 
-      - name: 构建前端
-        uses: actions/setup-node@v5
-        with:
-          node-version: '22'
-      - run: |
-          cd bgq/frontend
-          corepack enable
-          pnpm install --frozen-lockfile
-          pnpm build
-          mkdir -p ../internal/server/dist
-          cp -r dist/* ../internal/server/dist/
-
       - name: 设置 Go
         uses: actions/setup-go@v6
         with:
@@ -63,6 +51,8 @@ jobs:
       - name: 构建 bgq
         run: |
           cd bgq
+          mkdir -p internal/server/dist
+          touch internal/server/dist/.keep
           go build -o bin/bgq ./cmd/bgq/
 
       - name: 下载 Bangumi 归档
@@ -152,7 +142,7 @@ jobs:
 
             - `person_alias.json.gz` — 人物别名数据
             - `duplicate_check_results.txt` — 重复 ISBN 检查结果
-            - `results/*.csv` — 本周筛选结果
+            - `*.csv` — 自定义筛选结果
           files: |
             ${{ env.ALIAS_GZ }}
             duplicate_check_results.txt
