@@ -91,7 +91,7 @@
   <span class="spacer"></span>
   <a
     class="btn btn-default"
-    href="https://github.com/inchei/bangumi-query"
+    href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/bgq"
     target="_blank"
     rel="noopener"
     title="GitHub"
