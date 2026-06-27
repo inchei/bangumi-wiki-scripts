@@ -140,6 +140,7 @@ a:hover {
   display: flex;
   gap: 6px;
   margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
 /* ===== Form Controls ===== */
