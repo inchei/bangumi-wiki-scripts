@@ -13,11 +13,13 @@
     ctxFieldConfigs,
     CTX_SUBJECT,
     CTX_PERSON,
+    CTX_STAFF_PERSON,
     CTX_CHARACTER,
     CTX_EPISODE,
     EPISODE_FIELDS,
     EPISODE_FIELD_LABELS,
     focusRequest,
+    isPersonCtx,
   } from "../stores.js";
   import ConditionRow from "./ConditionRow.svelte";
   import Self from "./FilterTree.svelte";
@@ -126,11 +128,14 @@
         opts.push({ value: "character_person", label: "人物" });
         opts.push({ value: "character", label: "条目" });
       }
-    } else if (currentCtx === CTX_PERSON) {
+    } else if (isPersonCtx(currentCtx)) {
       opts.push({ value: "field", label: "字段" });
       opts.push({ value: "global", label: "全局" });
       const pfc = ctxFieldConfigs(CTX_PERSON);
       for (const k in pfc) opts.push({ value: k, label: pfc[k].label });
+      if (currentCtx === CTX_STAFF_PERSON) {
+        opts.push({ value: "appear_eps", label: "参与" });
+      }
       if (qTarget === "person") {
         opts.push({ value: "person_relation", label: "人物关系" });
         opts.push({ value: "person_character", label: "角色" });

@@ -344,13 +344,13 @@ type CharacterRelationFilter struct {
 
 // StaffFilter filters by staff/person.
 // Conditions support all filter types (nested), allowing full filtering on persons (subject target) or subjects (person target).
+// Use field=appear_eps inside conditions to filter on the junction table's appear_eps column.
 type StaffFilter struct {
-	Position   string       `yaml:"position" json:"position"`                         // Chinese position name (e.g., "原作")
-	AppearEps  *FieldFilter `yaml:"appear_eps,omitempty" json:"appear_eps,omitempty"` // filter on appear_eps field
-	Mode       string       `yaml:"mode" json:"mode"`                                 // any, all, none, count
-	CountOp    string       `yaml:"count_op,omitempty" json:"count_op,omitempty"`     // count mode operator
-	CountVal   interface{}  `yaml:"count_val,omitempty" json:"count_val,omitempty"`   // count mode threshold
-	Conditions []Filter     `yaml:"conditions" json:"conditions"`                     // conditions on person (subject target) or subject (person target)
+	Position   string      `yaml:"position" json:"position"`                       // Chinese position name (e.g., "原作")
+	Mode       string      `yaml:"mode" json:"mode"`                               // any, all, none, count
+	CountOp    string      `yaml:"count_op,omitempty" json:"count_op,omitempty"`   // count mode operator
+	CountVal   interface{} `yaml:"count_val,omitempty" json:"count_val,omitempty"` // count mode threshold
+	Conditions []Filter    `yaml:"conditions" json:"conditions"`                   // conditions on person (subject target) or subject (person target)
 }
 
 // CharacterFilter filters by character in a subject.
