@@ -38,7 +38,7 @@ var characterDirectFields = map[string]bool{
 
 var episodeDirectFields = map[string]bool{
 	"subject_id": true, "airdate": true, "duration": true,
-	"sort": true, "disc": true, "desc": true,
+	"sort": true, "disc": true, "desc": true, "episode_id": true,
 }
 
 func newTargetConfig(target string) *targetConfig {
@@ -68,9 +68,9 @@ func newTargetConfig(target string) *targetConfig {
 			target:       "episode",
 			mainAlias:    "e",
 			mainTable:    "episodes",
-			idColumn:     "id",
+			idColumn:     "episode_id",
 			typeColumn:   "type",
-			defaultCols:  []string{"id", "name", "name_cn", "type", "airdate", "duration", "sort"},
+			defaultCols:  []string{"episode_id", "name", "name_cn", "type", "airdate", "duration", "sort"},
 			directFields: mergeMaps(subjectDirectFields, episodeDirectFields),
 		}
 	default: // subject
