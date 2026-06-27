@@ -29,9 +29,11 @@
       .replace(/"/g, "&quot;");
   }
 
+  const idRegex = /^((person|character|episode)_)?id$/;
+
   function isIDColumn(colName) {
     const cn = colName.toLowerCase();
-    return cn === "id" || cn.endsWith("_id") || cn.endsWith("id");
+    return idRegex.test(cn);
   }
 
   function bgmLink(id, colName) {
@@ -113,6 +115,7 @@
   }
 
   let copiedTable = $state(false);
+  let copiedIds = $state(false);
   let copiedError = $state(false);
 
   function handleCopyTable() {
@@ -127,6 +130,26 @@
       .then(() => {
         copiedTable = true;
         setTimeout(() => (copiedTable = false), 2000);
+      })
+      .catch(() => alert("复制失败"));
+  }
+
+  function handleCopyIds() {
+    const res = $lastResult;
+    const rows = res.rows;
+    if (!rows) return;
+    const cols = res.columns;
+    const idCol = cols.findIndex((col) => isIDColumn(col));
+    if (idCol < 0) {
+      alert("未找到id列");
+      return;
+    }
+    const text = `bgm_id=${rows.map((row) => row[idCol]).join(",")}`;
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        copiedIds = true;
+        setTimeout(() => (copiedIds = false), 2000);
       })
       .catch(() => alert("复制失败"));
   }
@@ -180,6 +203,12 @@
               icon={faCheck}
             />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
           {copiedTable ? "复制成功" : "复制表格"}</button
+        >
+        <button class="btn btn-default btn-sm" onclick={handleCopyIds}
+          >{#if copiedIds}<FontAwesomeIcon
+              icon={faCheck}
+            />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
+          {copiedIds ? "复制成功" : "复制bgm_id"}</button
         >
       </span>
     </div>
