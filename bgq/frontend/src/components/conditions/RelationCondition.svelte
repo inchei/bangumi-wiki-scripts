@@ -81,6 +81,11 @@
 </div>
 {#if logic?.conditions?.length > 0 && logic.conditions[0].logic}
   <div class="nested">
-    <FilterTree lg={logic.conditions[0].logic} isRoot={false} ctx={nestedCtx} />
+    <FilterTree
+      lg={logic.conditions[0].logic}
+      isRoot={false}
+      ctx={nestedCtx}
+      hideDelete={true}
+    />
   </div>
 {/if}

@@ -401,6 +401,7 @@
           lg={ca.conditions[0].logic}
           isRoot={false}
           ctx={caCfg.condCtx}
+          hideDelete={true}
         />
       </div>
     {/if}
@@ -460,6 +461,7 @@
           lg={ca.subject_conditions[0].logic}
           isRoot={false}
           ctx={CTX_SUBJECT}
+          hideDelete={true}
         />
       </div>
     {/if}
@@ -545,14 +547,19 @@
     </div>
     {#if ep.logic}
       <div class="nested">
-        <FilterTree lg={ep.logic} isRoot={false} ctx={CTX_EPISODE} />
+        <FilterTree
+          lg={ep.logic}
+          isRoot={false}
+          ctx={CTX_EPISODE}
+          hideDelete={true}
+        />
       </div>
     {/if}
   {:else}
     <span class="cond-unknown">{JSON.stringify(item)}</span>
   {/if}
 
-  {#if condType !== "relation" && condType !== "staff" && condType !== "episode"}
+  {#if !["relation", "staff", "character", "person_relation", "character_relation", "person_character", "character_person", "episode"].includes(condType)}
     <button
       class="tag-remove"
       onclick={() => removeLogicLeaf(group, idx)}

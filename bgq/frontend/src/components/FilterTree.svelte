@@ -24,8 +24,13 @@
   import ConditionRow from "./ConditionRow.svelte";
   import Self from "./FilterTree.svelte";
 
-  /** @type {{ lg?: object, isRoot?: boolean, ctx?: string }} */
-  let { lg = undefined, isRoot = true, ctx = CTX_SUBJECT } = $props();
+  /** @type {{ lg?: object, isRoot?: boolean, ctx?: string, hideDelete?: boolean }} */
+  let {
+    lg = undefined,
+    isRoot = true,
+    ctx = CTX_SUBJECT,
+    hideDelete = false,
+  } = $props();
 
   const effectiveCtx = $derived(
     isRoot
@@ -182,7 +187,7 @@
         }}>OR</button
       >
     </div>
-    {#if !isRoot}
+    {#if !isRoot && !hideDelete}
       <button
         class="tag-remove"
         onclick={(e) => {
