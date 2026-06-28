@@ -3,6 +3,7 @@
     removeLogicLeaf,
     updateCondition,
     queryTarget,
+    updateStaffPositions,
     ctxFieldConfigs,
     fieldSelectOptions,
     opLabel,
@@ -260,7 +261,7 @@
     </select>
   {:else if condType === "relation"}
     <RelationCondition
-      label="关系"
+      label="条目关系"
       typeValue={item.relation.type}
       typeSuggestions={["任意"].concat(relationsByType(0))}
       onTypeChange={(v) => updateCondition(group, idx, "relation", "type", v)}
@@ -464,11 +465,10 @@
     {/if}
   {:else if condType === "staff"}
     {@const s = item.staff}
+    {@const posText =
+      s.positions?.length > 0 ? s.positions.join(",") : s.position || ""}
     <RelationCondition
       label={$queryTarget === "person" ? "关联" : "人物"}
-      typeValue={s.position}
-      typeSuggestions={["任意"].concat(positionsByType(0))}
-      onTypeChange={(v) => updateCondition(group, idx, "staff", "position", v)}
       mode={s.mode}
       onModeChange={(v) => updateCondition(group, idx, "staff", "mode", v)}
       countOp={s.count_op}
@@ -480,7 +480,30 @@
       onDelete={() => removeLogicLeaf(group, idx)}
       logic={s}
       nestedCtx={$queryTarget === "person" ? CTX_SUBJECT : CTX_STAFF_PERSON}
-    ></RelationCondition>
+    >
+      <AwesompleteInput
+        value={posText}
+        suggestions={["任意"].concat(positionsByType(0))}
+        oninput={(v) => {
+          const parts = v
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          updateStaffPositions(group, idx, parts);
+        }}
+        onchange={(v) => {
+          const parts = v
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          updateStaffPositions(group, idx, parts);
+        }}
+        placeholder="职位"
+        multiple={true}
+        separator=","
+        restrict={true}
+      />
+    </RelationCondition>
   {:else if condType === "episode"}
     {@const ep = item.episode}
     <div class="cond-row-inner">

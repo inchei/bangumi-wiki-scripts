@@ -371,6 +371,7 @@ export function createEmptyCondition(type) {
       return {
         staff: {
           position: "",
+          positions: [],
           mode: "any",
           conditions: [{ logic: newLogicGroup("and") }],
         },
@@ -524,6 +525,20 @@ export function toggleLogicOp(group, val) {
   getTargetStore().update((root) =>
     findAndReplace(root, group._id, (n) => ({ ...n, op: val })),
   );
+}
+
+export function updateStaffPositions(group, idx, parts) {
+  applyMutation(group._id, (items) => {
+    const oldItem = items[idx];
+    const oldTarget = oldItem.staff || {};
+    const updated = {
+      ...oldTarget,
+      position: parts[0] || "",
+      positions: parts,
+    };
+    items[idx] = { ...oldItem, staff: updated };
+    return items;
+  });
 }
 
 export function updateCondition(group, idx, kind, field, value) {
