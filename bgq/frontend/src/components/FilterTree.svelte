@@ -140,7 +140,7 @@
         opts.push({ value: "person_relation", label: "人物关系" });
         opts.push({ value: "person_character", label: "角色" });
       }
-      opts.push({ value: "staff", label: "关联" });
+      opts.push({ value: "staff", label: "条目" });
     } else {
       opts.push({ value: "field", label: "字段" });
       const fc = ctxFieldConfigs(effectiveCtx);
@@ -149,13 +149,13 @@
       opts.push({ value: "meta_tag", label: "公共标签" });
       opts.push({ value: "global", label: "全局" });
       if (qTarget === "subject") {
-        opts.push({ value: "relation", label: "关系" });
+        opts.push({ value: "relation", label: "条目关系" });
         opts.push({ value: "character", label: "角色" });
         opts.push({ value: "episode", label: "剧集" });
       }
       opts.push({
         value: "staff",
-        label: qTarget === "person" ? "关联" : "人物",
+        label: qTarget === "person" ? "条目" : "人物",
       });
     }
     return opts;

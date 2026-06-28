@@ -66,12 +66,14 @@
       setTimeout(() => {
         if (!inputEl) return;
         if (multiple) {
-          const clean = inputEl.value
+          const parts = inputEl.value
             .split(separator)
             .map((s) => s.trim())
-            .filter(Boolean)
-            .join(separator);
-          const val = clean ? clean + separator : "";
+            .filter(Boolean);
+          const clean = restrict
+            ? parts.filter((s) => suggestions.includes(s))
+            : parts;
+          const val = clean.length > 0 ? clean.join(separator) + separator : "";
           inputEl.value = val;
           onchange(val);
           lastValidValue = val;
