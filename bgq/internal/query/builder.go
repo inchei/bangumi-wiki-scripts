@@ -164,7 +164,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		if !personsLoaded {
 			personFile := b.dataDir + "/person.jsonlines"
 			ctes = append(ctes, fmt.Sprintf(
-				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox FROM read_json_auto('%s', format='newline_delimited'))`,
+				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('%s', format='newline_delimited'))`,
 				escapeSQLString(personFile),
 			))
 		}
@@ -181,7 +181,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		if !personsLoaded {
 			personFile := b.dataDir + "/person.jsonlines"
 			ctes = append(ctes, fmt.Sprintf(
-				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox FROM read_json_auto('%s', format='newline_delimited'))`,
+				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('%s', format='newline_delimited'))`,
 				escapeSQLString(personFile),
 			))
 			personsLoaded = true
@@ -243,7 +243,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		if !personsLoaded {
 			personFile := b.dataDir + "/person.jsonlines"
 			ctes = append(ctes, fmt.Sprintf(
-				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('%s', format='newline_delimited'))`,
+				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('%s', format='newline_delimited'))`,
 				escapeSQLString(personFile),
 			))
 		}

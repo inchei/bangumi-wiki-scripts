@@ -781,6 +781,9 @@ export const PERSON_FIELDS = [
   "id",
   "type",
   "career",
+  "summary",
+  "collects",
+  "comments",
   "简体中文名",
   "别名",
   "性别",
@@ -791,6 +794,7 @@ export const CHARACTER_FIELDS = [
   "name",
   "id",
   "role",
+  "summary",
   "comments",
   "collects",
   "简体中文名",
@@ -901,18 +905,6 @@ export const CHARACTER_FIELD_CONFIGS = {
       ["女", "女"],
       ["其他", "其他"],
     ],
-  },
-  comments: {
-    label: "评论数",
-    ops: ["gt", "gte", "lt", "lte", "eq"],
-    type: "number",
-    step: "1",
-  },
-  collects: {
-    label: "收藏数",
-    ops: ["gt", "gte", "lt", "lte", "eq"],
-    type: "number",
-    step: "1",
   },
 };
 
