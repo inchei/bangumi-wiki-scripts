@@ -21,7 +21,7 @@ export async function runQuery(filters, columns, target, limit, sort) {
   return r.json();
 }
 
-export function exportCSV(filters, columns, target, limit) {
+export function exportCSV(filters, columns, target, limit, sort) {
   fetch("/api/query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -31,6 +31,7 @@ export function exportCSV(filters, columns, target, limit) {
       columns,
       format: "csv",
       limit: Math.min(limit * 10, 10000),
+      sort: sort && sort.length > 0 ? sort : undefined,
     }),
   })
     .then((r) => r.blob())
