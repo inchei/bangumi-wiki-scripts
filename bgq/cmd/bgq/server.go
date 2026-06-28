@@ -66,15 +66,27 @@ func startServer(dataDir, listenAddr, dbPath string) {
 	// CORS middleware wrapper
 	handler := corsMiddleware(mux)
 
+	duckdbPath := query.GetDuckDBPath()
+	duckdbOK := fileExists(duckdbPath)
+
 	fmt.Printf("\n  Bangumi Query Web UI\n")
 	fmt.Printf("  ────────────────────\n")
 	fmt.Printf("  URL:      http://localhost%s\n", listenAddr)
-	fmt.Printf("  DuckDB:   %s\n", query.GetDuckDBPath())
 	if dbPath != "" {
-		fmt.Printf("  Database: %s\n", dbPath)
+		dbOK := fileExists(dbPath)
+		fmt.Printf("  Database: %s", dbPath)
+		if !dbOK {
+			fmt.Printf("  ⚠ 文件不存在")
+		}
+		fmt.Println()
 	} else {
 		fmt.Printf("  DataDir:  %s\n", absDataDir)
 	}
+	fmt.Printf("  DuckDB:   %s", duckdbPath)
+	if !duckdbOK {
+		fmt.Printf("  ⚠ 未找到")
+	}
+	fmt.Println()
 	fmt.Printf("\n  按 Ctrl+C 停止服务器\n\n")
 
 	server := &http.Server{
@@ -183,6 +195,7 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 	engine := query.NewEngine(s.dbPath, s.dataDir)
 	result, err := engine.Execute(ctx, cfg)
 	if err != nil {
+		log.Printf("查询失败: %v", err)
 		writeJSON(w, http.StatusInternalServerError, apiError{Error: "查询执行失败: " + err.Error()})
 		return
 	}

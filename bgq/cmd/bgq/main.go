@@ -15,12 +15,11 @@ import (
 )
 
 const (
-	version = "0.1.0"
-	banner  = `
+	banner = `
   ██████╗   ██████╗   ██████╗
   ██╔══██╗ ██╔════╝  ██╔═══██╗
   ██████╔╝ ██║  ███╗ ██║   ██║  Bangumi Query
-  ██╔══██╗ ██║   ██║ ██║▄▄ ██║  v` + version + `
+  ██╔══██╗ ██║   ██║ ██║▄▄ ██║
   ██████╔╝ ╚██████╔╝ ╚██████╔╝
   ╚═════╝   ╚═════╝   ╚══▀▀═╝
 
@@ -46,8 +45,6 @@ func main() {
 		cmdIngest(os.Args[2:])
 	case "interactive":
 		cmdInteractive(os.Args[2:])
-	case "version", "--version", "-v":
-		fmt.Printf("bgq version %s\n", version)
 	case "help", "--help", "-h":
 		printUsage()
 	default:
@@ -421,10 +418,10 @@ CREATE TABLE IF NOT EXISTS subjects AS
   SELECT * FROM read_json_auto('%s/subject.jsonlines', format='newline_delimited');
 
 CREATE TABLE IF NOT EXISTS persons AS
-  SELECT * FROM read_json_auto('%s/person.jsonlines', format='newline_delimited');
+  SELECT id AS person_id, * EXCLUDE (id) FROM read_json_auto('%s/person.jsonlines', format='newline_delimited');
 
 CREATE TABLE IF NOT EXISTS characters AS
-  SELECT * FROM read_json_auto('%s/character.jsonlines', format='newline_delimited');
+  SELECT id AS character_id, * EXCLUDE (id) FROM read_json_auto('%s/character.jsonlines', format='newline_delimited');
 
 CREATE TABLE IF NOT EXISTS subject_relations AS
   SELECT * FROM read_json_auto('%s/subject-relations.jsonlines', format='newline_delimited');
@@ -436,7 +433,7 @@ CREATE TABLE IF NOT EXISTS subject_characters AS
   SELECT * FROM read_json_auto('%s/subject-characters.jsonlines', format='newline_delimited');
 
 CREATE TABLE IF NOT EXISTS episodes AS
-  SELECT * FROM read_json_auto('%s/episode.jsonlines', format='newline_delimited');
+  SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('%s/episode.jsonlines', format='newline_delimited');
 
 CREATE TABLE IF NOT EXISTS person_relations AS
   SELECT * FROM read_json_auto('%s/person-relations.jsonlines', format='newline_delimited')
