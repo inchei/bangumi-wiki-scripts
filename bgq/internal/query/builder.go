@@ -436,9 +436,9 @@ func (b *SQLBuilder) fieldFilter(f *config.FieldFilter, tableAlias string) (stri
 	if b.target == "person" && fieldName == "type" {
 		fieldName = "person_type"
 	}
-	// Map "id" to target's idColumn
-	if fieldName == "id" && b.tc.idColumn != "id" {
-		fieldName = b.tc.idColumn
+	// Map "id" to actual column name (differs when CTE renames id→person_id etc.)
+	if fieldName == "id" {
+		fieldName = b.actualColumn("id")
 	}
 
 	// Handle career as LIST_CONTAINS for person target
@@ -1418,15 +1418,16 @@ func (b *SQLBuilder) buildSelect() []string {
 
 	var result []string
 	for _, col := range cols {
+		realCol := b.actualColumn(col)
 		switch {
 		case col == "id" || col == "ID":
-			result = append(result, a+"."+tc.idColumn+" as id")
+			result = append(result, a+"."+quoteIdent(realCol)+" as id")
 		case col == "subject_id" && b.target == "episode":
 			result = append(result, a+".subject_id")
 		case col == "type" && tc.typeColumn != "type":
 			result = append(result, a+"."+quoteIdent(tc.typeColumn)+" AS type")
-		case b.isDirectField(col):
-			result = append(result, a+"."+quoteIdent(col))
+		case b.isDirectField(realCol):
+			result = append(result, a+"."+quoteIdent(realCol))
 		case col == "name_cn" && b.target == "person":
 			result = append(result, a+".name AS name_cn")
 		default:
@@ -1461,9 +1462,10 @@ func (b *SQLBuilder) buildOrderBy() string {
 			dir = "DESC"
 		}
 
+		fieldName := b.actualColumn(s.Field)
 		var expr string
-		if b.isDirectField(s.Field) {
-			expr = a + "." + quoteIdent(s.Field)
+		if b.isDirectField(fieldName) {
+			expr = a + "." + quoteIdent(fieldName)
 		} else {
 			expr = b.infoboxExtractExpr(s.Field, a)
 		}
@@ -1537,6 +1539,15 @@ func (b *SQLBuilder) getPositionIDsForName(name string) []int {
 		}
 	}
 	return ids
+}
+
+// actualColumn returns the real column name for a conceptual field name,
+// mapping id to the target's idColumn (person_id/character_id/episode_id).
+func (b *SQLBuilder) actualColumn(field string) string {
+	if field != "id" || b.tc.idColumn == "id" {
+		return field
+	}
+	return b.tc.idColumn
 }
 
 // isDirectField returns true if the field is a direct JSON column (not infobox).
