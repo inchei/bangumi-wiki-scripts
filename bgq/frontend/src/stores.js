@@ -200,6 +200,32 @@ function findAndReplace(node, id, replacer) {
         }
       }
     }
+    // episode.logic (direct, not in conditions array)
+    if (!found) {
+      for (const key of Object.keys(item)) {
+        if (found) break;
+        const val = item[key];
+        if (
+          val?.logic &&
+          typeof val.logic === "object" &&
+          !Array.isArray(val.logic) &&
+          !val.conditions
+        ) {
+          if (val.logic._id === id) {
+            newItems.push({ ...item, [key]: { ...val, logic: undefined } });
+            found = true;
+            changed = true;
+            break;
+          }
+          const updated = removeItemById(val.logic, id);
+          if (updated !== val.logic) {
+            newItems.push({ ...item, [key]: { ...val, logic: updated } });
+            found = true;
+            changed = true;
+          }
+        }
+      }
+    }
     if (!found) newItems.push(item);
   }
   return changed ? { ...node, items: newItems } : node;
@@ -500,6 +526,32 @@ function removeItemById(node, id) {
         changed = true;
       }
     });
+    // episode.logic (direct, not in conditions array)
+    if (!found) {
+      for (const key of Object.keys(item)) {
+        if (found) break;
+        const val = item[key];
+        if (
+          val?.logic &&
+          typeof val.logic === "object" &&
+          !Array.isArray(val.logic) &&
+          !val.conditions
+        ) {
+          if (val.logic._id === id) {
+            newItems.push({ ...item, [key]: { ...val, logic: undefined } });
+            found = true;
+            changed = true;
+            break;
+          }
+          const updated = removeItemById(val.logic, id);
+          if (updated !== val.logic) {
+            newItems.push({ ...item, [key]: { ...val, logic: updated } });
+            found = true;
+            changed = true;
+          }
+        }
+      }
+    }
     if (!found) newItems.push(item);
   }
   return changed ? { ...node, items: newItems } : node;
