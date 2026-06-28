@@ -30,6 +30,7 @@ var subjectDirectFields = map[string]bool{
 
 var personDirectFields = map[string]bool{
 	"person_id": true, "person_type": true, "career": true,
+	"summary": true, "collects": true, "comments": true,
 }
 
 var characterDirectFields = map[string]bool{
