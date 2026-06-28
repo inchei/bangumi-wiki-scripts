@@ -50,13 +50,20 @@
     if (multiple) {
       const sep = separator;
       const lastRe = new RegExp(`[^${sep}]*$`);
-      const beforeRe = new RegExp(`^.+${sep}\\s*|`);
       opts.filter = (text, input) =>
         Awesomplete.FILTER_CONTAINS(text, input.match(lastRe)[0]);
       opts.item = (text, input) =>
         Awesomplete.ITEM(text, input.match(lastRe)[0]);
       opts.replace = (text) => {
-        inputEl.value = inputEl.value.match(beforeRe)[0] + text + sep;
+        const val = inputEl.value;
+        const cursor = inputEl.selectionStart;
+        const left = val.lastIndexOf(sep, cursor - 1);
+        const right = val.indexOf(sep, cursor);
+        const start = left === -1 ? 0 : left + 1;
+        const end = right === -1 ? val.length : right;
+        const before = val.slice(0, start);
+        const after = val.slice(end);
+        inputEl.value = (before + text + sep + after).replace(/,\s*,/g, ",");
       };
     }
     aw = new Awesomplete(inputEl, opts);
