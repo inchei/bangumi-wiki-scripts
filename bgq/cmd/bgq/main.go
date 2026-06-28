@@ -276,7 +276,7 @@ func cmdServe(args []string) {
 			fmt.Fprintf(os.Stderr, "cwd: %v\n", err)
 			os.Exit(1)
 		}
-		startDevMode(bgqDir, dataDir, listen)
+		startDevMode(bgqDir, dataDir, listen, dbPath)
 		return
 	}
 
