@@ -88,10 +88,87 @@ export function newLogicGroup(op) {
   return { op: op || "and", items: [], _id: ++_logicIdCounter };
 }
 
-export const subjectRootLogic = writable(newLogicGroup("and"));
-export const personRootLogic = writable(newLogicGroup("and"));
-export const characterRootLogic = writable(newLogicGroup("and"));
-export const episodeRootLogic = writable(newLogicGroup("and"));
+const STORAGE_KEY = "bgq_state";
+
+export function saveToStorage() {
+  try {
+    const state = {
+      target: get(queryTarget),
+      subject: get(subjectRootLogic),
+      person: get(personRootLogic),
+      character: get(characterRootLogic),
+      episode: get(episodeRootLogic),
+      outputColumns: get(outputColumns),
+      sortRules: get(sortRules),
+      resultLimit: get(resultLimit),
+      targetSettings: _targetSettings,
+      _idCounter: _logicIdCounter,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+export function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const state = JSON.parse(raw);
+    if (!state) return false;
+    if (state.target) queryTarget.set(state.target);
+    if (state.subject) subjectRootLogic.set(state.subject);
+    if (state.person) personRootLogic.set(state.person);
+    if (state.character) characterRootLogic.set(state.character);
+    if (state.episode) episodeRootLogic.set(state.episode);
+    if (state.outputColumns != null) outputColumns.set(state.outputColumns);
+    if (state.sortRules != null) sortRules.set(state.sortRules);
+    if (state.resultLimit != null) resultLimit.set(state.resultLimit);
+    if (state.targetSettings)
+      Object.assign(_targetSettings, state.targetSettings);
+    if (state._idCounter != null) _logicIdCounter = state._idCounter;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Initialize from localStorage or defaults
+let saved = null;
+try {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) saved = JSON.parse(raw);
+} catch {
+  /* ignore */
+}
+
+export const subjectRootLogic = writable(
+  saved?.subject || newLogicGroup("and"),
+);
+export const personRootLogic = writable(saved?.person || newLogicGroup("and"));
+export const characterRootLogic = writable(
+  saved?.character || newLogicGroup("and"),
+);
+export const episodeRootLogic = writable(
+  saved?.episode || newLogicGroup("and"),
+);
+
+if (saved?._idCounter != null) _logicIdCounter = saved._idCounter;
+if (saved?.target) queryTarget.set(saved.target);
+if (saved?.outputColumns != null) outputColumns.set(saved.outputColumns);
+if (saved?.sortRules != null) sortRules.set(saved.sortRules);
+if (saved?.resultLimit != null) resultLimit.set(saved.resultLimit);
+if (saved?.targetSettings) Object.assign(_targetSettings, saved.targetSettings);
+
+// Auto-save to localStorage on any change
+subjectRootLogic.subscribe(() => saveToStorage());
+personRootLogic.subscribe(() => saveToStorage());
+characterRootLogic.subscribe(() => saveToStorage());
+episodeRootLogic.subscribe(() => saveToStorage());
+queryTarget.subscribe(() => saveToStorage());
+outputColumns.subscribe(() => saveToStorage());
+sortRules.subscribe(() => saveToStorage());
+resultLimit.subscribe(() => saveToStorage());
 
 function getTargetStore() {
   const target = get(queryTarget);
