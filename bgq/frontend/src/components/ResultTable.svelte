@@ -13,12 +13,9 @@
   import {
     lastResult,
     sortState,
-    queryTarget,
     lastQueryTarget,
     queryLoading,
-    getFiltersForAPI,
   } from "../stores.js";
-  import { exportCSV as apiExportCSV } from "../api.js";
   import { get } from "svelte/store";
 
   function escapeHtml(s) {
@@ -65,11 +62,26 @@
     return escapeHtml(String(val));
   }
 
+  // Keep in sync with backend builder.go:
+  // - extractNum() — first number from multi-value fields like "{ [121页] [128页] }"
+  // - infoboxFirstDateExpr + normalizeDate — first date from "|发售日={ [2004-08-14] }"
   function parseSortVal(v) {
     if (v === null || v === undefined || v === "")
       return { empty: true, num: NaN, str: "" };
     const s = String(v).trim();
-    return { empty: false, num: parseFloat(s), str: s.toLowerCase() };
+    const m = s.match(/\d[\d,.]*(?:\.\d+)?/);
+    const num = m ? parseFloat(m[0].replace(/,/g, "")) : NaN;
+    // Date detection: extract first YYYY-MM-DD or YYYY年M月D日
+    const re = /(\d{4})[-年](\d{1,2})(?:[-月](\d{1,2}))?/;
+    const dm = s.match(re);
+    const ts = dm
+      ? new Date(
+          parseInt(dm[1]),
+          parseInt(dm[2]) - 1,
+          parseInt(dm[3]) || 1,
+        ).getTime()
+      : NaN;
+    return { empty: false, num, ts, str: s.toLowerCase() };
   }
 
   function sortTable(colIdx) {
@@ -84,48 +96,66 @@
     sortState.set(newSort);
 
     const rows = [...res.rows];
-    const isNumeric = rows.some((r) => {
-      const p = parseSortVal(r[colIdx]);
-      return !p.empty && !isNaN(p.num);
-    });
+    const vals = rows.map((r) => parseSortVal(r[colIdx]));
+    const hasDate = vals.some((p) => !p.empty && !isNaN(p.ts));
+    const hasNumeric = vals.some((p) => !p.empty && !isNaN(p.num));
     rows.sort((a, b) => {
       const pa = parseSortVal(a[colIdx]),
         pb = parseSortVal(b[colIdx]);
       if (pa.empty && pb.empty) return 0;
       if (pa.empty) return 1;
       if (pb.empty) return -1;
-      const cmp =
-        isNumeric && !isNaN(pa.num) && !isNaN(pb.num)
-          ? pa.num - pb.num
-          : pa.str.localeCompare(pb.str, "zh");
+      let cmp;
+      if (hasDate && !isNaN(pa.ts) && !isNaN(pb.ts)) cmp = pa.ts - pb.ts;
+      else if (hasNumeric && !isNaN(pa.num) && !isNaN(pb.num))
+        cmp = pa.num - pb.num;
+      else cmp = pa.str.localeCompare(pb.str, "zh");
       return newSort.asc ? cmp : -cmp;
     });
     lastResult.set({ ...res, rows });
   }
 
+  function csvEscape(s) {
+    if (s === null || s === undefined) return "";
+    const str = String(s);
+    if (str.includes('"') || str.includes(",") || str.includes("\n"))
+      return '"' + str.replace(/"/g, '""') + '"';
+    return str;
+  }
+
   function handleExportCSV() {
-    const cols =
-      document
-        .getElementById("outputColumns")
-        ?.value.split(",")
-        .map((s) => s.trim())
-        .filter(Boolean) || [];
-    const limit =
-      parseInt(document.getElementById("resultLimit")?.value) || 500;
-    apiExportCSV(getFiltersForAPI(), cols, get(queryTarget), limit);
+    const res = $lastResult;
+    if (!res?.rows) return;
+    const cols = res.columns;
+    let text = cols.map(csvEscape).join(",") + "\n";
+    for (const row of res.rows) text += row.map(csvEscape).join(",") + "\n";
+    const blob = new Blob(["\ufeff" + text], {
+      type: "text/csv;charset=utf-8",
+    });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "bangumi_results.csv";
+    a.click();
   }
 
   let copiedTable = $state(false);
   let copiedIds = $state(false);
   let copiedError = $state(false);
 
+  function tsvEscape(s) {
+    if (s === null || s === undefined) return "";
+    const str = String(s);
+    if (str.includes('"') || str.includes("\t") || str.includes("\n"))
+      return '"' + str.replace(/"/g, '""') + '"';
+    return str;
+  }
+
   function handleCopyTable() {
     const res = $lastResult;
     if (!res?.rows) return;
     const cols = res.columns;
-    let text = cols.join("\t") + "\n";
-    for (const row of res.rows)
-      text += row.map((v) => v ?? "").join("\t") + "\n";
+    let text = cols.map(tsvEscape).join("\t") + "\n";
+    for (const row of res.rows) text += row.map(tsvEscape).join("\t") + "\n";
     navigator.clipboard
       .writeText(text)
       .then(() => {

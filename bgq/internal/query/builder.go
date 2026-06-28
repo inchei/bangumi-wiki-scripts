@@ -478,8 +478,11 @@ func (b *SQLBuilder) fieldFilter(f *config.FieldFilter, tableAlias string) (stri
 		return fmt.Sprintf("COALESCE(%s, '') != '' AND %s NOT LIKE '%%男%%' AND %s NOT LIKE '%%♂%%' AND %s NOT LIKE '%%女%%' AND %s NOT LIKE '%%♀%%'", expr, expr, expr, expr, expr), nil
 	}
 
-	// Infobox field — extract with regex, and apply numeric extraction for comparison ops
+	// Infobox field — extract with regex, and apply numeric/date extraction for comparison ops
 	fieldExpr := b.infoboxExtractExpr(f.Field, tableAlias)
+	if dateFields[f.Field] && (f.Operator == "before" || f.Operator == "after") {
+		fieldExpr = b.infoboxFirstDateExpr(f.Field, tableAlias)
+	}
 	if isNumericOp(f.Operator) {
 		fieldExpr = extractNum(fieldExpr)
 	}
@@ -1242,6 +1245,9 @@ func (b *SQLBuilder) fieldFilterForNested(f *config.FieldFilter, nestedAlias str
 
 	// Default: infobox field extraction
 	fieldExpr := b.infoboxExtractExpr(f.Field, nestedAlias)
+	if dateFields[f.Field] && (f.Operator == "before" || f.Operator == "after") {
+		fieldExpr = b.infoboxFirstDateExpr(f.Field, nestedAlias)
+	}
 	if isNumericOp(f.Operator) {
 		fieldExpr = extractNum(fieldExpr)
 	}
@@ -1520,7 +1526,12 @@ func (b *SQLBuilder) buildJoins() []string {
 
 var dateFields = map[string]bool{
 	"date": true, "airdate": true,
-	"生日": true, "播出日期": true, "播放开始": true, "播放结束": true, "发售日": true,
+	"生日": true, "放送开始": true, "播放结束": true, "发售日": true,
+	"连载开始": true, "连载结束": true, "开始": true, "结束": true,
+}
+
+var numericFields = map[string]bool{
+	"话数": true, "册数": true, "页数": true, "集数": true, "价格": true,
 }
 
 func (b *SQLBuilder) buildOrderBy() string {
@@ -1540,10 +1551,14 @@ func (b *SQLBuilder) buildOrderBy() string {
 		var expr string
 		if b.isDirectField(fieldName) {
 			expr = a + "." + quoteIdent(fieldName)
+		} else if dateFields[s.Field] {
+			expr = normalizeDate(b.infoboxFirstDateExpr(s.Field, a))
+		} else if numericFields[s.Field] {
+			expr = extractNum(b.infoboxExtractExpr(s.Field, a))
 		} else {
 			expr = b.infoboxExtractExpr(s.Field, a)
 		}
-		if dateFields[s.Field] {
+		if dateFields[s.Field] && b.isDirectField(fieldName) {
 			expr = normalizeDate(expr)
 		}
 		parts = append(parts, fmt.Sprintf("%s %s", expr, dir))
@@ -1553,12 +1568,25 @@ func (b *SQLBuilder) buildOrderBy() string {
 
 // infoboxExtractExpr generates a DuckDB expression to extract a field value from infobox.
 func (b *SQLBuilder) infoboxExtractExpr(fieldName, alias string) string {
-	// Build regex to extract |fieldName: value or |fieldName= value
-	// The regex matches: |fieldName :/= value (until |, }}, newline, or end)
-	// Only escape the field name; the rest of the pattern is literal
+	// Extract |fieldName: value or |fieldName= value.
+	// Handles both simple values and multi-value blocks:
+	//   Simple:  |field= value
+	//   Multi:   |field={\n[val1]\n[val2]\n}
 	escapedField := regexEscapeLiteral(fieldName)
-	pattern := fmt.Sprintf(`(?i)\|%s\s*[:=]\s*([^|}\n]*)`, escapedField)
+	pattern := fmt.Sprintf(`(?i)\|%s\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n]*)`, escapedField)
 	return fmt.Sprintf("regexp_extract(%s.infobox, '%s', 1)", alias, sqlEscapeRegexString(pattern))
+}
+
+// infoboxFirstDateExpr extracts the first date from an infobox field value.
+// Handles multi-value dates like |发售日={ [18禁版|2004-08-14] [全年龄总集篇|2007-12-30] }
+// by looking for the first date pattern. Accepts YYYY-M-D, YYYY-MM, YYYY (day/month optional):
+//
+//	YYYY-MM-DD | YYYY年M月D日 | YYYY-MM | YYYY年M月 | YYYY
+//
+// normalizeDate handles partial dates by padding to the 1st.
+func (b *SQLBuilder) infoboxFirstDateExpr(fieldName, alias string) string {
+	raw := b.infoboxExtractExpr(fieldName, alias)
+	return fmt.Sprintf("regexp_extract(%s, '(\\d{4}(?:[-年]\\d{1,2}(?:[-月]\\d{1,2})?)?)', 1)", raw)
 }
 
 // regexEscapeLiteral escapes a literal string for use inside a regex pattern.
