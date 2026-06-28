@@ -804,26 +804,56 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 	if nested == nil {
 		return "", fmt.Errorf("staff filter not supported for target %s", b.target)
 	}
-	ja := nested.junctionTable // junction alias (use full table name)
 
-	// Resolve position name to IDs; empty or "任意" means any position
-	anyPos := f.Position == "" || f.Position == "任意"
-	var posCond string
-	if anyPos {
-		posCond = "TRUE"
-	} else {
-		posIDs := b.getPositionIDsForName(f.Position)
-		if len(posIDs) == 0 {
-			return "", fmt.Errorf("未找到职位类型: %s", f.Position)
-		}
-		posCond = fmt.Sprintf("%s.position IN (%s)", ja, intListToSQL(posIDs))
+	// Collect positions: Positions overrides single Position
+	positions := f.Positions
+	if len(positions) == 0 && f.Position != "" {
+		positions = []string{f.Position}
 	}
 
-	// Build related entity conditions
+	if len(positions) == 0 {
+		return "", fmt.Errorf("staff filter requires at least one position")
+	}
+
+	// Resolve position names to ID sets
+	posIDSets := make([][]int, len(positions))
+	for i, name := range positions {
+		if name == "" || name == "任意" {
+			posIDSets[i] = nil // nil means wildcard
+		} else {
+			ids := b.getPositionIDsForName(name)
+			if len(ids) == 0 {
+				return "", fmt.Errorf("未找到职位类型: %s", name)
+			}
+			posIDSets[i] = ids
+		}
+	}
+
+	// Build person conditions
+	var personWhere string
+	if b.target == "subject" && len(f.Conditions) > 0 {
+		var err error
+		personWhere, err = b.buildPersonWhereForAlias(f.Conditions, nested.junctionTable)
+		if err != nil {
+			return "", fmt.Errorf("staff condition: %w", err)
+		}
+	}
+
+	// Multi-position: self-join to check same person across position groups
+	if len(positions) > 1 {
+		return b.multiStaffFilter(nested, posIDSets, personWhere, f)
+	}
+
+	// Single position: use existing manyToMany logic
+	ja := nested.junctionTable
+	posCond := "TRUE"
+	if posIDSets[0] != nil {
+		posCond = fmt.Sprintf("%s.position IN (%s)", ja, intListToSQL(posIDSets[0]))
+	}
+
 	var relatedWhere string
 	var relatedJoin string
 	if b.target == "person" {
-		// Person target: conditions on associated subjects
 		if len(f.Conditions) > 0 {
 			var err error
 			relatedWhere, err = b.buildWhereForAlias(f.Conditions, "rs")
@@ -834,7 +864,6 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 		relatedJoin = fmt.Sprintf("LEFT JOIN %s %s ON %s.%s = %s.%s",
 			nested.relatedTable, nested.relatedAlias, ja, nested.relatedFK, nested.relatedAlias, nested.relatedPK)
 	} else {
-		// Subject target: conditions on associated persons
 		if len(f.Conditions) > 0 {
 			var err error
 			relatedWhere, err = b.buildPersonWhereForAlias(f.Conditions, ja)
@@ -861,6 +890,51 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 		countOp:        f.CountOp,
 		countVal:       f.CountVal,
 	})
+}
+
+// multiStaffFilter handles multi-position staff filter (same person across positions).
+func (b *SQLBuilder) multiStaffFilter(nested *nestedEntityConfig, posIDSets [][]int, personWhere string, f *config.StaffFilter) (string, error) {
+	jt := nested.junctionTable
+	ma := b.mainAlias
+	mp := nested.mainPK
+	jmf := nested.junctionMainFK
+
+	// Build self-join chain: sp1 ↔ sp2 ↔ sp3 ... all sharing same person_id
+	var joins []string
+	var conds []string
+	for i := range posIDSets {
+		alias := fmt.Sprintf("sp%d", i+1)
+		if i == 0 {
+			cond := "TRUE"
+			if posIDSets[i] != nil {
+				cond = fmt.Sprintf("%s.position IN (%s)", alias, intListToSQL(posIDSets[i]))
+			}
+			conds = append(conds, fmt.Sprintf("%s.%s = %s.%s AND %s", alias, jmf, ma, mp, cond))
+		} else {
+			joins = append(joins, fmt.Sprintf("JOIN %s %s ON %s.%s = sp1.%s AND %s.%s = sp1.%s",
+				jt, alias, alias, jmf, jmf, alias, nested.relatedFK, nested.relatedFK))
+			cond := "TRUE"
+			if posIDSets[i] != nil {
+				cond = fmt.Sprintf("%s.position IN (%s)", alias, intListToSQL(posIDSets[i]))
+			}
+			conds = append(conds, cond)
+		}
+	}
+
+	allConds := strings.Join(conds, " AND ")
+	if personWhere != "" && personWhere != "TRUE" {
+		allConds += " AND " + personWhere
+	}
+
+	// none mode
+	if f.Mode == "none" {
+		return fmt.Sprintf("NOT EXISTS (SELECT 1 FROM %s sp1 %s WHERE %s)",
+			jt, strings.Join(joins, " "), allConds), nil
+	}
+
+	// any mode
+	return fmt.Sprintf("EXISTS (SELECT 1 FROM %s sp1 %s WHERE %s)",
+		jt, strings.Join(joins, " "), allConds), nil
 }
 
 // characterFilter handles character-based filtering for subject queries.

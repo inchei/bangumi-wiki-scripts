@@ -345,8 +345,11 @@ type CharacterRelationFilter struct {
 // StaffFilter filters by staff/person.
 // Conditions support all filter types (nested), allowing full filtering on persons (subject target) or subjects (person target).
 // Use field=appear_eps inside conditions to filter on the junction table's appear_eps column.
+// When Positions has multiple values, checks that the same person holds all positions
+// (self-join on subject_persons matching person_id across position groups).
 type StaffFilter struct {
-	Position   string      `yaml:"position" json:"position"`                       // Chinese position name (e.g., "原作")
+	Position   string      `yaml:"position,omitempty" json:"position,omitempty"`   // single Chinese position name (e.g., "原作")
+	Positions  []string    `yaml:"positions,omitempty" json:"positions,omitempty"` // multiple positions for same-person check
 	Mode       string      `yaml:"mode" json:"mode"`                               // any, all, none, count
 	CountOp    string      `yaml:"count_op,omitempty" json:"count_op,omitempty"`   // count mode operator
 	CountVal   interface{} `yaml:"count_val,omitempty" json:"count_val,omitempty"` // count mode threshold
@@ -525,7 +528,7 @@ func (c *Config) Validate() error {
 				f.CharacterRelation.Mode = "any"
 			}
 		case f.Staff != nil:
-			if f.Staff.Position == "" {
+			if f.Staff.Position == "" && len(f.Staff.Positions) == 0 {
 				return fmt.Errorf("筛选条件 %d: staff position 不能为空", i+1)
 			}
 			if f.Staff.Mode == "" {
