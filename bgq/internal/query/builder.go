@@ -436,6 +436,10 @@ func (b *SQLBuilder) fieldFilter(f *config.FieldFilter, tableAlias string) (stri
 	if b.target == "person" && fieldName == "type" {
 		fieldName = "person_type"
 	}
+	// Map "id" to target's idColumn
+	if fieldName == "id" && b.tc.idColumn != "id" {
+		fieldName = b.tc.idColumn
+	}
 
 	// Handle career as LIST_CONTAINS for person target
 	if b.target == "person" && fieldName == "career" {
