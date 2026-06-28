@@ -55,11 +55,24 @@
     return "";
   }
 
-  function cellContent(col, val) {
+  const MAX_DISPLAY_LEN = 80;
+  let expanded = $state({});
+
+  function toggleExpand(ri, ci) {
+    const key = ri + "_" + ci;
+    expanded = { ...expanded, [key]: !expanded[key] };
+  }
+
+  function cellHtml(col, val, ri, ci) {
     if (isIDColumn(col)) return bgmLink(val, col);
     if (val === null || val === undefined || val === "")
       return '<span class="cell-null">—</span>';
-    return escapeHtml(String(val));
+    const s = String(val);
+    const key = ri + "_" + ci;
+    const isExpanded = expanded[key];
+    const display = isExpanded ? s : s.slice(0, MAX_DISPLAY_LEN);
+    const suffix = !isExpanded && s.length > MAX_DISPLAY_LEN ? "…" : "";
+    return escapeHtml(display + suffix).replace(/\n/g, "<br>");
   }
 
   // Keep in sync with backend builder.go:
@@ -258,16 +271,28 @@
                   class="sortable"
                   class:sort-asc={$sortState.col === i && $sortState.asc}
                   class:sort-desc={$sortState.col === i && !$sortState.asc}
-                  onclick={() => sortTable(i)}
+                  aria-sort={$sortState.col === i
+                    ? $sortState.asc
+                      ? "ascending"
+                      : "descending"
+                    : "none"}
                   title={col}
-                  >{col.length > 20 ? col.substring(0, 18) + "…" : col}
-                  {#if $sortState.col === i && $sortState.asc}
-                    <FontAwesomeIcon icon={faArrowDownShortWide} />
-                  {:else if $sortState.col === i && !$sortState.asc}
-                    <FontAwesomeIcon icon={faArrowDownWideShort} />
-                  {:else}
-                    <FontAwesomeIcon icon={faSort} class="sort-placeholder" />
-                  {/if}
+                >
+                  <span
+                    class="sort-btn"
+                    onclick={() => sortTable(i)}
+                    onkeydown={(e) => e.key === "Enter" && sortTable(i)}
+                    tabindex="0"
+                    role="button"
+                    >{col.length > 20 ? col.substring(0, 18) + "…" : col}
+                    {#if $sortState.col === i && $sortState.asc}
+                      <FontAwesomeIcon icon={faArrowDownShortWide} />
+                    {:else if $sortState.col === i && !$sortState.asc}
+                      <FontAwesomeIcon icon={faArrowDownWideShort} />
+                    {:else}
+                      <FontAwesomeIcon icon={faSort} class="sort-placeholder" />
+                    {/if}
+                  </span>
                 </th>
               {/each}
             </tr>
@@ -277,8 +302,19 @@
               <tr>
                 <!-- eslint-disable svelte/no-at-html-tags -->
                 {#each res.columns as col, i (col)}
-                  <td class={cellClass(col)}
-                    >{@html cellContent(col, row[i])}</td
+                  {@const isLong =
+                    row[i] && String(row[i]).length > MAX_DISPLAY_LEN}
+                  <td
+                    class={cellClass(col) +
+                      (expanded[ri + "_" + i] ? " cell-expanded" : "") +
+                      (isLong ? " cell-expandable" : "")}
+                    onclick={isLong ? () => toggleExpand(ri, i) : undefined}
+                    onkeydown={isLong
+                      ? (e) => e.key === "Enter" && toggleExpand(ri, i)
+                      : undefined}
+                    tabindex={isLong ? "0" : undefined}
+                    role={isLong ? "button" : undefined}
+                    >{@html cellHtml(col, row[i], ri, i)}</td
                   >
                 {/each}
                 <!-- eslint-enable svelte/no-at-html-tags -->
@@ -396,12 +432,18 @@
   }
 
   .results-table th.sortable {
-    cursor: pointer;
     user-select: none;
+    padding: 0;
+  }
+
+  .results-table th.sortable .sort-btn {
+    display: block;
+    padding: 10px 14px;
+    cursor: pointer;
     transition: background 0.15s;
   }
 
-  .results-table th.sortable:hover {
+  .results-table th.sortable .sort-btn:hover {
     background: var(--accent-light);
     color: var(--text);
   }
@@ -425,6 +467,21 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .results-table td.cell-expandable {
+    cursor: pointer;
+  }
+
+  .results-table td:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .results-table td.cell-expanded {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .results-table tbody tr {
