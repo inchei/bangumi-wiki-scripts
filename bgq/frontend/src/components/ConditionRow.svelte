@@ -66,6 +66,7 @@
           "not_contains",
           "eq",
           "regex",
+          "not_regex",
           "gt",
           "lt",
           "gte",
@@ -224,6 +225,7 @@
     >
       <option value="contains">包含</option>
       <option value="not_contains">不包含</option>
+      <option value="not_regex">正则不符合</option>
       <option value="regex">正则</option>
     </select>
     <input

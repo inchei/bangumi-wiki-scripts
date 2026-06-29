@@ -748,11 +748,11 @@ export const EPISODE_FIELD_LABELS = {
   episode_id: "ID",
 };
 export const EPISODE_FIELD_OPS = {
-  name: ["contains", "not_contains", "eq", "regex"],
-  name_cn: ["contains", "not_contains", "eq", "regex"],
-  description: ["contains", "not_contains", "eq", "regex"],
+  name: ["contains", "not_contains", "eq", "regex", "not_regex"],
+  name_cn: ["contains", "not_contains", "eq", "regex", "not_regex"],
+  description: ["contains", "not_contains", "eq", "regex", "not_regex"],
   airdate: ["before", "after"],
-  duration: ["contains", "not_contains", "eq", "regex"],
+  duration: ["contains", "not_contains", "eq", "regex", "not_regex"],
   sort: ["gt", "gte", "lt", "lte", "eq"],
   type: ["gt", "gte", "lt", "lte", "eq"],
   disc: ["gt", "gte", "lt", "lte", "eq"],
@@ -966,6 +966,7 @@ export function opLabel(op) {
     eq: "=",
     contains: "包含",
     not_contains: "不包含",
+    not_regex: "正则不符合",
     regex: "正则",
     gt: ">",
     gte: ">=",
