@@ -302,18 +302,18 @@
               <tr>
                 <!-- eslint-disable svelte/no-at-html-tags -->
                 {#each res.columns as col, i (col)}
-                  {@const isLong =
+                  {@const long =
                     row[i] && String(row[i]).length > MAX_DISPLAY_LEN}
                   <td
                     class={cellClass(col) +
                       (expanded[ri + "_" + i] ? " cell-expanded" : "") +
-                      (isLong ? " cell-expandable" : "")}
-                    onclick={isLong ? () => toggleExpand(ri, i) : undefined}
-                    onkeydown={isLong
+                      (long ? " cell-expandable" : "")}
+                    onclick={long ? () => toggleExpand(ri, i) : undefined}
+                    onkeydown={long
                       ? (e) => e.key === "Enter" && toggleExpand(ri, i)
                       : undefined}
-                    tabindex={isLong ? "0" : undefined}
-                    role={isLong ? "button" : undefined}
+                    tabindex={long ? "0" : undefined}
+                    role={long ? "button" : undefined}
                     >{@html cellHtml(col, row[i], ri, i)}</td
                   >
                 {/each}
@@ -464,9 +464,6 @@
     padding: 8px 14px;
     border-bottom: 1px solid var(--bg-alt);
     max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 
   .results-table td.cell-expandable {
@@ -478,9 +475,6 @@
   }
 
   .results-table td.cell-expanded {
-    overflow: visible;
-    text-overflow: clip;
-    white-space: normal;
     overflow-wrap: anywhere;
   }
 
