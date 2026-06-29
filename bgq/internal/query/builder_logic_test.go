@@ -11,9 +11,15 @@ import (
 
 // testDataDir returns the absolute path to bangumi_archive relative to the repo root.
 func testDataDir() string {
-	// This file is at bgq/internal/query/builder_test.go
+	// This file is at bgq/internal/query/builder_logic_test.go
 	_, filename, _, _ := runtime.Caller(0)
 	return filepath.Join(filepath.Dir(filename), "..", "..", "..", "bangumi_archive")
+}
+
+// testExecuteDataDir returns the path to a small test archive for execute tests.
+func testExecuteDataDir() string {
+	_, filename, _, _ := runtime.Caller(0)
+	return filepath.Join(filepath.Dir(filename), "testdata", "archive")
 }
 
 // --- Logic structure tests (unit: verify SQL semantics, not just execution) ---
