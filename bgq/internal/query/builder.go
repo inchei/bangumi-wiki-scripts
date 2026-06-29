@@ -439,9 +439,93 @@ func (b *SQLBuilder) typeFilter(f *config.TypeFilter) (string, error) {
 	}
 }
 
+// buildFieldExpr builds a DuckDB expression to read a field value from an alias,
+// handling direct fields, infobox extraction, date normalization, and numeric extraction.
+func (b *SQLBuilder) buildFieldExpr(field, alias string, isDate, isNumeric bool) string {
+	var expr string
+	if b.isDirectField(field) {
+		expr = alias + "." + quoteIdent(field)
+	} else {
+		expr = b.infoboxExtractExpr(field, alias)
+	}
+	switch {
+	case isDate:
+		expr = b.infoboxFirstDateExpr(field, alias)
+	case isNumeric:
+		expr = extractNum(expr)
+	}
+	return expr
+}
+
+// splitFieldRef splits a field reference like "连载开始+300" into ("连载开始", "+300").
+func splitFieldRef(s string) (field, modifier string) {
+	for i := 1; i < len(s); i++ {
+		if s[i] == '+' || s[i] == '-' || s[i] == '*' || s[i] == '/' {
+			return s[:i], s[i:]
+		}
+	}
+	return s, ""
+}
+
+// buildFieldCompare generates a field-to-field comparison condition.
+// rhsModifier is an optional arithmetic suffix like "+300" to apply to the RHS expression.
+func (b *SQLBuilder) buildFieldCompare(lhsField, rhsField, rhsModifier, op, lhsAlias, rhsAlias string) (string, error) {
+	isDate := dateFields[lhsField] && dateFields[rhsField] && (op == "before" || op == "after")
+	isNumeric := isNumericOp(op)
+	lhs := b.buildFieldExpr(lhsField, lhsAlias, isDate, isNumeric)
+	rhs := b.buildFieldExpr(rhsField, rhsAlias, isDate, isNumeric)
+
+	switch op {
+	case "eq":
+		return fmt.Sprintf("CAST(%s AS VARCHAR) = CAST(%s AS VARCHAR)", lhs, rhs), nil
+	case "gt":
+		return fmt.Sprintf("%s > %s", lhs, rhs), nil
+	case "gte":
+		return fmt.Sprintf("%s >= %s", lhs, rhs), nil
+	case "lt":
+		return fmt.Sprintf("%s < %s", lhs, rhs), nil
+	case "lte":
+		return fmt.Sprintf("%s <= %s", lhs, rhs), nil
+	case "before":
+		return fmt.Sprintf("%s < %s", normalizeDate(lhs), b.applyDateModifier(normalizeDate(rhs), rhsModifier)), nil
+	case "after":
+		return fmt.Sprintf("%s > %s", normalizeDate(lhs), b.applyDateModifier(normalizeDate(rhs), rhsModifier)), nil
+	case "contains":
+		return fmt.Sprintf("CAST(%s AS VARCHAR) LIKE '%%' || CAST(%s AS VARCHAR) || '%%'", lhs, rhs), nil
+	case "not_contains":
+		return fmt.Sprintf("CAST(%s AS VARCHAR) NOT LIKE '%%' || CAST(%s AS VARCHAR) || '%%' AND TRIM(CAST(%s AS VARCHAR)) <> ''", lhs, rhs, lhs), nil
+	case "regex":
+		return fmt.Sprintf("regexp_matches(%s, %s)", lhs, rhs), nil
+	default:
+		return "", fmt.Errorf("field compare: unsupported operator %q", op)
+	}
+}
+
+// applyDateModifier wraps a date expression with an optional arithmetic modifier.
+// E.g., for expr=TRY_CAST(date AS DATE) and modifier="+300" → (TRY_CAST(date AS DATE) + 300)
+func (b *SQLBuilder) applyDateModifier(expr, modifier string) string {
+	if modifier == "" {
+		return expr
+	}
+	return fmt.Sprintf("(%s %s)", expr, modifier)
+}
+
 // fieldFilter handles field-based filtering (JSON field or infobox field).
 func (b *SQLBuilder) fieldFilter(f *config.FieldFilter, tableAlias string) (string, error) {
+	// Field-to-field comparison: value starting with "$" references another field
+	// "$main." prefix references the main entity (e.g., parent subject's id)
 	valueStr := fmt.Sprintf("%v", f.Value)
+	if strings.HasPrefix(valueStr, "$") {
+		refValue := valueStr[1:]
+		refAlias := tableAlias
+		if strings.HasPrefix(refValue, "main.") {
+			refAlias = b.mainAlias
+			refValue = refValue[5:]
+		}
+		refField, modifier := splitFieldRef(refValue)
+		return b.buildFieldCompare(f.Field, refField, modifier, f.Operator, tableAlias, refAlias)
+	}
+
 	fieldName := f.Field
 
 	// Map "type" to "person_type" for person target
@@ -765,6 +849,16 @@ func (b *SQLBuilder) typeFilterForAlias(f *config.TypeFilter, alias string) (str
 
 func (b *SQLBuilder) fieldFilterForAlias(f *config.FieldFilter, alias string) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
+	if strings.HasPrefix(valueStr, "$") {
+		refValue := valueStr[1:]
+		refAlias := alias
+		if strings.HasPrefix(refValue, "main.") {
+			refAlias = b.mainAlias
+			refValue = refValue[5:]
+		}
+		refField, modifier := splitFieldRef(refValue)
+		return b.buildFieldCompare(f.Field, refField, modifier, f.Operator, alias, refAlias)
+	}
 	// Special case: rank 0 means no ranking
 	if f.Field == "rank" {
 		col := alias + "." + quoteIdent("rank")
@@ -1214,6 +1308,16 @@ func (b *SQLBuilder) filterForNestedContext(f config.Filter, idx int, nestedAlia
 // fieldFilterForNested builds a field filter for a nested entity context using a field map.
 func (b *SQLBuilder) fieldFilterForNested(f *config.FieldFilter, nestedAlias string, fieldMap map[string]string, junctionAlias string) (string, error) {
 	valueStr := fmt.Sprintf("%v", f.Value)
+	if strings.HasPrefix(valueStr, "$") {
+		refValue := valueStr[1:]
+		refAlias := nestedAlias
+		if strings.HasPrefix(refValue, "main.") {
+			refAlias = b.mainAlias
+			refValue = refValue[5:]
+		}
+		refField, modifier := splitFieldRef(refValue)
+		return b.buildFieldCompare(f.Field, refField, modifier, f.Operator, nestedAlias, refAlias)
+	}
 
 	// Special case: appear_eps in staff person context references junction table
 	if f.Field == "appear_eps" && junctionAlias != "" {
@@ -1576,7 +1680,10 @@ func (b *SQLBuilder) buildRelationOutput(relType, field string) (string, error) 
 		return "", fmt.Errorf("未找到关系类型: %s", relType)
 	}
 	rf := b.findFilter(filterTypeRelation, relType)
-	conds := rf.(*config.RelationFilter)
+	var conds *config.RelationFilter
+	if rf != nil {
+		conds = rf.(*config.RelationFilter)
+	}
 
 	var relatedWhere string
 	relatedJoin := "LEFT JOIN subjects rs ON r.related_subject_id = rs.id"
@@ -1943,8 +2050,9 @@ func (b *SQLBuilder) infoboxExtractExpr(fieldName, alias string) string {
 	// Handles both simple values and multi-value blocks:
 	//   Simple:  |field= value
 	//   Multi:   |field={\n[val1]\n[val2]\n}
+	// Excludes \r to avoid CRLF line-ending artifacts in comparison operators.
 	escapedField := regexEscapeLiteral(fieldName)
-	pattern := fmt.Sprintf(`(?i)\|%s\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n]*)`, escapedField)
+	pattern := fmt.Sprintf(`(?i)\|%s\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)`, escapedField)
 	return fmt.Sprintf("regexp_extract(%s.infobox, '%s', 1)", alias, sqlEscapeRegexString(pattern))
 }
 
