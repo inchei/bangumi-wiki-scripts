@@ -1,4 +1,12 @@
-function handleSetupViewButtons(btnId) {
+import { state, type PreviousItem } from './core';
+import { startProcessing, processNextItem, submitUpdate } from './api';
+import { checkForUpdates, generateCommitMessage } from './diff';
+import { showStatusMessage, showLoadingOverlay, hideLoadingOverlay } from './ui';
+import { switchToSetupView, switchToUpdateErrorView } from './views';
+import { resetProcessingState } from './utils';
+import { saveState } from './core';
+
+export function handleSetupViewButtons(btnId: string): void {
     switch (btnId) {
         case 'setup-start-processing':
             startProcessing();
@@ -13,31 +21,30 @@ function handleSetupViewButtons(btnId) {
     }
 }
 
-function handleProcessingViewButtons(btnId) {
+export function handleProcessingViewButtons(btnId: string): void {
+    if (!state.csvData) return;
     const currentItem = state.csvData[state.currentIndex];
     const subjectData = state.currentSubjectData;
-    const itemId = currentItem?.id || state.currentItemId;
+    const itemId = currentItem?.id || state.currentItemId || '';
     const itemName = subjectData?.name || '未知名称';
     const entityType = currentItem?.type || 'subject';
 
-    // Build previous item with entity type info
-    function makePreviousItem() {
+    function makePreviousItem(): PreviousItem {
         return { id: itemId, name: itemName, type: entityType };
     }
 
     switch (btnId) {
-        case 'process-confirm-update':
-            const finalWcode = document.getElementById('static-wcode-input').value;
+        case 'process-confirm-update': {
+            const finalWcode = (document.getElementById('static-wcode-input') as HTMLTextAreaElement).value;
 
-            // Tags and series only apply to subjects
             const finalTags = entityType === 'subject'
-                ? document.getElementById('static-tags-input').value.split(' ').filter(t => t)
+                ? (document.getElementById('static-tags-input') as HTMLInputElement).value.split(' ').filter(t => t)
                 : [];
             const finalSeries = entityType === 'subject'
-                ? document.getElementById('static-series-checkbox').checked
+                ? (document.getElementById('static-series-checkbox') as HTMLInputElement).checked
                 : false;
 
-            const commitMessage = document.getElementById('static-commit-input').value ||
+            const commitMessage = (document.getElementById('static-commit-input') as HTMLInputElement).value ||
                 generateCommitMessage(state.currentFieldUpdates, state.currentTagUpdates, state.currentSeriesUpdate, entityType);
 
             const hasUpdates = checkForUpdates();
@@ -54,7 +61,7 @@ function handleProcessingViewButtons(btnId) {
             }
 
             document.querySelectorAll('#static-buttons-container button').forEach(btn => {
-                btn.disabled = true;
+                (btn as HTMLButtonElement).disabled = true;
             });
             showLoadingOverlay('正在提交更新...');
 
@@ -73,15 +80,16 @@ function handleProcessingViewButtons(btnId) {
                     saveState();
                     processNextItem();
                 },
-                (error) => {
+                (error: Error) => {
                     hideLoadingOverlay();
                     document.querySelectorAll('#static-buttons-container button').forEach(btn => {
-                        btn.disabled = false;
+                        (btn as HTMLButtonElement).disabled = false;
                     });
                     switchToUpdateErrorView(error.message);
-                }
+                },
             );
             break;
+        }
 
         case 'process-skip-update':
             state.previousItem = makePreviousItem();
@@ -106,11 +114,12 @@ function handleProcessingViewButtons(btnId) {
             processNextItem();
             break;
 
-        case 'process-retry-error':
+        case 'process-retry-error': {
             const currentRetryCount = state.retryCount[itemId] || 0;
             showStatusMessage(`正在重试（${currentRetryCount}次）...`);
             processNextItem();
             break;
+        }
 
         case 'process-skip-update-fail':
             state.previousItem = makePreviousItem();
@@ -120,19 +129,25 @@ function handleProcessingViewButtons(btnId) {
             processNextItem();
             break;
 
-        case 'process-retry-update':
+        case 'process-retry-update': {
             const retryCurrentCount = state.retryCount[itemId] || 0;
             showStatusMessage(`正在重试（${retryCurrentCount}次）...`);
             processNextItem(true);
             break;
+        }
     }
 }
 
-function handleCompletedViewButtons(btnId) {
+export function handleCompletedViewButtons(btnId: string): void {
     switch (btnId) {
         case 'completed-back-to-setup':
             switchToSetupView();
             hideProgressBar();
             break;
     }
+}
+
+function hideProgressBar(): void {
+    const el = document.getElementById('bgm-tool-progress');
+    if (el) el.style.display = 'none';
 }

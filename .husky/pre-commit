@@ -16,3 +16,10 @@ if [ -n "$FE_FILES" ]; then
   cd bgq/frontend && pnpm exec lint-staged || exit 1
   cd ../..
 fi
+
+WB_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '^wikiBatch/src/' || true)
+if [ -n "$WB_FILES" ]; then
+  cd wikiBatch && pnpm lint && pnpm lint:css && pnpm typecheck && pnpm build || exit 1
+  cd ..
+  git add wikiBatch/dist/wikiBatch.user.js
+fi

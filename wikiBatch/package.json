@@ -1,0 +1,27 @@
+{
+  "name": "bangumi-wiki-batch",
+  "private": true,
+  "scripts": {
+    "build": "node build.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "lint:css": "stylelint src/*.css"
+  },
+  "dependencies": {
+    "@trim21/gm-fetch": "^0.3.0",
+    "diff": "^9.0.0",
+    "diff2html": "^3.4.56",
+    "papaparse": "^5.5.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/papaparse": "^5.5.2",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.6.0",
+    "globals": "^17.7.0",
+    "stylelint": "^17.14.0",
+    "stylelint-config-standard": "^40.0.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.62.0"
+  }
+}
