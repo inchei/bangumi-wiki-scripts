@@ -927,6 +927,8 @@ func (b *SQLBuilder) multiStaffFilter(nested *nestedEntityConfig, posIDSets [][]
 	allConds := strings.Join(conds, " AND ")
 	if personWhere != "" && personWhere != "TRUE" {
 		allConds += " AND " + personWhere
+		joins = append(joins, fmt.Sprintf("LEFT JOIN %s %s ON sp1.%s = %s.%s",
+			nested.relatedTable, nested.relatedAlias, nested.relatedFK, nested.relatedAlias, nested.relatedPK))
 	}
 
 	// none mode
