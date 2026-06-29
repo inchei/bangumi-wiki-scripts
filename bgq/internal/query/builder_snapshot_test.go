@@ -274,6 +274,100 @@ func generateAllSQL() map[string]string {
 		}
 	}
 
+	// Relation output columns
+	relOutputFilters := []struct {
+		name    string
+		columns []string
+		filter  config.Filter
+	}{
+		{"relation_output_limit", []string{"id", "name", "单行本.name", "单行本.发售日"}, config.Filter{Relation: &config.RelationFilter{
+			Type: "单行本", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "1"}}},
+		}}},
+		{"relation_output_all", []string{"id", "name", "单行本.name+", "单行本.发售日+"}, config.Filter{Relation: &config.RelationFilter{
+			Type: "单行本", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "1"}}},
+		}}},
+		{"relation_output_count", []string{"id", "name", "单行本.count"}, config.Filter{Relation: &config.RelationFilter{
+			Type: "单行本", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "1"}}},
+		}}},
+		{"staff_output", []string{"id", "name", "原作.name", "原作.count"}, config.Filter{Staff: &config.StaffFilter{
+			Position: "原作", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
+		}}},
+		{"character_output", []string{"id", "name", "主角.name", "主角.count"}, config.Filter{Character: &config.CharacterFilter{
+			Type: "主角", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
+		}}},
+		{"episode_output", []string{"id", "name", "episode.name", "episode.count"}, config.Filter{Episode: &config.EpisodeFilter{
+			Mode: "any", Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
+			}},
+		}}},
+	}
+	for _, ro := range relOutputFilters {
+		cfg := &config.Config{
+			DataDir: testDataDir(), Limit: 10,
+			Output:  &config.Output{Format: "table", Columns: ro.columns},
+			Filters: []config.Filter{ro.filter},
+		}
+		sql, err := NewSQLBuilder(cfg, cfg.DataDir).Build()
+		if err != nil {
+			results[ro.name] = "ERROR: " + err.Error()
+		} else {
+			results[ro.name] = sql
+		}
+	}
+
+	// Person output columns (person target)
+	personOutTests := []struct {
+		name    string
+		columns []string
+		filter  config.Filter
+	}{
+		{"person_relation_output", []string{"person_id", "name", "同事.name", "同事.count"}, config.Filter{PersonRelation: &config.PersonRelationFilter{
+			Type: "同事", Mode: "any",
+		}}},
+	}
+	for _, pt := range personOutTests {
+		cfg := &config.Config{
+			DataDir: testDataDir(), Limit: 10, Target: "person",
+			Output:  &config.Output{Format: "table", Columns: pt.columns},
+			Filters: []config.Filter{pt.filter},
+		}
+		sql, err := NewSQLBuilder(cfg, cfg.DataDir).Build()
+		if err != nil {
+			results[pt.name] = "ERROR: " + err.Error()
+		} else {
+			results[pt.name] = sql
+		}
+	}
+
+	// Character output columns (character target)
+	charOutTests := []struct {
+		name    string
+		columns []string
+		filter  config.Filter
+	}{
+		{"character_relation_output", []string{"character_id", "name", "朋友.name", "朋友.count"}, config.Filter{CharacterRelation: &config.CharacterRelationFilter{
+			Type: "朋友", Mode: "any",
+		}}},
+	}
+	for _, ct := range charOutTests {
+		cfg := &config.Config{
+			DataDir: testDataDir(), Limit: 10, Target: "character",
+			Output:  &config.Output{Format: "table", Columns: ct.columns},
+			Filters: []config.Filter{ct.filter},
+		}
+		sql, err := NewSQLBuilder(cfg, cfg.DataDir).Build()
+		if err != nil {
+			results[ct.name] = "ERROR: " + err.Error()
+		} else {
+			results[ct.name] = sql
+		}
+	}
+
 	return results
 }
 

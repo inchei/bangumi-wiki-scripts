@@ -22,9 +22,8 @@ cd bgq
 
 # Build (requires frontend dist: cd frontend && pnpm build, then cp -r frontend/dist internal/server/dist)
 go build -o bin/bgq ./cmd/bgq/
-go test ./internal/query/ -v               # Run tests (~1s, snapshot-based, no DuckDB needed)
-go test ./internal/query/ -update          # Regenerate golden file after intentional SQL changes
-go test ./internal/query/ -execute         # Also execute SQL against DuckDB (slower, needs DuckDB)
+go test ./internal/query/ -v -execute      # Run tests (snapshot + DuckDB execution)
+go test ./internal/query/ -update -execute # Regenerate golden file + verify with DuckDB
 go test ./internal/query/ -run TestAllCombinations -v  # Single test
 
 gofmt -w .                                 # Format
