@@ -1,5 +1,6 @@
 bangumi_archive
 *.jsonlines
+!bgq/internal/query/testdata/archive/*.jsonlines
 *.xlsx
 diff.py
 *.db

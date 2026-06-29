@@ -1,11 +1,14 @@
 package query
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -16,6 +19,41 @@ import (
 
 var update = flag.Bool("update", false, "update golden files")
 var execute = flag.Bool("execute", false, "also execute SQL against DuckDB")
+
+// testDBPath is a persistent DuckDB database for db-mode tests, built via bgq ingest in TestMain.
+var testDBPath string
+
+func TestMain(m *testing.M) {
+	flag.Parse()
+	if *execute {
+		// Build bgq ingest binary
+		_, filename, _, _ := runtime.Caller(0)
+		repoRoot := filepath.Join(filepath.Dir(filename), "..", "..", "..")
+		bgqDir := filepath.Join(repoRoot, "bgq")
+		ingestBin := filepath.Join(os.TempDir(), "bgq-ingest-test")
+		cmd := exec.CommandContext(context.Background(), "go", "build", "-o", ingestBin, "./cmd/bgq/")
+		cmd.Dir = bgqDir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to build bgq ingest: %v\nOutput: %s\n", err, string(out))
+			os.Exit(1)
+		}
+
+		// Create test database
+		testDBPath = filepath.Join(os.TempDir(), "bgq-test-"+strconv.Itoa(os.Getpid())+".db")
+		archiveDir := testExecuteDataDir()
+		cmd = exec.CommandContext(context.Background(), ingestBin, "ingest", "--db", testDBPath, "--data-dir", archiveDir)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			_ = os.Remove(testDBPath)
+			fmt.Fprintf(os.Stderr, "Failed to create test database: %v\nOutput: %s\n", err, string(out))
+			os.Exit(1)
+		}
+	}
+	code := m.Run()
+	if testDBPath != "" {
+		_ = os.Remove(testDBPath)
+	}
+	os.Exit(code)
+}
 
 // inClauseRe matches IN (val1, val2, ...) clauses.
 var inClauseRe = regexp.MustCompile(`IN \(([^)]+)\)`)
@@ -51,6 +89,7 @@ func generateAllSQL() map[string]string {
 	modes := []string{"any", "all", "none", "count"}
 	combos := []combo{
 		{"staff", []string{"subject", "person"}},
+		{"staff_multi", []string{"subject", "person"}},
 		{"character", []string{"subject", "character"}},
 		{"relation", []string{"subject"}},
 		{"person_relation", []string{"person"}},
@@ -69,6 +108,11 @@ func generateAllSQL() map[string]string {
 				case "staff":
 					f = config.Filter{Staff: &config.StaffFilter{
 						Position: "原作", Mode: mode, CountOp: "gte", CountVal: 1,
+						Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
+					}}
+				case "staff_multi":
+					f = config.Filter{Staff: &config.StaffFilter{
+						Positions: []string{"原作", "脚本"}, Mode: mode, CountOp: "gte", CountVal: 1,
 						Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
 					}}
 				case "character":
@@ -164,9 +208,19 @@ func generateAllSQL() map[string]string {
 		{"field", []string{"subject", "person", "character", "episode"}, config.Filter{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
 		{"tag", []string{"subject"}, config.Filter{Tag: &config.TagFilter{Operator: "contains", Value: "test"}}},
 		{"meta_tag", []string{"subject"}, config.Filter{MetaTag: &config.TagFilter{Operator: "contains", Value: "TV"}}},
-		{"global", []string{"subject"}, config.Filter{Global: &config.GlobalFilter{Operator: "contains", Value: "test"}}},
+		{"global", []string{"subject", "person", "character"}, config.Filter{Global: &config.GlobalFilter{Operator: "contains", Value: "test"}}},
 		{"episode", []string{"subject"}, config.Filter{Episode: &config.EpisodeFilter{
 			Mode: "any", Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
+			}},
+		}}},
+		{"episode_all", []string{"subject"}, config.Filter{Episode: &config.EpisodeFilter{
+			Mode: "all", Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
+			}},
+		}}},
+		{"episode_count", []string{"subject"}, config.Filter{Episode: &config.EpisodeFilter{
+			Mode: "count", CountOp: "gte", CountVal: 1, Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
 				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
 			}},
 		}}},
@@ -264,16 +318,204 @@ func TestAllCombinations(t *testing.T) {
 	// Optional: also execute against DuckDB
 	if *execute {
 		SetDuckDBPath(filepath.Join(testBinDir(), "duckdb"))
-		engine := NewEngine("", testDataDir())
+		executeDir := testExecuteDataDir()
+
+		// data-dir mode (JSONLines → CTEs)
+		engine := NewEngine("", executeDir)
 		for name, sql := range results {
 			if strings.HasPrefix(sql, "ERROR:") {
 				continue
 			}
 			t.Run(name, func(t *testing.T) {
-				if _, err := engine.executeSQL(t.Context(), sql); err != nil {
+				testSQL := strings.ReplaceAll(sql, testDataDir(), executeDir)
+				if _, err := engine.executeSQL(t.Context(), testSQL); err != nil {
+					t.Fatalf("Execute failed:\nSQL: %s\nError: %v", testSQL, err)
+				}
+			})
+		}
+
+		// db mode (persistent database built by bgq ingest)
+		engineDB := NewEngine(testDBPath, "")
+		dbResults := generateAllSQLDB()
+		for name, sql := range dbResults {
+			if strings.HasPrefix(sql, "ERROR:") {
+				continue
+			}
+			t.Run("db_"+name, func(t *testing.T) {
+				if _, err := engineDB.executeSQL(t.Context(), sql); err != nil {
 					t.Fatalf("Execute failed:\nSQL: %s\nError: %v", sql, err)
 				}
 			})
 		}
 	}
+}
+
+// generateAllSQLDB returns all filter × mode combinations in persistent database mode (no CTEs).
+func generateAllSQLDB() map[string]string {
+	type combo struct {
+		filterName string
+		targets    []string
+	}
+	modes := []string{"any", "all", "none", "count"}
+	combos := []combo{
+		{"staff", []string{"subject", "person"}},
+		{"staff_multi", []string{"subject", "person"}},
+		{"character", []string{"subject", "character"}},
+		{"relation", []string{"subject"}},
+		{"person_relation", []string{"person"}},
+		{"character_relation", []string{"character"}},
+		{"person_character", []string{"person"}},
+		{"character_person", []string{"character"}},
+	}
+
+	makeCfg := func(target string, f config.Filter) *config.Config {
+		return &config.Config{Database: "test", Limit: 10, Target: target,
+			Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+			Filters: []config.Filter{f},
+		}
+	}
+
+	results := make(map[string]string)
+	for _, c := range combos {
+		for _, target := range c.targets {
+			for _, mode := range modes {
+				var f config.Filter
+				switch c.filterName {
+				case "staff":
+					f = config.Filter{Staff: &config.StaffFilter{
+						Position: "原作", Mode: mode, CountOp: "gte", CountVal: 1,
+						Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
+					}}
+				case "staff_multi":
+					f = config.Filter{Staff: &config.StaffFilter{
+						Positions: []string{"原作", "脚本"}, Mode: mode, CountOp: "gte", CountVal: 1,
+						Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
+					}}
+				case "character":
+					f = config.Filter{Character: &config.CharacterFilter{
+						Type: "主角", Mode: mode, CountOp: "gte", CountVal: 1,
+						Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
+					}}
+				case "relation":
+					f = config.Filter{Relation: &config.RelationFilter{
+						Type: "单行本", Mode: mode, CountOp: "gte", CountVal: 1,
+						Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "score", Operator: "gt", Value: "8"}}},
+					}}
+				case "person_relation":
+					f = config.Filter{PersonRelation: &config.PersonRelationFilter{Type: "同事", Mode: mode, CountOp: "gte", CountVal: 1}}
+				case "character_relation":
+					f = config.Filter{CharacterRelation: &config.CharacterRelationFilter{Type: "朋友", Mode: mode, CountOp: "gte", CountVal: 1}}
+				case "person_character":
+					f = config.Filter{PersonCharacter: &config.PersonCharacterFilter{
+						Type: "CV", Mode: mode, CountOp: "gte", CountVal: 1,
+						SubjectConditions: []config.Filter{{Field: &config.FieldFilter{Field: "score", Operator: "gt", Value: "8"}}},
+					}}
+				case "character_person":
+					f = config.Filter{CharacterPerson: &config.CharacterPersonFilter{
+						Type: "CV", Mode: mode, CountOp: "gte", CountVal: 1,
+						SubjectConditions: []config.Filter{{Field: &config.FieldFilter{Field: "score", Operator: "gt", Value: "8"}}},
+					}}
+				}
+				name := fmt.Sprintf("%s_%s_%s", c.filterName, target, mode)
+				cfg := makeCfg(target, f)
+				sql, err := NewSQLBuilder(cfg, "").Build()
+				if err != nil {
+					results[name] = "ERROR: " + err.Error()
+				} else {
+					results[name] = sql
+				}
+			}
+		}
+	}
+
+	subjectModes := []string{"any", "all", "count"}
+	for _, mode := range modes {
+		for _, subjMode := range subjectModes {
+			for _, pair := range [][2]string{
+				{"person_character_person", "person"},
+				{"character_person_character", "character"},
+			} {
+				name := fmt.Sprintf("%s_%s_subj%s", pair[0], mode, subjMode)
+				var f config.Filter
+				if pair[0] == "person_character_person" {
+					f = config.Filter{PersonCharacter: &config.PersonCharacterFilter{
+						Type: "CV", Mode: mode, CountOp: "gte", CountVal: 1,
+						SubjectMode: subjMode, SubjectCountOp: "gte", SubjectCountVal: 1,
+						SubjectConditions: []config.Filter{{Field: &config.FieldFilter{Field: "score", Operator: "gt", Value: "8"}}},
+					}}
+				} else {
+					f = config.Filter{CharacterPerson: &config.CharacterPersonFilter{
+						Type: "CV", Mode: mode, CountOp: "gte", CountVal: 1,
+						SubjectMode: subjMode, SubjectCountOp: "gte", SubjectCountVal: 1,
+						SubjectConditions: []config.Filter{{Field: &config.FieldFilter{Field: "score", Operator: "gt", Value: "8"}}},
+					}}
+				}
+				cfg := makeCfg(pair[1], f)
+				sql, err := NewSQLBuilder(cfg, "").Build()
+				if err != nil {
+					results[name] = "ERROR: " + err.Error()
+				} else {
+					results[name] = sql
+				}
+			}
+		}
+	}
+
+	simpleFilters := []struct {
+		name    string
+		targets []string
+		filter  config.Filter
+	}{
+		{"type", []string{"subject", "person", "character"}, config.Filter{Type: &config.TypeFilter{Value: 1}}},
+		{"field", []string{"subject", "person", "character", "episode"}, config.Filter{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}}},
+		{"tag", []string{"subject"}, config.Filter{Tag: &config.TagFilter{Operator: "contains", Value: "test"}}},
+		{"meta_tag", []string{"subject"}, config.Filter{MetaTag: &config.TagFilter{Operator: "contains", Value: "TV"}}},
+		{"global", []string{"subject", "person", "character"}, config.Filter{Global: &config.GlobalFilter{Operator: "contains", Value: "test"}}},
+		{"episode", []string{"subject"}, config.Filter{Episode: &config.EpisodeFilter{
+			Mode: "any", Logic: &config.LogicFilter{Op: "and", Items: []config.Filter{
+				{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "test"}},
+			}},
+		}}},
+	}
+	for _, sf := range simpleFilters {
+		for _, target := range sf.targets {
+			cfg := makeCfg(target, sf.filter)
+			sql, err := NewSQLBuilder(cfg, "").Build()
+			name := fmt.Sprintf("%s_%s", sf.name, target)
+			if err != nil {
+				results[name] = "ERROR: " + err.Error()
+			} else {
+				results[name] = sql
+			}
+		}
+	}
+
+	specials := []struct {
+		name   string
+		filter config.Filter
+	}{
+		{"staff_appear_eps", config.Filter{Staff: &config.StaffFilter{
+			Position: "原作", Mode: "any",
+			Conditions: []config.Filter{
+				{Field: &config.FieldFilter{Field: "appear_eps", Operator: "contains", Value: "1,2,3"}},
+			},
+		}}},
+		{"logic_or", config.Filter{Logic: &config.LogicFilter{Op: "or", Items: []config.Filter{
+			{Field: &config.FieldFilter{Field: "score", Operator: "gt", Value: "8"}},
+			{Tag: &config.TagFilter{Operator: "contains", Value: "test"}},
+		}}}},
+		{"tag_negate", config.Filter{Tag: &config.TagFilter{Operator: "contains", Value: "test", Negate: true}}},
+		{"meta_tag_negate", config.Filter{MetaTag: &config.TagFilter{Operator: "contains", Value: "TV", Negate: true}}},
+	}
+	for _, sp := range specials {
+		cfg := makeCfg("subject", sp.filter)
+		sql, err := NewSQLBuilder(cfg, "").Build()
+		if err != nil {
+			results[sp.name] = "ERROR: " + err.Error()
+		} else {
+			results[sp.name] = sql
+		}
+	}
+
+	return results
 }

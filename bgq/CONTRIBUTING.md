@@ -4,7 +4,7 @@
 
 - Go（版本见 `go.mod`）
 - Node.js + pnpm（前端开发）
-- DuckDB CLI（运行时需要；测试默认不需要，`-execute` 模式需要）
+- DuckDB CLI（运行时需要；快照测试不需要，`-execute` 模式需要）
 
 ## 后端（Go）
 
@@ -20,7 +20,7 @@ go test ./internal/query/ -v
 # 修改 SQL 后更新快照
 go test ./internal/query/ -update
 
-# 也执行 SQL 验证（需要 DuckDB，较慢）
+# 也执行 SQL 验证（需要 DuckDB，使用小数据集 ~4s）
 go test ./internal/query/ -execute
 
 # 代码质量
@@ -34,10 +34,10 @@ golangci-lint run ./...
 
 ### 测试策略
 
-- **快照测试**（`TestAllCombinations`）：生成所有 target × filter × mode 组合的 SQL，与 `testdata/all_combinations.sql` 对比。修改 SQL 生成逻辑后用 `-update` 接受变更。
+- **快照测试**（`TestAllCombinations`）：生成所有 target × filter × mode 组合的 SQL，与 `testdata/all_combinations.golden` 对比。修改 SQL 生成逻辑后用 `-update` 接受变更。
 - **单元测试**（`TestBuildLogic*`）：验证 logic 组合的 SQL 结构（括号、展开等）。
 - **引擎测试**（`TestExecute*`）：验证 DuckDB 执行能力。
-- **`-execute` 模式**：在快照测试基础上额外执行 SQL，用于验证 DuckDB 兼容性（版本升级、数据结构变化时使用）。
+- **`-execute` 模式**：在快照测试基础上，使用 `testdata/archive/`（每个表 200 行）对生成的 SQL 执行 DuckDB 验证。同时测试 data-dir 模式和 db 模式（通过 `bgq ingest` 构建数据库）。用于捕获运行时错误（如缺失的 table join、列名不匹配等）。
 
 ### 模型数据更新
 
@@ -111,8 +111,9 @@ bgq/
 │   │   ├── builder_generic.go    # manyToManyFilter + threeWayFilter
 │   │   ├── builder_target.go     # targetConfig + nestedEntityConfig
 │   │   ├── engine.go             # DuckDB 执行引擎
-│   │   └── testdata/             # 快照文件
-│   │       └── all_combinations.sql
+│   │   ├── testdata/                  # 快照 + 测试数据
+│   │   │   ├── all_combinations.golden # SQL 快照
+│   │   │   └── archive/               # 测试用数据子集（各 200 行）
 │   └── server/           # 内嵌 Web UI（SPA）
 │       ├── webui.go          # //go:embed dist/*
 │       └── dist/             # 前端构建产物（从 frontend/dist 复制）

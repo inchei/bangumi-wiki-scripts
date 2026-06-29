@@ -418,7 +418,7 @@ CREATE TABLE IF NOT EXISTS subjects AS
   SELECT * FROM read_json_auto('%s/subject.jsonlines', format='newline_delimited');
 
 CREATE TABLE IF NOT EXISTS persons AS
-  SELECT id AS person_id, * EXCLUDE (id) FROM read_json_auto('%s/person.jsonlines', format='newline_delimited');
+  SELECT id AS person_id, type AS person_type, * EXCLUDE (id, type) FROM read_json_auto('%s/person.jsonlines', format='newline_delimited');
 
 CREATE TABLE IF NOT EXISTS characters AS
   SELECT id AS character_id, * EXCLUDE (id) FROM read_json_auto('%s/character.jsonlines', format='newline_delimited');
@@ -439,6 +439,10 @@ CREATE TABLE IF NOT EXISTS person_relations AS
   SELECT * FROM read_json_auto('%s/person-relations.jsonlines', format='newline_delimited')
   WHERE person_type = 'prsn';
 
+CREATE TABLE IF NOT EXISTS character_relations AS
+  SELECT * FROM read_json_auto('%s/person-relations.jsonlines', format='newline_delimited')
+  WHERE person_type = 'crt';
+
 CREATE TABLE IF NOT EXISTS person_characters AS
   SELECT * FROM read_json_auto('%s/person-characters.jsonlines', format='newline_delimited');
 
@@ -454,7 +458,7 @@ CREATE INDEX IF NOT EXISTS idx_person_relations_type ON person_relations(relatio
 CREATE INDEX IF NOT EXISTS idx_person_characters_person ON person_characters(person_id);
 CREATE INDEX IF NOT EXISTS idx_person_characters_character ON person_characters(character_id);
 CREATE INDEX IF NOT EXISTS idx_person_characters_subject ON person_characters(subject_id);
-`, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir)
+`, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir, dataDir)
 
 	return query.ExecuteDuckDBSQL(ctx, dbPath, sql)
 }
