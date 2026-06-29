@@ -36,23 +36,22 @@
 
 #### CSV 文件格式
 
-CSV 文件需包含标题行，**必须包含 `id` 列**。可选 `type` 列指定实体类型。其他列为要更新的字段名。
+CSV 文件需包含标题行，**必须包含 `id` 列**。可选 `type` 列指定实体类型。其他列名为 Wcode 字段名，值为要设置的字段值。
 
 ```csv
-type,id,infobox,tags,series
-subject,354667,|Platform=PC,标签A 标签B,true
-character,12345,|Gender=男,,
-person,67890,|Profession=声优,,
+id,作者,platform,tags,series
+354667,虚渊玄,PC,标签A 标签B,true
 ```
 
 - **type**：实体类型，可选值：`subject`（条目，默认）、`character` / `crt`（角色）、`person` / `prsn`（人物）。不填默认为 `subject`
 - **id**：实体 ID（必填）
-- **字段列**（如 `infobox`、`platform` 等）：将更新 Wcode 中对应字段的值。`\n` 会被转换为换行符
+- **字段列**：列名即为 Wcode 字段名（如 `作者`、`platform`），值将更新到该字段
 - **tags**：空格分隔的标签。带 `-` 前缀表示删除该标签（如 `-旧标签`）。**仅适用于条目**
 - **series**：`true`/`false`/`1`/`0`/`yes`/`no`，设置是否为系列。**仅适用于条目**
-- **角色和人物仅支持 Private API (PATCH) 提交方式**
+- `\n` 在值中会被转换为换行符
+- 角色和人物仅支持 Private API (PATCH) 提交方式
 
-> **注意**：`tags` 和 `series` 列对角色和人物无效。提交角色/人物时仅更新 infobox (Wcode)。
+> **注意**：`tags` 和 `series` 列对角色和人物无效。提交角色/人物时仅更新 infobox。
 
 ### 2. 处理条目
 
@@ -80,67 +79,49 @@ person,67890,|Profession=声优,,
 
 ```
 wikiBatch/
-├── build.js              # 构建脚本
+├── build.js              # 构建脚本 (esbuild)
 ├── header.js             # ==UserScript== 元数据头
 ├── dist/
 │   └── wikiBatch.user.js # 构建输出
 ├── src/
-│   ├── styles.js         # GM_addStyle CSS + 外部样式表
-│   ├── core.js           # 状态管理 (state, saveState)
-│   ├── utils.js          # 工具函数 (sanitizeRegExp, arraysEqual 等)
-│   ├── ui.js             # UI 辅助 (进度条、loading、状态消息)
-│   ├── csv.js            # CSV 解析
-│   ├── diff.js           # Diff 显示 & Wcode 文本操作
-│   ├── api.js            # API 调用 (获取条目、提交更新)
-│   ├── views.js          # 视图切换 (setup/processing/error/completed)
-│   ├── handlers.js       # 按钮点击事件处理
-│   └── dom.js            # DOM 创建 & 事件绑定
+│   ├── index.ts          # 入口文件
+│   ├── core.ts           # 状态管理 + 类型定义
+│   ├── utils.ts          # 工具函数
+│   ├── ui.ts             # UI 辅助 (进度条、loading、状态消息)
+│   ├── csv.ts            # CSV 解析 (papaparse)
+│   ├── diff.ts           # Diff 显示 & Wcode 文本操作
+│   ├── api.ts            # API 调用 (获取条目、提交更新)
+│   ├── views.ts          # 视图切换
+│   ├── handlers.ts       # 按钮点击事件处理
+│   ├── dom.ts            # DOM 创建 & 事件绑定
+│   ├── styles.ts         # CDN 样式表注入
+│   ├── styles.css        # 应用样式 (独立 CSS 文件)
+│   └── globals.d.ts      # GM_* API 类型声明
+├── tsconfig.json
+├── eslint.config.mjs
+├── .stylelintrc.json
+├── package.json
 └── README.md
 ```
 
-### 模块依赖关系
-
-```
-styles  (独立，GM_addStyle 立即执行)
-  ↓
-core    (state 对象，被所有模块引用)
-  ↓
-utils   (纯函数，依赖 state)
-  ↓
-ui      (DOM 操作，依赖 state)
-  ↓
-csv     (依赖 state, ui, views)
-  ↓
-diff    (依赖 state, utils)
-  ↓
-api     (依赖 state, ui, views)
-  ↓
-views   (依赖 state, ui, diff, csv)
-  ↓
-handlers (依赖 state, ui, api, views)
-  ↓
-dom     (依赖所有模块，创建 UI 并绑定事件)
-```
-
-模块间通过**函数声明提升（hoisting）**解决循环依赖——所有函数在 IIFE 作用域内提升到顶部，无需模块加载器。
-
-### 构建
+### 构建与检查
 
 ```bash
-cd wikiBatch
-node build.js
+pnpm build           # esbuild 打包 → dist/wikiBatch.user.js
+pnpm typecheck       # tsc --noEmit 类型检查
+pnpm lint            # ESLint
+pnpm lint:css        # Stylelint
 ```
 
-输出文件：`dist/wikiBatch.user.js`
-
-构建脚本将 `src/` 下的模块按依赖顺序拼接，包裹在 IIFE 中，并添加 `header.js` 中的 UserScript 元数据。
+npm 依赖（`diff`、`diff2html`、`papaparse`、`@trim21/gm-fetch`）通过 esbuild 打包进单文件，无需 CDN `@require`。
 
 ### 开发约定
 
-- 所有函数使用 `function` 声明（非 `const` 箭头函数），以便利用提升机制
-- 全局状态存储在 `state` 对象中，通过 `saveState()` 持久化到 `localStorage` 和 `GM_setValue`
+- 所有源码使用 **TypeScript** + **ESM imports**，esbuild 负责打包为 IIFE
+- CSS 在 `styles.css` 中编辑，构建时通过 `GM_addStyle` 注入
+- 全局状态存储在 `state` 对象中（`core.ts`），通过 `saveState()` 持久化到 `localStorage` 和 `GM_setValue`
 - 视图切换通过 `switchToXxxView()` 函数实现，按钮事件通过委托绑定在 `#static-buttons-container` 上
-- 新增功能时，按职责放入对应模块，保持单文件 200 行以内的可维护规模
+- Pre-commit hook 自动运行 lint + typecheck + build
 
 ## 许可
 

@@ -1,4 +1,19 @@
-function createFloatButton() {
+import { state, saveState } from './core';
+import { switchToSetupView } from './views';
+import { hideStatusMessage } from './ui';
+import {
+    updateConfirmButtonState,
+    updateDiffDisplay,
+    updateTagsDiffDisplay,
+    generateCommitMessage,
+} from './diff';
+import {
+    handleSetupViewButtons,
+    handleProcessingViewButtons,
+    handleCompletedViewButtons,
+} from './handlers';
+
+function createFloatButton(): HTMLElement {
     let floatBtn = document.getElementById('bgm-float-button');
     if (!floatBtn) {
         floatBtn = document.createElement('div');
@@ -10,19 +25,19 @@ function createFloatButton() {
             const container = document.getElementById('bgm-tool-container');
             if (container) {
                 container.style.display = 'flex';
-                floatBtn.style.display = 'none';
+                if (floatBtn) floatBtn.style.display = 'none';
             }
         });
     }
     return floatBtn;
 }
 
-function createStaticDOM() {
+export function createStaticDOM(): void {
     const floatBtn = createFloatButton();
     floatBtn.style.display = 'none';
 
     if (document.getElementById('bgm-tool-container')) {
-        document.getElementById('bgm-tool-container').style.display = 'flex';
+        document.getElementById('bgm-tool-container')!.style.display = 'flex';
         return;
     }
 
@@ -92,27 +107,35 @@ function createStaticDOM() {
 
     bindEventDelegation();
 
-    document.getElementById('bgm-tool-close').addEventListener('click', () => {
-        container.style.display = 'none';
-        createFloatButton().style.display = 'flex';
-        hideStatusMessage();
-        saveState();
-    });
+    const closeBtn = document.getElementById('bgm-tool-close');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            container.style.display = 'none';
+            const fb = createFloatButton();
+            fb.style.display = 'flex';
+            hideStatusMessage();
+            saveState();
+        });
+    }
 
-    document.getElementById('bgm-tool-settings').addEventListener('click', () => {
-        switchToSetupView();
-    });
+    const settingsBtn = document.getElementById('bgm-tool-settings');
+    if (settingsBtn) {
+        settingsBtn.addEventListener('click', () => {
+            switchToSetupView();
+        });
+    }
 
     bindEditRegionEvents();
 
     switchToSetupView();
 }
 
-function bindEventDelegation() {
+function bindEventDelegation(): void {
     const buttonsContainer = document.getElementById('static-buttons-container');
+    if (!buttonsContainer) return;
 
     buttonsContainer.addEventListener('click', (e) => {
-        const targetBtn = e.target.closest('button');
+        const targetBtn = (e.target as HTMLElement).closest('button');
         if (!targetBtn) return;
 
         const btnId = targetBtn.id;
@@ -132,24 +155,24 @@ function bindEventDelegation() {
     });
 }
 
-function bindEditRegionEvents() {
-    const commitInput = document.getElementById('static-commit-input');
+function bindEditRegionEvents(): void {
+    const commitInput = document.getElementById('static-commit-input') as HTMLInputElement;
     commitInput.addEventListener('input', (e) => {
         if (state.currentView === 'processing' && state.currentSubjectData) {
-            state.currentCommitMessage = e.target.value;
+            state.currentCommitMessage = (e.target as HTMLInputElement).value;
             updateConfirmButtonState();
         }
     });
 
-    const lockCommitBtn = document.getElementById('static-lock-commit');
+    const lockCommitBtn = document.getElementById('static-lock-commit') as HTMLButtonElement;
     lockCommitBtn.addEventListener('click', () => {
         if (state.currentView !== 'processing' || !state.currentSubjectData) return;
 
         state.isCommitMessageLocked = !state.isCommitMessageLocked;
-        const commitInput = document.getElementById('static-commit-input');
+        const commitInput2 = document.getElementById('static-commit-input') as HTMLInputElement;
 
         if (state.isCommitMessageLocked) {
-            state.lockedCommitMessage = commitInput.value;
+            state.lockedCommitMessage = commitInput2.value;
             lockCommitBtn.innerHTML = '<i class="fas fa-lock"></i>';
             lockCommitBtn.title = '解锁编辑摘要';
         } else {
@@ -162,44 +185,44 @@ function bindEditRegionEvents() {
                 state.currentFieldUpdates,
                 state.currentTagUpdates,
                 state.currentSeriesUpdate,
-                entityType
+                entityType,
             );
-            commitInput.value = state.currentCommitMessage;
+            commitInput2.value = state.currentCommitMessage;
         }
         saveState();
         updateConfirmButtonState();
     });
 
-    const wcodeInput = document.getElementById('static-wcode-input');
+    const wcodeInput = document.getElementById('static-wcode-input') as HTMLTextAreaElement;
     wcodeInput.addEventListener('input', (e) => {
         if (state.currentView === 'processing' && state.currentSubjectData) {
-            state.currentWcode = e.target.value;
+            state.currentWcode = (e.target as HTMLTextAreaElement).value;
             updateDiffDisplay(
                 state.currentSubjectData.infobox || '',
-                e.target.value,
-                'static-content-diff-container'
+                (e.target as HTMLTextAreaElement).value,
+                'static-content-diff-container',
             );
             updateConfirmButtonState();
         }
     });
 
-    const tagsInput = document.getElementById('static-tags-input');
+    const tagsInput = document.getElementById('static-tags-input') as HTMLInputElement;
     tagsInput.addEventListener('input', (e) => {
         if (state.currentView === 'processing' && state.currentSubjectData) {
-            state.currentTags = e.target.value;
+            state.currentTags = (e.target as HTMLInputElement).value;
             updateTagsDiffDisplay(
                 state.currentSubjectData.metaTags || [],
-                e.target.value.split(' ').filter(t => t),
-                'static-tags-diff-container'
+                (e.target as HTMLInputElement).value.split(' ').filter(t => t),
+                'static-tags-diff-container',
             );
             updateConfirmButtonState();
         }
     });
 
-    const seriesCheckbox = document.getElementById('static-series-checkbox');
+    const seriesCheckbox = document.getElementById('static-series-checkbox') as HTMLInputElement;
     seriesCheckbox.addEventListener('change', (e) => {
         if (state.currentView === 'processing' && state.currentSubjectData) {
-            state.currentSeries = e.target.checked;
+            state.currentSeries = (e.target as HTMLInputElement).checked;
             updateConfirmButtonState();
         }
     });
