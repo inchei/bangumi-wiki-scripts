@@ -155,15 +155,25 @@
           placeholder="职业"
         />
       {:else}
+        {@const isRef =
+          typeof item.field.value === "string" &&
+          item.field.value.startsWith("$")}
         <input
           class="input"
-          type={fc ? fc.type || "text" : opInputType(item.field.operator)}
+          class:input-ref={isRef}
+          type={isRef
+            ? "text"
+            : fc
+              ? fc.type || "text"
+              : opInputType(item.field.operator)}
           value={item.field.value || ""}
           onchange={(e) =>
             updateCondition(group, idx, "field", "value", e.target.value)}
           placeholder={isEpCtx && item.field.field === "duration"
             ? "如: 24m / 00:23:30"
-            : ""}
+            : isRef
+              ? "输入 $字段名 引用其他字段"
+              : ""}
           step={fc?.step || undefined}
         />
       {/if}
@@ -583,5 +593,10 @@
   .cond-unknown {
     font-size: 12px;
     flex: 1;
+  }
+
+  :global(.input-ref) {
+    background: var(--bg-alt);
+    border-color: var(--accent);
   }
 </style>

@@ -259,6 +259,8 @@ func generateAllSQL() map[string]string {
 		}}}},
 		{"tag_negate", config.Filter{Tag: &config.TagFilter{Operator: "contains", Value: "test", Negate: true}}},
 		{"meta_tag_negate", config.Filter{MetaTag: &config.TagFilter{Operator: "contains", Value: "TV", Negate: true}}},
+		{"field_ref", config.Filter{Field: &config.FieldFilter{Field: "发售日", Operator: "before", Value: "$连载开始"}}},
+		{"field_ref_mod", config.Filter{Field: &config.FieldFilter{Field: "发售日", Operator: "after", Value: "$连载开始+300"}}},
 	}
 	for _, sp := range specials {
 		cfg := &config.Config{
