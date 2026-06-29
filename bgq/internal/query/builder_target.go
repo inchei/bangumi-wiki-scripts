@@ -30,16 +30,18 @@ var subjectDirectFields = map[string]bool{
 
 var personDirectFields = map[string]bool{
 	"person_id": true, "person_type": true, "career": true,
-	"summary": true, "collects": true, "comments": true,
+	"name": true, "summary": true, "collects": true, "comments": true,
 }
 
 var characterDirectFields = map[string]bool{
-	"character_id": true, "role": true, "comments": true, "collects": true,
+	"character_id": true, "role": true, "name": true,
+	"summary": true, "comments": true, "collects": true,
 }
 
 var episodeDirectFields = map[string]bool{
 	"subject_id": true, "airdate": true, "duration": true,
 	"sort": true, "disc": true, "description": true, "episode_id": true,
+	"name": true, "name_cn": true, "type": true,
 }
 
 func newTargetConfig(target string) *targetConfig {

@@ -9,6 +9,18 @@ import (
 	"github.com/inchei/bangumi-query/internal/model"
 )
 
+// Filter type identifiers for findFilter.
+type filterType int
+
+const (
+	filterTypeRelation filterType = iota
+	filterTypeStaff
+	filterTypeCharacter
+	filterTypeEpisode
+	filterTypePersonRelation
+	filterTypeCharacterRelation
+)
+
 // SQLBuilder generates DuckDB SQL from a Config.
 type SQLBuilder struct {
 	cfg       *config.Config
@@ -1508,6 +1520,35 @@ func (b *SQLBuilder) buildSelect() []string {
 
 	var result []string
 	for _, col := range cols {
+		// Check for association output column syntax: "类型.字段名" or "类型.字段名+"
+		if parts := strings.SplitN(col, ".", 2); len(parts) == 2 {
+			prefix, field := parts[0], parts[1]
+			var subquery string
+			var err error
+
+			switch {
+			case prefix == "episode":
+				subquery, err = b.buildEpisodeOutput(field)
+			case len(b.getRelationIDsForName(prefix)) > 0:
+				subquery, err = b.buildRelationOutput(prefix, field)
+			case b.target == "subject" && len(b.getPositionIDsForName(prefix)) > 0:
+				subquery, err = b.buildStaffOutput(prefix, field)
+			case b.target == "subject":
+				if id, ok := b.getCharacterAssociationTypeID(prefix); ok {
+					subquery, err = b.buildCharacterOutput(prefix, field, id)
+				}
+			case b.target == "person" && len(b.getPersonRelationIDsForName(prefix)) > 0:
+				subquery, err = b.buildPersonRelationOutput(prefix, field)
+			case b.target == "character" && len(b.getCharacterRelationIDsForName(prefix)) > 0:
+				subquery, err = b.buildCharacterRelationOutput(prefix, field)
+			}
+
+			if err == nil && subquery != "" {
+				result = append(result, subquery)
+				continue
+			}
+		}
+
 		realCol := b.actualColumn(col)
 		switch {
 		case col == "id" || col == "ID":
@@ -1526,6 +1567,326 @@ func (b *SQLBuilder) buildSelect() []string {
 		}
 	}
 	return result
+}
+
+// buildRelationOutput generates a subquery for related subject fields (单行本.发售日).
+func (b *SQLBuilder) buildRelationOutput(relType, field string) (string, error) {
+	relIDs := b.getRelationIDsForName(relType)
+	if len(relIDs) == 0 {
+		return "", fmt.Errorf("未找到关系类型: %s", relType)
+	}
+	rf := b.findFilter(filterTypeRelation, relType)
+	conds := rf.(*config.RelationFilter)
+
+	var relatedWhere string
+	relatedJoin := "LEFT JOIN subjects rs ON r.related_subject_id = rs.id"
+	if conds != nil && len(conds.Conditions) > 0 {
+		var err error
+		relatedWhere, err = b.buildWhereForAlias(conds.Conditions, "rs")
+		if err != nil {
+			return "", fmt.Errorf("relation output: %w", err)
+		}
+	}
+	typeCond := fmt.Sprintf("r.relation_type IN (%s)", intListToSQL(relIDs))
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "subject_relations", ja: "r", mainFK: "subject_id",
+		entityJoin: relatedJoin, typeCond: typeCond, extraWhere: relatedWhere,
+		entityAlias: "rs", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
+		directFields: subjectDirectFields,
+	})
+}
+
+// buildStaffOutput generates a subquery for staff fields (原作.name).
+func (b *SQLBuilder) buildStaffOutput(position, field string) (string, error) {
+	posIDs := b.getPositionIDsForName(position)
+	if len(posIDs) == 0 {
+		return "", fmt.Errorf("未找到职位类型: %s", position)
+	}
+	sf := b.findFilter(filterTypeStaff, position)
+	var personWhere string
+	entityJoin := "LEFT JOIN persons p ON sp.person_id = p.person_id"
+	if sf != nil {
+		s := sf.(*config.StaffFilter)
+		if len(s.Conditions) > 0 {
+			var err error
+			personWhere, err = b.buildPersonWhereForAlias(s.Conditions, "sp")
+			if err != nil {
+				return "", fmt.Errorf("staff output: %w", err)
+			}
+		}
+	}
+	typeCond := fmt.Sprintf("sp.position IN (%s)", intListToSQL(posIDs))
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "subject_persons", ja: "sp", mainFK: "subject_id",
+		entityJoin: entityJoin, typeCond: typeCond, extraWhere: personWhere,
+		entityAlias: "p", field: field, label: fmt.Sprintf("\"%s.%s\"", position, field),
+		directFields: personDirectFields,
+	})
+}
+
+// buildCharacterOutput generates a subquery for character fields (主角.name).
+func (b *SQLBuilder) buildCharacterOutput(charType, field string, typeID int) (string, error) {
+	cf := b.findFilter(filterTypeCharacter, charType)
+	var charWhere string
+	entityJoin := "LEFT JOIN characters c ON sc.character_id = c.character_id"
+	if cf != nil {
+		c := cf.(*config.CharacterFilter)
+		if len(c.Conditions) > 0 {
+			var err error
+			charWhere, err = b.buildCharacterWhereForAlias(c.Conditions)
+			if err != nil {
+				return "", fmt.Errorf("character output: %w", err)
+			}
+		}
+	}
+	typeCond := fmt.Sprintf("sc.type = %d", typeID)
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "subject_characters", ja: "sc", mainFK: "subject_id",
+		entityJoin: entityJoin, typeCond: typeCond, extraWhere: charWhere,
+		entityAlias: "c", field: field, label: fmt.Sprintf("\"%s.%s\"", charType, field),
+		directFields: characterDirectFields,
+	})
+}
+
+// buildEpisodeOutput generates a subquery for episode fields (episode.name).
+func (b *SQLBuilder) buildEpisodeOutput(field string) (string, error) {
+	ef := b.findFilter(filterTypeEpisode, "")
+	var epWhere string
+	if ef != nil {
+		e := ef.(*config.EpisodeFilter)
+		if e.Logic != nil && len(e.Logic.Items) > 0 {
+			var err error
+			epWhere, err = b.buildClausesWithOp(e.Logic.Items, clauseContext{alias: "e", isEpisodeCtx: true}, e.Logic.Op)
+			if err != nil {
+				return "", fmt.Errorf("episode output: %w", err)
+			}
+		}
+	}
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "episodes", ja: "e", mainFK: "subject_id",
+		entityJoin: "", typeCond: "TRUE", extraWhere: epWhere,
+		entityAlias: "e", field: field, label: fmt.Sprintf("\"episode.%s\"", field),
+		directFields: episodeDirectFields,
+	})
+}
+
+// buildPersonRelationOutput generates a subquery for person relation fields (同事.name).
+func (b *SQLBuilder) buildPersonRelationOutput(relType, field string) (string, error) {
+	if b.target != "person" {
+		return "", fmt.Errorf("person_relation output only supported for person target")
+	}
+	relIDs := b.getPersonRelationIDsForName(relType)
+	if len(relIDs) == 0 {
+		return "", fmt.Errorf("未找到人物关系类型: %s", relType)
+	}
+	pf := b.findFilter(filterTypePersonRelation, relType)
+	var relatedWhere string
+	entityJoin := "LEFT JOIN persons rp ON pr.related_person_id = rp.person_id"
+	if pf != nil {
+		p := pf.(*config.PersonRelationFilter)
+		if len(p.Conditions) > 0 {
+			var err error
+			relatedWhere, err = b.buildPersonRelationWhereForAlias(p.Conditions)
+			if err != nil {
+				return "", fmt.Errorf("person_relation output: %w", err)
+			}
+		}
+	}
+	typeCond := fmt.Sprintf("pr.relation_type IN (%s)", intListToSQL(relIDs))
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "person_relations", ja: "pr", mainFK: "person_id",
+		entityJoin: entityJoin, typeCond: typeCond, extraWhere: relatedWhere,
+		entityAlias: "rp", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
+		directFields: personDirectFields,
+	})
+}
+
+// buildCharacterRelationOutput generates a subquery for character relation fields (朋友.name).
+func (b *SQLBuilder) buildCharacterRelationOutput(relType, field string) (string, error) {
+	if b.target != "character" {
+		return "", fmt.Errorf("character_relation output only supported for character target")
+	}
+	relIDs := b.getCharacterRelationIDsForName(relType)
+	if len(relIDs) == 0 {
+		return "", fmt.Errorf("未找到角色关系类型: %s", relType)
+	}
+	cf := b.findFilter(filterTypeCharacterRelation, relType)
+	var relatedWhere string
+	entityJoin := "LEFT JOIN characters rc ON cr.related_person_id = rc.character_id"
+	if cf != nil {
+		c := cf.(*config.CharacterRelationFilter)
+		if len(c.Conditions) > 0 {
+			var err error
+			relatedWhere, err = b.buildCharacterRelationWhereForAlias(c.Conditions)
+			if err != nil {
+				return "", fmt.Errorf("character_relation output: %w", err)
+			}
+		}
+	}
+	typeCond := fmt.Sprintf("cr.relation_type IN (%s)", intListToSQL(relIDs))
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "character_relations", ja: "cr", mainFK: "person_id",
+		entityJoin: entityJoin, typeCond: typeCond, extraWhere: relatedWhere,
+		entityAlias: "rc", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
+		directFields: characterDirectFields,
+	})
+}
+
+// assocSubConfig configures a correlated subquery for association type output columns.
+type assocSubConfig struct {
+	junction     string          // table name
+	ja           string          // table alias
+	mainFK       string          // FK in junction referencing main entity
+	entityJoin   string          // LEFT JOIN clause (empty if no join needed)
+	typeCond     string          // type/position filter condition
+	extraWhere   string          // additional conditions from filter
+	entityAlias  string          // entity alias for field resolution
+	field        string          // field name (supports "count", "field+")
+	label        string          // column label (already quoted)
+	directFields map[string]bool // direct fields for this entity type
+}
+
+// buildAssocSubquery generates a correlated subquery for association field output.
+func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
+	field := cfg.field
+	allMode := strings.HasSuffix(field, "+")
+	if allMode {
+		field = strings.TrimSuffix(field, "+")
+	}
+
+	pred := cfg.typeCond
+	if cfg.extraWhere != "" && cfg.extraWhere != "TRUE" {
+		pred = pred + " AND " + cfg.extraWhere
+	}
+	mainRef := fmt.Sprintf("%s.%s", b.mainAlias, b.tc.idColumn)
+
+	// Count mode
+	if field == "count" {
+		return fmt.Sprintf(
+			"(SELECT COUNT(*) FROM %s %s %s WHERE %s.%s = %s AND %s) AS %s",
+			cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
+		), nil
+	}
+
+	// Build field expression
+	ea := cfg.entityAlias
+	var fieldExpr string
+	if field == "id" || field == "ID" {
+		fieldExpr = ea + ".id"
+	} else if cfg.directFields[field] {
+		fieldExpr = ea + "." + quoteIdent(field)
+	} else {
+		fieldExpr = b.infoboxExtractExpr(field, ea)
+	}
+
+	if allMode {
+		return fmt.Sprintf(
+			"(SELECT string_agg(CAST(%s AS VARCHAR), ', ' ORDER BY %s.%s) FROM %s %s %s WHERE %s.%s = %s AND %s) AS %s",
+			fieldExpr, ea, b.tc.idColumn, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
+		), nil
+	}
+	return fmt.Sprintf(
+		"(SELECT %s FROM %s %s %s WHERE %s.%s = %s AND %s LIMIT 1) AS %s",
+		fieldExpr, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
+	), nil
+}
+
+// findFilter walks the filter tree to find the first filter of the given type
+// whose type/position/relation name matches. Returns nil if not found.
+// The returned interface{} must be type-asserted to the appropriate filter type.
+func (b *SQLBuilder) findFilter(ft filterType, typeName string) interface{} {
+	for _, f := range b.cfg.Filters {
+		if result := findFilterInNode(f, ft, typeName); result != nil {
+			return result
+		}
+	}
+	return nil
+}
+
+// findFilterInNode recursively searches a filter tree node for a matching filter.
+func findFilterInNode(f config.Filter, ft filterType, typeName string) interface{} {
+	switch ft {
+	case filterTypeRelation:
+		if f.Relation != nil && f.Relation.Type == typeName {
+			return f.Relation
+		}
+	case filterTypeStaff:
+		if f.Staff != nil && (f.Staff.Position == typeName || containsString(f.Staff.Positions, typeName)) {
+			return f.Staff
+		}
+	case filterTypeCharacter:
+		if f.Character != nil && f.Character.Type == typeName {
+			return f.Character
+		}
+	case filterTypeEpisode:
+		if f.Episode != nil {
+			return f.Episode
+		}
+	case filterTypePersonRelation:
+		if f.PersonRelation != nil && f.PersonRelation.Type == typeName {
+			return f.PersonRelation
+		}
+	case filterTypeCharacterRelation:
+		if f.CharacterRelation != nil && f.CharacterRelation.Type == typeName {
+			return f.CharacterRelation
+		}
+	}
+	// Recurse into logic and other containers
+	if f.Logic != nil {
+		for _, child := range f.Logic.Items {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+	}
+	if f.Staff != nil {
+		for _, child := range f.Staff.Conditions {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+	}
+	if f.Character != nil {
+		for _, child := range f.Character.Conditions {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+	}
+	if f.PersonCharacter != nil {
+		for _, child := range f.PersonCharacter.Conditions {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+		for _, child := range f.PersonCharacter.SubjectConditions {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+	}
+	if f.CharacterPerson != nil {
+		for _, child := range f.CharacterPerson.Conditions {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+		for _, child := range f.CharacterPerson.SubjectConditions {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+	}
+	return nil
+}
+
+func containsString(slice []string, s string) bool {
+	for _, v := range slice {
+		if v == s {
+			return true
+		}
+	}
+	return false
 }
 
 func (b *SQLBuilder) buildJoins() []string {
