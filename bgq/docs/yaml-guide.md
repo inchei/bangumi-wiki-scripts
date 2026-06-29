@@ -222,3 +222,42 @@ sort:
 # === 限制 ===
 limit: 1000                             # 最大结果数（默认 1000）
 ```
+
+## 高级用法
+
+### 字段引用
+
+`value` 以 `$` 开头时表示引用其他字段的值，而非字面量比较。例如查询「评分高于排名」的条目：
+
+```yaml
+- field:
+    field: score
+    operator: gt
+    value: "$rank"
+```
+
+也支持引用 infobox 字段：
+
+```yaml
+- field:
+    field: date
+    operator: after
+    value: "$发售日"
+```
+
+在嵌套条件（如 `relation`、`staff` 内部）中，用 `$main.` 前缀引用外层主条目自身字段，而非关联对象的字段：
+
+```yaml
+# 筛选关联条目评分高于主条目评分的系列
+- relation:
+    type: "系列"
+    mode: any
+    conditions:
+      - field:
+          field: score
+          operator: gt
+          value: "$main.score"
+```
+
+字段引用在 Web UI 中也受支持——输入框会自动高亮提示。
+```
