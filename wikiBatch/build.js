@@ -1,64 +1,42 @@
 /**
  * Build script for wikiBatch userscript.
- * Concatenates source modules into a single userscript file.
+ * Uses esbuild to bundle TypeScript + npm dependencies into a single file.
  *
  * Usage: node build.js
  */
 
 const fs = require('fs');
 const path = require('path');
+const esbuild = require('esbuild');
 
 const ROOT = __dirname;
 const SRC = path.join(ROOT, 'src');
 const DIST = path.join(ROOT, 'dist');
+const HEADER = fs.readFileSync(path.join(ROOT, 'header.js'), 'utf8').trim();
 
-// Source files in dependency order
-const MODULES = [
-    'styles.js',    // GM_addStyle CSS + external stylesheets
-    'core.js',      // State management
-    'utils.js',     // Utility functions
-    'ui.js',        // UI helpers
-    'csv.js',       // CSV parsing
-    'diff.js',      // Diff display & wiki text manipulation
-    'api.js',       // API interaction
-    'views.js',     // View switching
-    'handlers.js',  // Button click handlers
-    'dom.js',       // DOM creation & event binding
-];
+async function build() {
+    if (!fs.existsSync(DIST)) {
+        fs.mkdirSync(DIST, { recursive: true });
+    }
 
-// Read header
-const header = fs.readFileSync(path.join(ROOT, 'header.js'), 'utf8').trim();
+    const result = await esbuild.build({
+        entryPoints: [path.join(SRC, 'index.ts')],
+        bundle: true,
+        format: 'iife',
+        outfile: path.join(DIST, 'wikiBatch.user.js'),
+        loader: {
+            '.css': 'text',
+        },
+        minify: true,
+        banner: {
+            js: HEADER + '\n',
+        },
+    });
 
-// Read and combine all source modules
-const sourceCode = MODULES
-    .map((file) => {
-        const content = fs.readFileSync(path.join(SRC, file), 'utf8').trim();
-        return `// ===== ${file} =====\n\n${content}`;
-    })
-    .join('\n\n');
-
-// Ensure dist directory exists
-if (!fs.existsSync(DIST)) {
-    fs.mkdirSync(DIST, { recursive: true });
+    console.log(`Build complete: ${path.join(DIST, 'wikiBatch.user.js')}`);
 }
 
-// Assemble the final userscript
-const output = [
-    header,
-    '',
-    '(function () {',
-    "    'use strict';",
-    '',
-    sourceCode,
-    '',
-    '    // ===== Initialization =====',
-    '    createStaticDOM();',
-    '})();',
-    '',
-].join('\n');
-
-const outPath = path.join(DIST, 'wikiBatch.user.js');
-fs.writeFileSync(outPath, output);
-console.log(`Build complete: ${outPath}`);
-console.log(`  ${MODULES.length} modules bundled`);
-console.log(`  ${output.split('\n').length} lines total`);
+build().catch(err => {
+    console.error('Build failed:', err);
+    process.exit(1);
+});

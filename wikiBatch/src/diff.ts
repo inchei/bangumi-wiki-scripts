@@ -1,22 +1,27 @@
-function getCurrentEntityType() {
+import * as Diff from 'diff';
+import { Diff2HtmlUI } from 'diff2html/lib/ui/js/diff2html-ui-slim';
+import { state, type EntityType, type TagUpdates, type SeriesUpdate, type CsvItem } from './core';
+import { sanitizeRegExp, arraysEqual } from './utils';
+
+export function getCurrentEntityType(): EntityType {
     if (!state.csvData || state.currentIndex >= state.csvData.length) return 'subject';
     return state.csvData[state.currentIndex]?.type || 'subject';
 }
 
-function checkForUpdates() {
+export function checkForUpdates(): boolean {
     if (!state.currentSubjectData) return false;
 
     const entityType = getCurrentEntityType();
-    const currentWcode = document.getElementById('static-wcode-input').value;
+    const currentWcode = (document.getElementById('static-wcode-input') as HTMLTextAreaElement).value;
     const normalizedCurrentWcode = currentWcode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
     const originalWcode = state.currentSubjectData.infobox || '';
     const normalizedOriginalWcode = originalWcode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
     const wcodeChanged = normalizedCurrentWcode !== normalizedOriginalWcode;
 
-    // Tags and series only apply to subjects
     if (entityType === 'subject') {
-        const currentTags = document.getElementById('static-tags-input').value.split(' ').filter(t => t);
-        const currentSeries = document.getElementById('static-series-checkbox').checked;
+        const tagsInput = document.getElementById('static-tags-input') as HTMLInputElement;
+        const currentTags = tagsInput.value.split(' ').filter(t => t);
+        const currentSeries = (document.getElementById('static-series-checkbox') as HTMLInputElement).checked;
         const originalTags = state.currentSubjectData.metaTags || [];
         const originalSeries = state.currentSubjectData.series || false;
         const tagsChanged = !arraysEqual(currentTags, originalTags);
@@ -27,8 +32,10 @@ function checkForUpdates() {
     return wcodeChanged;
 }
 
-function updateConfirmButtonState() {
-    const confirmBtn = document.querySelector('#static-buttons-container button#process-confirm-update');
+export function updateConfirmButtonState(): void {
+    const confirmBtn = document.querySelector(
+        '#static-buttons-container button#process-confirm-update',
+    ) as HTMLButtonElement | null;
     if (!confirmBtn) return;
 
     const hasUpdates = checkForUpdates();
@@ -42,13 +49,17 @@ function updateConfirmButtonState() {
     }
 }
 
-function generateCommitMessage(fieldUpdates, tagUpdates, seriesUpdate, entityType) {
+export function generateCommitMessage(
+    fieldUpdates: Record<string, string> | null,
+    tagUpdates: TagUpdates | null,
+    seriesUpdate: SeriesUpdate | null,
+    entityType: EntityType | undefined,
+): string {
     const updatedFields = Object.keys(fieldUpdates || {});
-    const messages = [];
+    const messages: string[] = [];
 
     if (updatedFields.length) messages.push(`更新${updatedFields.join('、')}`);
 
-    // Tags and series only apply to subjects
     if (entityType === 'subject' || !entityType) {
         if (tagUpdates?.add.length) messages.push(`添加标签${tagUpdates.add.join('、')}`);
         if (tagUpdates?.remove.length) messages.push(`删除标签${tagUpdates.remove.join('、')}`);
@@ -60,21 +71,22 @@ function generateCommitMessage(fieldUpdates, tagUpdates, seriesUpdate, entityTyp
     return messages.filter(s => s).join('；') || '更新条目信息';
 }
 
-function updateDiffDisplay(oldText, newText, containerId) {
+export function updateDiffDisplay(oldText: string, newText: string, containerId: string): void {
     try {
         const normalizedOld = (oldText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         const normalizedNew = (newText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         const fileName = `条目 ${state.currentSubjectData?.name || '未知名称'} - ${state.currentItemId}`;
         const diffString = Diff.createPatch(fileName, normalizedOld, normalizedNew);
-        const configuration = {
+        const configuration: Record<string, unknown> = {
             drawFileList: false,
             fileListToggle: false,
             fileContentToggle: false,
             matching: 'lines',
-            highlight: false
+            highlight: false,
         };
 
         const container = document.getElementById(containerId);
+        if (!container) return;
         const diff2htmlUi = new Diff2HtmlUI(container, diffString, configuration);
         diff2htmlUi.draw();
 
@@ -85,35 +97,41 @@ function updateDiffDisplay(oldText, newText, containerId) {
                 newScript.setAttribute(attr.name, attr.value);
             });
             newScript.textContent = script.textContent;
-            script.parentNode.replaceChild(newScript, script);
+            script.parentNode!.replaceChild(newScript, script);
         });
 
-        document.getElementById('diff-error').style.display = 'none';
-    } catch (e) {
+        const diffError = document.getElementById('diff-error');
+        if (diffError) diffError.style.display = 'none';
+    } catch (e: unknown) {
         console.error('Diff generation error:', e);
-        document.getElementById('diff-error').textContent = `差异显示错误: ${e.message}`;
-        document.getElementById('diff-error').style.display = 'block';
+        const diffError = document.getElementById('diff-error');
+        if (diffError) {
+            diffError.textContent = `差异显示错误: ${(e as Error).message}`;
+            diffError.style.display = 'block';
+        }
     }
 }
 
-function updateTagsDiffDisplay(oldTags, newTags, containerId) {
+export function updateTagsDiffDisplay(oldTags: string[], newTags: string[], containerId: string): void {
     const oldText = oldTags.join(' ');
     const newText = newTags.join(' ');
     updateDiffDisplay(oldText, newText, containerId);
 }
 
-function getFieldUpdates(csvItem, oldInfobox) {
-    const updates = {};
+export function getFieldUpdates(csvItem: CsvItem, _oldInfobox: string): Record<string, string> {
+    const updates: Record<string, string> = {};
     Object.keys(csvItem).forEach(key => {
         if (!['id', 'tags', 'series', 'type'].includes(key.toLowerCase())) {
-            updates[key] = csvItem[key];
+            const val = csvItem[key];
+            if (val !== undefined) {
+                updates[key] = val;
+            }
         }
     });
     return updates;
 }
 
-function getTagUpdates(csvItem, oldTags) {
-    // Tags only apply to subjects
+export function getTagUpdates(csvItem: CsvItem, _oldTags: string[]): TagUpdates {
     const entityType = csvItem.type || 'subject';
     if (entityType !== 'subject') {
         return { add: [], remove: [] };
@@ -122,8 +140,8 @@ function getTagUpdates(csvItem, oldTags) {
     const tagsStr = csvItem.tags || '';
     const tags = tagsStr.split(' ').filter(t => t);
 
-    const add = [];
-    const remove = [];
+    const add: string[] = [];
+    const remove: string[] = [];
 
     tags.forEach(tag => {
         if (tag.startsWith('-')) {
@@ -136,29 +154,26 @@ function getTagUpdates(csvItem, oldTags) {
     return { add, remove };
 }
 
-function getSeriesUpdate(csvItem, oldSeries) {
-    // Series only applies to subjects
+export function getSeriesUpdate(csvItem: CsvItem, oldSeries: boolean): SeriesUpdate {
     const entityType = csvItem.type || 'subject';
     if (entityType !== 'subject') {
         return { hasUpdate: false };
     }
 
-    // Check if CSV has a series column
     if (csvItem.series === undefined || csvItem.series === null || csvItem.series === '') {
         return { hasUpdate: false };
     }
 
-    // Parse CSV series value, supports true/false, 1/0, yes/no
     const seriesValue = csvItem.series.trim().toLowerCase();
     const newValue = seriesValue === 'true' || seriesValue === '1' || seriesValue === 'yes';
 
     return {
         hasUpdate: newValue !== oldSeries,
-        newValue: newValue
+        newValue: newValue,
     };
 }
 
-function updateInfobox(oldInfobox, fieldUpdates) {
+export function updateInfobox(oldInfobox: string, fieldUpdates: Record<string, string>): string {
     let newInfobox = oldInfobox;
 
     Object.entries(fieldUpdates).forEach(([field, value]) => {
@@ -176,7 +191,7 @@ function updateInfobox(oldInfobox, fieldUpdates) {
     return newInfobox;
 }
 
-function applyTagUpdates(oldTags, tagUpdates) {
+export function applyTagUpdates(oldTags: string[], tagUpdates: TagUpdates): string[] {
     const newTagsSet = new Set(oldTags);
     tagUpdates.add.forEach(tag => newTagsSet.add(tag));
     tagUpdates.remove.forEach(tag => newTagsSet.delete(tag));
