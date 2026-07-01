@@ -129,6 +129,51 @@ cp -r skills/bgq-query ~/.hermes/skills/data-science/
 
 详细用法见 [skills/bgq-query/SKILL.md](skills/bgq-query/SKILL.md)。
 
+## 附加功能
+
+基于同数据库的便利查询，serve 后可提供相关 API。
+
+### 检查缺失条目关联
+
+检查某人是否在相关条目中缺少 staff 职位关联：
+
+```bash
+# 检查"川原砾"在书籍(1)类型中缺失的 staff 条目
+./bin/bgq missing subjects "川原砾" --type 1 --db ./bangumi.db
+
+# 限制仅检查特定职位
+./bin/bgq missing subjects "川原砾" --type 1 --db ./bangumi.db --position 1
+```
+
+| 参数 | 说明 |
+|------|------|
+| `--type` | 条目类型：1(书籍) 2(动画) 3(音乐) 4(游戏) 6(三次元)（必需） |
+| `--db` | DuckDB 数据库路径（默认查找 `./bangumi.db`） |
+| `--position` | 限制仅检查指定职位 ID |
+
+HTTP 接口（serve 后）：
+
+```bash
+curl "http://localhost:8080/api/persons/川原砾/missing-subjects?type=1"
+```
+
+```json
+// 返回按 subject_id 聚合的缺失职位信息
+{
+  "324": {
+    "name": "アクセル・ワールド",
+    "positions": [1, 5]   // 缺失的职位 ID
+  }
+}
+```
+
+| 参数 | 说明 |
+|------|------|
+| `type` | 条目类型（必填） |
+| `position` | 仅检查指定职位 ID（可选） |
+
+Referrer 限制：仅允许来自 `bgm.tv`、`bangumi.tv`、`chii.in` 的请求，直接访问（新标签页、curl 无 referrer）不受限。
+
 ## 开发
 
 见 [CONTRIBUTING.md](CONTRIBUTING.md)。
