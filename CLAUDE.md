@@ -36,6 +36,7 @@ golangci-lint run ./...                    # Lint
 ./bin/bgq serve --data-dir ./bangumi_archive --listen :8080
 ./bin/bgq serve --dev                      # Hot reload (Air)
 ./bin/bgq missing subjects "川原砾" --type 1
+./bin/bgq missing episodes "川原砾"
 ```
 
 ### Frontend (Svelte)
@@ -78,6 +79,8 @@ bgq/
 │   │   ├── missing.go                # `missing` CLI subcommand dispatcher
 │   │   ├── missing_subjects.go       # Missing subjects (staff) check logic + HTTP handler
 │   │   ├── missing_subjects_test.go  # Tests for buildCheckSQL SQL generation
+│   │   ├── missing_episodes.go       # Missing episodes (staff) check logic + HTTP handler
+│   │   ├── missing_episodes_test.go  # Tests for expandAppearEps, epLabel, resolveOverlaps, etc.
 │   │   ├── server.go                 # HTTP server + API handlers
 │   │   └── dev.go                    # Air hot-reload dev mode
 │   └── gen-model/
@@ -178,6 +181,7 @@ Sub-filter modes: `any` (exists), `all` (universal), `none` (negation), `count` 
 - `GET /api/health` — health check
 - `GET /api/debug` — DuckDB/data diagnostics
 - `GET /api/persons/{name}/missing-subjects?type=<type>&position=<pos>` — find subjects missing a person's staff entry for given positions
+- `GET /api/persons/{name}/missing-episodes` — find episodes whose description mentions a person but lack a corresponding staff entry
 - `/` — embedded SPA; static files (images, CSS) served from embedded `dist/`
 
 ## Filters (`filters/`)
@@ -221,6 +225,8 @@ Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
 - `bgq/cmd/bgq/missing.go` — `missing` CLI subcommand dispatcher (subjects, episodes)
 - `bgq/cmd/bgq/missing_subjects.go` — Missing subjects (staff) check: `buildCheckSQL` + HTTP handler
 - `bgq/cmd/bgq/missing_subjects_test.go` — Tests for `buildCheckSQL` SQL generation
+- `bgq/cmd/bgq/missing_episodes.go` — Missing episodes check: `handleMissingEpisodes` + position matching + episode label helpers
+- `bgq/cmd/bgq/missing_episodes_test.go` — Tests for `expandAppearEps`, `epLabel`, `resolveOverlaps`, `buildEpPositionTable`
 - `bgq/cmd/bgq/interactive.go` — Interactive REPL (shared parser with web API)
 - `bgq/cmd/bgq/server.go` — HTTP server + API handlers
 - `bgq/internal/server/webui.go` — Embedded static files via `//go:embed dist/*`
