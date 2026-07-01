@@ -3,7 +3,6 @@ tmp/
 .air-dev.toml
 
 # Frontend build
-frontend/node_modules/
 frontend/dist/
 
 # Embedded frontend build

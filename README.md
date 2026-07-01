@@ -4,7 +4,7 @@
 
 ## 工具
 
-### bgq — 高性能条目筛选
+### bgq 条目筛选
 
 基于 DuckDB 的命令行/Web 筛选工具，支持 YAML 配置、交互模式、Web 界面。
 
@@ -13,9 +13,11 @@
 - 内嵌 Web UI，支持可视化筛选和 CSV 导出
 - 支持 Linux、macOS、Windows，也可 Docker 部署
 
-📖 **[bgq 详细文档](bgq/README.md)**
+[文档](bgq/README.md)
 
-### wikiBatch — 批量 Wiki 编辑
+导出的 CSV 可用于 wikiBatch。
+
+### wikiBatch 批量 Wiki 编辑
 
 Tampermonkey 用户脚本，在 `next.bgm.tv` 上批量审核编辑条目/角色/人物的 Wiki 信息。
 
@@ -23,20 +25,21 @@ Tampermonkey 用户脚本，在 `next.bgm.tv` 上批量审核编辑条目/角色
 - 提交前 diff 预览，断点续传，重复检测
 - 支持 Private API 和旧版表单两种提交方式
 
-📖 **[wikiBatch 详细文档](wikiBatch/README.md)**
+[文档](wikiBatch/README.md)
 
-### 工作流：bgq → wikiBatch
+### wikiMissingPositions
 
-bgq 输出的 CSV 可直接作为 wikiBatch 的输入：
+Tampermonkey 用户脚本，在条目页和人物关联页一键补完已填写但未关联的 STAFF。
 
-```bash
-# 1. 用 bgq 筛选目标条目，输出 CSV（必须含 id 列）
-./bgq/bin/bgq query --config query.yaml --format csv --output results.csv
+- 条目页 infobox 高亮未关联姓名，点击弹出补完弹窗
+- 关联页自动查询并预填缺失条目/剧集
+- 需要配合 `bgq serve` 的 API 使用
 
-# 2. 在 next.bgm.tv 打开 wikiBatch，上传 results.csv 批量编辑
-```
+安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/wikiMissingPositions/dist/wikiMissingPositions.user.js>
 
-CSV 中的 `id` 列对应条目 ID，其他列名对应要更新的字段（如 `infobox`、`tags`、`series`）。
+或启用[组件](https://bgm.tv/dev/app/6476)。
+
+[文档](wikiMissingPositions/README.md)
 
 ## Python 脚本
 
@@ -107,7 +110,3 @@ python sync_index.py --index 12345 --csv results/some-filter.csv --dry-run
 ```bash
 BANGUMI_TOKEN=xxx ./sync_indices.sh --data-dir bangumi_archive --bgq bgq/bin/bgq
 ```
-
-**尚无法用 bgq 自动检查的项目**：
-- 过于便宜/昂贵的书籍（价格币种格式不统一）
-- 发售日比连载开始还早（需跨字段比较，当前仅支持字段与常量比较）

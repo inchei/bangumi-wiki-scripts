@@ -64,15 +64,20 @@ func main() {
 	fmt.Println("  Generating staff_data.go...")
 	generateStaffData(staffYAML, outDir, tmplDir)
 
-	fmt.Println("  Generating metatags.go...")
-	generateMetaTags(dataDir, outDir, tmplDir)
-
-	// Generate frontend schema data
 	frontendDir := "../../frontend/src"
 	if _, err := os.Stat(frontendDir); err == nil {
 		fmt.Println("  Generating schema-data.js...")
 		generateSchemaData(platformsYAML, subjectRelationsYAML, personRelationsYAML, staffYAML, dataDir, frontendDir, tmplDir)
 	}
+
+	wikiMPDir := "../../../wikiMissingPositions/src"
+	if _, err := os.Stat(wikiMPDir); err == nil {
+		fmt.Println("  Generating position-ids.js...")
+		generatePositionIDs(staffYAML, wikiMPDir)
+	}
+
+	fmt.Println("  Generating metatags.go...")
+	generateMetaTags(dataDir, outDir, tmplDir)
 
 	fmt.Println("Done!")
 }
@@ -145,6 +150,38 @@ type StaffYAML struct {
 	Define struct {
 		Types map[string]map[int]StaffItem `yaml:"types"`
 	} `yaml:"define"`
+}
+
+func generatePositionIDs(staffYAML []byte, outDir string) {
+	var data StaffYAML
+	if err := yaml.Unmarshal(staffYAML, &data); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse subject_staffs.yml: %v\n", err)
+		os.Exit(1)
+	}
+
+	yamlToCode := map[string]int{
+		"book": 1, "anime": 2, "music": 3, "game": 4, "real": 6,
+	}
+
+	var sb strings.Builder
+	sb.WriteString("export const POSITION_IDS = {\n")
+	keys := sortedStringKeys(yamlToCode)
+	for _, yt := range keys {
+		tc := yamlToCode[yt]
+		ps := data.Define.Types[yt]
+		if len(ps) == 0 {
+			continue
+		}
+		fmt.Fprintf(&sb, "  %d: {\n", tc)
+		codes := sortedIntKeys(ps)
+		for _, c := range codes {
+			fmt.Fprintf(&sb, "    %d: '%s',\n", c, ps[c].CN)
+		}
+		sb.WriteString("  },\n")
+	}
+	sb.WriteString("};\n")
+
+	writeToFile(filepath.Join(outDir, "position-ids.js"), sb.String())
 }
 
 // --- Helpers ---
