@@ -25,6 +25,7 @@ go build -o bin/bgq ./cmd/bgq/
 go test ./internal/query/ -v -execute      # Run tests (snapshot + DuckDB execution)
 go test ./internal/query/ -update -execute # Regenerate golden file + verify with DuckDB
 go test ./internal/query/ -run TestAllCombinations -v  # Single test
+go test ./cmd/bgq/ -run TestBuildCheckSQL -v           # Missing subjects SQL tests
 
 gofmt -w .                                 # Format
 go vet ./...                               # Static analysis
@@ -34,6 +35,7 @@ golangci-lint run ./...                    # Lint
 ./bin/bgq query --config query.yaml --data-dir ./bangumi_archive
 ./bin/bgq serve --data-dir ./bangumi_archive --listen :8080
 ./bin/bgq serve --dev                      # Hot reload (Air)
+./bin/bgq missing subjects "川原砾" --type 1
 ```
 
 ### Frontend (Svelte)
@@ -71,10 +73,13 @@ Path resolution: `DUCKDB_PATH` env → `bin/duckdb` (relative to executable) →
 bgq/
 ├── cmd/
 │   ├── bgq/
-│   │   ├── main.go           # CLI entry + subcommands (query, serve, ingest, interactive, version)
-│   │   ├── interactive.go    # Interactive REPL mode
-│   │   ├── server.go         # HTTP server + API handlers
-│   │   └── dev.go            # Air hot-reload dev mode
+│   │   ├── main.go                   # CLI entry + subcommands (query, serve, ingest, interactive, missing, version)
+│   │   ├── interactive.go            # Interactive REPL mode
+│   │   ├── missing.go                # `missing` CLI subcommand dispatcher
+│   │   ├── missing_subjects.go       # Missing subjects (staff) check logic + HTTP handler
+│   │   ├── missing_subjects_test.go  # Tests for buildCheckSQL SQL generation
+│   │   ├── server.go                 # HTTP server + API handlers
+│   │   └── dev.go                    # Air hot-reload dev mode
 │   └── gen-model/
 │       ├── main.go           # Code generator (platforms, relations, staff, meta tags)
 │       └── templates/        # Go + JS templates for code generation
@@ -172,6 +177,7 @@ Sub-filter modes: `any` (exists), `all` (universal), `none` (negation), `count` 
 - `POST /api/query` — accepts `filters` (JSON), `yaml` (string), or `conditions` (legacy string array)
 - `GET /api/health` — health check
 - `GET /api/debug` — DuckDB/data diagnostics
+- `GET /api/persons/{name}/missing-subjects?type=<type>&position=<pos>` — find subjects missing a person's staff entry for given positions
 - `/` — embedded SPA; static files (images, CSS) served from embedded `dist/`
 
 ## Filters (`filters/`)
@@ -212,6 +218,9 @@ Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
 - `bgq/internal/model/helpers.go` — Lookup helpers (PlatformsByType, RelationsByType, etc.)
 - `bgq/cmd/gen-model/main.go` — Code generator for schema constants (run via `go generate`)
 - `bgq/cmd/bgq/main.go` — CLI dispatch + ingest logic
+- `bgq/cmd/bgq/missing.go` — `missing` CLI subcommand dispatcher (subjects, episodes)
+- `bgq/cmd/bgq/missing_subjects.go` — Missing subjects (staff) check: `buildCheckSQL` + HTTP handler
+- `bgq/cmd/bgq/missing_subjects_test.go` — Tests for `buildCheckSQL` SQL generation
 - `bgq/cmd/bgq/interactive.go` — Interactive REPL (shared parser with web API)
 - `bgq/cmd/bgq/server.go` — HTTP server + API handlers
 - `bgq/internal/server/webui.go` — Embedded static files via `//go:embed dist/*`

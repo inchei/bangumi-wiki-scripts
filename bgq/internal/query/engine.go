@@ -71,6 +71,11 @@ func (e *Engine) Execute(ctx context.Context, cfg *config.Config) (*QueryResult,
 	return result, nil
 }
 
+// ExecuteRaw runs a raw SQL string directly and returns results.
+func (e *Engine) ExecuteRaw(ctx context.Context, sql string) (*QueryResult, error) {
+	return e.executeSQL(ctx, sql)
+}
+
 // executeSQL runs a SQL query via DuckDB CLI and returns parsed results.
 func (e *Engine) executeSQL(ctx context.Context, sql string) (*QueryResult, error) {
 	// Validate DuckDB binary exists

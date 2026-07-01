@@ -60,6 +60,7 @@ func startServer(dataDir, listenAddr, dbPath string) {
 	mux.HandleFunc("/api/query", s.handleQuery)
 	mux.HandleFunc("/api/health", s.handleHealth)
 	mux.HandleFunc("/api/debug", s.handleDebug)
+	mux.HandleFunc("/api/persons/{name}/missing-subjects", s.handleCheckMissingStaff)
 
 	mux.HandleFunc("/", s.handleStatic)
 

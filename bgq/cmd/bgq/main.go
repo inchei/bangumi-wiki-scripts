@@ -45,6 +45,8 @@ func main() {
 		cmdIngest(os.Args[2:])
 	case "interactive":
 		cmdInteractive(os.Args[2:])
+	case "missing":
+		cmdMissing(os.Args[2:])
 	case "help", "--help", "-h":
 		printUsage()
 	default:
@@ -61,6 +63,7 @@ func printUsage() {
   bgq query --interactive [--data-dir <数据目录>]
   bgq serve [--data-dir <数据目录>] [--listen <地址:端口>] [--dev]
   bgq ingest --data-dir <数据目录> --db <数据库路径>
+  bgq missing subjects <人名> --type <条目类型> --db <数据库>
   bgq version
   bgq help
 
@@ -68,6 +71,7 @@ func printUsage() {
   query       执行筛选查询（从YAML配置文件）
   serve       启动Web界面
   ingest      将数据导入DuckDB数据库（加速后续查询）
+  missing     检查缺失的条目 staff 关联（需要 ingest 后的数据库）
   interactive 交互式模式（兼容旧版Python脚本）
   version     显示版本信息
   help        显示此帮助信息
@@ -452,6 +456,7 @@ CREATE INDEX IF NOT EXISTS idx_relations_subject ON subject_relations(subject_id
 CREATE INDEX IF NOT EXISTS idx_relations_type ON subject_relations(relation_type);
 CREATE INDEX IF NOT EXISTS idx_persons_subject ON subject_persons(subject_id);
 CREATE INDEX IF NOT EXISTS idx_persons_position ON subject_persons(position);
+CREATE INDEX IF NOT EXISTS idx_persons_person ON subject_persons(person_id);
 CREATE INDEX IF NOT EXISTS idx_episodes_subject ON episodes(subject_id);
 CREATE INDEX IF NOT EXISTS idx_person_relations_person ON person_relations(person_id);
 CREATE INDEX IF NOT EXISTS idx_person_relations_type ON person_relations(relation_type);
