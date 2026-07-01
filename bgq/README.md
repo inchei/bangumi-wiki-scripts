@@ -174,6 +174,32 @@ curl "http://localhost:8080/api/persons/川原砾/missing-subjects?type=1"
 
 Referrer 限制：仅允许来自 `bgm.tv`、`bangumi.tv`、`chii.in` 的请求，直接访问（新标签页、curl 无 referrer）不受限。
 
+### 检查缺失剧集标注
+
+检查某人在剧集描述中出现但缺少对应 staff 关联的剧集：
+
+```bash
+./bin/bgq missing episodes "川原砾" --db ./bangumi.db
+```
+
+HTTP 接口（serve 后）：
+
+```bash
+curl "http://localhost:8080/api/persons/川原砾/missing-episodes"
+```
+
+```json
+// 返回匹配结果，按 subject 分组
+{
+  "matched": {
+    "12": { "name": "アクセル・ワールド", "episodes": { "1": ["1", "2"] } }
+  },
+  "unmatched": {
+    "12": { "name": "アクセル・ワールド", "episodes": [{"episode_id": 3, "label": "3"}] }
+  }
+}
+```
+
 ## 开发
 
 见 [CONTRIBUTING.md](CONTRIBUTING.md)。
