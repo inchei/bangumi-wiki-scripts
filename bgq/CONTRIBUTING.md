@@ -26,6 +26,9 @@ go test ./internal/query/ -execute
 # 缺失条目关联检查 SQL 测试（不需要 DuckDB）
 go test ./cmd/bgq/ -run TestBuildCheckSQL -v
 
+# 缺失剧集标注测试（不需要 DuckDB）
+go test ./cmd/bgq/ -run "TestExpand|TestEpLabel|TestResolveOverlaps|TestBuildEpPositionTable" -v
+
 # 代码质量
 gofmt -w .
 go vet ./...
@@ -42,6 +45,7 @@ golangci-lint run ./...
 - **引擎测试**（`TestExecute*`）：验证 DuckDB 执行能力。
 - **`-execute` 模式**：在快照测试基础上，使用 `testdata/archive/`（每个表 200 行）对生成的 SQL 执行 DuckDB 验证。同时测试 data-dir 模式和 db 模式（通过 `bgq ingest` 构建数据库）。用于捕获运行时错误（如缺失的 table join、列名不匹配等）。
 - **Missing subjects 测试**（`TestBuildCheckSQL*`）：验证 `buildCheckSQL` 生成的 SQL 结构是否包含预期的 CTE、类型过滤、UNION ALL 等。
+- **Missing episodes 测试**（`TestExpand*`, `TestEpLabel*`, `TestResolveOverlaps*`, `TestBuildEpPositionTable*`）：验证剧集描述匹配相关的辅助函数。
 
 ### 模型数据更新
 
@@ -97,6 +101,8 @@ bgq/
 │   ├── missing.go             # missing 子命令调度
 │   ├── missing_subjects.go    # 缺失条目关联检查 + HTTP handler
 │   ├── missing_subjects_test.go # buildCheckSQL SQL 生成测试
+│   ├── missing_episodes.go    # 缺失剧集标注检查 + HTTP handler
+│   ├── missing_episodes_test.go # 剧集辅助函数测试
 │   ├── server.go              # Web 服务器 + API
 │   └── dev.go                 # Air 热重载开发模式
 ├── cmd/gen-model/
@@ -152,6 +158,7 @@ bgq/
 | `/api/query` | POST | 执行查询（支持 yaml / filters / conditions 三种输入） |
 | `/api/health` | GET | 健康检查 |
 | `/api/persons/{name}/missing-subjects` | GET | 查询某人在指定条目类型中缺失的 staff 关联 |
+| `/api/persons/{name}/missing-episodes` | GET | 查询某人在剧集描述中出现但缺少 staff 关联的剧集 |
 
 **查询请求示例**：
 
