@@ -8,7 +8,7 @@ import (
 )
 
 func TestBuildCheckSQL_BookExcludesSeries(t *testing.T) {
-	positions := map[int]string{1: "作者"}
+	positions := map[int]string{2001: "作者"}
 	sql := buildCheckSQL(1, "川原砾", positions)
 
 	if !strings.Contains(sql, "series_ids") {
@@ -19,6 +19,10 @@ func TestBuildCheckSQL_BookExcludesSeries(t *testing.T) {
 	}
 	if !strings.Contains(sql, "s.type = 1") {
 		t.Error("should filter subjects.type = 1")
+	}
+	// series filter should appear inside the pairs subquery, not as UNION ALL
+	if !strings.Contains(sql, "AND s.id NOT IN (SELECT id FROM series_ids)") {
+		t.Error("series filter clause should be present for book type")
 	}
 }
 
@@ -32,27 +36,76 @@ func TestBuildCheckSQL_AnimeNoSeriesFilter(t *testing.T) {
 	if !strings.Contains(sql, "s.type = 2") {
 		t.Error("should filter subjects.type = 2")
 	}
+	if strings.Contains(sql, "NOT IN (SELECT id FROM series_ids)") {
+		t.Error("anime type (2) should NOT apply the series filter")
+	}
 }
 
-func TestBuildCheckSQL_MultiplePositions(t *testing.T) {
+func TestBuildCheckSQL_PositionsMapContainsAllPositions(t *testing.T) {
 	positions := map[int]string{1: "原作", 46: "系列构成"}
 	sql := buildCheckSQL(2, "川原砾", positions)
 
-	// Should have UNION ALL for each position
-	count := strings.Count(sql, "UNION ALL")
-	if count != 1 {
-		t.Errorf("2 positions should have 1 UNION ALL, got %d", count)
+	if !strings.Contains(sql, "positions_map(id, name) AS") {
+		t.Error("should include positions_map CTE")
 	}
+	if !strings.Contains(sql, "(1, '原作')") {
+		t.Error("positions_map VALUES should include position id=1 '原作'")
+	}
+	if !strings.Contains(sql, "(46, '系列构成')") {
+		t.Error("positions_map VALUES should include position id=46 '系列构成'")
+	}
+}
 
-	if !strings.Contains(sql, "position = 1") && !strings.Contains(sql, "position = 46") {
-		t.Error("should reference both position IDs")
+func TestBuildCheckSQL_NoUnionAll(t *testing.T) {
+	// Phase 1 design replaces the per-position UNION ALL with a single
+	// SELECT joining against positions_map.
+	positions := map[int]string{1: "原作", 46: "系列构成", 20: "原画"}
+	sql := buildCheckSQL(2, "川原砾", positions)
+
+	if strings.Contains(sql, "UNION ALL") {
+		t.Error("Phase 1 SQL should NOT use UNION ALL (replaced by positions_map join)")
+	}
+}
+
+func TestBuildCheckSQL_PairsCTEUsesSingleRegex(t *testing.T) {
+	positions := map[int]string{1: "原作"}
+	sql := buildCheckSQL(2, "川原砾", positions)
+
+	if !strings.Contains(sql, "pairs AS") {
+		t.Error("should include pairs CTE")
+	}
+	if !strings.Contains(sql, "regexp_extract_all") {
+		t.Error("pairs CTE should use regexp_extract_all for single-pass extraction")
+	}
+	if !strings.Contains(sql, "LIST_ZIP") {
+		t.Error("pairs CTE should use LIST_ZIP to align key/value groups")
+	}
+	// Count occurrences of the infobox pattern — should appear exactly twice
+	// (one for group 1, one for group 2) regardless of how many positions
+	// are being checked.
+	patternCount := strings.Count(sql, infoboxPairPattern)
+	if patternCount != 2 {
+		t.Errorf("infobox pattern should appear exactly twice (group 1 + group 2), got %d", patternCount)
+	}
+}
+
+func TestBuildCheckSQL_NoMatchColumns(t *testing.T) {
+	// Phase 1 removed the m_<id> boolean-column scheme from buildMatchCols.
+	positions := map[int]string{1: "原作", 46: "系列构成"}
+	sql := buildCheckSQL(2, "川原砾", positions)
+
+	if strings.Contains(sql, "m_1") || strings.Contains(sql, "m_46") {
+		t.Error("Phase 1 SQL should NOT reference m_<id> match columns")
+	}
+	if strings.Contains(sql, "AS m_") {
+		t.Error("Phase 1 SQL should NOT define any m_<id> columns")
 	}
 }
 
 func TestBuildCheckSQL_GameType(t *testing.T) {
 	positions := make(map[int]string)
-	for id, name := range model.StaffPositions[4] {
-		positions[id] = name
+	for id, posName := range model.StaffPositions[4] {
+		positions[id] = posName
 	}
 	sql := buildCheckSQL(4, "虚淵玄", positions)
 
@@ -80,7 +133,7 @@ func TestBuildCheckSQL_ContainsLinkedCTE(t *testing.T) {
 }
 
 func TestBuildCheckSQL_NameEscaping(t *testing.T) {
-	positions := map[int]string{1: "作者"}
+	positions := map[int]string{2001: "作者"}
 	sql := buildCheckSQL(1, "O'Brien", positions)
 
 	if !strings.Contains(sql, "O''Brien") {
@@ -88,22 +141,36 @@ func TestBuildCheckSQL_NameEscaping(t *testing.T) {
 	}
 }
 
-func TestBuildCheckSQL_InfoboxMatchColumns(t *testing.T) {
-	positions := map[int]string{1: "作者", 2: "出版社"}
-	sql := buildCheckSQL(1, "川原砾", positions)
+func TestBuildCheckSQL_FinalSelectShape(t *testing.T) {
+	positions := map[int]string{1: "原作"}
+	sql := buildCheckSQL(2, "川原砾", positions)
 
-	if !strings.Contains(sql, "m_1") {
-		t.Error("should create match column m_1 for position ID 1")
+	if !strings.Contains(sql, "SELECT s.id, s.name, pm.id") {
+		t.Error("final SELECT should project (s.id, s.name, pm.id)")
 	}
-	if !strings.Contains(sql, "m_2") {
-		t.Error("should create match column m_2 for position ID 2")
+	if !strings.Contains(sql, "JOIN pairs ON pairs.subject_id = s.id") {
+		t.Error("final SELECT should join pairs on subject_id")
+	}
+	if !strings.Contains(sql, "JOIN positions_map pm ON pm.name = pairs.k") {
+		t.Error("final SELECT should join positions_map on name = pairs.k")
+	}
+	if !strings.Contains(sql, "NOT EXISTS (SELECT 1 FROM linked l") {
+		t.Error("final SELECT should anti-join linked via NOT EXISTS")
+	}
+	if !strings.Contains(sql, "ORDER BY s.id, pm.id") {
+		t.Error("final SELECT should order by (s.id, pm.id) for stable output")
 	}
 }
 
-func TestBuildCheckSQL_SinglePositionNoUnion(t *testing.T) {
+func TestBuildCheckSQL_SinglePositionStillUsesPositionsMap(t *testing.T) {
+	// Even with one position, Phase 1 uses the positions_map join shape
+	// (no special-casing back to the old m_<id> scheme).
 	positions := map[int]string{5: "插图"}
 	sql := buildCheckSQL(1, "川原砾", positions)
 
+	if !strings.Contains(sql, "positions_map") {
+		t.Error("single position should still use positions_map CTE")
+	}
 	if strings.Contains(sql, "UNION ALL") {
 		t.Error("single position should not have UNION ALL")
 	}
