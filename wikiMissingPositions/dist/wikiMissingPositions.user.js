@@ -796,17 +796,23 @@ document.head.appendChild(styleEl);
       };
     });
     let offX = 0, offY = 0;
-    handle.onmousedown = (e) => {
+    function cx(e) {
+      return e.touches ? e.touches[0].clientX : e.clientX;
+    }
+    function cy(e) {
+      return e.touches ? e.touches[0].clientY : e.clientY;
+    }
+    handle.onmousedown = handle.ontouchstart = (e) => {
       if (e.target.closest(".bgm-mp-notify-close")) return;
-      offX = e.clientX - notify.getBoundingClientRect().left;
-      offY = e.clientY - notify.getBoundingClientRect().top;
-      document.onmousemove = (ev) => {
-        notify.style.left = ev.clientX - offX + "px";
-        notify.style.top = ev.clientY - offY + "px";
+      offX = cx(e) - notify.getBoundingClientRect().left;
+      offY = cy(e) - notify.getBoundingClientRect().top;
+      document.onmousemove = document.ontouchmove = (ev) => {
+        notify.style.left = cx(ev) - offX + "px";
+        notify.style.top = cy(ev) - offY + "px";
         notify.style.right = "auto";
       };
-      document.onmouseup = () => {
-        document.onmousemove = null;
+      document.onmouseup = document.ontouchend = () => {
+        document.onmousemove = document.ontouchmove = null;
       };
     };
     notify.querySelector(".bgm-mp-notify-close").onclick = () => notify.remove();
@@ -1056,20 +1062,26 @@ document.head.appendChild(styleEl);
     content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
     popup.querySelector(".bgm-mp-notify-close").onclick = () => popup.remove();
     let offX = 0, offY = 0;
-    handle.onmousedown = (e) => {
+    function cx(e) {
+      return e.touches ? e.touches[0].clientX : e.clientX;
+    }
+    function cy(e) {
+      return e.touches ? e.touches[0].clientY : e.clientY;
+    }
+    handle.onmousedown = handle.ontouchstart = (e) => {
       if (e.target.closest(".bgm-mp-notify-close")) return;
       const rect = popup.getBoundingClientRect();
       popup.style.transform = "none";
       popup.style.left = rect.left + "px";
       popup.style.top = rect.top + "px";
-      offX = e.clientX - rect.left;
-      offY = e.clientY - rect.top;
-      document.onmousemove = (ev) => {
-        popup.style.left = ev.clientX - offX + "px";
-        popup.style.top = ev.clientY - offY + "px";
+      offX = cx(e) - rect.left;
+      offY = cy(e) - rect.top;
+      document.onmousemove = document.ontouchmove = (ev) => {
+        popup.style.left = cx(ev) - offX + "px";
+        popup.style.top = cy(ev) - offY + "px";
       };
-      document.onmouseup = () => {
-        document.onmousemove = null;
+      document.onmouseup = document.ontouchend = () => {
+        document.onmousemove = document.ontouchmove = null;
       };
     };
     (async () => {

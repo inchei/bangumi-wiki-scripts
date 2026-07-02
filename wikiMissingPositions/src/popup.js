@@ -103,17 +103,19 @@ export function showPendingEps(allUnmatched, personName, type) {
 
   let offX = 0,
     offY = 0;
-  handle.onmousedown = (e) => {
+  function cx(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
+  function cy(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
+  handle.onmousedown = handle.ontouchstart = (e) => {
     if (e.target.closest('.bgm-mp-notify-close')) return;
-    offX = e.clientX - notify.getBoundingClientRect().left;
-    offY = e.clientY - notify.getBoundingClientRect().top;
-    document.onmousemove = (ev) => {
-      notify.style.left = ev.clientX - offX + 'px';
-      notify.style.top = ev.clientY - offY + 'px';
+    offX = cx(e) - notify.getBoundingClientRect().left;
+    offY = cy(e) - notify.getBoundingClientRect().top;
+    document.onmousemove = document.ontouchmove = (ev) => {
+      notify.style.left = cx(ev) - offX + 'px';
+      notify.style.top = cy(ev) - offY + 'px';
       notify.style.right = 'auto';
     };
-    document.onmouseup = () => {
-      document.onmousemove = null;
+    document.onmouseup = document.ontouchend = () => {
+      document.onmousemove = document.ontouchmove = null;
     };
   };
 
