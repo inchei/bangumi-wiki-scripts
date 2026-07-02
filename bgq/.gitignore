@@ -11,4 +11,7 @@ internal/server/dist/
 # Binaries
 bin/
 
+# Benchmark output
+bench/
+
 .env

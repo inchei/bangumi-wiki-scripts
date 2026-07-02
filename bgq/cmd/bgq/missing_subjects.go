@@ -14,11 +14,13 @@ import (
 
 const delimClass = `[()\[\]{}（）<>《》「」『』【】+×·→/／、,，;；：&＆\\等]`
 
-type posDef struct {
-	id       int
-	name     string
-	spattern string // SQL-escaped infobox extract regex
-}
+// infoboxPairPattern extracts all `|key= value` single-line pairs from an
+// infobox template string. Group 1 = key, group 2 = value (up to newline or
+// pipe). Multi-line brace values (`|key: { ... }`) are intentionally NOT
+// supported — `bgq missing` only checks single-line staff fields.
+// Anchored to start-of-line with (?im) so `^` matches each line, not just
+// the start of the whole string.
+const infoboxPairPattern = `(?im)^\|([^|=\n]+?)\s*=\s*([^\n\r|]*)`
 
 func (s *server) handleCheckMissingStaff(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
@@ -113,20 +115,23 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string) st
 	posIDs := sortedKeys(positions)
 	hasSeries := typeCode == 1
 
-	// Pre-build per-position SQL parts
-	posDefs := make([]posDef, len(posIDs))
+	// Build positions_map VALUES list: (id, '职位名'), (id, '职位名'), ...
+	var posValues strings.Builder
 	for i, posID := range posIDs {
-		spattern := strings.ReplaceAll(
-			fmt.Sprintf(`(?i)\|%s\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)`,
-				regexp.QuoteMeta(positions[posID])),
-			"'", "''",
-		)
-		posDefs[i] = posDef{posID, positions[posID], spattern}
+		if i > 0 {
+			posValues.WriteString(",")
+		}
+		posNameSQL := strings.ReplaceAll(positions[posID], "'", "''")
+		fmt.Fprintf(&posValues, "(%d, '%s')", posID, posNameSQL)
 	}
+
+	// infobox pair pattern (single-quoted SQL string; no single quotes in
+	// the pattern itself, so no doubling needed).
+	infoboxPatternSQL := strings.ReplaceAll(infoboxPairPattern, "'", "''")
 
 	var sb strings.Builder
 
-	// CTEs
+	// CTE 1 (optional): series_ids — only for book type (1).
 	cteCount := 0
 	if hasSeries {
 		sb.WriteString(`WITH series_ids AS (
@@ -136,7 +141,8 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string) st
 		cteCount++
 	}
 
-	// linked CTE: pre-compute all (subject_id, position) where this person is already staff
+	// CTE: linked — pre-compute (subject_id, position) where this person is
+	// already a registered staff member.
 	fmt.Fprintf(&sb, `%slinked AS (
   SELECT sp.subject_id, sp.position
   FROM subject_persons sp
@@ -146,35 +152,47 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string) st
 `, withPrefix(cteCount), escapedNameSQL)
 	cteCount++
 
-	// base CTE: single scan, compute all match flags as boolean columns
-	// Column aliases defined here are accessible in the outer UNION ALL.
-	matchCols := buildMatchCols(posDefs, snamePattern)
-	fmt.Fprintf(&sb, `%sbase AS (
-  SELECT s.id, s.name%s
-  FROM subjects s
-  WHERE s.type = %d
-    %s
-)
-`,
-		withPrefix(cteCount),
-		func() string {
-			if len(matchCols) == 0 {
-				return ""
-			}
-			return ",\n    " + strings.Join(matchCols, ",\n    ")
-		}(),
-		typeCode,
-		seriesFilter(hasSeries))
+	// CTE: positions_map — (position_id, position_name) tuples for this type.
+	fmt.Fprintf(&sb, `%spositions_map(id, name) AS (
+  VALUES %s
+),
+`, withPrefix(cteCount), posValues.String())
+	cteCount++
 
-	// UNION ALL from base — m_%d references the boolean column from base CTE
-	for i, pd := range posDefs {
-		if i > 0 {
-			sb.WriteString("UNION ALL\n")
-		}
-		fmt.Fprintf(&sb, "SELECT id, name, %d FROM base WHERE m_%d AND id NOT IN (SELECT subject_id FROM linked WHERE position = %d)",
-			pd.id, pd.id, pd.id)
-		sb.WriteString("\n")
-	}
+	// CTE: pairs — single-pass extraction of all `|key= value` pairs per
+	// subject. list_zip aligns keys (group 1) with values (group 2); unnest
+	// turns the list into one row per pair. kv[1]/kv[2] access unnamed
+	// struct fields (list_zip produces unnamed structs in DuckDB 1.2).
+	fmt.Fprintf(&sb, `%spairs AS (
+  SELECT subject_id,
+         LOWER(TRIM(REPLACE(kv[1], '　', ''))) AS k,
+         kv[2] AS v
+  FROM (
+    SELECT s.id AS subject_id,
+           UNNEST(LIST_ZIP(
+             regexp_extract_all(s.infobox, '%s', 1),
+             regexp_extract_all(s.infobox, '%s', 2)
+           )) AS kv
+    FROM subjects s
+    WHERE s.type = %d
+%s
+  ) sub
+)
+`, withPrefix(cteCount), infoboxPatternSQL, infoboxPatternSQL, typeCode,
+		indentSeriesFilter(hasSeries))
+
+	// Final SELECT: subjects whose infobox value for a position key mentions
+	// the person (with delimiter boundaries), but no linked staff entry
+	// exists for that (subject, position).
+	sb.WriteString(`SELECT s.id, s.name, pm.id
+FROM subjects s
+JOIN pairs ON pairs.subject_id = s.id
+JOIN positions_map pm ON pm.name = pairs.k
+WHERE regexp_matches(REPLACE(REPLACE(pairs.v, '　', ''), ' ', ''), '`)
+	sb.WriteString(snamePattern)
+	sb.WriteString(`')
+  AND NOT EXISTS (SELECT 1 FROM linked l WHERE l.subject_id = s.id AND l.position = pm.id)
+ORDER BY s.id, pm.id;`)
 
 	return sb.String()
 }
@@ -186,6 +204,9 @@ func withPrefix(cteCount int) string {
 	return ""
 }
 
+// seriesFilter returns the AND-clause that excludes series subjects (only
+// applied for book type 1, where series subjects are aggregate entries that
+// should not themselves be checked for missing staff).
 func seriesFilter(hasSeries bool) string {
 	if hasSeries {
 		return "AND s.id NOT IN (SELECT id FROM series_ids)"
@@ -193,14 +214,14 @@ func seriesFilter(hasSeries bool) string {
 	return ""
 }
 
-func buildMatchCols(posDefs []posDef, snamePattern string) []string {
-	cols := make([]string, len(posDefs))
-	for i, pd := range posDefs {
-		cols[i] = fmt.Sprintf(
-			"regexp_matches(REPLACE(REPLACE(regexp_extract(s.infobox, '%s', 1), '　', ''), ' ', ''), '%s') AS m_%d",
-			pd.spattern, snamePattern, pd.id)
+// indentSeriesFilter returns seriesFilter() indented for embedding inside the
+// pairs subquery's WHERE clause (two-level indent: 4 + 4 spaces).
+func indentSeriesFilter(hasSeries bool) string {
+	s := seriesFilter(hasSeries)
+	if s == "" {
+		return ""
 	}
-	return cols
+	return "    " + s
 }
 
 var allowedHosts = []string{"bgm.tv", "bangumi.tv", "chii.in"}
