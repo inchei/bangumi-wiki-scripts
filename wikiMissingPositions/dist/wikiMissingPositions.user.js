@@ -820,45 +820,55 @@ document.head.appendChild(styleEl);
   function addSubjectLi(sid, posId, name) {
     const existing = document.querySelector(`#crtRelateSubjects li.old:has([href="/subject/${sid}"]):has(option[selected][value="${posId}"])`);
     if (existing) return existing;
-    console.log("???");
     subjectList = [{ id: Number(sid), type_id: type, name, name_cn: "", url_mod: "subject" }];
     addRelateSubject(0, "submitForm");
     document.querySelector("#crtRelateSubjects select").value = posId;
     return document.querySelector(`#crtRelateSubjects li:has([href="/subject/${sid}"])`);
   }
-  async function runEpisodeCheck() {
-    const provider = getProvider();
-    const queryName = nameInput.value.trim() || document.querySelector(".nameSingle").textContent.trim();
-    epBtn.disabled = true;
-    epBtn.textContent = "\u83B7\u53D6\u4E2D\u2026\u2026";
-    try {
-      const url = `${provider}/api/persons/${encodeURIComponent(queryName)}/missing-episodes`;
-      const res = await fetch(url);
-      const data = await res.json();
-      let none = true;
-      for (const [sid, entry] of Object.entries(data.matched || {})) {
-        for (const [posId, labels] of Object.entries(entry.episodes || {})) {
-          const li = addSubjectLi(sid, posId, entry.name);
-          const epInput = li.querySelector('[name$="[appear_eps]"]');
-          if (epInput) {
-            const currentSet = parseAppearEps(epInput.value);
-            const hasAll = labels.every((l) => currentSet.has(l));
-            if (!hasAll) {
-              none = false;
-              epInput.value = genAppearEps(labels);
-              if (li.classList.contains("old")) {
-                li.style.background = document.documentElement.getAttribute("data-theme") === "dark" ? "rgba(255, 248, 165, 0.08)" : "rgba(255, 248, 165, 0.2)";
-              }
+  async function processEpisodesData(data, queryName) {
+    let none = true;
+    for (const [sid, entry] of Object.entries(data.matched || {})) {
+      for (const [posId, labels] of Object.entries(entry.episodes || {})) {
+        const li = addSubjectLi(sid, posId, entry.name);
+        const epInput = li.querySelector('[name$="[appear_eps]"]');
+        if (epInput) {
+          const currentSet = parseAppearEps(epInput.value);
+          const hasAll = labels.every((l) => currentSet.has(l));
+          if (!hasAll) {
+            none = false;
+            epInput.value = genAppearEps(labels);
+            if (li.classList.contains("old")) {
+              li.style.background = document.documentElement.getAttribute("data-theme") === "dark" ? "rgba(255, 248, 165, 0.08)" : "rgba(255, 248, 165, 0.2)";
             }
           }
         }
       }
-      const allUnmatched = [];
-      for (const [sid, entry] of Object.entries(data.unmatched || {})) {
-        none = false;
-        allUnmatched.push({ sid, entry });
-      }
-      if (allUnmatched.length) showPendingEps(allUnmatched, queryName, type);
+    }
+    const allUnmatched = [];
+    for (const [sid, entry] of Object.entries(data.unmatched || {})) {
+      none = false;
+      allUnmatched.push({ sid, entry });
+    }
+    if (allUnmatched.length) showPendingEps(allUnmatched, queryName, type);
+    return none;
+  }
+  async function runEpisodeCheck() {
+    const queryName = nameInput.value.trim() || document.querySelector(".nameSingle").textContent.trim();
+    epBtn.disabled = true;
+    epBtn.textContent = "\u83B7\u53D6\u4E2D\u2026\u2026";
+    const pending = getPendingData();
+    if (pending && pending.episodesData) {
+      const none = await processEpisodesData(pending.episodesData, queryName);
+      epBtn.textContent = none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u5267\u96C6" : "\u5267\u96C6\u5173\u8054\u5B8C\u6210\uFF01";
+      epBtn.disabled = false;
+      return;
+    }
+    const provider = getProvider();
+    try {
+      const url = `${provider}/api/persons/${encodeURIComponent(queryName)}/missing-episodes`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const none = await processEpisodesData(data, queryName);
       epBtn.textContent = none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u5267\u96C6" : "\u5267\u96C6\u5173\u8054\u5B8C\u6210\uFF01";
     } catch (e) {
       console.error(e);
@@ -899,6 +909,24 @@ document.head.appendChild(styleEl);
     btn.className = "bgm-mp-btn";
     btn.addEventListener("click", async () => {
       const position = select.value;
+      const pending = getPendingData();
+      if (pending && pending.subjectsData) {
+        const resEntries = Object.entries(pending.subjectsData);
+        let none = true;
+        for (const [id, entry] of resEntries) {
+          for (const pos of entry.positions || []) {
+            if (position && String(pos) !== position) continue;
+            if (!document.querySelector(`#crtRelateSubjects li.old:has([href="/subject/${id}"]):has(option[selected][value="${pos}"])`)) {
+              none = false;
+              subjectList = [{ id: Number(id), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }];
+              addRelateSubject(0, "submitForm");
+              document.querySelector("#crtRelateSubjects select").value = pos;
+            }
+          }
+        }
+        btn.textContent = none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u586B\u5199\u5B8C\u6210\uFF01";
+        return;
+      }
       const provider = getProvider();
       try {
         btn.disabled = true;
@@ -1136,6 +1164,10 @@ document.head.appendChild(styleEl);
     } catch (_e) {
     }
   }
+  var _pendingData = null;
+  function getPendingData() {
+    return _pendingData;
+  }
   function processPendingData() {
     const raw = localStorage.getItem("bgm-mp-pending");
     if (!raw) return;
@@ -1143,7 +1175,11 @@ document.head.appendChild(styleEl);
     if (!referrer.includes("/person/new") && !referrer.match(/\/person\/\d+$/)) return;
     try {
       const data = JSON.parse(raw);
-      if (!data.subjectsData) return;
+      _pendingData = data;
+      if (!data.subjectsData) {
+        localStorage.removeItem("bgm-mp-pending");
+        return;
+      }
       for (const [sid, entry] of Object.entries(data.subjectsData)) {
         for (const posId of entry.positions || []) {
           const li = addSubjectLi(Number(sid), posId, entry.name);

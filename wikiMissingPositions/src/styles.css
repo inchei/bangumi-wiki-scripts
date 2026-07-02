@@ -247,7 +247,7 @@ html[data-theme='dark'] .bgm-mp-btn:hover,
   border: 3px solid #e4e7ed;
   border-top-color: var(--primary-color,#f09199);
   border-radius: 50%;
-  animation: bgm-mp-spin 0.7s linear infinite;
+  animation: bgm-mp-spin 1.2s linear infinite;
 }
 
 html[data-theme="dark"] .bgm-mp-spinner {
