@@ -4,7 +4,7 @@ import { genAppearEps, parseAppearEps, sortAppearEps } from './appear-eps.js';
 import { showPendingEps } from './popup.js';
 import { processPendingData, getPendingData } from './subject-page.js';
 
-let select, type, nameInput, epBtn;
+let select, type, nameInput, epNameInput, epBtn;
 
 export function addSubjectLi(sid, posId, name) {
   const existing = document.querySelector(`#crtRelateSubjects li.old:has([href="/subject/${sid}"]):has(option[selected][value="${posId}"])`);
@@ -45,7 +45,7 @@ async function processEpisodesData(data, queryName) {
 }
 
 export async function runEpisodeCheck() {
-  const queryName = nameInput.value.trim() || document.querySelector('.nameSingle').textContent.trim();
+  const queryName = epNameInput.value.trim() || document.querySelector('.nameSingle').textContent.trim();
   epBtn.disabled = true;
   epBtn.textContent = '获取中……';
 
@@ -161,12 +161,16 @@ export function initAddRelated() {
   group2.className = 'bgm-mp-group';
 
   if (type === 2) {
+    epNameInput = document.createElement('input');
+    epNameInput.type = 'text';
+    epNameInput.className = 'bgm-mp-input';
+    epNameInput.placeholder = '别名（可选）';
     epBtn = document.createElement('button');
     epBtn.textContent = '关联已填写剧集';
     epBtn.id = 'missingEpisodes';
     epBtn.className = 'bgm-mp-btn';
     epBtn.addEventListener('click', runEpisodeCheck);
-    group2.append(epBtn);
+    group2.append(epNameInput, epBtn);
   }
 
   group1.append(nameInput, select, btn);
