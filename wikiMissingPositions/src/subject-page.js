@@ -142,7 +142,8 @@ export function openSubjectPopup(personName, typeCode) {
     const encodedName = encodeURIComponent(personName);
 
     let subjectsData = null,
-      episodesData = null;
+      episodesData = null,
+      fetchFailed = false;
 
     try {
       const subjRes = await fetch(
@@ -150,6 +151,7 @@ export function openSubjectPopup(personName, typeCode) {
       );
       subjectsData = await subjRes.json();
     } catch (e) {
+      fetchFailed = true;
       subjectsData = {};
     }
 
@@ -158,8 +160,15 @@ export function openSubjectPopup(personName, typeCode) {
         const epRes = await fetch(`${provider}/api/persons/${encodedName}/missing-episodes`);
         episodesData = await epRes.json();
       } catch (e) {
+        fetchFailed = true;
         episodesData = {};
       }
+    }
+
+    if (fetchFailed) {
+      const errColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#e57373' : '#a0222e';
+      content.innerHTML = `<div class="bgm-mp-loading-wrap" style="color:${errColor}">获取失败，请检查API地址或网络</div>`;
+      return;
     }
 
     let html = '';
@@ -197,13 +206,16 @@ export function openSubjectPopup(personName, typeCode) {
       }
     }
 
+    const hasData = subjEntries.length || (episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length));
+
     html += `<div class="bgm-mp-popup-actions">
-        <button class="bgm-mp-btn" id="bgm-mp-create-btn">创建人物</button>
+        <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? '' : ' disabled style="opacity:0.5"'}>创建人物</button>
       </div>`;
 
     content.innerHTML = html;
 
     document.querySelector('#bgm-mp-create-btn').onclick = () => {
+      if (!hasData) return;
       localStorage.setItem(
         'bgm-mp-pending',
         JSON.stringify({

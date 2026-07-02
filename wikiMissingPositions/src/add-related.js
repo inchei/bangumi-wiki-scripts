@@ -50,7 +50,7 @@ export async function runEpisodeCheck() {
   epBtn.textContent = '获取中……';
 
   const pending = getPendingData();
-  if (pending && pending.episodesData) {
+  if (pending && pending.episodesData && (Object.keys(pending.episodesData.matched || {}).length || Object.keys(pending.episodesData.unmatched || {}).length)) {
     const none = await processEpisodesData(pending.episodesData, queryName);
     epBtn.textContent = none ? '未查找到任何已填写剧集' : '剧集关联完成！';
     epBtn.disabled = false;
@@ -112,7 +112,7 @@ export function initAddRelated() {
     const position = select.value;
 
     const pending = getPendingData();
-    if (pending && pending.subjectsData) {
+    if (pending && pending.subjectsData && Object.keys(pending.subjectsData).length) {
       const resEntries = Object.entries(pending.subjectsData);
       let none = true;
       for (const [id, entry] of resEntries) {
