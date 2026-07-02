@@ -159,7 +159,11 @@ export function openSubjectPopup(personName, typeCode) {
         `${provider}/api/persons/${encodedName}/missing-subjects${typeParam}`,
         { signal },
       );
-      subjectsData = await subjRes.json();
+      if (!subjRes.ok) {
+        subjectsData = null;
+      } else {
+        subjectsData = await subjRes.json();
+      }
     } catch (e) {
       if (e.name === 'AbortError') {
         aborted = true;
@@ -173,7 +177,9 @@ export function openSubjectPopup(personName, typeCode) {
           `${provider}/api/persons/${encodedName}/missing-episodes`,
           { signal },
         );
-        episodesData = await epRes.json();
+        if (epRes.ok) {
+          episodesData = await epRes.json();
+        }
       } catch (e) {
         if (e.name === 'AbortError') {
           aborted = true;
