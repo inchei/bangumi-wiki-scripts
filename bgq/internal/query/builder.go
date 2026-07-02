@@ -925,7 +925,7 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 	}
 
 	if len(positions) == 0 {
-		return "", fmt.Errorf("staff filter requires at least one position")
+		positions = []string{""} // wildcard — any position
 	}
 
 	// Resolve position names to ID sets

@@ -35,6 +35,12 @@ for yaml_file in index_filters/*.yaml; do
     continue
   fi
 
+  ignore_order=$(grep -m1 '^ignore_order:' "$yaml_file" | sed 's/ignore_order:\s*//' | tr -d ' ')
+  ignore_order_arg=""
+  if [ "$ignore_order" = "true" ]; then
+    ignore_order_arg="--ignore-order"
+  fi
+
   echo ""
   echo "========================================"
   echo "  同步目录: $name (index=$index_id)"
@@ -44,7 +50,7 @@ for yaml_file in index_filters/*.yaml; do
       --config "$yaml_file" \
       --data-dir "$DATA_DIR" \
       --format csv \
-    | python3 sync_index.py --index "$index_id"; then
+    | python3 sync_index.py --index "$index_id" $ignore_order_arg; then
     echo "✅ $name 同步完成"
     success=$((success + 1))
   else

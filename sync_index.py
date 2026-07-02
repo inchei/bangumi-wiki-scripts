@@ -9,7 +9,7 @@
     - id 列自动识别：person_id → person, character_id → character, id → subject
     - 若存在 index_desc 列，用其值作为条目描述
     - 否则，非 ID 列以 "列名：值" 拼接为描述
-    - 行序即目录排序
+    - 行序即目录排序（除非指定 --ignore-order）
 
 环境变量:
     BANGUMI_TOKEN  Bangumi API access token (必需)
@@ -120,6 +120,7 @@ def sync(
     columns: list[str],
     rows: list[dict],
     dry_run: bool,
+    ignore_order: bool = False,
 ):
     has_index_desc = "index_desc" in columns
 
@@ -153,31 +154,37 @@ def sync(
 
     for sid in to_add:
         info = result_map[sid]
-        status, body = api_call(
+        body = {"cat": cat, "sid": sid, "comment": info["desc"]}
+        if not ignore_order:
+            body["order"] = info["order"]
+        status, resp_body = api_call(
             "PUT",
             f"/indexes/{index_id}/related",
             token,
-            {"cat": cat, "sid": sid, "order": info["order"], "comment": info["desc"]},
+            body,
         )
         if status == 200:
             ok += 1
         else:
-            print(f"  添加 {sid} 失败: {status} {body}", file=sys.stderr)
+            print(f"  添加 {sid} 失败: {status} {resp_body}", file=sys.stderr)
             fail += 1
 
     for sid in to_update:
         info = result_map[sid]
         record_id = existing[sid]["id"]
-        status, body = api_call(
+        body = {"comment": info["desc"]}
+        if not ignore_order:
+            body["order"] = info["order"]
+        status, resp_body = api_call(
             "PATCH",
             f"/indexes/{index_id}/related/{record_id}",
             token,
-            {"order": info["order"], "comment": info["desc"]},
+            body,
         )
         if status == 200:
             ok += 1
         else:
-            print(f"  更新 {sid} 失败: {status} {body}", file=sys.stderr)
+            print(f"  更新 {sid} 失败: {status} {resp_body}", file=sys.stderr)
             fail += 1
 
     for sid in to_remove_sid:
@@ -201,6 +208,7 @@ def main():
     parser.add_argument("--index", type=int, required=True, help="Bangumi 目录 ID")
     parser.add_argument("--csv", help="CSV 文件路径（不指定则从 stdin 读取）")
     parser.add_argument("--dry-run", action="store_true", help="仅预览，不执行")
+    parser.add_argument("--ignore-order", action="store_true", help="忽略 CSV 顺序，不修改目录条目顺序")
     args = parser.parse_args()
 
     token = os.environ.get("BANGUMI_TOKEN", "")
@@ -232,7 +240,7 @@ def main():
     print(f"列: {columns}")
     print(f"行数: {len(rows)}")
 
-    sync(args.index, cat, id_col, token, columns, rows, args.dry_run)
+    sync(args.index, cat, id_col, token, columns, rows, args.dry_run, args.ignore_order)
 
 
 if __name__ == "__main__":
