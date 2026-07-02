@@ -4,7 +4,7 @@ import { genAppearEps, parseAppearEps, sortAppearEps } from './appear-eps.js';
 import { showPendingEps } from './popup.js';
 import { processPendingData, getPendingData } from './subject-page.js';
 
-let select, type, nameInput, epNameInput, epBtn;
+let select, type, nameInput, epNameInput, epBtn, personId;
 
 export function addSubjectLi(sid, posId, name) {
   const existing = document.querySelector(`#crtRelateSubjects li.old:has([href="/subject/${sid}"]):has(option[selected][value="${posId}"])`);
@@ -44,10 +44,18 @@ async function processEpisodesData(data, queryName) {
   return none;
 }
 
+function resolveTarget(name) {
+  if (!name || !personId) return '';
+  return `&target=${personId}`;
+}
+
 export async function runEpisodeCheck() {
-  const queryName = epNameInput.value.trim() || document.querySelector('.nameSingle').textContent.trim();
+  const alias = epNameInput.value.trim();
+  const queryName = alias || document.querySelector('.nameSingle').textContent.trim();
   epBtn.disabled = true;
   epBtn.textContent = '获取中……';
+
+  const targetParam = await resolveTarget(alias);
 
   const pending = getPendingData();
   if (pending && pending.episodesData && (Object.keys(pending.episodesData.matched || {}).length || Object.keys(pending.episodesData.unmatched || {}).length)) {
@@ -59,7 +67,7 @@ export async function runEpisodeCheck() {
 
   const provider = getProvider();
   try {
-    const url = `${provider}/api/persons/${encodeURIComponent(queryName)}/missing-episodes`;
+    const url = `${provider}/api/persons/${encodeURIComponent(queryName)}/missing-episodes${targetParam ? '?' + targetParam.slice(1) : ''}`;
     const res = await fetch(url);
     const data = await res.json();
     const none = await processEpisodesData(data, queryName);
@@ -74,6 +82,8 @@ export async function runEpisodeCheck() {
 
 export function initAddRelated() {
   const personName = document.querySelector('.nameSingle').textContent.trim();
+  const pidMatch = location.pathname.match(/\/person\/(\d+)/);
+  personId = pidMatch ? pidMatch[1] : '';
 
   type = {
     anime: 2,
@@ -134,7 +144,9 @@ export function initAddRelated() {
     try {
       btn.disabled = true;
       btn.textContent = '获取中……';
-      const res = await fetch(`${provider}/api/persons/${encodeURIComponent(nameInput.value.trim() || personName)}/missing-subjects?type=${type}&position=${position}`);
+      const alias = nameInput.value.trim();
+      const targetParam = await resolveTarget(alias);
+      const res = await fetch(`${provider}/api/persons/${encodeURIComponent(alias || personName)}/missing-subjects?type=${type}&position=${position}${targetParam}`);
       const data = await res.json();
       const resEntries = Object.entries(data);
       let none = true;

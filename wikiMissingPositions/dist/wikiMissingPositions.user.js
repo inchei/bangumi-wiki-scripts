@@ -267,6 +267,35 @@ html[data-theme='dark'] .bgm-mp-notify .staff-error-section {
   color: #ffb6c1;
 }
 
+/* 确认加载按钮（与 warning 格式一致，背景偏白/夜间黑） */
+.bgm-mp-notify .staff-confirm-section {
+  padding: 10px 12px;
+  margin: 0 0 16px;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(200, 200, 200, 0.3);
+  border-radius: 8px;
+  color: #303133;
+  overflow-wrap: break-word;
+  cursor: pointer;
+  text-align: center;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+
+.bgm-mp-notify .staff-confirm-section:hover {
+  background: rgba(240, 240, 240, 0.8);
+}
+
+html[data-theme='dark'] .bgm-mp-notify .staff-confirm-section {
+  background: rgba(40, 40, 40, 0.6);
+  border-color: rgba(100, 100, 100, 0.5);
+  color: #dcdcdc;
+}
+
+html[data-theme='dark'] .bgm-mp-notify .staff-confirm-section:hover {
+  background: rgba(50, 50, 50, 0.8);
+}
+
 .bgm-mp-notify .staff-tip-title.unmatched {
   color: #a0222e;
 }
@@ -870,6 +899,7 @@ document.head.appendChild(styleEl);
   var nameInput;
   var epNameInput;
   var epBtn;
+  var personId;
   function addSubjectLi(sid, posId, name) {
     const existing = document.querySelector(`#crtRelateSubjects li.old:has([href="/subject/${sid}"]):has(option[selected][value="${posId}"])`);
     if (existing) return existing;
@@ -905,10 +935,16 @@ document.head.appendChild(styleEl);
     if (allUnmatched.length) showPendingEps(allUnmatched, queryName, type);
     return none;
   }
+  function resolveTarget(name) {
+    if (!name || !personId) return "";
+    return `&target=${personId}`;
+  }
   async function runEpisodeCheck() {
-    const queryName = epNameInput.value.trim() || document.querySelector(".nameSingle").textContent.trim();
+    const alias = epNameInput.value.trim();
+    const queryName = alias || document.querySelector(".nameSingle").textContent.trim();
     epBtn.disabled = true;
     epBtn.textContent = "\u83B7\u53D6\u4E2D\u2026\u2026";
+    const targetParam = await resolveTarget(alias);
     const pending = getPendingData();
     if (pending && pending.episodesData && (Object.keys(pending.episodesData.matched || {}).length || Object.keys(pending.episodesData.unmatched || {}).length)) {
       const none = await processEpisodesData(pending.episodesData, queryName);
@@ -918,7 +954,7 @@ document.head.appendChild(styleEl);
     }
     const provider = getProvider();
     try {
-      const url = `${provider}/api/persons/${encodeURIComponent(queryName)}/missing-episodes`;
+      const url = `${provider}/api/persons/${encodeURIComponent(queryName)}/missing-episodes${targetParam ? "?" + targetParam.slice(1) : ""}`;
       const res = await fetch(url);
       const data = await res.json();
       const none = await processEpisodesData(data, queryName);
@@ -932,6 +968,8 @@ document.head.appendChild(styleEl);
   }
   function initAddRelated() {
     const personName = document.querySelector(".nameSingle").textContent.trim();
+    const pidMatch = location.pathname.match(/\/person\/(\d+)/);
+    personId = pidMatch ? pidMatch[1] : "";
     type = {
       anime: 2,
       book: 1,
@@ -984,7 +1022,9 @@ document.head.appendChild(styleEl);
       try {
         btn.disabled = true;
         btn.textContent = "\u83B7\u53D6\u4E2D\u2026\u2026";
-        const res = await fetch(`${provider}/api/persons/${encodeURIComponent(nameInput.value.trim() || personName)}/missing-subjects?type=${type}&position=${position}`);
+        const alias = nameInput.value.trim();
+        const targetParam = await resolveTarget(alias);
+        const res = await fetch(`${provider}/api/persons/${encodeURIComponent(alias || personName)}/missing-subjects?type=${type}&position=${position}${targetParam}`);
         const data = await res.json();
         const resEntries = Object.entries(data);
         let none = true;
@@ -1052,6 +1092,25 @@ document.head.appendChild(styleEl);
     }).replace(/[\uFF21-\uFF5A]/g, function(match) {
       return String.fromCharCode(match.charCodeAt(0) - 65248);
     }).toLowerCase();
+  }
+
+  // src/person.js
+  async function checkExistingPerson(personName) {
+    const result = { aliased: null, directMatch: null };
+    try {
+      const [aliased, searchResults] = await Promise.all([
+        window.personAliasQuery?.(personName),
+        searchPrsn(personName)
+      ]);
+      if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
+      const first = searchResults?.[0];
+      if (first && normalize(personName) === normalize(first.name)) {
+        result.directMatch = { name: first.name, id: first.id };
+      }
+    } catch (e) {
+      console.error("checkExistingPerson failed:", e);
+    }
+    return result;
   }
 
   // src/subject-page.js
@@ -1126,23 +1185,6 @@ document.head.appendChild(styleEl);
     });
   }
   var _abortController = null;
-  async function checkExistingPerson(personName) {
-    const result = { aliased: null, directMatch: null };
-    try {
-      const [aliased, searchResults] = await Promise.all([
-        window.personAliasQuery?.(personName),
-        searchPrsn(personName)
-      ]);
-      if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
-      const first = searchResults?.[0];
-      if (first && normalize(personName) === normalize(first.name)) {
-        result.directMatch = { name: first.name, id: first.id };
-      }
-    } catch (e) {
-      console.error("checkExistingPerson failed:", e);
-    }
-    return result;
-  }
   function openSubjectPopup(personName, typeCode) {
     if (_abortController) _abortController.abort();
     _abortController = new AbortController();
@@ -1188,19 +1230,59 @@ document.head.appendChild(styleEl);
       };
     };
     (async () => {
-      const existingPromise = checkExistingPerson(personName);
-      const typeParam = typeCode ? `?type=${typeCode}` : "";
-      const encodedName = encodeURIComponent(personName);
-      let subjectsData = null, episodesData = null, aborted = false;
+      const existing2 = await checkExistingPerson(personName);
+      let targetParam = "";
+      if (existing2.aliased) targetParam = `&target=${existing2.aliased.id}`;
+      else if (existing2.directMatch) targetParam = `&target=${existing2.directMatch.id}`;
+      const hasExisting = existing2.aliased || existing2.directMatch;
+      if (hasExisting) {
+        let warningHtml = "";
+        if (existing2.aliased) {
+          warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u7684\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.aliased.id}" target="_blank">${existing2.aliased.name}</a></div>`;
+        }
+        if (existing2.directMatch) {
+          warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u540C\u540D\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.directMatch.id}" target="_blank">${existing2.directMatch.name}</a></div>`;
+        }
+        warningHtml += '<div class="staff-confirm-section" id="bgm-mp-confirm-btn">\u4ECD\u7136\u52A0\u8F7D</div>';
+        content.innerHTML = warningHtml;
+        document.querySelector("#bgm-mp-confirm-btn").onclick = () => {
+          document.querySelector("#bgm-mp-confirm-btn").remove();
+          fetchAndRenderResults(personName, typeCode, provider, signal, content, existing2, targetParam);
+        };
+      } else {
+        await fetchAndRenderResults(personName, typeCode, provider, signal, content, existing2, targetParam);
+      }
+    })();
+  }
+  async function fetchAndRenderResults(personName, typeCode, provider, signal, content, existing, targetParam) {
+    const typeParam = typeCode ? `?type=${typeCode}` : "";
+    const encodedName = encodeURIComponent(personName);
+    let subjectsData = null, episodesData = null, aborted = false;
+    try {
+      const subjRes = await fetch(
+        `${provider}/api/persons/${encodedName}/missing-subjects${typeParam}${targetParam}`,
+        { signal }
+      );
+      if (!subjRes.ok) {
+        subjectsData = null;
+      } else {
+        subjectsData = await subjRes.json();
+      }
+    } catch (e) {
+      if (e.name === "AbortError") {
+        aborted = true;
+        return;
+      }
+    }
+    if (typeCode === 2) {
       try {
-        const subjRes = await fetch(
-          `${provider}/api/persons/${encodedName}/missing-subjects${typeParam}`,
+        const epQuery = targetParam ? "?" + targetParam.slice(1) : "";
+        const epRes = await fetch(
+          `${provider}/api/persons/${encodedName}/missing-episodes${epQuery}`,
           { signal }
         );
-        if (!subjRes.ok) {
-          subjectsData = null;
-        } else {
-          subjectsData = await subjRes.json();
+        if (epRes.ok) {
+          episodesData = await epRes.json();
         }
       } catch (e) {
         if (e.name === "AbortError") {
@@ -1208,88 +1290,64 @@ document.head.appendChild(styleEl);
           return;
         }
       }
-      if (typeCode === 2) {
-        try {
-          const epRes = await fetch(
-            `${provider}/api/persons/${encodedName}/missing-episodes`,
-            { signal }
-          );
-          if (epRes.ok) {
-            episodesData = await epRes.json();
-          }
-        } catch (e) {
-          if (e.name === "AbortError") {
-            aborted = true;
-            return;
-          }
+    }
+    if (aborted) return;
+    const hasNetworkError = subjectsData === null;
+    const subjEntries = hasNetworkError ? [] : Object.entries(subjectsData || {});
+    const hasData = subjEntries.length || episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length);
+    let html = "";
+    if (hasNetworkError) {
+      html = '<div class="staff-error-section"><div class="staff-error-title">\u83B7\u53D6\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5API\u5730\u5740\u6216\u7F51\u7EDC</div></div>';
+    } else {
+      if (subjEntries.length) {
+        html += '<div class="bgm-mp-result-list">';
+        html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u6761\u76EE\u5173\u8054\uFF1A</div>';
+        for (const [sid, entry] of subjEntries) {
+          const posNames = (entry.positions || []).map((pid) => POSITION_IDS[typeCode]?.[pid] || pid).join("\u3001");
+          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${posNames}</div>`;
         }
-      }
-      if (aborted) return;
-      const hasNetworkError = subjectsData === null;
-      const subjEntries = hasNetworkError ? [] : Object.entries(subjectsData || {});
-      const hasData = subjEntries.length || episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length);
-      let html = "";
-      if (hasNetworkError) {
-        html = '<div class="staff-error-section"><div class="staff-error-title">\u83B7\u53D6\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5API\u5730\u5740\u6216\u7F51\u7EDC</div></div>';
+        html += "</div>";
       } else {
-        if (subjEntries.length) {
+        html += '<div class="bgm-mp-empty-hint">\u65E0\u7F3A\u5931\u6761\u76EE\u5173\u8054</div>';
+      }
+      if (episodesData) {
+        const epEntries = Object.entries(episodesData.matched || {});
+        if (epEntries.length) {
           html += '<div class="bgm-mp-result-list">';
-          html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u6761\u76EE\u5173\u8054\uFF1A</div>';
-          for (const [sid, entry] of subjEntries) {
-            const posNames = (entry.positions || []).map((pid) => POSITION_IDS[typeCode]?.[pid] || pid).join("\u3001");
-            html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${posNames}</div>`;
+          html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
+          for (const [sid, entry] of epEntries) {
+            const posMap = entry.episodes || {};
+            const parts = Object.entries(posMap).map(
+              ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}\uFF1A${genAppearEps(labels)}`
+            );
+            html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> ${parts.join("\uFF0C")}</div>`;
           }
           html += "</div>";
-        } else {
-          html += '<div class="bgm-mp-empty-hint">\u65E0\u7F3A\u5931\u6761\u76EE\u5173\u8054</div>';
         }
-        if (episodesData) {
-          const epEntries = Object.entries(episodesData.matched || {});
-          if (epEntries.length) {
-            html += '<div class="bgm-mp-result-list">';
-            html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
-            for (const [sid, entry] of epEntries) {
-              const posMap = entry.episodes || {};
-              const parts = Object.entries(posMap).map(
-                ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}\uFF1A${genAppearEps(labels)}`
-              );
-              html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> ${parts.join("\uFF0C")}</div>`;
-            }
-            html += "</div>";
-          }
-          if (Object.keys(episodesData.unmatched || {}).length) {
-            html += '<div class="bgm-mp-unmatched-hint">\u53E6\u6709\u90E8\u5206\u96C6\u6570\u672A\u5B9A\u4F4D\u5230\u804C\u4F4D</div>';
-          }
+        if (Object.keys(episodesData.unmatched || {}).length) {
+          html += '<div class="bgm-mp-unmatched-hint">\u53E6\u6709\u90E8\u5206\u96C6\u6570\u672A\u5B9A\u4F4D\u5230\u804C\u4F4D</div>';
         }
-        html += `<div class="bgm-mp-popup-actions">
-          <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? "" : ' disabled style="opacity:0.5"'}>\u521B\u5EFA\u4EBA\u7269</button>
-        </div>`;
       }
-      const existing2 = await existingPromise;
-      let warningHtml = "";
-      if (existing2.aliased) {
-        warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u7684\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.aliased.id}" target="_blank">${existing2.aliased.name}</a></div>`;
-      }
-      if (existing2.directMatch) {
-        warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u540C\u540D\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.directMatch.id}" target="_blank">${existing2.directMatch.name}</a></div>`;
-      }
-      content.innerHTML = warningHtml + html;
-      if (!hasNetworkError) {
-        document.querySelector("#bgm-mp-create-btn").onclick = () => {
-          if (!hasData) return;
-          localStorage.setItem(
-            "bgm-mp-pending",
-            JSON.stringify({
-              personName,
-              typeCode,
-              subjectsData,
-              episodesData
-            })
-          );
-          window.open("/person/new");
-        };
-      }
-    })();
+      html += `<div class="bgm-mp-popup-actions">
+        <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? "" : ' disabled style="opacity:0.5"'}>\u521B\u5EFA\u4EBA\u7269</button>
+      </div>`;
+    }
+    content.innerHTML = html;
+    if (!hasNetworkError) {
+      document.querySelector("#bgm-mp-create-btn").onclick = () => {
+        if (!hasData) return;
+        localStorage.setItem(
+          "bgm-mp-pending",
+          JSON.stringify({
+            personName,
+            typeCode,
+            subjectsData,
+            episodesData
+          })
+        );
+        window.open("/person/new");
+      };
+    }
   }
   function initPersonNewPage() {
     const raw = localStorage.getItem("bgm-mp-pending");
@@ -1304,13 +1362,13 @@ document.head.appendChild(styleEl);
   function initPersonPage() {
     const raw = localStorage.getItem("bgm-mp-pending");
     if (!raw) return;
-    const personId = location.pathname.match(/\/person\/(\d+)/)?.[1];
-    if (!personId) return;
+    const personId2 = location.pathname.match(/\/person\/(\d+)/)?.[1];
+    if (!personId2) return;
     try {
       const data = JSON.parse(raw);
       const typeExt = { 1: "book", 2: "anime", 3: "music", 4: "game", 6: "real" }[data.typeCode];
       if (!typeExt) return;
-      location.href = `/person/${personId}/add_related/${typeExt}`;
+      location.href = `/person/${personId2}/add_related/${typeExt}`;
     } catch (_e) {
     }
   }
