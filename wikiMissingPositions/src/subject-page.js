@@ -238,6 +238,9 @@ export function initPersonPage() {
   } catch (_e) { /* ignore */ }
 }
 
+let _pendingData = null;
+export function getPendingData() { return _pendingData; }
+
 export function processPendingData() {
   const raw = localStorage.getItem('bgm-mp-pending');
   if (!raw) return;
@@ -247,7 +250,11 @@ export function processPendingData() {
 
   try {
     const data = JSON.parse(raw);
-    if (!data.subjectsData) return;
+    _pendingData = data;
+    if (!data.subjectsData) {
+      localStorage.removeItem('bgm-mp-pending');
+      return;
+    }
 
     for (const [sid, entry] of Object.entries(data.subjectsData)) {
       for (const posId of entry.positions || []) {
