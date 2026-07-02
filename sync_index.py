@@ -154,9 +154,9 @@ def sync(
 
     for sid in to_add:
         info = result_map[sid]
-        body = {"cat": cat, "sid": sid, "comment": info["desc"]}
-        if not ignore_order:
-            body["order"] = info["order"]
+        body = {"cat": cat, "sid": sid, "order": info["order"], "comment": info["desc"]}
+        if ignore_order:
+            body["order"] = 0
         status, resp_body = api_call(
             "PUT",
             f"/indexes/{index_id}/related",
@@ -172,9 +172,9 @@ def sync(
     for sid in to_update:
         info = result_map[sid]
         record_id = existing[sid]["id"]
-        body = {"comment": info["desc"]}
-        if not ignore_order:
-            body["order"] = info["order"]
+        body = {"order": info["order"], "comment": info["desc"]}
+        if ignore_order:
+            body["order"] = existing[sid]["order"]
         status, resp_body = api_call(
             "PATCH",
             f"/indexes/{index_id}/related/{record_id}",
