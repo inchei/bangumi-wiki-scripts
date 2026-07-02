@@ -91,16 +91,6 @@ export function initSubjectPage() {
   });
 }
 
-function posName(typeCode, pid) {
-  return POSITION_IDS[typeCode]?.[pid]
-    || POSITION_IDS[1]?.[pid]
-    || POSITION_IDS[2]?.[pid]
-    || POSITION_IDS[3]?.[pid]
-    || POSITION_IDS[4]?.[pid]
-    || POSITION_IDS[6]?.[pid]
-    || pid;
-}
-
 let _abortController = null;
 
 export function openSubjectPopup(personName, typeCode) {
@@ -209,7 +199,7 @@ export function openSubjectPopup(personName, typeCode) {
         html += '<div class="bgm-mp-section-title">缺失条目关联：</div>';
         for (const [sid, entry] of subjEntries) {
           const posNames = (entry.positions || [])
-            .map((pid) => posName(typeCode, pid))
+            .map((pid) => POSITION_IDS[typeCode]?.[pid] || pid)
             .join('、');
           html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${posNames}</div>`;
         }
@@ -226,7 +216,7 @@ export function openSubjectPopup(personName, typeCode) {
           for (const [sid, entry] of epEntries) {
             const posMap = entry.episodes || {};
             const parts = Object.entries(posMap).map(
-              ([pid, labels]) => `${posName(typeCode, Number(pid))}：${genAppearEps(labels)}`,
+              ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}：${genAppearEps(labels)}`,
             );
             html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> ${parts.join('，')}</div>`;
           }
