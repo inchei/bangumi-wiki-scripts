@@ -199,12 +199,7 @@ func (s *server) handleMissingEpisodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	positions := make(map[int]string)
-	for _, m := range model.StaffPositions {
-		for id, name := range m {
-			positions[id] = name
-		}
-	}
+	positions := model.StaffPositions[2]
 
 	lit2pid, combinedRe := buildEpPositionTable(positions)
 	if combinedRe == nil {
