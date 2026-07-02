@@ -8,10 +8,13 @@ This is a monorepo for [Bangumi](https://bgm.tv) wiki automation:
 
 1. **`bgq/`** — Go CLI + Web UI for high-performance subject filtering via DuckDB SQL
 2. **`wikiBatch/`** — Tampermonkey userscript for batch wiki editing on next.bgm.tv
-3. **Root** — Python scripts for duplicate ISBN detection, archive download, CI automation
-4. **`filters/`** — YAML filter configs executed by bgq in CI, results uploaded to GitHub Releases
+3. **`wikiMissingPositions/`** — Tampermonkey userscript for pre-creating persons and one-click completion of missing staff/episode associations
+4. **Root** — Python scripts for duplicate ISBN detection, archive download, CI automation
+5. **`filters/`** — YAML filter configs executed by bgq in CI, results uploaded to GitHub Releases
 
 bgq CSV output feeds directly into wikiBatch for batch editing.
+
+**Important: `wikiBatch` and `wikiMissingPositions` are completely separate Tampermonkey userscripts with different purposes, different codebases, and different build systems. Never confuse them or search one when the other is referenced.**
 
 ## Build & Development Commands
 
@@ -237,7 +240,8 @@ Examples: `feat: add new feature`, `fix: resolve bug`, `docs: update readme`.
 - `bgq/internal/server/webui.go` — Embedded static files via `//go:embed dist/*`
 - `bgq/frontend/src/schema-data.js` — Auto-generated schema constants (platforms, relations, positions, meta tags)
 - `bgq/frontend/src/stores.js` — Frontend global state (filters, conditions, logic tree)
-- `wikiBatch/` — Batch wiki editor userscript (separate project, see its own README)
+- `wikiMissingPositions/` — Pre-create person / one-click completion userscript
+- `wikiBatch/` — Batch wiki editor userscript (completely separate from wikiMissingPositions)
 
 ## Docker
 
