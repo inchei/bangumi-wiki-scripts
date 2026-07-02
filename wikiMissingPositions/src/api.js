@@ -1,14 +1,18 @@
 import { SETTINGS_KEY, DEFAULT_PROVIDER } from './config.js';
 
+function hasChiiApp() {
+  return typeof chiiApp !== 'undefined' && chiiApp;
+}
+
 export function getProvider() {
-  if (chiiApp) {
+  if (hasChiiApp()) {
     return chiiApp.cloud_settings.get(SETTINGS_KEY) || DEFAULT_PROVIDER;
   }
   return localStorage.getItem(SETTINGS_KEY) || DEFAULT_PROVIDER;
 }
 
 export function saveProvider(val) {
-  if (chiiApp) {
+  if (hasChiiApp()) {
     chiiApp.cloud_settings.update({ [SETTINGS_KEY]: val });
     return;
   }
