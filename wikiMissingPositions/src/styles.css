@@ -186,6 +186,50 @@ html[data-theme='dark'] .bgm-mp-notify {
   font-size: 14px;
 }
 
+/* 警告提示样式（镜像 wikiEpStaffRelate） */
+.bgm-mp-notify .staff-warning-section {
+  padding: 10px 12px;
+  margin: 0 0 16px;
+  background: rgba(255, 248, 225, 0.6);
+  border: 1px solid rgba(255, 153, 0, 0.3);
+  border-radius: 8px;
+  color: #856404;
+  overflow-wrap: break-word;
+}
+
+.bgm-mp-notify .staff-warning-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+html[data-theme='dark'] .bgm-mp-notify .staff-warning-section {
+  background: rgba(60, 40, 0, 0.4);
+  border-color: rgba(255, 153, 0, 0.5);
+  color: #ffd700;
+}
+
+/* 错误提示样式（镜像 wikiRelDiff staff-error-section） */
+.bgm-mp-notify .staff-error-section {
+  padding: 10px 12px;
+  margin: 0 0 16px;
+  background: rgba(255, 224, 178, 0.6);
+  border: 1px solid rgba(255, 99, 71, 0.3);
+  border-radius: 8px;
+  color: #8b0000;
+  overflow-wrap: break-word;
+}
+
+.bgm-mp-notify .staff-error-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+html[data-theme='dark'] .bgm-mp-notify .staff-error-section {
+  background: rgba(80, 0, 0, 0.4);
+  border-color: rgba(255, 99, 71, 0.5);
+  color: #ffb6c1;
+}
+
 .bgm-mp-notify .staff-tip-title.unmatched {
   color: #a0222e;
 }
