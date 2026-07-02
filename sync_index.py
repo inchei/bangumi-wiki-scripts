@@ -47,16 +47,13 @@ def detect_id_column(columns: list[str]) -> tuple[int, str]:
 def api(method: str, path: str, token: str, body: dict | None = None) -> tuple[int, str]:
     url = f"{API_BASE}{path}"
     data = json.dumps(body).encode() if body else None
-    req = Request(
-        url,
-        data=data,
-        method=method,
-        headers={
-            "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-            "User-Agent": "bangumi-wiki-scripts/sync_index",
-        },
-    )
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "User-Agent": "bangumi-wiki-scripts/sync_index",
+    }
+    if body is not None:
+        headers["Content-Type"] = "application/json"
+    req = Request(url, data=data, method=method, headers=headers)
     try:
         with urlopen(req) as resp:
             return resp.status, resp.read().decode()
@@ -140,10 +137,10 @@ def sync(
             "desc": build_desc(row, columns, id_col, has_index_desc),
         }
 
-    print(f"筛选结果: {len(result_ids)} 条")
+    print(f"筛选结果: {len(result_ids)} 条", flush=True)
 
     existing = get_existing(index_id, cat, token)
-    print(f"目录现有: {len(existing)} 条")
+    print(f"目录现有: {len(existing)} 条", flush=True)
 
     result_set = set(result_ids)
     to_add = [s for s in result_ids if s not in existing]
@@ -160,7 +157,7 @@ def sync(
         ]
     to_remove_sid = [s for s in existing if s not in result_set]
 
-    print(f"添加: {len(to_add)}, 更新: {len(to_update)}, 移除: {len(to_remove_sid)}")
+    print(f"添加: {len(to_add)}, 更新: {len(to_update)}, 移除: {len(to_remove_sid)}", flush=True)
 
     if dry_run:
         print("[dry-run] 不执行")
@@ -219,7 +216,7 @@ def sync(
             fail += 1
         time.sleep(delay)
 
-    print(f"完成: {ok} 成功, {fail} 失败")
+    print(f"完成: {ok} 成功, {fail} 失败", flush=True)
 
 
 def main():
