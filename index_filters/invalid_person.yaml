@@ -1,5 +1,6 @@
 # 光杆人物
 target_index: 100350
+ignore_order: true
 target: person
 filters:
  -
