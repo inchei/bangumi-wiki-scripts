@@ -91,7 +91,13 @@ export function initSubjectPage() {
   });
 }
 
+let _abortController = null;
+
 export function openSubjectPopup(personName, typeCode) {
+  if (_abortController) _abortController.abort();
+  _abortController = new AbortController();
+  const signal = _abortController.signal;
+
   const existing = document.querySelector('.bgm-mp-subject-popup');
   if (existing) existing.remove();
 
@@ -112,7 +118,10 @@ export function openSubjectPopup(personName, typeCode) {
 
   content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
 
-  popup.querySelector('.bgm-mp-notify-close').onclick = () => popup.remove();
+  popup.querySelector('.bgm-mp-notify-close').onclick = () => {
+    _abortController.abort();
+    popup.remove();
+  };
 
   // Drag
   let offX = 0,
@@ -143,90 +152,103 @@ export function openSubjectPopup(personName, typeCode) {
 
     let subjectsData = null,
       episodesData = null,
-      fetchFailed = false;
+      aborted = false;
 
     try {
       const subjRes = await fetch(
         `${provider}/api/persons/${encodedName}/missing-subjects${typeParam}`,
+        { signal },
       );
       subjectsData = await subjRes.json();
     } catch (e) {
-      fetchFailed = true;
-      subjectsData = {};
+      if (e.name === 'AbortError') {
+        aborted = true;
+        return;
+      }
     }
 
     if (typeCode === 2) {
       try {
-        const epRes = await fetch(`${provider}/api/persons/${encodedName}/missing-episodes`);
+        const epRes = await fetch(
+          `${provider}/api/persons/${encodedName}/missing-episodes`,
+          { signal },
+        );
         episodesData = await epRes.json();
       } catch (e) {
-        fetchFailed = true;
-        episodesData = {};
-      }
-    }
-
-    if (fetchFailed) {
-      const errColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#e57373' : '#a0222e';
-      content.innerHTML = `<div class="bgm-mp-loading-wrap" style="color:${errColor}">获取失败，请检查API地址或网络</div>`;
-      return;
-    }
-
-    let html = '';
-    const subjEntries = subjectsData ? Object.entries(subjectsData) : [];
-    if (subjEntries.length) {
-      html += '<div class="bgm-mp-result-list">';
-      html += '<div class="bgm-mp-section-title">缺失条目关联：</div>';
-      for (const [sid, entry] of subjEntries) {
-        const posNames = (entry.positions || [])
-          .map((pid) => POSITION_IDS[typeCode]?.[pid] || pid)
-          .join('、');
-        html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${posNames}</div>`;
-      }
-      html += '</div>';
-    } else {
-      html += '<div class="bgm-mp-empty-hint">无缺失条目关联</div>';
-    }
-
-    if (episodesData) {
-      const epEntries = Object.entries(episodesData.matched || {});
-      if (epEntries.length) {
-        html += '<div class="bgm-mp-result-list">';
-        html += '<div class="bgm-mp-section-title">缺失剧集关联：</div>';
-        for (const [sid, entry] of epEntries) {
-          const posMap = entry.episodes || {};
-          const parts = Object.entries(posMap).map(
-            ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}：${genAppearEps(labels)}`,
-          );
-          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> ${parts.join('，')}</div>`;
+        if (e.name === 'AbortError') {
+          aborted = true;
+          return;
         }
-        html += '</div>';
-      }
-      if (Object.keys(episodesData.unmatched || {}).length) {
-        html += '<div class="bgm-mp-unmatched-hint">另有部分集数未定位到职位</div>';
       }
     }
 
+    if (aborted) return;
+
+    const hasNetworkError = subjectsData === null;
+    const subjEntries = hasNetworkError ? [] : Object.entries(subjectsData || {});
     const hasData = subjEntries.length || (episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length));
 
-    html += `<div class="bgm-mp-popup-actions">
-        <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? '' : ' disabled style="opacity:0.5"'}>创建人物</button>
-      </div>`;
+    let html = '';
+
+    if (hasNetworkError) {
+      const errColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#e57373' : '#a0222e';
+      html = `<div class="bgm-mp-loading-wrap" style="color:${errColor}">获取失败，请检查API地址或网络</div>`;
+    } else {
+      if (subjEntries.length) {
+        html += '<div class="bgm-mp-result-list">';
+        html += '<div class="bgm-mp-section-title">缺失条目关联：</div>';
+        for (const [sid, entry] of subjEntries) {
+          const posNames = (entry.positions || [])
+            .map((pid) => POSITION_IDS[typeCode]?.[pid] || pid)
+            .join('、');
+          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${posNames}</div>`;
+        }
+        html += '</div>';
+      } else {
+        html += '<div class="bgm-mp-empty-hint">无缺失条目关联</div>';
+      }
+
+      if (episodesData) {
+        const epEntries = Object.entries(episodesData.matched || {});
+        if (epEntries.length) {
+          html += '<div class="bgm-mp-result-list">';
+          html += '<div class="bgm-mp-section-title">缺失剧集关联：</div>';
+          for (const [sid, entry] of epEntries) {
+            const posMap = entry.episodes || {};
+            const parts = Object.entries(posMap).map(
+              ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}：${genAppearEps(labels)}`,
+            );
+            html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> ${parts.join('，')}</div>`;
+          }
+          html += '</div>';
+        }
+        if (Object.keys(episodesData.unmatched || {}).length) {
+          html += '<div class="bgm-mp-unmatched-hint">另有部分集数未定位到职位</div>';
+        }
+      }
+
+      html += `<div class="bgm-mp-popup-actions">
+          <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? '' : ' disabled style="opacity:0.5"'}>创建人物</button>
+        </div>`;
+    }
 
     content.innerHTML = html;
 
-    document.querySelector('#bgm-mp-create-btn').onclick = () => {
-      if (!hasData) return;
-      localStorage.setItem(
-        'bgm-mp-pending',
-        JSON.stringify({
-          personName,
-          typeCode,
-          subjectsData,
-          episodesData,
-        }),
-      );
-      window.open('/person/new');
-    };
+    if (!hasNetworkError) {
+      document.querySelector('#bgm-mp-create-btn').onclick = () => {
+        if (!hasData) return;
+        localStorage.setItem(
+          'bgm-mp-pending',
+          JSON.stringify({
+            personName,
+            typeCode,
+            subjectsData,
+            episodesData,
+          }),
+        );
+        window.open('/person/new');
+      };
+    }
   })();
 }
 
