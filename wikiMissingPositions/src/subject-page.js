@@ -3,7 +3,7 @@ import { getProvider } from './api.js';
 import { genAppearEps } from './appear-eps.js';
 import { showPendingEps } from './popup.js';
 import { addSubjectLi } from './add-related.js';
-
+import { searchPrsn, normalize } from './search.js';
 
 const LOADING_MSGS = [
   '坐和放宽',
@@ -93,6 +93,24 @@ export function initSubjectPage() {
 
 let _abortController = null;
 
+async function checkExistingPerson(personName) {
+  const result = { aliased: null, directMatch: null };
+  try {
+    const [aliased, searchResults] = await Promise.all([
+      window.personAliasQuery?.(personName),
+      searchPrsn(personName),
+    ]);
+    if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
+    const first = searchResults?.[0];
+    if (first && normalize(personName) === normalize(first.name)) {
+      result.directMatch = { name: first.name, id: first.id };
+    }
+  } catch (e) {
+    console.error('checkExistingPerson failed:', e);
+  }
+  return result;
+}
+
 export function openSubjectPopup(personName, typeCode) {
   if (_abortController) _abortController.abort();
   _abortController = new AbortController();
@@ -151,6 +169,7 @@ export function openSubjectPopup(personName, typeCode) {
 
   // Fetch data
   (async () => {
+    const existingPromise = checkExistingPerson(personName);
     const typeParam = typeCode ? `?type=${typeCode}` : '';
     const encodedName = encodeURIComponent(personName);
 
@@ -201,8 +220,7 @@ export function openSubjectPopup(personName, typeCode) {
     let html = '';
 
     if (hasNetworkError) {
-      const errColor = document.documentElement.getAttribute('data-theme') === 'dark' ? '#e57373' : '#a0222e';
-      html = `<div class="bgm-mp-loading-wrap" style="color:${errColor}">获取失败，请检查API地址或网络</div>`;
+      html = '<div class="staff-error-section"><div class="staff-error-title">获取失败，请检查API地址或网络</div></div>';
     } else {
       if (subjEntries.length) {
         html += '<div class="bgm-mp-result-list">';
@@ -242,7 +260,15 @@ export function openSubjectPopup(personName, typeCode) {
         </div>`;
     }
 
-    content.innerHTML = html;
+    const existing = await existingPromise;
+    let warningHtml = '';
+    if (existing.aliased) {
+      warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">别名为「${personName}」的人物已存在：</div><a class="l" href="/person/${existing.aliased.id}" target="_blank">${existing.aliased.name}</a></div>`;
+    }
+    if (existing.directMatch) {
+      warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">同名人物已存在：</div><a class="l" href="/person/${existing.directMatch.id}" target="_blank">${existing.directMatch.name}</a></div>`;
+    }
+    content.innerHTML = warningHtml + html;
 
     if (!hasNetworkError) {
       document.querySelector('#bgm-mp-create-btn').onclick = () => {
