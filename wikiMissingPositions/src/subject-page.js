@@ -126,8 +126,12 @@ export function openSubjectPopup(personName, typeCode) {
   // Drag
   let offX = 0,
     offY = 0;
-  function cx(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
-  function cy(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
+  function cx(e) {
+    return e.touches ? e.touches[0].clientX : e.clientX;
+  }
+  function cy(e) {
+    return e.touches ? e.touches[0].clientY : e.clientY;
+  }
   handle.onmousedown = handle.ontouchstart = (e) => {
     if (e.target.closest('.bgm-mp-notify-close')) return;
     const rect = popup.getBoundingClientRect();
@@ -282,7 +286,9 @@ export function initPersonPage() {
 }
 
 let _pendingData = null;
-export function getPendingData() { return _pendingData; }
+export function getPendingData() {
+  return _pendingData;
+}
 
 export function processPendingData() {
   const raw = localStorage.getItem('bgm-mp-pending');

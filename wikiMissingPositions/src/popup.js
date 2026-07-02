@@ -103,8 +103,12 @@ export function showPendingEps(allUnmatched, personName, type) {
 
   let offX = 0,
     offY = 0;
-  function cx(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
-  function cy(e) { return e.touches ? e.touches[0].clientY : e.clientY; }
+  function cx(e) {
+    return e.touches ? e.touches[0].clientX : e.clientX;
+  }
+  function cy(e) {
+    return e.touches ? e.touches[0].clientY : e.clientY;
+  }
   handle.onmousedown = handle.ontouchstart = (e) => {
     if (e.target.closest('.bgm-mp-notify-close')) return;
     offX = cx(e) - notify.getBoundingClientRect().left;
