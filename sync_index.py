@@ -25,6 +25,8 @@ import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
+REQUEST_DELAY = 0.2  # 默认请求间隔（秒）
+
 API_BASE = "https://next.bgm.tv/p1"
 
 # 列名 → (cat, id列名)
@@ -63,13 +65,16 @@ def api(method: str, path: str, token: str, body: dict | None = None) -> tuple[i
 
 
 def api_call(method: str, path: str, token: str, body: dict | None = None) -> tuple[int, str]:
-    """带 429 限流重试。"""
-    status, resp_body = api(method, path, token, body)
-    if status == 429:
-        wait = int(resp_body) if resp_body.isdigit() else 2
-        print(f"  限流，等待 {wait}s ...", file=sys.stderr)
-        time.sleep(wait)
-        return api(method, path, token, body)
+    """带 429 指数退避重试。"""
+    resp_body = ""
+    for attempt in range(5):
+        if attempt > 0:
+            wait = min(2 ** attempt + (int(resp_body) if resp_body.isdigit() else 0), 60)
+            print(f"  限流，等待 {wait}s ...", file=sys.stderr)
+            time.sleep(wait)
+        status, resp_body = api(method, path, token, body)
+        if status != 429:
+            return status, resp_body
     return status, resp_body
 
 
@@ -121,6 +126,7 @@ def sync(
     rows: list[dict],
     dry_run: bool,
     ignore_order: bool = False,
+    delay: float = REQUEST_DELAY,
 ):
     has_index_desc = "index_desc" in columns
 
@@ -141,7 +147,17 @@ def sync(
 
     result_set = set(result_ids)
     to_add = [s for s in result_ids if s not in existing]
-    to_update = [s for s in result_ids if s in existing]
+    to_update = [
+        s for s in result_ids if s in existing and (
+            existing[s]["order"] != result_map[s]["order"]
+            or existing[s]["comment"] != result_map[s]["desc"]
+        )
+    ]
+    if ignore_order:
+        to_update = [
+            s for s in result_ids if s in existing
+            and existing[s]["comment"] != result_map[s]["desc"]
+        ]
     to_remove_sid = [s for s in existing if s not in result_set]
 
     print(f"添加: {len(to_add)}, 更新: {len(to_update)}, 移除: {len(to_remove_sid)}")
@@ -168,6 +184,7 @@ def sync(
         else:
             print(f"  添加 {sid} 失败: {status} {resp_body}", file=sys.stderr)
             fail += 1
+        time.sleep(delay)
 
     for sid in to_update:
         info = result_map[sid]
@@ -186,10 +203,11 @@ def sync(
         else:
             print(f"  更新 {sid} 失败: {status} {resp_body}", file=sys.stderr)
             fail += 1
+        time.sleep(delay)
 
     for sid in to_remove_sid:
         record_id = existing[sid]["id"]
-        status, body = api_call(
+        status, resp_body = api_call(
             "DELETE",
             f"/indexes/{index_id}/related/{record_id}",
             token,
@@ -197,8 +215,9 @@ def sync(
         if status == 200:
             ok += 1
         else:
-            print(f"  移除 {sid} 失败: {status} {body}", file=sys.stderr)
+            print(f"  移除 {sid} 失败: {status} {resp_body}", file=sys.stderr)
             fail += 1
+        time.sleep(delay)
 
     print(f"完成: {ok} 成功, {fail} 失败")
 
@@ -209,6 +228,7 @@ def main():
     parser.add_argument("--csv", help="CSV 文件路径（不指定则从 stdin 读取）")
     parser.add_argument("--dry-run", action="store_true", help="仅预览，不执行")
     parser.add_argument("--ignore-order", action="store_true", help="忽略 CSV 顺序，不修改目录条目顺序")
+    parser.add_argument("--delay", type=float, default=REQUEST_DELAY, help=f"请求间隔秒数（默认 {REQUEST_DELAY}）")
     args = parser.parse_args()
 
     token = os.environ.get("BANGUMI_TOKEN", "")
@@ -240,7 +260,7 @@ def main():
     print(f"列: {columns}")
     print(f"行数: {len(rows)}")
 
-    sync(args.index, cat, id_col, token, columns, rows, args.dry_run, args.ignore_order)
+    sync(args.index, cat, id_col, token, columns, rows, args.dry_run, args.ignore_order, args.delay)
 
 
 if __name__ == "__main__":
