@@ -24,9 +24,9 @@ if [ -n "$WB_FILES" ]; then
   git add wikiBatch/dist/wikiBatch.user.js
 fi
 
-MP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '^wiki-missing-positions/src/' || true)
+MP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '^wikiMissingPositions/src/' || true)
 if [ -n "$MP_FILES" ]; then
-  cd wiki-missing-positions && pnpm lint && pnpm lint:css && pnpm build || exit 1
+  cd wikiMissingPositions && pnpm lint && pnpm lint:css && pnpm build || exit 1
   cd ..
-  git add wiki-missing-positions/dist/wikiMissingPositions.user.js
+  git add wikiMissingPositions/dist/wikiMissingPositions.user.js
 fi
