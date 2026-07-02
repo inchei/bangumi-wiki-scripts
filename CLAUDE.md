@@ -212,6 +212,11 @@ Two separate workflows:
 
 Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
 
+## Commit Conventions
+
+Use conventional commits without scope parentheses.
+Examples: `feat: add new feature`, `fix: resolve bug`, `docs: update readme`.
+
 ## Key Files
 
 - `bgq/internal/config/config.go` — Filter type definitions + YAML/JSON parsing

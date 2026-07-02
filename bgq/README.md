@@ -7,12 +7,15 @@
 ```bash
 cd bgq
 ./download-archive.sh ./bangumi_archive
-
-# 定期更新数据（cron）
-0 3 * * 1 /path/to/download-archive.sh /path/to/data
 ```
 
 或从 https://github.com/bangumi/Archive/releases/tag/archive 手动下载。
+
+每周自动更新数据：
+
+```bash
+(crontab -l 2>/dev/null; echo "0 3 * * 1 $(pwd)/download-archive.sh $(pwd)/bangumi_archive") | crontab -
+```
 
 ## 安装
 
@@ -30,7 +33,7 @@ cp -r frontend/dist internal/server/dist
 # 编译 Go 二进制
 go build -o bin/bgq ./cmd/bgq/
 
-# 下载 DuckDB CLI
+# 下载对应平台 DuckDB CLI
 curl -L https://github.com/duckdb/duckdb/releases/download/v1.2.0/duckdb_cli-linux-amd64.zip -o duckdb.zip
 unzip duckdb.zip -d bin/
 ```
@@ -85,11 +88,12 @@ YAML 格式说明见 [YAML 筛选条件参考](docs/yaml-guide.md)。
 
 ```bash
 ./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
+```
 
-# 定期更新数据（cron）
-0 3 * * 1 /path/to/download-archive.sh /path/to/data && \
-  /path/to/bgq ingest --data-dir /path/to/data --db /path/to/data/bangumi.db.tmp && \
-  mv /path/to/data/bangumi.db.tmp /path/to/data/bangumi.db
+每周自动更新数据并重建数据库：
+
+```bash
+(crontab -l 2>/dev/null; echo "0 3 * * 1 cd $(pwd) && ./download-archive.sh ./bangumi_archive && ./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db.tmp && mv ./bangumi.db.tmp ./bangumi.db") | crontab -
 ```
 
 命令行查询时在配置文件中用 `database` 替代 `data_dir`：
