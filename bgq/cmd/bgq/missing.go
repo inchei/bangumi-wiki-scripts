@@ -95,7 +95,7 @@ func runMissingSubjects(ctx context.Context, name string, typeCode int, dbPath s
 		os.Exit(1)
 	}
 
-	sql := buildCheckSQL(typeCode, name, positions)
+	sql := buildCheckSQL(typeCode, name, positions, 0)
 	engine := query.NewEngine(dbPath, "")
 	result, err := engine.ExecuteRaw(ctx, sql)
 	if err != nil {

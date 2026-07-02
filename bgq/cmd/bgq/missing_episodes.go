@@ -193,11 +193,14 @@ func (s *server) handleMissingEpisodes(w http.ResponseWriter, r *http.Request) {
 	}
 
 	name := r.PathValue("name")
+	targetStr := r.URL.Query().Get("target")
 
 	if name == "" {
 		writeJSON(w, http.StatusBadRequest, apiError{Error: "name 为必填参数"})
 		return
 	}
+
+	targetID, _ := strconv.Atoi(targetStr)
 
 	positions := model.StaffPositions[2]
 
@@ -214,7 +217,7 @@ func (s *server) handleMissingEpisodes(w http.ResponseWriter, r *http.Request) {
 	escapedNameSQL := strings.ReplaceAll(name, "'", "''")
 
 	// Phase 0: pre-load linked subjects for this person
-	linked := queryLinked(r.Context(), s, escapedNameSQL)
+	linked := queryLinked(r.Context(), s, escapedNameSQL, targetID)
 
 	// Phase 1: DuckDB wide filter
 	sql := fmt.Sprintf(`
@@ -404,13 +407,22 @@ func buildEpPositionTable(positions map[int]string) (map[string]int, *regexp.Reg
 	return lit2pid, re
 }
 
-func queryLinked(ctx context.Context, s *server, escapedNameSQL string) map[int]map[int]map[string]bool {
-	sql := fmt.Sprintf(`
+func queryLinked(ctx context.Context, s *server, escapedNameSQL string, targetID int) map[int]map[int]map[string]bool {
+	var sql string
+	if targetID > 0 {
+		sql = fmt.Sprintf(`
+SELECT subject_id, position, COALESCE(appear_eps, '') AS appear_eps
+FROM subject_persons sp
+WHERE sp.person_id = %d
+`, targetID)
+	} else {
+		sql = fmt.Sprintf(`
 SELECT subject_id, position, COALESCE(appear_eps, '') AS appear_eps
 FROM subject_persons sp
 JOIN persons p ON sp.person_id = p.person_id
 WHERE LOWER(REPLACE(REPLACE(TRIM(p.name), '　', ''), ' ', '')) = LOWER(REPLACE(REPLACE('%s', '　', ''), ' ', ''))
 `, escapedNameSQL)
+	}
 
 	engine := query.NewEngine(s.dbPath, s.dataDir)
 	result, err := engine.ExecuteRaw(ctx, sql)

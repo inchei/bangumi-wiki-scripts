@@ -41,6 +41,7 @@ func (s *server) handleCheckMissingStaff(w http.ResponseWriter, r *http.Request)
 	name := r.PathValue("name")
 	typeStr := r.URL.Query().Get("type")
 	posStr := r.URL.Query().Get("position")
+	targetStr := r.URL.Query().Get("target")
 
 	if name == "" || typeStr == "" {
 		writeJSON(w, http.StatusBadRequest, apiError{Error: "name 和 type 为必填参数"})
@@ -74,7 +75,9 @@ func (s *server) handleCheckMissingStaff(w http.ResponseWriter, r *http.Request)
 		positions = map[int]string{posID: posName}
 	}
 
-	sql := buildCheckSQL(typeCode, name, positions)
+	targetID, _ := strconv.Atoi(targetStr)
+
+	sql := buildCheckSQL(typeCode, name, positions, targetID)
 
 	engine := query.NewEngine(s.dbPath, s.dataDir)
 	result, err := engine.ExecuteRaw(r.Context(), sql)
@@ -103,7 +106,7 @@ func (s *server) handleCheckMissingStaff(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, agg)
 }
 
-func buildCheckSQL(typeCode int, personName string, positions map[int]string) string {
+func buildCheckSQL(typeCode int, personName string, positions map[int]string, targetID int) string {
 	cleanName := strings.ReplaceAll(strings.ReplaceAll(personName, "　", ""), " ", "")
 	escapedName := regexp.QuoteMeta(cleanName)
 	escapedNameSQL := strings.ReplaceAll(personName, "'", "''")
@@ -143,13 +146,22 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string) st
 
 	// CTE: linked — pre-compute (subject_id, position) where this person is
 	// already a registered staff member.
-	fmt.Fprintf(&sb, `%slinked AS (
+	if targetID > 0 {
+		fmt.Fprintf(&sb, `%slinked AS (
+  SELECT sp.subject_id, sp.position
+  FROM subject_persons sp
+  WHERE sp.person_id = %d
+),
+`, withPrefix(cteCount), targetID)
+	} else {
+		fmt.Fprintf(&sb, `%slinked AS (
   SELECT sp.subject_id, sp.position
   FROM subject_persons sp
   JOIN persons p ON sp.person_id = p.person_id
   WHERE LOWER(REPLACE(REPLACE(TRIM(p.name), '　', ''), ' ', '')) = LOWER(REPLACE(REPLACE('%s', '　', ''), ' ', ''))
 ),
 `, withPrefix(cteCount), escapedNameSQL)
+	}
 	cteCount++
 
 	// CTE: positions_map — (position_id, position_name) tuples for this type.
