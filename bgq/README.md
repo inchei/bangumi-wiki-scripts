@@ -2,6 +2,12 @@
 
 基于 DuckDB 的 [Bangumi Archive](https://github.com/bangumi/Archive) 条目筛选工具，支持 YAML 配置文件、命令行交互、Web 界面三种使用方式。
 
+## 快速开始
+
+1. 从 [GitHub Releases](https://github.com/inchei/bangumi-wiki-scripts/releases/latest) 下载的对应平台压缩包
+2. 从 https://github.com/bangumi/Archive/releases/tag/archive 下载最新数据并解压到上述文件夹内
+3. 在上述文件夹打开终端模拟器，运行 `./bgq serve --data-dir ./bangumi_archive` （Windows 将 `./bgq` 替换为 `bgq.exe`）
+
 ## 准备数据
 
 ```bash
@@ -33,7 +39,7 @@ cp -r frontend/dist internal/server/dist
 # 编译 Go 二进制
 go build -o bin/bgq ./cmd/bgq/
 
-# 下载对应平台 DuckDB CLI
+# 下载对应平台 DuckDB CLI，也可以使用发行版包，后续配置链接或环境变量即可
 curl -L https://github.com/duckdb/duckdb/releases/download/v1.2.0/duckdb_cli-linux-amd64.zip -o duckdb.zip
 unzip duckdb.zip -d bin/
 ```
