@@ -1048,6 +1048,9 @@ document.head.appendChild(styleEl);
       a.addEventListener("click", () => openSubjectPopup(a.dataset.name, typeCode));
     });
   }
+  function posName(typeCode, pid) {
+    return POSITION_IDS[typeCode]?.[pid] || POSITION_IDS[1]?.[pid] || POSITION_IDS[2]?.[pid] || POSITION_IDS[3]?.[pid] || POSITION_IDS[4]?.[pid] || POSITION_IDS[6]?.[pid] || pid;
+  }
   var _abortController = null;
   function openSubjectPopup(personName, typeCode) {
     if (_abortController) _abortController.abort();
@@ -1136,7 +1139,7 @@ document.head.appendChild(styleEl);
           html += '<div class="bgm-mp-result-list">';
           html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u6761\u76EE\u5173\u8054\uFF1A</div>';
           for (const [sid, entry] of subjEntries) {
-            const posNames = (entry.positions || []).map((pid) => POSITION_IDS[typeCode]?.[pid] || pid).join("\u3001");
+            const posNames = (entry.positions || []).map((pid) => posName(typeCode, pid)).join("\u3001");
             html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${posNames}</div>`;
           }
           html += "</div>";
@@ -1151,7 +1154,7 @@ document.head.appendChild(styleEl);
             for (const [sid, entry] of epEntries) {
               const posMap = entry.episodes || {};
               const parts = Object.entries(posMap).map(
-                ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}\uFF1A${genAppearEps(labels)}`
+                ([pid, labels]) => `${posName(typeCode, Number(pid))}\uFF1A${genAppearEps(labels)}`
               );
               html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> ${parts.join("\uFF0C")}</div>`;
             }
