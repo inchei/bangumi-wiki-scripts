@@ -3,7 +3,7 @@ import { getProvider } from './api.js';
 import { genAppearEps } from './appear-eps.js';
 import { showPendingEps } from './popup.js';
 import { addSubjectLi } from './add-related.js';
-import { searchPrsn, normalize } from './search.js';
+import { checkExistingPerson } from './person.js';
 
 const LOADING_MSGS = [
   '坐和放宽',
@@ -93,24 +93,6 @@ export function initSubjectPage() {
 
 let _abortController = null;
 
-async function checkExistingPerson(personName) {
-  const result = { aliased: null, directMatch: null };
-  try {
-    const [aliased, searchResults] = await Promise.all([
-      window.personAliasQuery?.(personName),
-      searchPrsn(personName),
-    ]);
-    if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
-    const first = searchResults?.[0];
-    if (first && normalize(personName) === normalize(first.name)) {
-      result.directMatch = { name: first.name, id: first.id };
-    }
-  } catch (e) {
-    console.error('checkExistingPerson failed:', e);
-  }
-  return result;
-}
-
 export function openSubjectPopup(personName, typeCode) {
   if (_abortController) _abortController.abort();
   _abortController = new AbortController();
@@ -169,23 +151,68 @@ export function openSubjectPopup(personName, typeCode) {
 
   // Fetch data
   (async () => {
-    const existingPromise = checkExistingPerson(personName);
-    const typeParam = typeCode ? `?type=${typeCode}` : '';
-    const encodedName = encodeURIComponent(personName);
+    const existing = await checkExistingPerson(personName);
+    let targetParam = '';
+    if (existing.aliased) targetParam = `&target=${existing.aliased.id}`;
+    else if (existing.directMatch) targetParam = `&target=${existing.directMatch.id}`;
 
-    let subjectsData = null,
-      episodesData = null,
-      aborted = false;
+    const hasExisting = existing.aliased || existing.directMatch;
 
+    if (hasExisting) {
+      let warningHtml = '';
+      if (existing.aliased) {
+        warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">别名为「${personName}」的人物已存在：</div><a class="l" href="/person/${existing.aliased.id}" target="_blank">${existing.aliased.name}</a></div>`;
+      }
+      if (existing.directMatch) {
+        warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">同名人物已存在：</div><a class="l" href="/person/${existing.directMatch.id}" target="_blank">${existing.directMatch.name}</a></div>`;
+      }
+      warningHtml += '<div class="staff-confirm-section" id="bgm-mp-confirm-btn">仍然加载</div>';
+      content.innerHTML = warningHtml;
+
+      document.querySelector('#bgm-mp-confirm-btn').onclick = () => {
+        document.querySelector('#bgm-mp-confirm-btn').remove();
+        fetchAndRenderResults(personName, typeCode, provider, signal, content, existing, targetParam);
+      };
+    } else {
+      await fetchAndRenderResults(personName, typeCode, provider, signal, content, existing, targetParam);
+    }
+  })();
+}
+
+async function fetchAndRenderResults(personName, typeCode, provider, signal, content, existing, targetParam) {
+  const typeParam = typeCode ? `?type=${typeCode}` : '';
+  const encodedName = encodeURIComponent(personName);
+
+  let subjectsData = null,
+    episodesData = null,
+    aborted = false;
+
+  try {
+    const subjRes = await fetch(
+      `${provider}/api/persons/${encodedName}/missing-subjects${typeParam}${targetParam}`,
+      { signal },
+    );
+    if (!subjRes.ok) {
+      subjectsData = null;
+    } else {
+      subjectsData = await subjRes.json();
+    }
+  } catch (e) {
+    if (e.name === 'AbortError') {
+      aborted = true;
+      return;
+    }
+  }
+
+  if (typeCode === 2) {
     try {
-      const subjRes = await fetch(
-        `${provider}/api/persons/${encodedName}/missing-subjects${typeParam}`,
+      const epQuery = targetParam ? '?' + targetParam.slice(1) : '';
+      const epRes = await fetch(
+        `${provider}/api/persons/${encodedName}/missing-episodes${epQuery}`,
         { signal },
       );
-      if (!subjRes.ok) {
-        subjectsData = null;
-      } else {
-        subjectsData = await subjRes.json();
+      if (epRes.ok) {
+        episodesData = await epRes.json();
       }
     } catch (e) {
       if (e.name === 'AbortError') {
@@ -193,99 +220,74 @@ export function openSubjectPopup(personName, typeCode) {
         return;
       }
     }
+  }
 
-    if (typeCode === 2) {
-      try {
-        const epRes = await fetch(
-          `${provider}/api/persons/${encodedName}/missing-episodes`,
-          { signal },
-        );
-        if (epRes.ok) {
-          episodesData = await epRes.json();
-        }
-      } catch (e) {
-        if (e.name === 'AbortError') {
-          aborted = true;
-          return;
-        }
+  if (aborted) return;
+
+  const hasNetworkError = subjectsData === null;
+  const subjEntries = hasNetworkError ? [] : Object.entries(subjectsData || {});
+  const hasData = subjEntries.length || (episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length));
+
+  let html = '';
+
+  if (hasNetworkError) {
+    html = '<div class="staff-error-section"><div class="staff-error-title">获取失败，请检查API地址或网络</div></div>';
+  } else {
+    if (subjEntries.length) {
+      html += '<div class="bgm-mp-result-list">';
+      html += '<div class="bgm-mp-section-title">缺失条目关联：</div>';
+      for (const [sid, entry] of subjEntries) {
+        const posNames = (entry.positions || [])
+          .map((pid) => POSITION_IDS[typeCode]?.[pid] || pid)
+          .join('、');
+        html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${posNames}</div>`;
       }
+      html += '</div>';
+    } else {
+      html += '<div class="bgm-mp-empty-hint">无缺失条目关联</div>';
     }
 
-    if (aborted) return;
-
-    const hasNetworkError = subjectsData === null;
-    const subjEntries = hasNetworkError ? [] : Object.entries(subjectsData || {});
-    const hasData = subjEntries.length || (episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length));
-
-    let html = '';
-
-    if (hasNetworkError) {
-      html = '<div class="staff-error-section"><div class="staff-error-title">获取失败，请检查API地址或网络</div></div>';
-    } else {
-      if (subjEntries.length) {
+    if (episodesData) {
+      const epEntries = Object.entries(episodesData.matched || {});
+      if (epEntries.length) {
         html += '<div class="bgm-mp-result-list">';
-        html += '<div class="bgm-mp-section-title">缺失条目关联：</div>';
-        for (const [sid, entry] of subjEntries) {
-          const posNames = (entry.positions || [])
-            .map((pid) => POSITION_IDS[typeCode]?.[pid] || pid)
-            .join('、');
-          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${posNames}</div>`;
+        html += '<div class="bgm-mp-section-title">缺失剧集关联：</div>';
+        for (const [sid, entry] of epEntries) {
+          const posMap = entry.episodes || {};
+          const parts = Object.entries(posMap).map(
+            ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}：${genAppearEps(labels)}`,
+          );
+          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> ${parts.join('，')}</div>`;
         }
         html += '</div>';
-      } else {
-        html += '<div class="bgm-mp-empty-hint">无缺失条目关联</div>';
       }
-
-      if (episodesData) {
-        const epEntries = Object.entries(episodesData.matched || {});
-        if (epEntries.length) {
-          html += '<div class="bgm-mp-result-list">';
-          html += '<div class="bgm-mp-section-title">缺失剧集关联：</div>';
-          for (const [sid, entry] of epEntries) {
-            const posMap = entry.episodes || {};
-            const parts = Object.entries(posMap).map(
-              ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}：${genAppearEps(labels)}`,
-            );
-            html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> ${parts.join('，')}</div>`;
-          }
-          html += '</div>';
-        }
-        if (Object.keys(episodesData.unmatched || {}).length) {
-          html += '<div class="bgm-mp-unmatched-hint">另有部分集数未定位到职位</div>';
-        }
+      if (Object.keys(episodesData.unmatched || {}).length) {
+        html += '<div class="bgm-mp-unmatched-hint">另有部分集数未定位到职位</div>';
       }
-
-      html += `<div class="bgm-mp-popup-actions">
-          <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? '' : ' disabled style="opacity:0.5"'}>创建人物</button>
-        </div>`;
     }
 
-    const existing = await existingPromise;
-    let warningHtml = '';
-    if (existing.aliased) {
-      warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">别名为「${personName}」的人物已存在：</div><a class="l" href="/person/${existing.aliased.id}" target="_blank">${existing.aliased.name}</a></div>`;
-    }
-    if (existing.directMatch) {
-      warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">同名人物已存在：</div><a class="l" href="/person/${existing.directMatch.id}" target="_blank">${existing.directMatch.name}</a></div>`;
-    }
-    content.innerHTML = warningHtml + html;
+    html += `<div class="bgm-mp-popup-actions">
+        <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? '' : ' disabled style="opacity:0.5"'}>创建人物</button>
+      </div>`;
+  }
 
-    if (!hasNetworkError) {
-      document.querySelector('#bgm-mp-create-btn').onclick = () => {
-        if (!hasData) return;
-        localStorage.setItem(
-          'bgm-mp-pending',
-          JSON.stringify({
-            personName,
-            typeCode,
-            subjectsData,
-            episodesData,
-          }),
-        );
-        window.open('/person/new');
-      };
-    }
-  })();
+  content.innerHTML = html;
+
+  if (!hasNetworkError) {
+    document.querySelector('#bgm-mp-create-btn').onclick = () => {
+      if (!hasData) return;
+      localStorage.setItem(
+        'bgm-mp-pending',
+        JSON.stringify({
+          personName,
+          typeCode,
+          subjectsData,
+          episodesData,
+        }),
+      );
+      window.open('/person/new');
+    };
+  }
 }
 
 export function initPersonNewPage() {

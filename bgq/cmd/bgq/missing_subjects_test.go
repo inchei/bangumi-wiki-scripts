@@ -9,7 +9,7 @@ import (
 
 func TestBuildCheckSQL_BookExcludesSeries(t *testing.T) {
 	positions := map[int]string{2001: "作者"}
-	sql := buildCheckSQL(1, "川原砾", positions)
+	sql := buildCheckSQL(1, "川原砾", positions, 0)
 
 	if !strings.Contains(sql, "series_ids") {
 		t.Error("book type (1) should include series_ids CTE")
@@ -28,7 +28,7 @@ func TestBuildCheckSQL_BookExcludesSeries(t *testing.T) {
 
 func TestBuildCheckSQL_AnimeNoSeriesFilter(t *testing.T) {
 	positions := map[int]string{1: "原作"}
-	sql := buildCheckSQL(2, "川原砾", positions)
+	sql := buildCheckSQL(2, "川原砾", positions, 0)
 
 	if strings.Contains(sql, "series_ids") {
 		t.Error("anime type (2) should NOT include series_ids CTE")
@@ -43,7 +43,7 @@ func TestBuildCheckSQL_AnimeNoSeriesFilter(t *testing.T) {
 
 func TestBuildCheckSQL_PositionsMapContainsAllPositions(t *testing.T) {
 	positions := map[int]string{1: "原作", 46: "系列构成"}
-	sql := buildCheckSQL(2, "川原砾", positions)
+	sql := buildCheckSQL(2, "川原砾", positions, 0)
 
 	if !strings.Contains(sql, "positions_map(id, name) AS") {
 		t.Error("should include positions_map CTE")
@@ -60,7 +60,7 @@ func TestBuildCheckSQL_NoUnionAll(t *testing.T) {
 	// Phase 1 design replaces the per-position UNION ALL with a single
 	// SELECT joining against positions_map.
 	positions := map[int]string{1: "原作", 46: "系列构成", 20: "原画"}
-	sql := buildCheckSQL(2, "川原砾", positions)
+	sql := buildCheckSQL(2, "川原砾", positions, 0)
 
 	if strings.Contains(sql, "UNION ALL") {
 		t.Error("Phase 1 SQL should NOT use UNION ALL (replaced by positions_map join)")
@@ -69,7 +69,7 @@ func TestBuildCheckSQL_NoUnionAll(t *testing.T) {
 
 func TestBuildCheckSQL_PairsCTEUsesSingleRegex(t *testing.T) {
 	positions := map[int]string{1: "原作"}
-	sql := buildCheckSQL(2, "川原砾", positions)
+	sql := buildCheckSQL(2, "川原砾", positions, 0)
 
 	if !strings.Contains(sql, "pairs AS") {
 		t.Error("should include pairs CTE")
@@ -92,7 +92,7 @@ func TestBuildCheckSQL_PairsCTEUsesSingleRegex(t *testing.T) {
 func TestBuildCheckSQL_NoMatchColumns(t *testing.T) {
 	// Phase 1 removed the m_<id> boolean-column scheme from buildMatchCols.
 	positions := map[int]string{1: "原作", 46: "系列构成"}
-	sql := buildCheckSQL(2, "川原砾", positions)
+	sql := buildCheckSQL(2, "川原砾", positions, 0)
 
 	if strings.Contains(sql, "m_1") || strings.Contains(sql, "m_46") {
 		t.Error("Phase 1 SQL should NOT reference m_<id> match columns")
@@ -107,7 +107,7 @@ func TestBuildCheckSQL_GameType(t *testing.T) {
 	for id, posName := range model.StaffPositions[4] {
 		positions[id] = posName
 	}
-	sql := buildCheckSQL(4, "虚淵玄", positions)
+	sql := buildCheckSQL(4, "虚淵玄", positions, 0)
 
 	if !strings.Contains(sql, "s.type = 4") {
 		t.Error("should filter subjects.type = 4")
@@ -119,7 +119,7 @@ func TestBuildCheckSQL_GameType(t *testing.T) {
 
 func TestBuildCheckSQL_ContainsLinkedCTE(t *testing.T) {
 	positions := map[int]string{1: "原作"}
-	sql := buildCheckSQL(2, "川原砾", positions)
+	sql := buildCheckSQL(2, "川原砾", positions, 0)
 
 	if !strings.Contains(sql, "linked AS") {
 		t.Error("should include linked CTE for existing staff check")
@@ -134,7 +134,7 @@ func TestBuildCheckSQL_ContainsLinkedCTE(t *testing.T) {
 
 func TestBuildCheckSQL_NameEscaping(t *testing.T) {
 	positions := map[int]string{2001: "作者"}
-	sql := buildCheckSQL(1, "O'Brien", positions)
+	sql := buildCheckSQL(1, "O'Brien", positions, 0)
 
 	if !strings.Contains(sql, "O''Brien") {
 		t.Error("should escape single quotes in name")
@@ -143,7 +143,7 @@ func TestBuildCheckSQL_NameEscaping(t *testing.T) {
 
 func TestBuildCheckSQL_FinalSelectShape(t *testing.T) {
 	positions := map[int]string{1: "原作"}
-	sql := buildCheckSQL(2, "川原砾", positions)
+	sql := buildCheckSQL(2, "川原砾", positions, 0)
 
 	if !strings.Contains(sql, "SELECT s.id, s.name, pm.id") {
 		t.Error("final SELECT should project (s.id, s.name, pm.id)")
@@ -166,7 +166,7 @@ func TestBuildCheckSQL_SinglePositionStillUsesPositionsMap(t *testing.T) {
 	// Even with one position, Phase 1 uses the positions_map join shape
 	// (no special-casing back to the old m_<id> scheme).
 	positions := map[int]string{5: "插图"}
-	sql := buildCheckSQL(1, "川原砾", positions)
+	sql := buildCheckSQL(1, "川原砾", positions, 0)
 
 	if !strings.Contains(sql, "positions_map") {
 		t.Error("single position should still use positions_map CTE")
