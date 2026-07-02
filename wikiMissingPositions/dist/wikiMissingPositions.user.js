@@ -330,7 +330,6 @@ html[data-theme="dark"] .bgm-mp-spinner {
 
 .bgm-mp-unmatched-hint {
   margin-top: 8px;
-  color: #a0222e;
   font-size: 12px;
 }
 
@@ -863,7 +862,7 @@ document.head.appendChild(styleEl);
     epBtn.disabled = true;
     epBtn.textContent = "\u83B7\u53D6\u4E2D\u2026\u2026";
     const pending = getPendingData();
-    if (pending && pending.episodesData) {
+    if (pending && pending.episodesData && (Object.keys(pending.episodesData.matched || {}).length || Object.keys(pending.episodesData.unmatched || {}).length)) {
       const none = await processEpisodesData(pending.episodesData, queryName);
       epBtn.textContent = none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u5267\u96C6" : "\u5267\u96C6\u5173\u8054\u5B8C\u6210\uFF01";
       epBtn.disabled = false;
@@ -916,7 +915,7 @@ document.head.appendChild(styleEl);
     btn.addEventListener("click", async () => {
       const position = select.value;
       const pending = getPendingData();
-      if (pending && pending.subjectsData) {
+      if (pending && pending.subjectsData && Object.keys(pending.subjectsData).length) {
         const resEntries = Object.entries(pending.subjectsData);
         let none = true;
         for (const [id, entry] of resEntries) {
@@ -1087,13 +1086,14 @@ document.head.appendChild(styleEl);
     (async () => {
       const typeParam = typeCode ? `?type=${typeCode}` : "";
       const encodedName = encodeURIComponent(personName);
-      let subjectsData = null, episodesData = null;
+      let subjectsData = null, episodesData = null, fetchFailed = false;
       try {
         const subjRes = await fetch(
           `${provider}/api/persons/${encodedName}/missing-subjects${typeParam}`
         );
         subjectsData = await subjRes.json();
       } catch (e) {
+        fetchFailed = true;
         subjectsData = {};
       }
       if (typeCode === 2) {
@@ -1101,8 +1101,14 @@ document.head.appendChild(styleEl);
           const epRes = await fetch(`${provider}/api/persons/${encodedName}/missing-episodes`);
           episodesData = await epRes.json();
         } catch (e) {
+          fetchFailed = true;
           episodesData = {};
         }
+      }
+      if (fetchFailed) {
+        const errColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#e57373" : "#a0222e";
+        content.innerHTML = `<div class="bgm-mp-loading-wrap" style="color:${errColor}">\u83B7\u53D6\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5API\u5730\u5740\u6216\u7F51\u7EDC</div>`;
+        return;
       }
       let html = "";
       const subjEntries = subjectsData ? Object.entries(subjectsData) : [];
@@ -1135,11 +1141,13 @@ document.head.appendChild(styleEl);
           html += '<div class="bgm-mp-unmatched-hint">\u53E6\u6709\u90E8\u5206\u96C6\u6570\u672A\u5B9A\u4F4D\u5230\u804C\u4F4D</div>';
         }
       }
+      const hasData = subjEntries.length || episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length);
       html += `<div class="bgm-mp-popup-actions">
-        <button class="bgm-mp-btn" id="bgm-mp-create-btn">\u521B\u5EFA\u4EBA\u7269</button>
+        <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? "" : ' disabled style="opacity:0.5"'}>\u521B\u5EFA\u4EBA\u7269</button>
       </div>`;
       content.innerHTML = html;
       document.querySelector("#bgm-mp-create-btn").onclick = () => {
+        if (!hasData) return;
         localStorage.setItem(
           "bgm-mp-pending",
           JSON.stringify({

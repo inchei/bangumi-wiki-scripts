@@ -19,7 +19,7 @@
 
 ### wikiBatch 批量 Wiki 编辑
 
-Tampermonkey 用户脚本，在 `next.bgm.tv` 上批量审核编辑条目/角色/人物的 Wiki 信息。
+用户脚本，在 `next.bgm.tv` 上批量审核编辑条目/角色/人物的 Wiki 信息。
 
 - 通过 CSV 文件批量更新 Infobox、标签、系列状态
 - 提交前 diff 预览，断点续传，重复检测
@@ -29,7 +29,7 @@ Tampermonkey 用户脚本，在 `next.bgm.tv` 上批量审核编辑条目/角色
 
 ### wikiMissingPositions
 
-Tampermonkey 用户脚本，在条目页和人物关联页一键补完已填写但未关联的 STAFF。
+用户脚本，在条目页和人物关联页一键补完已填写但未关联的 STAFF。
 
 - 条目页 infobox 高亮未关联姓名，点击弹出补完弹窗
 - 关联页自动查询并预填缺失条目/剧集
