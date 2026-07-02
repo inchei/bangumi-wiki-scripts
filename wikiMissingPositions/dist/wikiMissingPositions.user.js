@@ -223,6 +223,50 @@ html[data-theme='dark'] .bgm-mp-notify {
   font-size: 14px;
 }
 
+/* 警告提示样式（镜像 wikiEpStaffRelate） */
+.bgm-mp-notify .staff-warning-section {
+  padding: 10px 12px;
+  margin: 0 0 16px;
+  background: rgba(255, 248, 225, 0.6);
+  border: 1px solid rgba(255, 153, 0, 0.3);
+  border-radius: 8px;
+  color: #856404;
+  overflow-wrap: break-word;
+}
+
+.bgm-mp-notify .staff-warning-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+html[data-theme='dark'] .bgm-mp-notify .staff-warning-section {
+  background: rgba(60, 40, 0, 0.4);
+  border-color: rgba(255, 153, 0, 0.5);
+  color: #ffd700;
+}
+
+/* 错误提示样式（镜像 wikiRelDiff staff-error-section） */
+.bgm-mp-notify .staff-error-section {
+  padding: 10px 12px;
+  margin: 0 0 16px;
+  background: rgba(255, 224, 178, 0.6);
+  border: 1px solid rgba(255, 99, 71, 0.3);
+  border-radius: 8px;
+  color: #8b0000;
+  overflow-wrap: break-word;
+}
+
+.bgm-mp-notify .staff-error-title {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+html[data-theme='dark'] .bgm-mp-notify .staff-error-section {
+  background: rgba(80, 0, 0, 0.4);
+  border-color: rgba(255, 99, 71, 0.5);
+  color: #ffb6c1;
+}
+
 .bgm-mp-notify .staff-tip-title.unmatched {
   color: #a0222e;
 }
@@ -977,6 +1021,34 @@ document.head.appendChild(styleEl);
     processPendingData();
   }
 
+  // src/search.js
+  var createFetch = (method) => async (url, body) => {
+    const options = method === "POST" ? { method, body: JSON.stringify(body) } : { method };
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return await response.json();
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  };
+  var fetchPost = createFetch("POST");
+  var postSearch = async (cat, keyword, filter) => {
+    const url = `https://api.bgm.tv/v0/search/${cat}?limit=1`;
+    const body = { keyword, filter };
+    const result = await fetchPost(url, body);
+    return result?.data;
+  };
+  var searchPrsn = (keyword) => postSearch("persons", keyword);
+  function normalize(name) {
+    return name.replace(/\s/g, "").replaceAll("-", "").replace(/[\u30A1-\u30F6]/g, function(match) {
+      return String.fromCharCode(match.charCodeAt(0) - 96);
+    }).replace(/[\uFF21-\uFF5A]/g, function(match) {
+      return String.fromCharCode(match.charCodeAt(0) - 65248);
+    }).toLowerCase();
+  }
+
   // src/subject-page.js
   var LOADING_MSGS = [
     "\u5750\u548C\u653E\u5BBD",
@@ -1049,6 +1121,23 @@ document.head.appendChild(styleEl);
     });
   }
   var _abortController = null;
+  async function checkExistingPerson(personName) {
+    const result = { aliased: null, directMatch: null };
+    try {
+      const [aliased, searchResults] = await Promise.all([
+        window.personAliasQuery?.(personName),
+        searchPrsn(personName)
+      ]);
+      if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
+      const first = searchResults?.[0];
+      if (first && normalize(personName) === normalize(first.name)) {
+        result.directMatch = { name: first.name, id: first.id };
+      }
+    } catch (e) {
+      console.error("checkExistingPerson failed:", e);
+    }
+    return result;
+  }
   function openSubjectPopup(personName, typeCode) {
     if (_abortController) _abortController.abort();
     _abortController = new AbortController();
@@ -1094,6 +1183,7 @@ document.head.appendChild(styleEl);
       };
     };
     (async () => {
+      const existingPromise = checkExistingPerson(personName);
       const typeParam = typeCode ? `?type=${typeCode}` : "";
       const encodedName = encodeURIComponent(personName);
       let subjectsData = null, episodesData = null, aborted = false;
@@ -1135,8 +1225,7 @@ document.head.appendChild(styleEl);
       const hasData = subjEntries.length || episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length);
       let html = "";
       if (hasNetworkError) {
-        const errColor = document.documentElement.getAttribute("data-theme") === "dark" ? "#e57373" : "#a0222e";
-        html = `<div class="bgm-mp-loading-wrap" style="color:${errColor}">\u83B7\u53D6\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5API\u5730\u5740\u6216\u7F51\u7EDC</div>`;
+        html = '<div class="staff-error-section"><div class="staff-error-title">\u83B7\u53D6\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5API\u5730\u5740\u6216\u7F51\u7EDC</div></div>';
       } else {
         if (subjEntries.length) {
           html += '<div class="bgm-mp-result-list">';
@@ -1171,7 +1260,15 @@ document.head.appendChild(styleEl);
           <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? "" : ' disabled style="opacity:0.5"'}>\u521B\u5EFA\u4EBA\u7269</button>
         </div>`;
       }
-      content.innerHTML = html;
+      const existing2 = await existingPromise;
+      let warningHtml = "";
+      if (existing2.aliased) {
+        warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u7684\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.aliased.id}" target="_blank">${existing2.aliased.name}</a></div>`;
+      }
+      if (existing2.directMatch) {
+        warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u540C\u540D\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.directMatch.id}" target="_blank">${existing2.directMatch.name}</a></div>`;
+      }
+      content.innerHTML = warningHtml + html;
       if (!hasNetworkError) {
         document.querySelector("#bgm-mp-create-btn").onclick = () => {
           if (!hasData) return;
