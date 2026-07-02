@@ -868,6 +868,7 @@ document.head.appendChild(styleEl);
   var select;
   var type;
   var nameInput;
+  var epNameInput;
   var epBtn;
   function addSubjectLi(sid, posId, name) {
     const existing = document.querySelector(`#crtRelateSubjects li.old:has([href="/subject/${sid}"]):has(option[selected][value="${posId}"])`);
@@ -905,7 +906,7 @@ document.head.appendChild(styleEl);
     return none;
   }
   async function runEpisodeCheck() {
-    const queryName = nameInput.value.trim() || document.querySelector(".nameSingle").textContent.trim();
+    const queryName = epNameInput.value.trim() || document.querySelector(".nameSingle").textContent.trim();
     epBtn.disabled = true;
     epBtn.textContent = "\u83B7\u53D6\u4E2D\u2026\u2026";
     const pending = getPendingData();
@@ -1008,12 +1009,16 @@ document.head.appendChild(styleEl);
     const group2 = document.createElement("div");
     group2.className = "bgm-mp-group";
     if (type === 2) {
+      epNameInput = document.createElement("input");
+      epNameInput.type = "text";
+      epNameInput.className = "bgm-mp-input";
+      epNameInput.placeholder = "\u522B\u540D\uFF08\u53EF\u9009\uFF09";
       epBtn = document.createElement("button");
       epBtn.textContent = "\u5173\u8054\u5DF2\u586B\u5199\u5267\u96C6";
       epBtn.id = "missingEpisodes";
       epBtn.className = "bgm-mp-btn";
       epBtn.addEventListener("click", runEpisodeCheck);
-      group2.append(epBtn);
+      group2.append(epNameInput, epBtn);
     }
     group1.append(nameInput, select, btn);
     container.append(group1, group2);
