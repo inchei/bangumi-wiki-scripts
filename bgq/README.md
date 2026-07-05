@@ -182,7 +182,7 @@ curl "http://localhost:8080/api/persons/川原砾/missing-subjects?type=1"
 | `type` | 条目类型（必填） |
 | `position` | 仅检查指定职位 ID（可选） |
 
-Referrer 限制：仅允许来自 `bgm.tv`、`bangumi.tv`、`chii.in` 的请求，直接访问（新标签页、curl 无 referrer）不受限。
+Referrer 限制：仅允许来自 `bgm.tv`、`bangumi.tv`、`chii.in` 及部分镜像站的请求，直接访问（新标签页、curl 无 referrer）不受限。
 
 ### 检查缺失剧集标注
 
