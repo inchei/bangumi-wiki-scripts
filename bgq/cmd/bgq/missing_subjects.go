@@ -172,23 +172,17 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string, ta
 	cteCount++
 
 	// CTE: pairs — single-pass extraction of all `|key= value` pairs per
-	// subject. list_zip aligns keys (group 1) with values (group 2); unnest
-	// turns the list into one row per pair. kv[1]/kv[2] access unnamed
-	// struct fields (list_zip produces unnamed structs in DuckDB 1.2).
+	// subject. Multiple UNNEST in the same SELECT expand in lockstep (DuckDB
+	// pairs them positionally), giving directly accessible columns without
+	// needing struct access (avoids struct_extract issues across DuckDB
+	// versions).
 	fmt.Fprintf(&sb, `%spairs AS (
-  SELECT subject_id,
-         LOWER(TRIM(REPLACE(kv[1], '　', ''))) AS k,
-         kv[2] AS v
-  FROM (
-    SELECT s.id AS subject_id,
-           UNNEST(LIST_ZIP(
-             regexp_extract_all(s.infobox, '%s', 1),
-             regexp_extract_all(s.infobox, '%s', 2)
-           )) AS kv
-    FROM subjects s
-    WHERE s.type = %d
+  SELECT s.id AS subject_id,
+         UNNEST(regexp_extract_all(s.infobox, '%s', 1)) AS k,
+         UNNEST(regexp_extract_all(s.infobox, '%s', 2)) AS v
+  FROM subjects s
+  WHERE s.type = %d
 %s
-  ) sub
 )
 `, withPrefix(cteCount), infoboxPatternSQL, infoboxPatternSQL, typeCode,
 		indentSeriesFilter(hasSeries))
