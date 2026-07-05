@@ -77,8 +77,8 @@ func TestBuildCheckSQL_PairsCTEUsesSingleRegex(t *testing.T) {
 	if !strings.Contains(sql, "regexp_extract_all") {
 		t.Error("pairs CTE should use regexp_extract_all for single-pass extraction")
 	}
-	if !strings.Contains(sql, "LIST_ZIP") {
-		t.Error("pairs CTE should use LIST_ZIP to align key/value groups")
+	if strings.Contains(sql, "LIST_ZIP") {
+		t.Error("pairs CTE should UNNEST lists directly without LIST_ZIP")
 	}
 	// Count occurrences of the infobox pattern — should appear exactly twice
 	// (one for group 1, one for group 2) regardless of how many positions
