@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.0.2
+// @version      0.1.0
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -37,6 +37,9 @@
 const styleEl = document.createElement('style');
 styleEl.textContent = `.bgm-mp-settings {
   padding: 12px;
+  display: flex;
+  flex-flow: column;
+  gap: 10px;
 }
 
 .bgm-mp-settings .bgm-mp-row {
@@ -46,14 +49,13 @@ styleEl.textContent = `.bgm-mp-settings {
 }
 
 .bgm-mp-settings .bgm-mp-row label {
-  font-size: 13px;
   color: #909399;
   white-space: nowrap;
   flex-shrink: 0;
   margin-right: 8px;
 }
 
-.bgm-mp-settings .bgm-mp-row input {
+.bgm-mp-settings .bgm-mp-row input[type="text"] {
   height: 32px;
   padding: 0 10px;
   border: 1px solid #e4e7ed;
@@ -706,25 +708,38 @@ document.head.appendChild(styleEl);
   };
 
   // src/config.js
-  var SETTINGS_KEY = "wikiMissingPositionsProvider";
+  var PROVIDER_KEY = "wikiMissingPositionsProvider";
+  var SHOW_KEY = "wikiMissingPositionsShow";
   var DEFAULT_PROVIDER = "https://bgq.iccci.cc.cd";
 
   // src/api.js
   function hasChiiApp() {
     return typeof chiiApp !== "undefined" && chiiApp;
   }
-  function getProvider() {
+  function get(key, def) {
     if (hasChiiApp()) {
-      return chiiApp.cloud_settings.get(SETTINGS_KEY) || DEFAULT_PROVIDER;
+      return chiiApp.cloud_settings.get(key) || def;
     }
-    return localStorage.getItem(SETTINGS_KEY) || DEFAULT_PROVIDER;
+    return localStorage.getItem(key) || def;
   }
-  function saveProvider(val) {
+  function getProvider() {
+    return get(PROVIDER_KEY, DEFAULT_PROVIDER);
+  }
+  function getShow() {
+    return get(SHOW_KEY, "on");
+  }
+  function save(key, val) {
     if (hasChiiApp()) {
-      chiiApp.cloud_settings.update({ [SETTINGS_KEY]: val });
+      chiiApp.cloud_settings.update({ [key]: val });
       return;
     }
-    localStorage.setItem(SETTINGS_KEY, val);
+    localStorage.setItem(key, val);
+  }
+  function saveProvider(val) {
+    save(PROVIDER_KEY, val);
+  }
+  function saveShow(val) {
+    save(SHOW_KEY, val);
   }
 
   // src/appear-eps.js
@@ -1131,6 +1146,7 @@ document.head.appendChild(styleEl);
     return typeof m === "function" ? m() : m;
   }
   function initSubjectPage() {
+    if (getShow() === "off") return;
     const href = document.querySelector(".focus").href.split("/").pop();
     const typeCode = { anime: 2, book: 1, music: 3, game: 4, real: 6 }[href] || 0;
     if (!typeCode) return;
@@ -1447,13 +1463,18 @@ document.head.appendChild(styleEl);
       type: "custom",
       customContent: function() {
         const provider = getProvider();
+        const show = getShow();
         return (
           /* html */
           `
         <div class="bgm-mp-settings">
           <div class="bgm-mp-row">
-            <label>API \u5730\u5740</label>
+            <label for="bgm-mp-provider">API \u5730\u5740</label>
             <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, "&quot;")}">
+          </div>
+          <div class="bgm-mp-row">
+            <label for="bgm-mp-show">\u6761\u76EE\u9875\u663E\u793A\u53EF\u80FD\u7684\u672A\u5173\u8054\u4EBA\u7269</label>
+            <input type="checkbox" id="bgm-mp-show"${show === "on" ? " checked" : ""}>
           </div>
         </div>`
         );
@@ -1461,6 +1482,9 @@ document.head.appendChild(styleEl);
       onInit: function(tabSelector, $tabContent) {
         $tabContent.off("change", "#bgm-mp-provider").on("change", "#bgm-mp-provider", function() {
           saveProvider($(this).val());
+        });
+        $tabContent.off("change", "#bgm-mp-show").on("change", "#bgm-mp-show", function() {
+          saveShow(this.checked ? "on" : "off");
         });
       }
     });
