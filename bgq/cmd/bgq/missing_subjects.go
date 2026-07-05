@@ -230,7 +230,7 @@ func indentSeriesFilter(hasSeries bool) string {
 	return "    " + s
 }
 
-var allowedHosts = []string{"bgm.tv", "bangumi.tv", "chii.in"}
+var allowedHosts = []string{"bgm.tv", "bangumi.tv", "chii.in", "bgmmi.anibt.net", "bangumi.lol"}
 
 func allowedReferrer(r *http.Request) bool {
 	src := r.Header.Get("Origin")
