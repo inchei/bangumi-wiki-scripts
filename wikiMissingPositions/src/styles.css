@@ -1,5 +1,8 @@
 .bgm-mp-settings {
   padding: 12px;
+  display: flex;
+  flex-flow: column;
+  gap: 10px;
 }
 
 .bgm-mp-settings .bgm-mp-row {
@@ -9,14 +12,13 @@
 }
 
 .bgm-mp-settings .bgm-mp-row label {
-  font-size: 13px;
   color: #909399;
   white-space: nowrap;
   flex-shrink: 0;
   margin-right: 8px;
 }
 
-.bgm-mp-settings .bgm-mp-row input {
+.bgm-mp-settings .bgm-mp-row input[type="text"] {
   height: 32px;
   padding: 0 10px;
   border: 1px solid #e4e7ed;

@@ -1,5 +1,5 @@
 import { initSubjectPage, initPersonNewPage, initPersonPage } from './subject-page.js';
-import { getProvider, saveProvider } from './api.js';
+import { getProvider, getShow, saveProvider, saveShow } from './api.js';
 import { initAddRelated } from './add-related.js';
 
 const pathname = location.pathname;
@@ -28,17 +28,25 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
     type: 'custom',
     customContent: function() {
       const provider = getProvider();
+      const show = getShow();
       return /* html */`
         <div class="bgm-mp-settings">
           <div class="bgm-mp-row">
-            <label>API 地址</label>
+            <label for="bgm-mp-provider">API 地址</label>
             <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, '&quot;')}">
+          </div>
+          <div class="bgm-mp-row">
+            <label for="bgm-mp-show">条目页显示可能的未关联人物</label>
+            <input type="checkbox" id="bgm-mp-show"${show === 'on' ? ' checked' : ''}>
           </div>
         </div>`;
     },
     onInit: function(tabSelector, $tabContent) {
       $tabContent.off('change', '#bgm-mp-provider').on('change', '#bgm-mp-provider', function() {
         saveProvider($(this).val());
+      });
+      $tabContent.off('change', '#bgm-mp-show').on('change', '#bgm-mp-show', function() {
+        saveShow(this.checked ? 'on' : 'off');
       });
     }
   });

@@ -1,5 +1,5 @@
 import { POSITION_IDS } from './position-ids.js';
-import { getProvider } from './api.js';
+import { getProvider, getShow } from './api.js';
 import { genAppearEps } from './appear-eps.js';
 import { showPendingEps } from './popup.js';
 import { addSubjectLi } from './add-related.js';
@@ -24,6 +24,8 @@ function randomMsg() {
 }
 
 export function initSubjectPage() {
+  if (getShow() === 'off') return;
+
   const href = document.querySelector('.focus').href.split('/').pop();
   const typeCode = { anime: 2, book: 1, music: 3, game: 4, real: 6 }[href] || 0;
   if (!typeCode) return;
