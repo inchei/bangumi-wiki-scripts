@@ -35,7 +35,7 @@ export function initSubjectPage() {
 
   const DELIM_RE = /[()[\]{}（）<>《》「」『』【】+×·→/／、,，;；：&＆\\等]+/;
 
-  infobox.querySelectorAll('li').forEach((li) => {
+  infobox.querySelectorAll('li:not(.sub_container):not(.sub_group)').forEach((li) => {
     const tip = li.querySelector('.tip');
     if (!tip) return;
     const fieldName = tip.textContent.replace(/[:：]\s*$/, '').trim();
