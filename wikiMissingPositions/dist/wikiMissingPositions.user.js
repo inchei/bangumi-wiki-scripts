@@ -911,11 +911,11 @@ document.head.appendChild(styleEl);
   var epBtn;
   var personId;
   function addSubjectLi(sid, posId, name) {
-    const existing = document.querySelector(`#crtRelateSubjects li.old:has([href="/subject/${sid}"]):has(option[selected][value="${posId}"])`);
-    if (existing) return existing;
+    const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${sid}"])`);
+    if (existing?.querySelector('select[name$="[prsnPos]"]')?.value === posId) return existing;
     subjectList = [{ id: Number(sid), type_id: type, name, name_cn: "", url_mod: "subject" }];
     addRelateSubject(0, "submitForm");
-    document.querySelector("#crtRelateSubjects select").value = posId;
+    document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = posId;
     return document.querySelector(`#crtRelateSubjects li:has([href="/subject/${sid}"])`);
   }
   async function processEpisodesData(data, queryName) {
@@ -1017,11 +1017,12 @@ document.head.appendChild(styleEl);
         for (const [id, entry] of resEntries) {
           for (const pos of entry.positions || []) {
             if (position && String(pos) !== position) continue;
-            if (!document.querySelector(`#crtRelateSubjects li.old:has([href="/subject/${id}"]):has(option[selected][value="${pos}"])`)) {
+            const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${id}"])`);
+            if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
               none = false;
               subjectList = [{ id: Number(id), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }];
               addRelateSubject(0, "submitForm");
-              document.querySelector("#crtRelateSubjects select").value = pos;
+              document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
             }
           }
         }
@@ -1040,11 +1041,12 @@ document.head.appendChild(styleEl);
         let none = true;
         for (const [id, entry] of resEntries) {
           for (const pos of entry.positions) {
-            if (!document.querySelector(`#crtRelateSubjects li.old:has([href="/subject/${id}"]):has(option[selected][value="${pos}"])`)) {
+            const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${id}"])`);
+            if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
               none = false;
               subjectList = [{ id: Number(id), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }];
               addRelateSubject(0, "submitForm");
-              document.querySelector("#crtRelateSubjects select").value = pos;
+              document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
             }
           }
         }
