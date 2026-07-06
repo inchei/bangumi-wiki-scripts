@@ -15,7 +15,8 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const bangumiCommonBase = "https://raw.githubusercontent.com/bangumi/common/master"
+// const bangumiCommonBase = "https://raw.githubusercontent.com/bangumi/common/master"
+const bangumiCommonBase = "https://ghfast.top/https://raw.githubusercontent.com/bangumi/common/master"
 
 //go:generate cp -r templates ../../internal/model/templates
 
@@ -54,6 +55,21 @@ func main() {
 	subjectRelationsYAML := downloadFile(bangumiCommonBase + "/subject_relations.yml")
 	personRelationsYAML := downloadFile(bangumiCommonBase + "/person_relations.yml")
 	staffYAML := downloadFile(bangumiCommonBase + "/subject_staffs.yml")
+
+	var data StaffYAML
+	if err := yaml.Unmarshal(staffYAML, &data); err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to parse subject_staffs.yml: %v\n", err)
+		os.Exit(1)
+	}
+
+	if types, ok := data.Define.Types["anime"]; ok {
+		delete(types, 23)
+		var err error
+		if staffYAML, err = yaml.Marshal(data); err != nil {
+			fmt.Fprintf(os.Stderr, "Failed to marshal staff data: %v\n", err)
+			os.Exit(1)
+		}
+	}
 
 	fmt.Println("  Generating platform.go...")
 	generatePlatform(platformsYAML, outDir, tmplDir)
