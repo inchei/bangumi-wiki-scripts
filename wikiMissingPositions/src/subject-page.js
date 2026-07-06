@@ -234,6 +234,8 @@ async function fetchAndRenderResults(personName, typeCode, provider, signal, con
 
   if (hasNetworkError) {
     html = '<div class="staff-error-section"><div class="staff-error-title">获取失败，请检查API地址或网络</div></div>';
+  } else if (!hasData) {
+    html = '<div class="bgm-mp-empty-hint">未找到缺失关联</div>';
   } else {
     if (subjEntries.length) {
       html += '<div class="bgm-mp-result-list">';
@@ -245,16 +247,15 @@ async function fetchAndRenderResults(personName, typeCode, provider, signal, con
         html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${posNames}</div>`;
       }
       html += '</div>';
-    } else {
-      html += '<div class="bgm-mp-empty-hint">无缺失条目关联</div>';
     }
 
     if (episodesData) {
-      const epEntries = Object.entries(episodesData.matched || {});
-      if (epEntries.length) {
+      const matchedEpEntries = Object.entries(episodesData.matched || {});
+      const unmatchedEpEntries = Object.entries(episodesData.unmatched || {});
+      if (matchedEpEntries.length) {
         html += '<div class="bgm-mp-result-list">';
         html += '<div class="bgm-mp-section-title">缺失剧集关联：</div>';
-        for (const [sid, entry] of epEntries) {
+        for (const [sid, entry] of matchedEpEntries) {
           const posMap = entry.episodes || {};
           const parts = Object.entries(posMap).map(
             ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}：${genAppearEps(labels)}`,
@@ -263,8 +264,16 @@ async function fetchAndRenderResults(personName, typeCode, provider, signal, con
         }
         html += '</div>';
       }
-      if (Object.keys(episodesData.unmatched || {}).length) {
-        html += '<div class="bgm-mp-unmatched-hint">另有部分集数未定位到职位</div>';
+      if (unmatchedEpEntries.length) {
+        html += '<div class="bgm-mp-result-list">';
+        html += '<div class="bgm-mp-section-title">疑似缺失剧集关联：</div>';
+        for (const [sid, entry] of unmatchedEpEntries) {
+          const episodes = entry.episodes || [];
+          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${
+            episodes.map((ep) => `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`).join(', ')
+          }</div>`;
+        }
+        html += '</div>';
       }
     }
 

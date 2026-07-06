@@ -179,6 +179,7 @@ html[data-theme='dark'] .bgm-mp-notify {
   max-height: 400px;
   overflow-y: auto;
   font-size: 13px;
+  min-height: 120px;
 }
 
 .bgm-mp-notify .staff-tip-title {
@@ -343,7 +344,6 @@ html[data-theme="dark"] .bgm-mp-spinner {
 }
 
 .bgm-mp-loading-wrap {
-  min-height: 120px;
   text-align: center;
   padding: 40px 20px;
   color: #909399;
@@ -364,11 +364,7 @@ html[data-theme="dark"] .bgm-mp-spinner {
 .bgm-mp-empty-hint {
   color: #909399;
   margin-bottom: 8px;
-}
-
-.bgm-mp-unmatched-hint {
-  margin-top: 8px;
-  font-size: 12px;
+  text-align: center;
 }
 
 .bgm-mp-popup-actions {

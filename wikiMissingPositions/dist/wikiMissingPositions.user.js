@@ -216,6 +216,7 @@ html[data-theme='dark'] .bgm-mp-notify {
   max-height: 400px;
   overflow-y: auto;
   font-size: 13px;
+  min-height: 120px;
 }
 
 .bgm-mp-notify .staff-tip-title {
@@ -380,7 +381,6 @@ html[data-theme="dark"] .bgm-mp-spinner {
 }
 
 .bgm-mp-loading-wrap {
-  min-height: 120px;
   text-align: center;
   padding: 40px 20px;
   color: #909399;
@@ -401,11 +401,7 @@ html[data-theme="dark"] .bgm-mp-spinner {
 .bgm-mp-empty-hint {
   color: #909399;
   margin-bottom: 8px;
-}
-
-.bgm-mp-unmatched-hint {
-  margin-top: 8px;
-  font-size: 12px;
+  text-align: center;
 }
 
 .bgm-mp-popup-actions {
@@ -1313,6 +1309,8 @@ document.head.appendChild(styleEl);
     let html = "";
     if (hasNetworkError) {
       html = '<div class="staff-error-section"><div class="staff-error-title">\u83B7\u53D6\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5API\u5730\u5740\u6216\u7F51\u7EDC</div></div>';
+    } else if (!hasData) {
+      html = '<div class="bgm-mp-empty-hint">\u672A\u627E\u5230\u7F3A\u5931\u5173\u8054</div>';
     } else {
       if (subjEntries.length) {
         html += '<div class="bgm-mp-result-list">';
@@ -1322,15 +1320,14 @@ document.head.appendChild(styleEl);
           html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${posNames}</div>`;
         }
         html += "</div>";
-      } else {
-        html += '<div class="bgm-mp-empty-hint">\u65E0\u7F3A\u5931\u6761\u76EE\u5173\u8054</div>';
       }
       if (episodesData) {
-        const epEntries = Object.entries(episodesData.matched || {});
-        if (epEntries.length) {
+        const matchedEpEntries = Object.entries(episodesData.matched || {});
+        const unmatchedEpEntries = Object.entries(episodesData.unmatched || {});
+        if (matchedEpEntries.length) {
           html += '<div class="bgm-mp-result-list">';
           html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
-          for (const [sid, entry] of epEntries) {
+          for (const [sid, entry] of matchedEpEntries) {
             const posMap = entry.episodes || {};
             const parts = Object.entries(posMap).map(
               ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}\uFF1A${genAppearEps(labels)}`
@@ -1339,8 +1336,14 @@ document.head.appendChild(styleEl);
           }
           html += "</div>";
         }
-        if (Object.keys(episodesData.unmatched || {}).length) {
-          html += '<div class="bgm-mp-unmatched-hint">\u53E6\u6709\u90E8\u5206\u96C6\u6570\u672A\u5B9A\u4F4D\u5230\u804C\u4F4D</div>';
+        if (unmatchedEpEntries.length) {
+          html += '<div class="bgm-mp-result-list">';
+          html += '<div class="bgm-mp-section-title">\u7591\u4F3C\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
+          for (const [sid, entry] of unmatchedEpEntries) {
+            const episodes = entry.episodes || [];
+            html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${episodes.map((ep) => `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`).join(", ")}</div>`;
+          }
+          html += "</div>";
         }
       }
       html += `<div class="bgm-mp-popup-actions">
