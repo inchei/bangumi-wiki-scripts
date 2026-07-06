@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.1.0
+// @version      0.1.1
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -471,7 +471,6 @@ document.head.appendChild(styleEl);
       20: "\u539F\u753B",
       21: "\u7B2C\u4E8C\u539F\u753B",
       22: "\u52A8\u753B\u68C0\u67E5",
-      23: "\u52A9\u7406\u5236\u7247\u4EBA",
       24: "\u5236\u4F5C\u52A9\u7406",
       25: "\u80CC\u666F\u7F8E\u672F",
       26: "\u8272\u5F69\u6307\u5B9A",

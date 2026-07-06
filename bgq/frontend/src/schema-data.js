@@ -46,7 +46,7 @@ const REAL_PLATFORMS = [
 ];
 
 const PLATFORMS_BY_TYPE = {
-  0: (() => { const seen = new Set(); return [...BOOK_PLATFORMS, ...ANIME_PLATFORMS, ...MUSIC_PLATFORMS, ...GAME_PLATFORMS, ...REAL_PLATFORMS].filter(p => { const k = p.code + ':' + p.name; if (seen.has(k)) return false; seen.add(k); return true; }); })(),
+  0: (() => { const seen = new Set(); return [...BOOK_PLATFORMS, ...ANIME_PLATFORMS, ...MUSIC_PLATFORMS, ...GAME_PLATFORMS, ...REAL_PLATFORMS, ].filter(p => { const k = p.code + ':' + p.name; if (seen.has(k)) return false; seen.add(k); return true; }); })(),
   1: BOOK_PLATFORMS,
   2: ANIME_PLATFORMS,
   3: MUSIC_PLATFORMS,
@@ -257,7 +257,6 @@ const ANIME_POSITIONS = [
   "原画",
   "第二原画",
   "动画检查",
-  "助理制片人",
   "制作助理",
   "背景美术",
   "色彩指定",
