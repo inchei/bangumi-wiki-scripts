@@ -51,27 +51,16 @@
 
 ## GitHub Actions
 
-- **数据更新**（每周二自动运行）→ `data-latest` Release：重复 ISBN 检查、人物别名、筛选结果
+- **数据更新**（每周二自动运行）→ [GitHub Pages](https://inchei.github.io/bangumi-wiki-scripts/) 查看筛选结果，`data-latest` Release 包含人物别名数据
 - **二进制构建**（bgq 代码变更时触发）→ `latest` Release：跨平台压缩包
 
-### 自动筛选查询
+### 网页端查看筛选结果
 
-CI 使用 bgq 执行 `filters/*.yaml` 中的查询，结果以 CSV 上传到 [data-latest Release](https://github.com/inchei/bangumi-wiki-scripts/releases/tag/data-latest)：
+筛选结果以 HTML 表格形式部署到 [GitHub Pages](https://inchei.github.io/bangumi-wiki-scripts/)，ID 列带有超链接可直达 Bangumi 条目页。
 
-- [小说系列关联漫画单行本](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/novel-series-manga-volumes.csv)
-- [漫画系列关联小说单行本](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/manga-series-novel-volumes.csv)
-- [标题有序号而标记为系列](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/numbered-title-marked-series.csv)
-- [非系列关联单行本](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/non-series-linked-volumes.csv)
-- [写了ISBN的系列](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/series-with-isbn.csv)
-- [连载结束无已完结标签](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/serialization-ended-no-complete-tag.csv)
-- [有序号的单行本未关联系列](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/numbered-volumes-no-series.csv)
-- [小说缺小说标签](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/novel-missing-novel-tag.csv)
-- [漫画缺漫画标签](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/manga-missing-manga-tag.csv)
-- [未填写作者](https://github.com/inchei/bangumi-wiki-scripts/releases/download/data-latest/missing-author.csv)
+### 本地批量生成
 
-输出的 CSV 含 `id` 列，可直接上传到 [wikiBatch](wikiBatch/README.md) 批量审核编辑。
-
-本地批量生成所有结果：
+需要 CSV 文件用于 [wikiBatch](wikiBatch/README.md) 批量编辑时，可本地运行：
 
 ```bash
 mkdir -p results

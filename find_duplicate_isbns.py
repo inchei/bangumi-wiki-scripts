@@ -14,12 +14,6 @@ DEFAULT_OUTPUT = "duplicate_check_results.txt"
 
 # 尝试导入可选库
 try:
-    from tqdm import tqdm
-    has_tqdm = True
-except ImportError:
-    has_tqdm = False
-
-try:
     from bs4 import BeautifulSoup
     has_bs4 = True
 except ImportError:
@@ -99,7 +93,7 @@ def fetch_and_extract_report_links(report_links: list) -> set:
         return all_reported_links
     
     print("\n正在获取汇报页面链接...")
-    iterable = tqdm(report_links, desc="处理页面") if has_tqdm else report_links
+    iterable = report_links
     
     for link in iterable:
         try:
@@ -109,8 +103,7 @@ def fetch_and_extract_report_links(report_links: list) -> set:
             response.raise_for_status()
             all_reported_links.update(extract_subject_links(response.text))
         except Exception as e:
-            if not has_tqdm:
-                print(f"获取 {link} 失败: {str(e)}")
+            print(f"获取 {link} 失败: {str(e)}")
     
     print(f"共提取到 {len(all_reported_links)} 个已汇报链接")
     return all_reported_links
@@ -169,7 +162,7 @@ def find_duplicate_isbns(jsonlines_file: str, reported_links: set) -> dict:
     multi_isbn = 0
     
     with open(jsonlines_file, 'r', encoding='utf-8') as f:
-        iterator = tqdm(f, total=total_lines, desc="分析进度") if has_tqdm and total_lines else f
+        iterator = f
         
         for line_num, line in enumerate(iterator, 1):
             try:
@@ -207,8 +200,7 @@ def find_duplicate_isbns(jsonlines_file: str, reported_links: set) -> dict:
                             })
             
             except Exception as e:
-                if not has_tqdm:
-                    print(f"处理第 {line_num} 行出错: {str(e)}")
+                print(f"处理第 {line_num} 行出错: {str(e)}")
     
     print(f"发现 {total_books} 个ISBN，{multi_isbn} 个多ISBN条目")
     if whitelisted:
