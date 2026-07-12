@@ -7,6 +7,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 env:
   REPORT_PAGES: >-
@@ -34,7 +36,7 @@ jobs:
       - name: 安装 Python 依赖
         run: |
           python -m pip install --upgrade pip
-          pip install requests tqdm beautifulsoup4 bgm-tv-wiki
+          pip install requests beautifulsoup4 bgm-tv-wiki pyyaml
 
       - name: 设置 Go
         uses: actions/setup-go@v6
@@ -108,6 +110,9 @@ jobs:
           echo ""
           echo "  筛选完成: ${success} 成功, ${fail} 失败"
 
+      - name: 转换为 HTML
+        run: python .github/scripts/results_to_html.py
+
       - name: 同步目录
         if: ${{ env.BANGUMI_TOKEN != '' }}
         env:
@@ -138,15 +143,22 @@ jobs:
           tag_name: data-latest
           name: Bangumi 数据更新
           body: |
-            每周自动更新的人物别名和筛选结果。
+            每周自动更新的人物别名数据。
 
             - `person_alias.json.gz` — 人物别名数据
-            - `duplicate_check_results.txt` — 重复 ISBN 检查结果
-            - `*.csv` — 自定义筛选结果
           files: |
             ${{ env.ALIAS_GZ }}
-            duplicate_check_results.txt
-            results/*.csv
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 配置 GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: 上传 Pages 构建产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: 部署到 GitHub Pages
+        uses: actions/deploy-pages@v4

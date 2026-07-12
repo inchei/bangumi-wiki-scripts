@@ -1,8 +1,0 @@
-# 已填写连载结束日期但没有"已完结"标签
-filters:
-  - type: 书籍
-  - field: { field: 连载结束, operator: regex, value: "\\d" }
-  - meta_tag: { value: "已完结", operator: contains, negate: true }
-  - meta_tag: { value: "完结", operator: contains, negate: true }
-output:
-  columns: [id, name, name_cn, 连载结束]
