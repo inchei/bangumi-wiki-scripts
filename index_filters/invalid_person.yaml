@@ -31,6 +31,15 @@ filters:
         logic:
          op: and
          items: []
+    -
+     person_relation:
+      type: ''
+      mode: none
+      conditions:
+       -
+        logic:
+         op: and
+         items: []
 output:
  columns:
   - person_id
