@@ -1,8 +1,0 @@
-# platform 为小说（1002）但没有"小说"标签，且未关联系列
-filters:
-  - type: 书籍
-  - field: { field: platform, operator: eq, value: "1002" }
-  - meta_tag: { value: "小说", operator: contains, negate: true }
-  - relation: { type: 系列, mode: none }
-output:
-  columns: [id, name, name_cn]

@@ -92,7 +92,7 @@ python sync_index.py --index 12345 --csv results/some-filter.csv --dry-run
 - 否则 → 非 ID 列以 `列名：值` 拼接（排除 `id` 和 `*_id` 列）
 - 行序即目录排序
 
-**目录过滤器**：`index_filters/` 目录下的 YAML 需包含 `target_index` 和 `target` 字段。CI 中设置 `BANGUMI_TOKEN` secret 即可自动同步。
+**目录过滤器**：`index_filters/` 目录下的 YAML 需包含 `target_index` 和 `target` 字段。可 fork 本仓库，设置 `BANGUMI_TOKEN` secret，设置 `test_sync_indices.yml` 的 cron，并删除其他 `.yml` 文件，开启并使用 GitHub Actions 同步自己的目录。
 
 批量同步所有目录（或用于 cron）：
 

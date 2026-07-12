@@ -22,7 +22,7 @@ for fname in sorted(os.listdir(results_dir)):
         continue
     target = filter_target(fname[:-4])
 
-    with open(os.path.join(results_dir, fname), newline='') as f:
+    with open(os.path.join(results_dir, fname), newline='', encoding='utf-8-sig') as f:
         rows = list(csv.reader(f))
     if not rows:
         continue
@@ -45,7 +45,7 @@ for fname in sorted(os.listdir(results_dir)):
         h.append('<tr>')
         for i, cell in enumerate(row):
             if i == id_col and cell:
-                h.append(f'<td><a href="https://bgm.tv/{target}/{html.escape(cell)}">{html.escape(cell)}</a></td>')
+                h.append(f'<td><a href="https://bgm.tv/{target}/{html.escape(cell)}" target="_blank">{html.escape(cell)}</a></td>')
             else:
                 h.append(f'<td>{html.escape(cell)}</td>')
         h.append('</tr>')
@@ -63,7 +63,7 @@ if os.path.exists(txt_src):
     lines = []
     for line in text.split('\n'):
         escaped = html.escape(line)
-        escaped = re.sub(r'(https://bgm\.tv/subject/\d+)', r'<a href="\1">\1</a>', escaped)
+        escaped = re.sub(r'(https://bgm\.tv/subject/\d+)', r'<a href="\1" target="_blank">\1</a>', escaped)
         lines.append(escaped)
     html_out = [
         '<!DOCTYPE html>',
@@ -80,7 +80,7 @@ idx = ['<!DOCTYPE html>',
        '<html><head><meta charset="utf-8"><title>筛选结果</title></head><body>',
        '<h1>Bangumi 筛选结果</h1><ul>']
 for out, src in pages:
-    idx.append(f'<li><a href="{html.escape(out)}">{html.escape(src)}</a></li>')
+    idx.append(f'<li><a href="{html.escape(out)}" target="_blank">{html.escape(src)}</a></li>')
 idx.append('</ul></body></html>')
 with open(os.path.join(output_dir, 'index.html'), 'w') as f:
     f.write('\n'.join(idx))

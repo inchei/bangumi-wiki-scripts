@@ -1,0 +1,103 @@
+name: 筛选结果 → Pages
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  REPORT_PAGES: >-
+    https://bgm.tv/group/topic/454229,
+    https://bgm.tv/group/topic/461956
+  AUTO_MODE: "true"
+  DUCKDB_VERSION: "1.2.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: pip install pyyaml requests beautifulsoup4 bgm-tv-wiki
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: bgq/go.mod
+          cache-dependency-path: bgq/go.sum
+
+      - name: 下载 DuckDB
+        run: |
+          curl -fsSL "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-linux-amd64.zip" -o /tmp/duckdb.zip
+          python3 -c "import zipfile; zipfile.ZipFile('/tmp/duckdb.zip').extractall('bgq/bin/')"
+          chmod +x bgq/bin/duckdb
+
+      - name: 构建 bgq
+        run: |
+          cd bgq
+          mkdir -p internal/server/dist
+          touch internal/server/dist/.keep
+          go build -o bin/bgq ./cmd/bgq/
+
+      - name: 下载 Bangumi 归档
+        run: bash bgq/download-archive.sh bangumi_archive
+
+      - name: 检查重复条目
+        run: python find_duplicate_isbns.py
+
+      - name: 执行筛选查询
+        env:
+          DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
+        run: |
+          mkdir -p results
+          DATA_DIR="${GITHUB_WORKSPACE}/bangumi_archive"
+          BIN="${GITHUB_WORKSPACE}/bgq/bin/bgq"
+
+          success=0
+          fail=0
+
+          for yaml_file in filters/*.yaml; do
+            if [ ! -f "$yaml_file" ]; then
+              echo "⚠ 没有找到 YAML 配置文件"
+              continue
+            fi
+
+            name=$(basename "$yaml_file" .yaml)
+            echo ""
+            echo "========================================"
+            echo "  处理: $name"
+            echo "========================================"
+
+            if "${BIN}" query \
+                --config "$yaml_file" \
+                --data-dir "${DATA_DIR}" \
+                --format csv \
+                --output "results/${name}.csv" \
+                2>&1; then
+              lines=$(wc -l < "results/${name}.csv" 2>/dev/null || echo 0)
+              echo "✅ ${name} 完成 (${lines} 行)"
+              success=$((success + 1))
+            else
+              echo "❌ ${name} 失败"
+              fail=$((fail + 1))
+            fi
+          done
+
+          echo ""
+          echo "  筛选完成: ${success} 成功, ${fail} 失败"
+
+      - name: 转换为 HTML
+        run: python .github/scripts/results_to_html.py
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - uses: actions/deploy-pages@v4
