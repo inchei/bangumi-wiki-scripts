@@ -63,6 +63,7 @@ func startServer(dataDir, listenAddr, dbPath string) {
 	mux.HandleFunc("/api/persons/{name}/missing-subjects", s.handleCheckMissingStaff)
 	mux.HandleFunc("/api/persons/{name}/missing-episodes", s.handleMissingEpisodes)
 
+	mux.HandleFunc("/sitemap.xml", s.handleSitemap)
 	mux.HandleFunc("/", s.handleStatic)
 
 	// CORS middleware wrapper
@@ -266,22 +267,25 @@ func getCWD() string {
 }
 
 func (s *server) handleStatic(w http.ResponseWriter, r *http.Request) {
-	// Serve embedded static files, fallback to index.html for SPA
 	staticFS, _ := fs.Sub(srv.StaticFS, "dist")
-	fileServer := http.FileServer(http.FS(staticFS))
+	http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
+}
 
-	// Try to open the requested file
-	name := strings.TrimPrefix(r.URL.Path, "/")
-	if f, err := staticFS.Open(name); err == nil {
-		defer func() { _ = f.Close() }()
-		if info, _ := f.Stat(); info != nil && !info.IsDir() {
-			fileServer.ServeHTTP(w, r)
-			return
-		}
+func (s *server) handleSitemap(w http.ResponseWriter, r *http.Request) {
+	baseURL := s.inferBaseURL(r)
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	_, _ = w.Write([]byte(`<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<url><loc>` + baseURL + `/</loc></url>
+</urlset>`))
+}
+
+func (s *server) inferBaseURL(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
 	}
-	// Not a real file → serve index.html (SPA fallback)
-	r.URL.Path = "/"
-	fileServer.ServeHTTP(w, r)
+	return scheme + "://" + r.Host
 }
 
 func (s *server) listDataFiles() []map[string]string {
