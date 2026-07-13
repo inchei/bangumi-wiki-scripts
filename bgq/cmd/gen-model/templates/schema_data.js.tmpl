@@ -4,14 +4,18 @@
 // --- Platforms (by subject type code) ---
 // type code: 1=书籍, 2=动画, 3=音乐, 4=游戏, 6=三次元, 0=all
 {{range .PlatformTypes}}
+{{- if .Entries}}
 const {{.GoType}}_PLATFORMS = [
 {{- range .Entries}}
   { code: {{.Code}}, name: "{{.Name}}" },
 {{- end}}
 ];
+{{- else}}
+const {{.GoType}}_PLATFORMS = [];
+{{- end}}
 {{end}}
 const PLATFORMS_BY_TYPE = {
-  0: (() => { const seen = new Set(); return [{{range .PlatformTypes}}...{{.GoType}}_PLATFORMS, {{end}}].filter(p => { const k = p.code + ':' + p.name; if (seen.has(k)) return false; seen.add(k); return true; }); })(),
+  0: (() => { const seen = new Set(); return [{{range $i, $p := .PlatformTypes}}{{if $i}}, {{end}}...{{$p.GoType}}_PLATFORMS{{end}}].filter(p => { const k = p.code + ':' + p.name; if (seen.has(k)) return false; seen.add(k); return true; }); })(),
 {{- range .PlatformTypes}}
   {{.TypeCode}}: {{.GoType}}_PLATFORMS,
 {{- end}}
@@ -28,14 +32,18 @@ export const PLATFORMS = platformsByType(0);
 // --- Relations (by subject type code) ---
 // type code: 1=书籍, 2=动画, 3=音乐, 4=游戏, 6=三次元, 0=all
 {{range .RelTypes}}
+{{- if .Entries}}
 const {{.GoType}}_RELATIONS = [
 {{- range .Entries}}
   "{{.Name}}",
 {{- end}}
 ];
+{{- else}}
+const {{.GoType}}_RELATIONS = [];
+{{- end}}
 {{end}}
 const RELATIONS_BY_TYPE = {
-  0: [...new Set([{{range .RelTypes}}...{{.GoType}}_RELATIONS, {{end}}])],
+  0: [...new Set([{{range $i, $r := .RelTypes}}{{if $i}}, {{end}}...{{$r.GoType}}_RELATIONS{{end}}])],
 {{- range .RelTypes}}
   {{.TypeCode}}: {{.GoType}}_RELATIONS,
 {{- end}}
@@ -75,14 +83,18 @@ export const PERSON_CHAR_TYPES = [
 
 // --- Staff positions (by subject type code) ---
 {{range .StaffTypes}}
+{{- if .Entries}}
 const {{.GoType}}_POSITIONS = [
 {{- range .Entries}}
   "{{.Name}}",
 {{- end}}
 ];
+{{- else}}
+const {{.GoType}}_POSITIONS = [];
+{{- end}}
 {{end}}
 const POSITIONS_BY_TYPE = {
-  0: [...new Set([{{range .StaffTypes}}...{{.GoType}}_POSITIONS, {{end}}])],
+  0: [...new Set([{{range $i, $s := .StaffTypes}}{{if $i}}, {{end}}...{{$s.GoType}}_POSITIONS{{end}}])],
 {{- range .StaffTypes}}
   {{.TypeCode}}: {{.GoType}}_POSITIONS,
 {{- end}}
@@ -106,7 +118,7 @@ const META_TAGS_BY_TYPE = {
   {{.TypeCode}}: META_TAGS_TYPE_{{.TypeCode}},
 {{- end}}
 };
-const META_TAGS_SET = new Set([{{range .MetaTagEntries}}...META_TAGS_TYPE_{{.TypeCode}}, {{end}}]);
+const META_TAGS_SET = new Set([{{range $i, $m := .MetaTagEntries}}{{if $i}}, {{end}}...META_TAGS_TYPE_{{$m.TypeCode}}{{end}}]);
 
 /** @param {number} typeCode 0=all */
 export function metaTagsByType(typeCode) {

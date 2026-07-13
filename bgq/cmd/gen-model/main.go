@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"go/format"
 	"io"
 	"log"
 	"net/http"
@@ -221,7 +222,13 @@ func sortedIntKeys[V any](m map[int]V) []int {
 }
 
 func writeToFile(path, content string) {
-	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+	data := []byte(content)
+	if strings.HasSuffix(path, ".go") {
+		if formatted, err := format.Source(data); err == nil {
+			data = formatted
+		}
+	}
+	if err := os.WriteFile(path, data, 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "Failed to write %s: %v\n", path, err)
 		os.Exit(1)
 	}
