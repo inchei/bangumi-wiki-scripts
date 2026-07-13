@@ -1,4 +1,4 @@
-name: Bangumi 数据更新
+name: update bangumi data
 
 on:
   schedule:
