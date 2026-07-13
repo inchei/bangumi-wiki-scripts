@@ -23,8 +23,7 @@ const ANIME_PLATFORMS = [
   { code: 2006, name: "动态漫画" },
 ];
 
-const MUSIC_PLATFORMS = [
-];
+const MUSIC_PLATFORMS = [];
 
 const GAME_PLATFORMS = [
   { code: 0, name: "其他" },
@@ -46,7 +45,7 @@ const REAL_PLATFORMS = [
 ];
 
 const PLATFORMS_BY_TYPE = {
-  0: (() => { const seen = new Set(); return [...BOOK_PLATFORMS, ...ANIME_PLATFORMS, ...MUSIC_PLATFORMS, ...GAME_PLATFORMS, ...REAL_PLATFORMS, ].filter(p => { const k = p.code + ':' + p.name; if (seen.has(k)) return false; seen.add(k); return true; }); })(),
+  0: (() => { const seen = new Set(); return [...BOOK_PLATFORMS, ...ANIME_PLATFORMS, ...MUSIC_PLATFORMS, ...GAME_PLATFORMS, ...REAL_PLATFORMS].filter(p => { const k = p.code + ':' + p.name; if (seen.has(k)) return false; seen.add(k); return true; }); })(),
   1: BOOK_PLATFORMS,
   2: ANIME_PLATFORMS,
   3: MUSIC_PLATFORMS,
@@ -148,7 +147,7 @@ const REAL_RELATIONS = [
 ];
 
 const RELATIONS_BY_TYPE = {
-  0: [...new Set([...ANIME_RELATIONS, ...BOOK_RELATIONS, ...GAME_RELATIONS, ...MUSIC_RELATIONS, ...REAL_RELATIONS, ])],
+  0: [...new Set([...ANIME_RELATIONS, ...BOOK_RELATIONS, ...GAME_RELATIONS, ...MUSIC_RELATIONS, ...REAL_RELATIONS])],
   2: ANIME_RELATIONS,
   1: BOOK_RELATIONS,
   4: GAME_RELATIONS,
@@ -496,7 +495,7 @@ const REAL_POSITIONS = [
 ];
 
 const POSITIONS_BY_TYPE = {
-  0: [...new Set([...ANIME_POSITIONS, ...BOOK_POSITIONS, ...GAME_POSITIONS, ...MUSIC_POSITIONS, ...REAL_POSITIONS, ])],
+  0: [...new Set([...ANIME_POSITIONS, ...BOOK_POSITIONS, ...GAME_POSITIONS, ...MUSIC_POSITIONS, ...REAL_POSITIONS])],
   2: ANIME_POSITIONS,
   1: BOOK_POSITIONS,
   4: GAME_POSITIONS,
@@ -954,7 +953,7 @@ const META_TAGS_BY_TYPE = {
   4: META_TAGS_TYPE_4,
   6: META_TAGS_TYPE_6,
 };
-const META_TAGS_SET = new Set([...META_TAGS_TYPE_1, ...META_TAGS_TYPE_2, ...META_TAGS_TYPE_3, ...META_TAGS_TYPE_4, ...META_TAGS_TYPE_6, ]);
+const META_TAGS_SET = new Set([...META_TAGS_TYPE_1, ...META_TAGS_TYPE_2, ...META_TAGS_TYPE_3, ...META_TAGS_TYPE_4, ...META_TAGS_TYPE_6]);
 
 /** @param {number} typeCode 0=all */
 export function metaTagsByType(typeCode) {
