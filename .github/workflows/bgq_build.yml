@@ -1,4 +1,4 @@
-name: bgq 构建发布
+name: build and release bgq
 
 on:
   push:
@@ -7,6 +7,10 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_run:
+    workflows: ["update common"]
+    types:
+      - completed
 
 permissions:
   contents: write

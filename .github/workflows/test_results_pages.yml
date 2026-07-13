@@ -1,4 +1,4 @@
-name: 筛选结果 → Pages
+name: publish filter results
 
 on:
   workflow_dispatch:

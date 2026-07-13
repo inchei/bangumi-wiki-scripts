@@ -1,4 +1,4 @@
-name: 人物别名
+name: release person alias
 
 on:
   workflow_dispatch:

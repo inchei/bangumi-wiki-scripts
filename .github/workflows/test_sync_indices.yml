@@ -1,4 +1,4 @@
-name: 删改目录
+name: sync indices
 
 on:
   workflow_dispatch:
