@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
+# /// script
+# requires-python = ">=3.9"
+# dependencies = [
+#   "pyyaml",
+# ]
+# ///
 """将 CSV 同步到 Bangumi 目录（使用 next.bgm.tv 私有 API）。
 
 用法:
     bgq query --config x.yaml --format csv | python sync_index.py --index 12345
-    python sync_index.py --index 12345 --csv results.csv
+    python sync_index.py --index 12345 --csv results.csv --config x.yaml
 
 列规则:
     - id 列自动识别：person_id → person, character_id → character, id → subject
     - 若存在 index_desc 列，用其值作为条目描述
     - 否则，非 ID 列以 "列名：值" 拼接为描述
-    - 行序即目录排序（除非指定 --ignore-order）
+    - 行序即目录排序（除非 --config 指定的 YAML 没有 sort 字段，或指定 --ignore-order）
 
 环境变量:
     BANGUMI_TOKEN  Bangumi API access token (必需)
@@ -20,12 +26,15 @@ import csv
 import io
 import json
 import os
+import random
 import sys
 import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-REQUEST_DELAY = 0.2  # 默认请求间隔（秒）
+import yaml
+
+REQUEST_DELAY = 21.0  # 默认请求间隔（秒），对应 ~3/min（留少量余量）
 
 API_BASE = "https://next.bgm.tv/p1"
 
@@ -45,6 +54,7 @@ def detect_id_column(columns: list[str]) -> tuple[int, str]:
 
 
 def api(method: str, path: str, token: str, body: dict | None = None) -> tuple[int, str]:
+    """发送 HTTP 请求，返回 (status, body)。"""
     url = f"{API_BASE}{path}"
     data = json.dumps(body).encode() if body else None
     headers = {
@@ -62,12 +72,11 @@ def api(method: str, path: str, token: str, body: dict | None = None) -> tuple[i
 
 
 def api_call(method: str, path: str, token: str, body: dict | None = None) -> tuple[int, str]:
-    """带 429 指数退避重试。"""
-    resp_body = ""
+    """带 429 退避重试。"""
     for attempt in range(5):
         if attempt > 0:
-            wait = min(2 ** attempt + (int(resp_body) if resp_body.isdigit() else 0), 60)
-            print(f"  限流，等待 {wait}s ...", file=sys.stderr)
+            wait = min(30 * 2 ** attempt, 300)
+            print(f"限流，等待 {wait}s ...", file=sys.stderr, flush=True)
             time.sleep(wait)
         status, resp_body = api(method, path, token, body)
         if status != 429:
@@ -76,7 +85,8 @@ def api_call(method: str, path: str, token: str, body: dict | None = None) -> tu
 
 
 def get_existing(index_id: int, cat: int, token: str) -> dict[int, dict]:
-    """获取目录现有条目，返回 {sid: {id(记录ID), order, comment}}。"""
+    """获取目录现有条目，返回 {sid: {id(记录ID), order, comment}}。
+    GET 不限流，无延迟。"""
     existing = {}
     offset = 0
     while True:
@@ -127,6 +137,15 @@ def sync(
 ):
     has_index_desc = "index_desc" in columns
 
+    operations = 0
+    current_delay = delay
+
+    def wait():
+        nonlocal operations
+        if operations > 0:
+            t = current_delay + random.uniform(0, current_delay * 0.2)
+            time.sleep(t)
+
     result_ids = []
     result_map = {}
     for i, row in enumerate(rows):
@@ -157,7 +176,12 @@ def sync(
         ]
     to_remove_sid = [s for s in existing if s not in result_set]
 
-    print(f"添加: {len(to_add)}, 更新: {len(to_update)}, 移除: {len(to_remove_sid)}", flush=True)
+    total_ops = len(to_add) + len(to_update) + len(to_remove_sid)
+    print(f"添加: {len(to_add)}, 更新: {len(to_update)}, 移除: {len(to_remove_sid)}, "
+          f"总计: {total_ops} 次 API 调用", flush=True)
+    if total_ops > 0:
+        eta = total_ops * current_delay
+        print(f"预计耗时: {eta:.0f}s (~{eta / 60:.0f}min)", flush=True)
 
     if dry_run:
         print("[dry-run] 不执行")
@@ -166,10 +190,12 @@ def sync(
     ok = fail = 0
 
     for sid in to_add:
+        wait()
         info = result_map[sid]
         body = {"cat": cat, "sid": sid, "order": info["order"], "comment": info["desc"]}
         if ignore_order:
             body["order"] = 0
+        print(f"  [{ok+fail+1}/{total_ops}] 添加 {sid} ...", flush=True, end=" ")
         status, resp_body = api_call(
             "PUT",
             f"/indexes/{index_id}/related",
@@ -178,17 +204,20 @@ def sync(
         )
         if status == 200:
             ok += 1
+            print("OK", flush=True)
         else:
-            print(f"  添加 {sid} 失败: {status} {resp_body}", file=sys.stderr)
             fail += 1
-        time.sleep(delay)
+            print(f"失败: {status}", flush=True)
+        operations += 1
 
     for sid in to_update:
+        wait()
         info = result_map[sid]
         record_id = existing[sid]["id"]
         body = {"order": info["order"], "comment": info["desc"]}
         if ignore_order:
             body["order"] = existing[sid]["order"]
+        print(f"  [{ok+fail+1}/{total_ops}] 更新 {sid} ...", flush=True, end=" ")
         status, resp_body = api_call(
             "PATCH",
             f"/indexes/{index_id}/related/{record_id}",
@@ -197,13 +226,16 @@ def sync(
         )
         if status == 200:
             ok += 1
+            print("OK", flush=True)
         else:
-            print(f"  更新 {sid} 失败: {status} {resp_body}", file=sys.stderr)
             fail += 1
-        time.sleep(delay)
+            print(f"失败: {status}", flush=True)
+        operations += 1
 
     for sid in to_remove_sid:
+        wait()
         record_id = existing[sid]["id"]
+        print(f"  [{ok+fail+1}/{total_ops}] 移除 {sid} ...", flush=True, end=" ")
         status, resp_body = api_call(
             "DELETE",
             f"/indexes/{index_id}/related/{record_id}",
@@ -211,10 +243,11 @@ def sync(
         )
         if status == 200:
             ok += 1
+            print("OK", flush=True)
         else:
-            print(f"  移除 {sid} 失败: {status} {resp_body}", file=sys.stderr)
             fail += 1
-        time.sleep(delay)
+            print(f"失败: {status}", flush=True)
+        operations += 1
 
     print(f"完成: {ok} 成功, {fail} 失败", flush=True)
 
@@ -223,10 +256,22 @@ def main():
     parser = argparse.ArgumentParser(description="将 CSV 同步到 Bangumi 目录")
     parser.add_argument("--index", type=int, required=True, help="Bangumi 目录 ID")
     parser.add_argument("--csv", help="CSV 文件路径（不指定则从 stdin 读取）")
+    parser.add_argument("--config", help="YAML 配置文件路径（用于检测 sort 字段决定是否忽略顺序）")
     parser.add_argument("--dry-run", action="store_true", help="仅预览，不执行")
-    parser.add_argument("--ignore-order", action="store_true", help="忽略 CSV 顺序，不修改目录条目顺序")
-    parser.add_argument("--delay", type=float, default=REQUEST_DELAY, help=f"请求间隔秒数（默认 {REQUEST_DELAY}）")
+    parser.add_argument("--ignore-order", action="store_true", help="强制忽略 CSV 顺序，不修改目录条目顺序")
+    parser.add_argument("--delay", type=float, default=REQUEST_DELAY, help=f"请求间隔秒数（默认 {REQUEST_DELAY}s，限流 3/min 时建议 ≥20s）")
     args = parser.parse_args()
+
+    ignore_order = args.ignore_order
+    if not ignore_order and args.config:
+        if not os.path.exists(args.config):
+            print(f"错误: 配置文件不存在: {args.config}", file=sys.stderr)
+            sys.exit(1)
+        with open(args.config) as f:
+            cfg = yaml.safe_load(f)
+        if cfg and "sort" not in cfg:
+            print("[自动] YAML 无 sort 字段，忽略顺序")
+            ignore_order = True
 
     token = os.environ.get("BANGUMI_TOKEN", "")
     if not token and not args.dry_run:
@@ -257,7 +302,7 @@ def main():
     print(f"列: {columns}")
     print(f"行数: {len(rows)}")
 
-    sync(args.index, cat, id_col, token, columns, rows, args.dry_run, args.ignore_order, args.delay)
+    sync(args.index, cat, id_col, token, columns, rows, args.dry_run, ignore_order, args.delay)
 
 
 if __name__ == "__main__":
