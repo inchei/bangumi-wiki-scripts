@@ -148,10 +148,12 @@ def parse_bangumi_person_jsonlines(file_path):
                       if n and n != en
                       and re.sub(r'[\s-]', '', n).translate(trans).lower() != normalized_en]
 
-                # 将别名映射到人物索引
+                # 将别名映射到人物索引（支持一对多）
                 for alias in qn:
                     if alias not in aliases:
-                        aliases[alias] = person_index
+                        aliases[alias] = []
+                    if person_index not in aliases[alias]:
+                        aliases[alias].append(person_index)
 
             except Exception as e:
                 print(f"Line {ln} error: {e}")
