@@ -247,6 +247,7 @@ func cmdServe(args []string) {
 	dataDir := "bangumi_archive"
 	listen := ":8080"
 	dbPath := ""
+	aliasesFile := ""
 	dev := false
 
 	for i := 0; i < len(args); i++ {
@@ -266,6 +267,11 @@ func cmdServe(args []string) {
 				dbPath = args[i+1]
 				i++
 			}
+		case "--aliases-file":
+			if i+1 < len(args) {
+				aliasesFile = args[i+1]
+				i++
+			}
 		case "--dev":
 			dev = true
 		}
@@ -278,11 +284,30 @@ func cmdServe(args []string) {
 			fmt.Fprintf(os.Stderr, "cwd: %v\n", err)
 			os.Exit(1)
 		}
-		startDevMode(bgqDir, dataDir, listen, dbPath)
+		startDevMode(bgqDir, dataDir, listen, dbPath, aliasesFile)
 		return
 	}
 
-	startServer(dataDir, listen, dbPath)
+	// Smart defaults
+	if dbPath == "" {
+		for _, p := range []string{"bangumi.db", filepath.Join(dataDir, "bangumi.db")} {
+			if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+				dbPath = p
+				break
+			}
+		}
+	}
+
+	if aliasesFile == "" {
+		for _, p := range []string{"../person_alias.json", "person_alias.json"} {
+			if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+				aliasesFile = p
+				break
+			}
+		}
+	}
+
+	startServer(dataDir, listen, dbPath, aliasesFile)
 }
 
 func cmdIngest(args []string) {
