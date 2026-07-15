@@ -23,13 +23,13 @@ export function showPendingEps(allUnmatched, personName, type) {
 
   const handle = document.createElement('div');
   handle.className = 'staff-tip-handle';
-  handle.innerHTML = '<strong>疑似匹配</strong><button class="bgm-mp-notify-close">&times;</button>';
+  handle.innerHTML =
+    '<strong>疑似匹配</strong><button class="bgm-mp-notify-close">&times;</button>';
 
   const content = document.createElement('div');
   content.className = 'staff-tip-content';
 
-  let html =
-    '<div class="bgm-mp-pending-header">以下剧集简介包含此名称但未定位到职位：</div>';
+  let html = '<div class="bgm-mp-pending-header">以下剧集简介包含此名称但未定位到职位：</div>';
   for (const sec of sections) {
     html += `<div class="bgm-mp-pending-item">
         <strong><a href="/subject/${sec.sid}">${sec.entry.name || '#' + sec.sid}</a></strong> ${sec.epLinks}

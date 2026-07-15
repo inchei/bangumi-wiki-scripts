@@ -55,7 +55,7 @@ styleEl.textContent = `.bgm-mp-settings {
   margin-right: 8px;
 }
 
-.bgm-mp-settings .bgm-mp-row input[type="text"] {
+.bgm-mp-settings .bgm-mp-row input[type='text'] {
   height: 32px;
   padding: 0 10px;
   border: 1px solid #e4e7ed;
@@ -70,7 +70,7 @@ styleEl.textContent = `.bgm-mp-settings {
 }
 
 .bgm-mp-settings .bgm-mp-row input:focus {
-  border-color: var(--primary-color,#f09199);
+  border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
 }
 
@@ -85,7 +85,7 @@ html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input {
 }
 
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input:focus {
-  border-color: var(--primary-color,#f09199);
+  border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 25%);
 }
 
@@ -124,7 +124,7 @@ html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input:focus {
 }
 
 .bgm-mp-select:focus {
-  border-color: var(--primary-color,#f09199);
+  border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
 }
 
@@ -141,7 +141,7 @@ html[data-theme='dark'] .bgm-mp-select {
 }
 
 html[data-theme='dark'] .bgm-mp-select:focus {
-  border-color: var(--primary-color,#f09199);
+  border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 25%);
 }
 
@@ -159,7 +159,7 @@ html[data-theme='dark'] .bgm-mp-select:focus {
 }
 
 .bgm-mp-input:focus {
-  border-color: var(--primary-color,#f09199);
+  border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
 }
 
@@ -170,7 +170,7 @@ html[data-theme='dark'] .bgm-mp-input {
 }
 
 html[data-theme='dark'] .bgm-mp-input:focus {
-  border-color: var(--primary-color,#f09199);
+  border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 25%);
 }
 /* Notification - wikiEpStaffRelate tip box style */
@@ -208,7 +208,7 @@ html[data-theme='dark'] .bgm-mp-notify {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: var(--primary-color,#f09199);
+  color: var(--primary-color, #f09199);
 }
 
 .bgm-mp-notify .staff-tip-content {
@@ -348,8 +348,8 @@ html[data-theme='dark'] .bgm-mp-btn {
 
 html[data-theme='dark'] .bgm-mp-btn:hover,
 .bgm-mp-btn:hover {
-  color: var(--primary-color,#f09199);
-  border-color: var(--primary-color,#f09199);
+  color: var(--primary-color, #f09199);
+  border-color: var(--primary-color, #f09199);
 }
 
 .bgm-mp-spinner {
@@ -358,14 +358,14 @@ html[data-theme='dark'] .bgm-mp-btn:hover,
   height: 32px;
   margin-bottom: 16px;
   border: 3px solid #e4e7ed;
-  border-top-color: var(--primary-color,#f09199);
+  border-top-color: var(--primary-color, #f09199);
   border-radius: 50%;
   animation: bgm-mp-spin 1.2s linear infinite;
 }
 
-html[data-theme="dark"] .bgm-mp-spinner {
+html[data-theme='dark'] .bgm-mp-spinner {
   border-color: #404040;
-  border-top-color: var(--primary-color,#f09199);
+  border-top-color: var(--primary-color, #f09199);
 }
 
 @keyframes bgm-mp-spin {
@@ -428,7 +428,7 @@ html[data-theme="dark"] .bgm-mp-spinner {
   color: #909399;
 }
 
-html[data-theme="dark"] .bgm-mp-name-link {
+html[data-theme='dark'] .bgm-mp-name-link {
   color: #51cf66;
 }
 
@@ -1017,10 +1017,14 @@ document.head.appendChild(styleEl);
         for (const [id, entry] of resEntries) {
           for (const pos of entry.positions || []) {
             if (position && String(pos) !== position) continue;
-            const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${id}"])`);
+            const existing = document.querySelector(
+              `#crtRelateSubjects li:has([href="/subject/${id}"])`
+            );
             if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
               none = false;
-              subjectList = [{ id: Number(id), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }];
+              subjectList = [
+                { id: Number(id), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }
+              ];
               addRelateSubject(0, "submitForm");
               document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
             }
@@ -1035,16 +1039,22 @@ document.head.appendChild(styleEl);
         btn.textContent = "\u83B7\u53D6\u4E2D\u2026\u2026";
         const alias = nameInput.value.trim();
         const targetParam = await resolveTarget(alias);
-        const res = await fetch(`${provider}/api/persons/${encodeURIComponent(alias || personName)}/missing-subjects?type=${type}&position=${position}${targetParam}`);
+        const res = await fetch(
+          `${provider}/api/persons/${encodeURIComponent(alias || personName)}/missing-subjects?type=${type}&position=${position}${targetParam}`
+        );
         const data = await res.json();
         const resEntries = Object.entries(data);
         let none = true;
         for (const [id, entry] of resEntries) {
           for (const pos of entry.positions) {
-            const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${id}"])`);
+            const existing = document.querySelector(
+              `#crtRelateSubjects li:has([href="/subject/${id}"])`
+            );
             if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
               none = false;
-              subjectList = [{ id: Number(id), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }];
+              subjectList = [
+                { id: Number(id), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }
+              ];
               addRelateSubject(0, "submitForm");
               document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
             }
@@ -1260,10 +1270,26 @@ document.head.appendChild(styleEl);
         content.innerHTML = warningHtml;
         document.querySelector("#bgm-mp-confirm-btn").onclick = () => {
           document.querySelector("#bgm-mp-confirm-btn").remove();
-          fetchAndRenderResults(personName, typeCode, provider, signal, content, existing2, targetParam);
+          fetchAndRenderResults(
+            personName,
+            typeCode,
+            provider,
+            signal,
+            content,
+            existing2,
+            targetParam
+          );
         };
       } else {
-        await fetchAndRenderResults(personName, typeCode, provider, signal, content, existing2, targetParam);
+        await fetchAndRenderResults(
+          personName,
+          typeCode,
+          provider,
+          signal,
+          content,
+          existing2,
+          targetParam
+        );
       }
     })();
   }
@@ -1343,7 +1369,9 @@ document.head.appendChild(styleEl);
           html += '<div class="bgm-mp-section-title">\u7591\u4F3C\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
           for (const [sid, entry] of unmatchedEpEntries) {
             const episodes = entry.episodes || [];
-            html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${episodes.map((ep) => `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`).join(", ")}</div>`;
+            html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${episodes.map(
+              (ep) => `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`
+            ).join(", ")}</div>`;
           }
           html += "</div>";
         }

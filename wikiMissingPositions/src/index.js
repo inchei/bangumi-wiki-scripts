@@ -26,10 +26,10 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
     tab: 'wiki_missing_positions',
     label: '缺失职位',
     type: 'custom',
-    customContent: function() {
+    customContent: function () {
       const provider = getProvider();
       const show = getShow();
-      return /* html */`
+      return /* html */ `
         <div class="bgm-mp-settings">
           <div class="bgm-mp-row">
             <label for="bgm-mp-provider">API 地址</label>
@@ -41,13 +41,13 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
           </div>
         </div>`;
     },
-    onInit: function(tabSelector, $tabContent) {
-      $tabContent.off('change', '#bgm-mp-provider').on('change', '#bgm-mp-provider', function() {
+    onInit: function (tabSelector, $tabContent) {
+      $tabContent.off('change', '#bgm-mp-provider').on('change', '#bgm-mp-provider', function () {
         saveProvider($(this).val());
       });
-      $tabContent.off('change', '#bgm-mp-show').on('change', '#bgm-mp-show', function() {
+      $tabContent.off('change', '#bgm-mp-show').on('change', '#bgm-mp-show', function () {
         saveShow(this.checked ? 'on' : 'off');
       });
-    }
+    },
   });
 }

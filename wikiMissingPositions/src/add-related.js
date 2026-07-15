@@ -28,8 +28,10 @@ async function processEpisodesData(data, queryName) {
           none = false;
           epInput.value = genAppearEps(labels);
           if (li.classList.contains('old')) {
-            li.style.background = document.documentElement.getAttribute('data-theme') === 'dark'
-              ? 'rgba(255, 248, 165, 0.08)' : 'rgba(255, 248, 165, 0.2)';
+            li.style.background =
+              document.documentElement.getAttribute('data-theme') === 'dark'
+                ? 'rgba(255, 248, 165, 0.08)'
+                : 'rgba(255, 248, 165, 0.2)';
           }
         }
       }
@@ -58,7 +60,12 @@ export async function runEpisodeCheck() {
   const targetParam = await resolveTarget(alias);
 
   const pending = getPendingData();
-  if (pending && pending.episodesData && (Object.keys(pending.episodesData.matched || {}).length || Object.keys(pending.episodesData.unmatched || {}).length)) {
+  if (
+    pending &&
+    pending.episodesData &&
+    (Object.keys(pending.episodesData.matched || {}).length ||
+      Object.keys(pending.episodesData.unmatched || {}).length)
+  ) {
     const none = await processEpisodesData(pending.episodesData, queryName);
     epBtn.textContent = none ? '未查找到任何已填写剧集' : '剧集关联完成！';
     epBtn.disabled = false;
@@ -96,11 +103,14 @@ export function initAddRelated() {
   select = document.createElement('select');
   select.className = 'bgm-mp-select';
   let posOpts = '<option value="">所有职位</option>';
-  Object.keys(POSITION_IDS[type] || {}).map(Number).sort(function (a, b) {
-    return a - b;
-  }).forEach(function (id) {
-    posOpts += `<option value="${id}">${POSITION_IDS[type][id]}</option>`;
-  });
+  Object.keys(POSITION_IDS[type] || {})
+    .map(Number)
+    .sort(function (a, b) {
+      return a - b;
+    })
+    .forEach(function (id) {
+      posOpts += `<option value="${id}">${POSITION_IDS[type][id]}</option>`;
+    });
   select.innerHTML = posOpts;
 
   const container = document.createElement('div');
@@ -128,10 +138,14 @@ export function initAddRelated() {
       for (const [id, entry] of resEntries) {
         for (const pos of entry.positions || []) {
           if (position && String(pos) !== position) continue;
-          const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${id}"])`);
+          const existing = document.querySelector(
+            `#crtRelateSubjects li:has([href="/subject/${id}"])`,
+          );
           if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
             none = false;
-            subjectList = [{ id: Number(id), type_id: type, name: entry.name, name_cn: '', url_mod: 'subject' }];
+            subjectList = [
+              { id: Number(id), type_id: type, name: entry.name, name_cn: '', url_mod: 'subject' },
+            ];
             addRelateSubject(0, 'submitForm');
             document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
           }
@@ -147,16 +161,22 @@ export function initAddRelated() {
       btn.textContent = '获取中……';
       const alias = nameInput.value.trim();
       const targetParam = await resolveTarget(alias);
-      const res = await fetch(`${provider}/api/persons/${encodeURIComponent(alias || personName)}/missing-subjects?type=${type}&position=${position}${targetParam}`);
+      const res = await fetch(
+        `${provider}/api/persons/${encodeURIComponent(alias || personName)}/missing-subjects?type=${type}&position=${position}${targetParam}`,
+      );
       const data = await res.json();
       const resEntries = Object.entries(data);
       let none = true;
       for (const [id, entry] of resEntries) {
         for (const pos of entry.positions) {
-          const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${id}"])`);
+          const existing = document.querySelector(
+            `#crtRelateSubjects li:has([href="/subject/${id}"])`,
+          );
           if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
             none = false;
-            subjectList = [{ id: Number(id), type_id: type, name: entry.name, name_cn: '', url_mod: 'subject' }];
+            subjectList = [
+              { id: Number(id), type_id: type, name: entry.name, name_cn: '', url_mod: 'subject' },
+            ];
             addRelateSubject(0, 'submitForm');
             document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
           }
