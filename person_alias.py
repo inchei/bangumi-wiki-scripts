@@ -1,3 +1,9 @@
+# /// script
+# requires-python = ">=3.9"
+# dependencies = [
+#   "bgm-tv-wiki",
+# ]
+# ///
 import json
 import re
 from bgm_tv_wiki import parse
