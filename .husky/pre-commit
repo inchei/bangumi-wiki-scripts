@@ -1,5 +1,23 @@
 #!/bin/sh
 
+bump_version() {
+  file="$1"
+  old_version=$(grep -o '@version\s\+[0-9.]\+' "$file" | awk '{print $2}')
+  if [ -z "$old_version" ]; then
+    echo "  ⚠ $file: @version not found, skip bump"
+    return
+  fi
+  last=$(echo "$old_version" | rev | cut -d. -f1 | rev)
+  prefix=$(echo "$old_version" | sed "s/\.$last$//")
+  new_version="${prefix}.$((last + 1))"
+  if [ "$OSTYPE" = "darwin"* ]; then
+    sed -i '' "s/@version\s\+$old_version/@version      $new_version/" "$file"
+  else
+    sed -i "s/@version\s\+$old_version/@version      $new_version/" "$file"
+  fi
+  echo "  🔖 $file: $old_version → $new_version"
+}
+
 GO_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$' || true)
 FE_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '^bgq/frontend/src/' || true)
 MP_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '^wikiMissingPositions/src/' || true)
@@ -21,18 +39,22 @@ if [ -n "$FE_FILES" ]; then
 fi
 
 if [ -n "$MP_FILES" ]; then
+  bump_version wikiMissingPositions/header.js
   cd wikiMissingPositions && pnpm lint && pnpm lint:css && pnpm format:check && pnpm build || exit 1
   cd ..
-  git add wikiMissingPositions/dist/wikiMissingPositions.user.js
+  git add wikiMissingPositions/header.js wikiMissingPositions/dist/wikiMissingPositions.user.js
 fi
 
 if [ -n "$PA_FILES" ]; then
+  bump_version wikiPersonAlias/wikiPersonAlias.user.js
   cd wikiPersonAlias && pnpm lint && pnpm format:check || exit 1
   cd ..
+  git add wikiPersonAlias/wikiPersonAlias.user.js
 fi
 
 if [ -n "$WB_FILES" ]; then
+  bump_version wikiBatch/header.js
   cd wikiBatch && pnpm lint && pnpm lint:css && pnpm typecheck && pnpm build || exit 1
   cd ..
-  git add wikiBatch/dist/wikiBatch.user.js
+  git add wikiBatch/header.js wikiBatch/dist/wikiBatch.user.js
 fi
