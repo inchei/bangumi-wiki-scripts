@@ -19,6 +19,7 @@ import (
 type server struct {
 	dataDir string
 	dbPath  string
+	aliases *aliasData
 }
 
 type apiQueryRequest struct {
@@ -37,7 +38,7 @@ type apiError struct {
 	Message string `json:"message,omitempty"`
 }
 
-func startServer(dataDir, listenAddr, dbPath string) {
+func startServer(dataDir, listenAddr, dbPath, aliasesFile string) {
 	// Resolve dataDir to absolute path
 	absDataDir := dataDir
 	if !strings.HasPrefix(dataDir, "/") {
@@ -54,6 +55,14 @@ func startServer(dataDir, listenAddr, dbPath string) {
 		dbPath:  dbPath,
 	}
 
+	if aliasesFile != "" {
+		var err error
+		s.aliases, err = loadAliasesFile(aliasesFile)
+		if err != nil {
+			fmt.Printf("⚠ 警告: 加载别名文件失败: %v\n", err)
+		}
+	}
+
 	mux := http.NewServeMux()
 
 	// API endpoints
@@ -62,6 +71,7 @@ func startServer(dataDir, listenAddr, dbPath string) {
 	mux.HandleFunc("/api/debug", s.handleDebug)
 	mux.HandleFunc("/api/persons/{name}/missing-subjects", s.handleCheckMissingStaff)
 	mux.HandleFunc("/api/persons/{name}/missing-episodes", s.handleMissingEpisodes)
+	mux.HandleFunc("/api/aliases/{alias}", s.handleAliases)
 
 	mux.HandleFunc("/sitemap.xml", s.handleSitemap)
 	mux.HandleFunc("/", s.handleStatic)
@@ -90,6 +100,14 @@ func startServer(dataDir, listenAddr, dbPath string) {
 		fmt.Printf("  ⚠ 未找到")
 	}
 	fmt.Println()
+	if aliasesFile != "" {
+		aliasesOK := s.aliases != nil
+		fmt.Printf("  Aliases:  %s", aliasesFile)
+		if !aliasesOK {
+			fmt.Printf("  ⚠ 加载失败")
+		}
+		fmt.Println()
+	}
 	fmt.Printf("\n  按 Ctrl+C 停止服务器\n\n")
 
 	server := &http.Server{

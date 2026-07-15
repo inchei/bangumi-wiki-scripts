@@ -210,6 +210,39 @@ curl "http://localhost:8080/api/persons/川原砾/missing-episodes"
 }
 ```
 
+### 人物别名查询
+
+根据名称（别名、中文名）查找对应的人物 ID，配合 wikiMissingPositions 等脚本使用。
+
+HTTP 接口（serve 后）：
+
+```bash
+# 启动时加载别名数据
+./bin/bgq serve --db ./bangumi.db --aliases-file ./person_alias.json
+
+curl "http://localhost:8080/api/aliases/斧谷稔"
+```
+
+```json
+[
+  { "name": "富野由悠季", "id": 613 }
+]
+```
+
+别名数据由 `person_alias.py` 生成（需 `uv`）：
+
+```bash
+uv run person_alias.py
+```
+
+每周自动更新别名数据：
+
+```bash
+(crontab -l 2>/dev/null; echo "0 4 * * 1 cd $(pwd) && bash bgq/download-archive.sh ./bangumi_archive && uv run person_alias.py") | crontab -
+```
+
+Aliases 文件路径通过 `--aliases-file` 参数指定，bgq 启动时一次性加载到内存。
+
 ## 开发
 
 见 [CONTRIBUTING.md](CONTRIBUTING.md)。
