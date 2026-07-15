@@ -27,6 +27,15 @@
 
 [文档](wikiBatch/README.md)
 
+### wikiPersonAlias
+
+用户脚本，将 `person_alias.json.gz` 导入 IndexedDB，提供 `window.personAliasQuery` / `window.personAliasQueryAll` 接口供其他脚本本地查询人物别名。
+
+- 支持远程更新（GitHub Releases）和本地 `.json.gz` 导入
+- 别名查询优先使用 bgq API，此脚本作为离线 fallback
+
+安装：<https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/wikiPersonAlias/wikiPersonAlias.user.js>
+
 ### wikiMissingPositions
 
 用户脚本，在条目页和人物关联页一键补完已填写但未关联的 STAFF。
@@ -43,10 +52,12 @@
 
 ## Python 脚本
 
+使用 uv 进行依赖管理，运行脚本使用 `uv run script.py`。
+
 | 脚本 | 说明 |
 |------|------|
 | [find_duplicate_isbns.py](find_duplicate_isbns.py) | 查找重复 ISBN 的条目（限 9784 开头的日本出版物） |
-| [person_alias.py](person_alias.py) | 生成人物别名 JSON 数据 |
+| [person_alias.py](person_alias.py) | 生成人物别名 JSON 数据（一对多映射），供 bgq API 或 wikiPersonAlias 脚本使用 |
 | [check_volume_order.py](check_volume_order.py) | 检查单行本卷序一致性 |
 
 ## GitHub Actions
