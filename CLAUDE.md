@@ -8,9 +8,10 @@ This is a monorepo for [Bangumi](https://bgm.tv) wiki automation:
 
 1. **`bgq/`** — Go CLI + Web UI for high-performance subject filtering via DuckDB SQL
 2. **`wikiBatch/`** — Tampermonkey userscript for batch wiki editing on next.bgm.tv
-3. **`wikiMissingPositions/`** — Tampermonkey userscript for pre-creating persons and one-click completion of missing staff/episode associations
-4. **Root** — Python scripts for duplicate ISBN detection, archive download, CI automation
-5. **`filters/`** — YAML filter configs executed by bgq in CI, results uploaded to GitHub Releases
+3. **`wikiPersonAlias/`** — Tampermonkey userscript for person alias lookup via IndexedDB (provides `window.personAliasQuery` / `window.personAliasQueryAll`)
+4. **`wikiMissingPositions/`** — Tampermonkey userscript for pre-creating persons and one-click completion of missing staff/episode associations
+5. **Root** — Python scripts for duplicate ISBN detection, archive download, CI automation
+6. **`filters/`** — YAML filter configs executed by bgq in CI, results uploaded to GitHub Releases
 
 bgq CSV output feeds directly into wikiBatch for batch editing.
 
@@ -37,6 +38,7 @@ golangci-lint run ./...                    # Lint
 
 ./bin/bgq query --config query.yaml --data-dir ./bangumi_archive
 ./bin/bgq serve --data-dir ./bangumi_archive --listen :8080
+./bin/bgq serve --data-dir ./bangumi_archive --db bangumi.db --aliases-file person_alias.json
 ./bin/bgq serve --dev                      # Hot reload (Air)
 ./bin/bgq missing subjects "川原砾" --type 1
 ./bin/bgq missing episodes "川原砾"
@@ -56,10 +58,13 @@ pnpm lint:css                              # Stylelint (CSS/Svelte styles)
 pnpm lint:css:fix                          # Stylelint auto-fix
 pnpm format                                # Prettier format
 pnpm format:check                          # Check formatting (CI)
-# After modifying frontend code, run pnpm lint && pnpm lint:css && pnpm format:check before committing
 # Pre-commit hook (.husky/pre-commit) runs automatically:
-#   - Go files: gofmt + go vet + go test (builder tests only)
-#   - Frontend files: lint-staged (ESLint + Stylelint + Prettier)
+#   - Go files: gofmt + go vet + golangci-lint + go test
+#   - wikiMissingPositions: bump version (header.js) → eslint + stylelint + prettier + build (auto-adds dist/)
+#   - wikiPersonAlias: bump version → eslint + prettier
+#   - wikiBatch: bump version (header.js) → eslint + stylelint + typecheck + build (auto-adds dist/)
+#   - Frontend (bgq): lint-staged (ESLint + Stylelint + Prettier)
+# Setup: git config core.hooksPath .husky (run once after clone)
 ```
 
 ### DuckDB CLI (runtime dependency)
@@ -84,6 +89,7 @@ bgq/
 │   │   ├── missing_subjects_test.go  # Tests for buildCheckSQL SQL generation
 │   │   ├── missing_episodes.go       # Missing episodes (staff) check logic + HTTP handler
 │   │   ├── missing_episodes_test.go  # Tests for expandAppearEps, epLabel, resolveOverlaps, etc.
+│   │   ├── aliases.go                # Person alias lookup endpoint (/api/aliases/{alias})
 │   │   ├── server.go                 # HTTP server + API handlers
 │   │   └── dev.go                    # Air hot-reload dev mode
 │   └── gen-model/
@@ -185,6 +191,7 @@ Sub-filter modes: `any` (exists), `all` (universal), `none` (negation), `count` 
 - `GET /api/debug` — DuckDB/data diagnostics
 - `GET /api/persons/{name}/missing-subjects?type=<type>&position=<pos>` — find subjects missing a person's staff entry for given positions
 - `GET /api/persons/{name}/missing-episodes` — find episodes whose description mentions a person but lack a corresponding staff entry
+- `GET /api/aliases/{alias}` — returns `[{name, id}, ...]` array of all persons with the given alias (requires `--aliases-file` at startup; serves as backend for `wikiPersonAlias` userscript and `wikiMissingPositions`)
 - `/` — embedded SPA; static files (images, CSS) served from embedded `dist/`
 
 ## Filters (`filters/`)
@@ -235,13 +242,26 @@ Examples: `feat: add new feature`, `fix: resolve bug`, `docs: update readme`.
 - `bgq/cmd/bgq/missing_subjects_test.go` — Tests for `buildCheckSQL` SQL generation
 - `bgq/cmd/bgq/missing_episodes.go` — Missing episodes check: `handleMissingEpisodes` + position matching + episode label helpers
 - `bgq/cmd/bgq/missing_episodes_test.go` — Tests for `expandAppearEps`, `epLabel`, `resolveOverlaps`, `buildEpPositionTable`
+- `bgq/cmd/bgq/aliases.go` — Person alias lookup handler: `handleAliases`, `normalizeAlias`, `loadAliasesFile`
 - `bgq/cmd/bgq/interactive.go` — Interactive REPL (shared parser with web API)
-- `bgq/cmd/bgq/server.go` — HTTP server + API handlers
+- `bgq/cmd/bgq/server.go` — HTTP server + API handlers (including aliases loading from `--aliases-file`)
 - `bgq/internal/server/webui.go` — Embedded static files via `//go:embed dist/*`
 - `bgq/frontend/src/schema-data.js` — Auto-generated schema constants (platforms, relations, positions, meta tags)
 - `bgq/frontend/src/stores.js` — Frontend global state (filters, conditions, logic tree)
 - `wikiMissingPositions/` — Pre-create person / one-click completion userscript
+- `wikiPersonAlias/` — Person alias IndexedDB lookup userscript (provides `window.personAliasQuery/QueryAll`)
 - `wikiBatch/` — Batch wiki editor userscript (completely separate from wikiMissingPositions)
+
+## Person Alias System
+
+`person_alias.py` generates `person_alias.json` (uploaded to GitHub Releases `data-latest`), which maps normalized aliases to person indices (one-to-many since the multi-result update). This data is consumed by:
+
+1. **`wikiPersonAlias.user.js`** — Tampermonkey userscript that loads the `.json.gz` file into IndexedDB and exposes `window.personAliasQuery(name)` (single result, with GM.notification on multi-match) and `window.personAliasQueryAll(name)` (full array).
+2. **`GET /api/aliases/{alias}`** (bgq) — Server-side endpoint that loads `person_alias.json` at startup via `--aliases-file`. Clients (wikiMissingPositions, wikiEpStaffRelate) query this **API first** (server auto-updates), falling back to `window.personAlias*` only if the API is unavailable.
+
+Normalization: strip spaces/hyphens, narrow kana→hiragana (U+FF66-U+FF9D), fullwidth letters→halfwidth (U+FF21-U+FF5A), fullwidth katakana→hiragana (U+30A1-U+30F6), lowercase. Identical across Python/Go/JS.
+
+`person_alias.py` uses PEP 723 inline script metadata — run via `uv run person_alias.py` (no venv setup needed).
 
 ## Docker
 
