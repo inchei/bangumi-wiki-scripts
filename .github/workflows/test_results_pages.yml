@@ -24,7 +24,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.10'
-      - run: pip install pyyaml requests beautifulsoup4 bgm-tv-wiki
+
+      - uses: astral-sh/setup-uv@v5
 
       - uses: actions/setup-go@v6
         with:
@@ -48,7 +49,7 @@ jobs:
         run: bash bgq/download-archive.sh bangumi_archive
 
       - name: 检查重复条目
-        run: python find_duplicate_isbns.py
+        run: uv run find_duplicate_isbns.py
 
       - name: 执行筛选查询
         env:
@@ -92,7 +93,7 @@ jobs:
           echo "  筛选完成: ${success} 成功, ${fail} 失败"
 
       - name: 转换为 HTML
-        run: python .github/scripts/results_to_html.py
+        run: uv run .github/scripts/results_to_html.py
 
       - uses: actions/configure-pages@v5
 
