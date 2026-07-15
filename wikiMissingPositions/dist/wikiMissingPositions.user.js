@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.1.1
+// @version      0.1.2
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -1118,13 +1118,29 @@ document.head.appendChild(styleEl);
 
   // src/person.js
   async function checkExistingPerson(personName) {
-    const result = { aliased: null, directMatch: null };
+    const result = { aliased: null, directMatch: null, aliasedMulti: null };
     try {
-      const [aliased, searchResults] = await Promise.all([
-        window.personAliasQuery?.(personName),
-        searchPrsn(personName)
-      ]);
+      let aliased = null;
+      const provider = getProvider();
+      try {
+        const res = await fetch(`${provider}/api/aliases/${encodeURIComponent(personName)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            aliased = data[0];
+            if (data.length > 1) {
+              result.aliasedMulti = data;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("aliases API failed:", e);
+      }
+      if (!aliased) {
+        aliased = await window.personAliasQuery?.(personName);
+      }
       if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
+      const searchResults = await searchPrsn(personName);
       const first = searchResults?.[0];
       if (first && normalize(personName) === normalize(first.name)) {
         result.directMatch = { name: first.name, id: first.id };
@@ -1261,7 +1277,15 @@ document.head.appendChild(styleEl);
       if (hasExisting) {
         let warningHtml = "";
         if (existing2.aliased) {
-          warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u7684\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.aliased.id}" target="_blank">${existing2.aliased.name}</a></div>`;
+          if (existing2.aliasedMulti && existing2.aliasedMulti.length > 1) {
+            warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u5339\u914D\u5230\u591A\u4E2A\u4EBA\u7269\uFF0C\u5DF2\u53D6\u7B2C\u4E00\u4E2A\uFF1A</div>`;
+            for (const p of existing2.aliasedMulti) {
+              warningHtml += `<a class="l" href="/person/${p.id}" target="_blank">${p.name}</a> `;
+            }
+            warningHtml += "</div>";
+          } else {
+            warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u7684\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.aliased.id}" target="_blank">${existing2.aliased.name}</a></div>`;
+          }
         }
         if (existing2.directMatch) {
           warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u540C\u540D\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.directMatch.id}" target="_blank">${existing2.directMatch.name}</a></div>`;

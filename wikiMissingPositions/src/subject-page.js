@@ -167,7 +167,15 @@ export function openSubjectPopup(personName, typeCode) {
     if (hasExisting) {
       let warningHtml = '';
       if (existing.aliased) {
-        warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">别名为「${personName}」的人物已存在：</div><a class="l" href="/person/${existing.aliased.id}" target="_blank">${existing.aliased.name}</a></div>`;
+        if (existing.aliasedMulti && existing.aliasedMulti.length > 1) {
+          warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">别名为「${personName}」匹配到多个人物，已取第一个：</div>`;
+          for (const p of existing.aliasedMulti) {
+            warningHtml += `<a class="l" href="/person/${p.id}" target="_blank">${p.name}</a> `;
+          }
+          warningHtml += '</div>';
+        } else {
+          warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">别名为「${personName}」的人物已存在：</div><a class="l" href="/person/${existing.aliased.id}" target="_blank">${existing.aliased.name}</a></div>`;
+        }
       }
       if (existing.directMatch) {
         warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">同名人物已存在：</div><a class="l" href="/person/${existing.directMatch.id}" target="_blank">${existing.directMatch.name}</a></div>`;
