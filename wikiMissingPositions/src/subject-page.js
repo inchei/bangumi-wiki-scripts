@@ -69,13 +69,17 @@ export function initSubjectPage() {
       );
       const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT, {
         acceptNode: (node) =>
-          node.parentElement.closest('a, .tip') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT,
+          node.parentElement.closest('a, .tip')
+            ? NodeFilter.FILTER_REJECT
+            : NodeFilter.FILTER_ACCEPT,
       });
       const tNodes = [];
       while (walker.nextNode()) tNodes.push(walker.currentNode);
       for (const node of tNodes) {
-        const html = node.textContent.replace(nameRE, (_, name, p3) =>
-          `<a class="bgm-mp-name bgm-mp-name-link" data-name="${name}">${name}</a>${p3}`,
+        const html = node.textContent.replace(
+          nameRE,
+          (_, name, p3) =>
+            `<a class="bgm-mp-name bgm-mp-name-link" data-name="${name}">${name}</a>${p3}`,
         );
         if (html !== node.textContent) {
           const span = document.createElement('span');
@@ -173,15 +177,39 @@ export function openSubjectPopup(personName, typeCode) {
 
       document.querySelector('#bgm-mp-confirm-btn').onclick = () => {
         document.querySelector('#bgm-mp-confirm-btn').remove();
-        fetchAndRenderResults(personName, typeCode, provider, signal, content, existing, targetParam);
+        fetchAndRenderResults(
+          personName,
+          typeCode,
+          provider,
+          signal,
+          content,
+          existing,
+          targetParam,
+        );
       };
     } else {
-      await fetchAndRenderResults(personName, typeCode, provider, signal, content, existing, targetParam);
+      await fetchAndRenderResults(
+        personName,
+        typeCode,
+        provider,
+        signal,
+        content,
+        existing,
+        targetParam,
+      );
     }
   })();
 }
 
-async function fetchAndRenderResults(personName, typeCode, provider, signal, content, existing, targetParam) {
+async function fetchAndRenderResults(
+  personName,
+  typeCode,
+  provider,
+  signal,
+  content,
+  existing,
+  targetParam,
+) {
   const typeParam = typeCode ? `?type=${typeCode}` : '';
   const encodedName = encodeURIComponent(personName);
 
@@ -228,12 +256,17 @@ async function fetchAndRenderResults(personName, typeCode, provider, signal, con
 
   const hasNetworkError = subjectsData === null;
   const subjEntries = hasNetworkError ? [] : Object.entries(subjectsData || {});
-  const hasData = subjEntries.length || (episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length));
+  const hasData =
+    subjEntries.length ||
+    (episodesData &&
+      (Object.keys(episodesData.matched || {}).length ||
+        Object.keys(episodesData.unmatched || {}).length));
 
   let html = '';
 
   if (hasNetworkError) {
-    html = '<div class="staff-error-section"><div class="staff-error-title">获取失败，请检查API地址或网络</div></div>';
+    html =
+      '<div class="staff-error-section"><div class="staff-error-title">获取失败，请检查API地址或网络</div></div>';
   } else if (!hasData) {
     html = '<div class="bgm-mp-empty-hint">未找到缺失关联</div>';
   } else {
@@ -269,9 +302,12 @@ async function fetchAndRenderResults(personName, typeCode, provider, signal, con
         html += '<div class="bgm-mp-section-title">疑似缺失剧集关联：</div>';
         for (const [sid, entry] of unmatchedEpEntries) {
           const episodes = entry.episodes || [];
-          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${
-            episodes.map((ep) => `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`).join(', ')
-          }</div>`;
+          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${episodes
+            .map(
+              (ep) =>
+                `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`,
+            )
+            .join(', ')}</div>`;
         }
         html += '</div>';
       }
@@ -308,7 +344,9 @@ export function initPersonNewPage() {
     const data = JSON.parse(raw);
     const input = document.querySelector('#crt_name');
     if (input && data.personName) input.value = data.personName;
-  } catch (_e) { /* ignore */ }
+  } catch (_e) {
+    /* ignore */
+  }
 }
 
 export function initPersonPage() {
@@ -321,7 +359,9 @@ export function initPersonPage() {
     const typeExt = { 1: 'book', 2: 'anime', 3: 'music', 4: 'game', 6: 'real' }[data.typeCode];
     if (!typeExt) return;
     location.href = `/person/${personId}/add_related/${typeExt}`;
-  } catch (_e) { /* ignore */ }
+  } catch (_e) {
+    /* ignore */
+  }
 }
 
 let _pendingData = null;
