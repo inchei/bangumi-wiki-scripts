@@ -143,7 +143,10 @@ def parse_bangumi_person_jsonlines(file_path):
                 })
 
                 # 最终归一化列表推导
-                qn = [re.sub(r'[\s-]', '', n).translate(trans).lower() for n in qn if n and n != en]
+                normalized_en = re.sub(r'[\s-]', '', en).translate(trans).lower()
+                qn = [re.sub(r'[\s-]', '', n).translate(trans).lower() for n in qn
+                      if n and n != en
+                      and re.sub(r'[\s-]', '', n).translate(trans).lower() != normalized_en]
 
                 # 将别名映射到人物索引
                 for alias in qn:
