@@ -235,10 +235,12 @@ curl "http://localhost:8080/api/aliases/斧谷稔"
 uv run person_alias.py
 ```
 
-每周自动更新别名数据：
+`serve` 从 `bgq/` 启动时自动检测 `../person_alias.json`。
+
+每周自动更新数据库和别名数据：
 
 ```bash
-(crontab -l 2>/dev/null; echo "0 4 * * 1 cd $(pwd) && bash bgq/download-archive.sh ./bangumi_archive && uv run person_alias.py") | crontab -
+(crontab -l 2>/dev/null; echo "0 4 * * 1 cd $(pwd) && ./download-archive.sh ./bangumi_archive && ./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db.tmp && mv ./bangumi.db.tmp ./bangumi.db") && uv run ../person_alias.py") | crontab -
 ```
 
 Aliases 文件路径通过 `--aliases-file` 参数指定，bgq 启动时一次性加载到内存。

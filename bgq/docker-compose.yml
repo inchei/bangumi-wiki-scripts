@@ -1,11 +1,13 @@
 services:
   bgq:
-    build: .
+    build:
+      context: ..
+      dockerfile: bgq/Dockerfile
     env_file: .env
     ports:
       - "${PORT:-7860}:${PORT:-7860}"
     volumes:
-      - bgq-data:/data/bangumi_archive
+      - bgq-data:/data
     restart: always
 
 volumes:
