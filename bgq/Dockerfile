@@ -27,7 +27,8 @@ COPY --from=builder /app/bin/bgq /usr/local/bin/bgq
 COPY person_alias.py /
 COPY bgq/download-archive.sh /download-archive.sh
 COPY bgq/docker-entrypoint.sh /entrypoint.sh
-RUN chmod +x /download-archive.sh /entrypoint.sh
+COPY bgq/update-data.sh /update-data.sh
+RUN chmod +x /download-archive.sh /entrypoint.sh /update-data.sh
 ENV DUCKDB_PATH=/usr/local/bin/duckdb
 ENV PATH="/root/.local/bin:${PATH}"
 CMD ["/entrypoint.sh"]
