@@ -17,9 +17,10 @@ import (
 )
 
 type server struct {
-	dataDir string
-	dbPath  string
-	aliases *aliasData
+	dataDir     string
+	dbPath      string
+	aliases     *aliasData
+	aliasesFile string
 }
 
 type apiQueryRequest struct {
@@ -51,8 +52,9 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string) {
 	}
 
 	s := &server{
-		dataDir: dataDir,
-		dbPath:  dbPath,
+		dataDir:     dataDir,
+		dbPath:      dbPath,
+		aliasesFile: aliasesFile,
 	}
 
 	if aliasesFile != "" {

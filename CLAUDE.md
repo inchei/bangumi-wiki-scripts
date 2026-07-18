@@ -257,7 +257,7 @@ Examples: `feat: add new feature`, `fix: resolve bug`, `docs: update readme`.
 `person_alias.py` generates `person_alias.json` (uploaded to GitHub Releases `data-latest`), which maps normalized aliases to person indices (one-to-many since the multi-result update). This data is consumed by:
 
 1. **`wikiPersonAlias.user.js`** — Tampermonkey userscript that loads the `.json.gz` file into IndexedDB and exposes `window.personAliasQuery(name)` (single result, with GM.notification on multi-match) and `window.personAliasQueryAll(name)` (full array).
-2. **`GET /api/aliases/{alias}`** (bgq) — Server-side endpoint that loads `person_alias.json` at startup via `--aliases-file`. Clients (wikiMissingPositions, wikiEpStaffRelate) query this **API first** (server auto-updates), falling back to `window.personAlias*` only if the API is unavailable.
+2. **`GET /api/aliases/{alias}`** (bgq) — Server-side endpoint that loads `person_alias.json` via `--aliases-file`. Auto-detects `../person_alias.json` and `./person_alias.json`. Hot-reloads on file change (checks mtime per request). Clients (wikiMissingPositions, wikiEpStaffRelate) query this **API first**, falling back to `window.personAlias*`.
 
 Normalization: strip spaces/hyphens, narrow kana→hiragana (U+FF66-U+FF9D), fullwidth letters→halfwidth (U+FF21-U+FF5A), fullwidth katakana→hiragana (U+30A1-U+30F6), lowercase. Identical across Python/Go/JS.
 
@@ -267,8 +267,9 @@ Normalization: strip spaces/hyphens, narrow kana→hiragana (U+FF66-U+FF9D), ful
 
 ```bash
 cd bgq
-docker build -t bgq .
-docker run -p 7860:7860 -v bgq-data:/data bgq
+docker compose up -d --build
 ```
 
-Dockerfile builds frontend and Go binary in separate stages. Entrypoint auto-downloads archive data on first run. `DATA_DIR` env var defaults to `/data/bangumi_archive`.
+Build context is the repo root (configured via `docker-compose.yml`), so `person_alias.py` can be copied without duplication. `.dockerignore` at repo root excludes large files (`bangumi_archive`, `node_modules`, `*.db`, etc.).
+
+Dockerfile builds frontend and Go binary in separate stages. Entrypoint auto-downloads archive data and generates `person_alias.json` (via `uv run`) on first run. Volume is `/data` (persists both archive and aliases JSON). `DATA_DIR` env var defaults to `/data/bangumi_archive`.
