@@ -17,10 +17,38 @@ cd bgq
 
 或从 https://github.com/bangumi/Archive/releases/tag/archive 手动下载。
 
-每周自动更新数据：
+## 定时更新（cron）
+
+### 前置：准备必要文件
+
+GitHub Releases 二进制包只含 `bgq` + `duckdb`，设置 cron 前还需要：
 
 ```bash
-(crontab -l 2>/dev/null; echo "0 3 * * 1 $(pwd)/download-archive.sh $(pwd)/bangumi_archive") | crontab -
+# download-archive.sh — 下载最新 Archive 数据
+curl -O https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/bgq/download-archive.sh
+chmod +x download-archive.sh
+
+# person_alias.py — 生成人物别名 JSON
+curl -O https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/person_alias.py
+
+# uv — 运行 person_alias.py（无需安装 Python）
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+### 仅更新 Archive 数据
+
+每周自动下载最新数据：
+
+```bash
+(crontab -l 2>/dev/null; echo "0 3 * * 1 cd $(pwd) && bash download-archive.sh ./bangumi_archive") | crontab -
+```
+
+### 更新数据 + 重建数据库 + 更新别名
+
+推荐组合 cron（周一凌晨 3 点执行）：
+
+```bash
+(crontab -l 2>/dev/null; echo "0 3 * * 1 cd $(pwd) && bash download-archive.sh ./bangumi_archive && ./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db.tmp && mv ./bangumi.db.tmp ./bangumi.db && uv run person_alias.py") | crontab -
 ```
 
 ## 安装
@@ -96,11 +124,7 @@ YAML 格式说明见 [YAML 筛选条件参考](docs/yaml-guide.md)。
 ./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
 ```
 
-每周自动更新数据并重建数据库：
-
-```bash
-(crontab -l 2>/dev/null; echo "0 3 * * 1 cd $(pwd) && ./download-archive.sh ./bangumi_archive && ./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db.tmp && mv ./bangumi.db.tmp ./bangumi.db") | crontab -
-```
+（详见顶部 [定时更新](#定时更新cron) 的 cron 示例）
 
 命令行查询时在配置文件中用 `database` 替代 `data_dir`：
 
@@ -235,13 +259,9 @@ curl "http://localhost:8080/api/aliases/斧谷稔"
 uv run person_alias.py
 ```
 
-`serve` 从 `bgq/` 启动时自动检测 `../person_alias.json`。
+生成的 `person_alias.json` 在仓库根目录，`serve` 从 `bgq/` 启动时自动检测 `../person_alias.json`。`serve` 运行后文件更新自动热加载，无需重启。
 
-每周自动更新数据库和别名数据：
-
-```bash
-(crontab -l 2>/dev/null; echo "0 4 * * 1 cd $(pwd) && ./download-archive.sh ./bangumi_archive && ./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db.tmp && mv ./bangumi.db.tmp ./bangumi.db") && uv run ../person_alias.py") | crontab -
-```
+（详见顶部 [定时更新](#定时更新cron) 的 cron 示例）
 
 Aliases 文件路径通过 `--aliases-file` 参数指定，bgq 启动时一次性加载到内存。
 
