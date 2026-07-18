@@ -11,44 +11,61 @@
 ## 准备数据
 
 ```bash
-cd bgq
+chmod +x download-archive.sh
 ./download-archive.sh ./bangumi_archive
 ```
 
 或从 https://github.com/bangumi/Archive/releases/tag/archive 手动下载。
 
-## 定时更新（cron）
+## 数据更新
 
-### 前置：准备必要文件
+### 前提
 
-GitHub Releases 二进制包只含 `bgq` + `duckdb`，设置 cron 前还需要：
+若使用 GitHub Releases 二进制包，由于只含 `bgq` + `duckdb`，设置 cron 前还需满足以下条件：
 
 ```bash
-# download-archive.sh — 下载最新 Archive 数据
+# download-archive.sh
 curl -O https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/bgq/download-archive.sh
 chmod +x download-archive.sh
+```
 
-# person_alias.py — 生成人物别名 JSON
+如需更新别名（见[下文](#人物别名查询)），还需以下条件：
+
+```bash
+# person_alias.py
 curl -O https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/person_alias.py
 
-# uv — 运行 person_alias.py（无需安装 Python）
+# uv
 curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
 
-### 仅更新 Archive 数据
+自编译请注意 `person_alias.py` 默认路径为项目根目录而非 `bgq` 下。
 
-每周自动下载最新数据：
+### cron 配置
+
+仅更新 Archive 数据：
 
 ```bash
 (crontab -l 2>/dev/null; echo "0 3 * * 1 cd $(pwd) && bash download-archive.sh ./bangumi_archive") | crontab -
 ```
 
-### 更新数据 + 重建数据库 + 更新别名
+更新数据 + 重建数据库：
+```bash
+(crontab -l 2>/dev/null; echo "0 3 * * 1 cd $(pwd) && bash download-archive.sh ./bangumi_archive && ./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db.tmp && mv ./bangumi.db.tmp ./bangumi.db") | crontab -
+```
 
-推荐组合 cron（周一凌晨 3 点执行）：
+更新数据 + 重建数据库 + 更新别名：
 
 ```bash
 (crontab -l 2>/dev/null; echo "0 3 * * 1 cd $(pwd) && bash download-archive.sh ./bangumi_archive && ./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db.tmp && mv ./bangumi.db.tmp ./bangumi.db && uv run person_alias.py") | crontab -
+```
+
+### Docker
+
+容器内已包含更新脚本，无需重启即可更新数据：
+
+```bash
+(crontab -l 2>/dev/null; echo "0 3 * * 1 docker compose -f $(pwd)/docker-compose.yml exec bgq /update-data.sh") | crontab -
 ```
 
 ## 安装
@@ -72,7 +89,7 @@ curl -L https://github.com/duckdb/duckdb/releases/download/v1.2.0/duckdb_cli-lin
 unzip duckdb.zip -d bin/
 ```
 
-## 部署 Web 界面
+## Docker 部署
 
 ```bash
 cd bgq
@@ -80,7 +97,7 @@ cp .env.example .env   # 按需编辑
 docker-compose up -d --build
 ```
 
-访问 `http://localhost:7860`。首次运行自动下载数据到卷中，后续数据更新可参考准备数据一节。
+默认访问 `http://localhost:7860`。首次运行自动下载数据到卷中，后续数据更新可参考[数据更新](#数据更新)。
 
 ## 使用
 
@@ -123,8 +140,6 @@ YAML 格式说明见 [YAML 筛选条件参考](docs/yaml-guide.md)。
 ```bash
 ./bin/bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
 ```
-
-（详见顶部 [定时更新](#定时更新cron) 的 cron 示例）
 
 命令行查询时在配置文件中用 `database` 替代 `data_dir`：
 
@@ -253,17 +268,13 @@ curl "http://localhost:8080/api/aliases/斧谷稔"
 ]
 ```
 
-别名数据由 `person_alias.py` 生成（需 `uv`）：
+别名数据由 `../person_alias.py` 生成（需 `uv`）：
 
 ```bash
 uv run person_alias.py
 ```
 
-生成的 `person_alias.json` 在仓库根目录，`serve` 从 `bgq/` 启动时自动检测 `../person_alias.json`。`serve` 运行后文件更新自动热加载，无需重启。
-
-（详见顶部 [定时更新](#定时更新cron) 的 cron 示例）
-
-Aliases 文件路径通过 `--aliases-file` 参数指定，bgq 启动时一次性加载到内存。
+`serve` 从 `bgq/` 启动时自动检测 `../person_alias.json` 和 `./person_alias.json`。
 
 ## 开发
 
