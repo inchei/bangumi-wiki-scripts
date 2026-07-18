@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
+	"time"
 )
 
 type personAliasEntry struct {
@@ -17,7 +19,10 @@ type personAliasEntry struct {
 type aliasData struct {
 	persons []personAliasEntry
 	aliases map[string][]int
+	modTime time.Time
 }
+
+var aliasesReloadMu sync.Mutex
 
 func loadAliasesFile(path string) (*aliasData, error) {
 	f, err := os.Open(path)
@@ -25,6 +30,11 @@ func loadAliasesFile(path string) (*aliasData, error) {
 		return nil, fmt.Errorf("打开 aliases 文件失败: %w", err)
 	}
 	defer func() { _ = f.Close() }()
+
+	fi, err := f.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("获取 aliases 文件状态失败: %w", err)
+	}
 
 	var raw []any
 	if err := json.NewDecoder(f).Decode(&raw); err != nil {
@@ -71,7 +81,7 @@ func loadAliasesFile(path string) (*aliasData, error) {
 	}
 
 	log.Printf("已加载 %d 个别名，映射到 %d 个人物", len(aliases), len(persons))
-	return &aliasData{persons: persons, aliases: aliases}, nil
+	return &aliasData{persons: persons, aliases: aliases, modTime: fi.ModTime()}, nil
 }
 
 func normalizeAlias(name string) string {
@@ -93,13 +103,43 @@ func normalizeAlias(name string) string {
 	return strings.ToLower(buf.String())
 }
 
+func (s *server) reloadAliasesIfStale() {
+	if s.aliasesFile == "" || s.aliases == nil {
+		return
+	}
+	fi, err := os.Stat(s.aliasesFile)
+	if err != nil {
+		return
+	}
+	if !fi.ModTime().After(s.aliases.modTime) {
+		return
+	}
+	aliasesReloadMu.Lock()
+	defer aliasesReloadMu.Unlock()
+	// double-check after acquiring lock
+	if fi, err := os.Stat(s.aliasesFile); err != nil || !fi.ModTime().After(s.aliases.modTime) {
+		return
+	}
+	ad, err := loadAliasesFile(s.aliasesFile)
+	if err != nil {
+		log.Printf("⚠ 热加载别名文件失败: %v", err)
+		return
+	}
+	s.aliases = ad
+}
+
 func (s *server) handleAliases(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		writeJSON(w, http.StatusMethodNotAllowed, apiError{Error: "只支持GET请求"})
 		return
 	}
 
-	if s.aliases == nil {
+	s.reloadAliasesIfStale()
+	aliasesReloadMu.Lock()
+	ad := s.aliases
+	aliasesReloadMu.Unlock()
+
+	if ad == nil {
 		writeJSON(w, http.StatusServiceUnavailable, apiError{Error: "别名数据未加载，请使用 --aliases-file 参数指定 person_alias.json 文件"})
 		return
 	}
@@ -111,7 +151,7 @@ func (s *server) handleAliases(w http.ResponseWriter, r *http.Request) {
 	}
 
 	key := normalizeAlias(alias)
-	indices, ok := s.aliases.aliases[key]
+	indices, ok := ad.aliases[key]
 	if !ok {
 		writeJSON(w, http.StatusOK, []personAliasEntry{})
 		return
@@ -119,8 +159,8 @@ func (s *server) handleAliases(w http.ResponseWriter, r *http.Request) {
 
 	result := make([]personAliasEntry, 0, len(indices))
 	for _, idx := range indices {
-		if idx >= 0 && idx < len(s.aliases.persons) {
-			entry := s.aliases.persons[idx]
+		if idx >= 0 && idx < len(ad.persons) {
+			entry := ad.persons[idx]
 			if entry.Name != "" {
 				result = append(result, entry)
 			}
