@@ -1,6 +1,0 @@
-bin/
-bangumi_archive/
-frontend/node_modules/
-frontend/dist/
-tmp/
-*.db
