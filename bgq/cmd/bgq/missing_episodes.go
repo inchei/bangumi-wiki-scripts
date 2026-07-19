@@ -225,6 +225,7 @@ SELECT e.episode_id, e.subject_id, s.name AS subject_name, e.sort, e.type, e.des
 FROM episodes e
 JOIN subjects s ON e.subject_id = s.id
 WHERE e.disc = 0
+  AND s.type = 2
   AND REPLACE(REPLACE(e.description, '　', ''), ' ', '')
         LIKE '%%' || REPLACE(REPLACE('%s', '　', ''), ' ', '') || '%%'
 ORDER BY e.subject_id, e.sort, e.type
