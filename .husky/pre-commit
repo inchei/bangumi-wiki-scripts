@@ -40,21 +40,36 @@ fi
 
 if [ -n "$MP_FILES" ]; then
   bump_version wikiMissingPositions/header.js
-  cd wikiMissingPositions && pnpm lint && pnpm lint:css && pnpm format:check && pnpm build || exit 1
+  cd wikiMissingPositions
+  if ! (pnpm lint && pnpm lint:css && pnpm format:check && pnpm build); then
+    cd ..
+    git checkout -- wikiMissingPositions/header.js
+    exit 1
+  fi
   cd ..
   git add wikiMissingPositions/header.js wikiMissingPositions/dist/wikiMissingPositions.user.js
 fi
 
 if [ -n "$PA_FILES" ]; then
   bump_version wikiPersonAlias/wikiPersonAlias.user.js
-  cd wikiPersonAlias && pnpm lint && pnpm format:check || exit 1
+  cd wikiPersonAlias
+  if ! (pnpm lint && pnpm format:check); then
+    cd ..
+    git checkout -- wikiPersonAlias/wikiPersonAlias.user.js
+    exit 1
+  fi
   cd ..
   git add wikiPersonAlias/wikiPersonAlias.user.js
 fi
 
 if [ -n "$WB_FILES" ]; then
   bump_version wikiBatch/header.js
-  cd wikiBatch && pnpm lint && pnpm lint:css && pnpm typecheck && pnpm build || exit 1
+  cd wikiBatch
+  if ! (pnpm lint && pnpm lint:css && pnpm typecheck && pnpm build); then
+    cd ..
+    git checkout -- wikiBatch/header.js
+    exit 1
+  fi
   cd ..
   git add wikiBatch/header.js wikiBatch/dist/wikiBatch.user.js
 fi
