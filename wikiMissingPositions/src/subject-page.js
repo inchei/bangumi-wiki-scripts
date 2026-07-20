@@ -1,9 +1,9 @@
 import { POSITION_IDS } from './position-ids.js';
 import { getProvider, getShow } from './api.js';
 import { genAppearEps } from './appear-eps.js';
-import { showPendingEps } from './popup.js';
-import { addSubjectLi } from './add-related.js';
 import { checkExistingPerson } from './person.js';
+
+const cacheKey = (name, t, target) => `mp:${name}:${t}:${target}`;
 
 const LOADING_MSGS = [
   '坐和放宽',
@@ -114,14 +114,20 @@ export function openSubjectPopup(personName, typeCode) {
 
   const handle = document.createElement('div');
   handle.className = 'staff-tip-handle';
-  handle.innerHTML = `<strong>${personName}</strong><button class="bgm-mp-notify-close">&times;</button>`;
+  const typeNames = { 1: '书', 2: '动', 3: '乐', 4: '游', 6: '实' };
+  const typeChecks = [1, 2, 3, 4, 6]
+    .map(
+      (t) =>
+        `<label class="bgm-mp-popup-type"><input type="checkbox" class="bgm-mp-type-check" value="${t}"${t === typeCode ? ' checked' : ''}>${typeNames[t]}</label>`,
+    )
+    .join('');
+  handle.innerHTML = `<strong>${personName}</strong><span class="bgm-mp-popup-types">${typeChecks}</span><button class="bgm-mp-notify-close">&times;</button>`;
 
   const content = document.createElement('div');
   content.className = 'staff-tip-content';
 
   popup.append(handle, content);
   document.body.appendChild(popup);
-
   content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
 
   popup.querySelector('.bgm-mp-notify-close').onclick = () => {
@@ -139,7 +145,7 @@ export function openSubjectPopup(personName, typeCode) {
     return e.touches ? e.touches[0].clientY : e.clientY;
   }
   handle.onmousedown = handle.ontouchstart = (e) => {
-    if (e.target.closest('.bgm-mp-notify-close')) return;
+    if (e.target.closest('.bgm-mp-notify-close, .bgm-mp-popup-type, .bgm-mp-popup-types')) return;
     const rect = popup.getBoundingClientRect();
     popup.style.transform = 'none';
     popup.style.left = rect.left + 'px';
@@ -155,12 +161,59 @@ export function openSubjectPopup(personName, typeCode) {
     };
   };
 
+  const doMultiFetch = (existing, targetParam) => {
+    if (!_ready) return;
+
+    const checked = [...popup.querySelectorAll('.bgm-mp-type-check:checked')].map((c) =>
+      Number(c.value),
+    );
+    const targetId = (existing?.aliased?.id || existing?.directMatch?.id || 0).toString();
+    const encoded = encodeURIComponent(personName);
+
+    let uncached = [];
+    let cached = {};
+    for (const t of checked) {
+      const key = cacheKey(encoded, t, targetId);
+      const cachedData = sessionStorage.getItem(key);
+      if (cachedData) {
+        try {
+          cached[t] = JSON.parse(cachedData);
+        } catch {
+          uncached.push(t);
+        }
+      } else {
+        uncached.push(t);
+      }
+    }
+
+    if (uncached.length === 0) {
+      renderResults(content, cached, null, encoded, personName);
+      return;
+    }
+
+    _abortController.abort();
+    _abortController = new AbortController();
+    const sig = _abortController.signal;
+    content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
+    fetchMultiType(personName, provider, sig, content, targetParam, uncached, cached, targetId);
+  };
+
+  popup.querySelectorAll('.bgm-mp-type-check').forEach((cb) => {
+    cb.addEventListener('change', () => doMultiFetch(_existing, _targetParam));
+  });
+
   // Fetch data
+  let _existing = null,
+    _targetParam = '',
+    _ready = false;
   (async () => {
     const existing = await checkExistingPerson(personName);
+    _existing = existing;
     let targetParam = '';
     if (existing.aliased) targetParam = `&target=${existing.aliased.id}`;
     else if (existing.directMatch) targetParam = `&target=${existing.directMatch.id}`;
+    _targetParam = targetParam;
+    _ready = true;
 
     const hasExisting = existing.aliased || existing.directMatch;
 
@@ -185,164 +238,163 @@ export function openSubjectPopup(personName, typeCode) {
 
       document.querySelector('#bgm-mp-confirm-btn').onclick = () => {
         document.querySelector('#bgm-mp-confirm-btn').remove();
-        fetchAndRenderResults(
-          personName,
-          typeCode,
-          provider,
-          signal,
-          content,
-          existing,
-          targetParam,
-        );
+        doMultiFetch(existing, targetParam);
       };
     } else {
-      await fetchAndRenderResults(
-        personName,
-        typeCode,
-        provider,
-        signal,
-        content,
-        existing,
-        targetParam,
-      );
+      doMultiFetch(existing, targetParam);
     }
   })();
 }
 
-async function fetchAndRenderResults(
+async function fetchMultiType(
   personName,
-  typeCode,
   provider,
   signal,
   content,
-  existing,
   targetParam,
+  types,
+  cached,
+  targetId,
 ) {
-  const typeParam = typeCode ? `?type=${typeCode}` : '';
   const encodedName = encodeURIComponent(personName);
 
-  let subjectsData = null,
-    episodesData = null,
-    aborted = false;
+  let subjectsByType = { ...cached },
+    episodesData = null;
+
+  const fetches = types.map((t) =>
+    fetch(`${provider}/api/persons/${encodedName}/missing-subjects?type=${t}${targetParam}`, {
+      signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && Object.keys(data).length) {
+          sessionStorage.setItem(cacheKey(encodedName, t, targetId), JSON.stringify(data));
+        }
+        return { type: t, data };
+      })
+      .catch((e) => {
+        if (e.name === 'AbortError') throw e;
+        console.error(`missing-subjects type=${t} failed:`, e);
+        return { type: t, data: null };
+      }),
+  );
 
   try {
-    const subjRes = await fetch(
-      `${provider}/api/persons/${encodedName}/missing-subjects${typeParam}${targetParam}`,
-      { signal },
-    );
-    if (!subjRes.ok) {
-      subjectsData = null;
-    } else {
-      subjectsData = await subjRes.json();
+    const results = await Promise.all(fetches);
+    for (const r of results) {
+      if (r.data && Object.keys(r.data).length) {
+        subjectsByType[r.type] = r.data;
+      }
     }
   } catch (e) {
-    if (e.name === 'AbortError') {
-      aborted = true;
-      return;
-    }
+    if (e.name !== 'AbortError') throw e;
+    return;
   }
 
-  if (typeCode === 2) {
+  if (types.includes(2)) {
     try {
       const epQuery = targetParam ? '?' + targetParam.slice(1) : '';
       const epRes = await fetch(
         `${provider}/api/persons/${encodedName}/missing-episodes${epQuery}`,
         { signal },
       );
-      if (epRes.ok) {
-        episodesData = await epRes.json();
-      }
+      if (epRes.ok) episodesData = await epRes.json();
     } catch (e) {
-      if (e.name === 'AbortError') {
-        aborted = true;
-        return;
-      }
+      if (e.name === 'AbortError') return;
     }
   }
 
-  if (aborted) return;
+  renderResults(content, subjectsByType, episodesData, encodedName, personName);
+}
 
-  const hasNetworkError = subjectsData === null;
-  const subjEntries = hasNetworkError ? [] : Object.entries(subjectsData || {});
+function renderResults(content, subjectsByType, episodesData, encodedName, personName) {
+  const typeNamesFull = { 1: '书籍', 2: '动画', 3: '音乐', 4: '游戏', 6: '三次元' };
+  const totalEntries = Object.values(subjectsByType).reduce((c, d) => c + Object.keys(d).length, 0);
   const hasData =
-    subjEntries.length ||
+    totalEntries ||
     (episodesData &&
       (Object.keys(episodesData.matched || {}).length ||
         Object.keys(episodesData.unmatched || {}).length));
 
   let html = '';
 
-  if (hasNetworkError) {
-    html =
-      '<div class="staff-error-section"><div class="staff-error-title">获取失败，请检查API地址或网络</div></div>';
-  } else if (!hasData) {
-    html = '<div class="bgm-mp-empty-hint">未找到缺失关联</div>';
-  } else {
-    if (subjEntries.length) {
-      html += '<div class="bgm-mp-result-list">';
-      html += '<div class="bgm-mp-section-title">缺失条目关联：</div>';
-      for (const [sid, entry] of subjEntries) {
+  if (totalEntries) {
+    html += '<div class="bgm-mp-result-list">';
+    html += '<div class="bgm-mp-section-title">缺失条目关联：</div>';
+    for (const t of [2, 1, 3, 4, 6]) {
+      const data = subjectsByType[t];
+      if (!data) continue;
+      html += `<div class="bgm-mp-type-section"><div class="bgm-mp-type-title">${typeNamesFull[t]}</div>`;
+      for (const [sid, entry] of Object.entries(data)) {
         const posNames = (entry.positions || [])
-          .map((pid) => POSITION_IDS[typeCode]?.[pid] || pid)
+          .map((pid) => POSITION_IDS[t]?.[pid] || pid)
           .join('、');
         html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${posNames}</div>`;
       }
       html += '</div>';
     }
-
-    if (episodesData) {
-      const matchedEpEntries = Object.entries(episodesData.matched || {});
-      const unmatchedEpEntries = Object.entries(episodesData.unmatched || {});
-      if (matchedEpEntries.length) {
-        html += '<div class="bgm-mp-result-list">';
-        html += '<div class="bgm-mp-section-title">缺失剧集关联：</div>';
-        for (const [sid, entry] of matchedEpEntries) {
-          const posMap = entry.episodes || {};
-          const parts = Object.entries(posMap).map(
-            ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}：${genAppearEps(labels)}`,
-          );
-          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> ${parts.join('，')}</div>`;
-        }
-        html += '</div>';
-      }
-      if (unmatchedEpEntries.length) {
-        html += '<div class="bgm-mp-result-list">';
-        html += '<div class="bgm-mp-section-title">疑似缺失剧集关联：</div>';
-        for (const [sid, entry] of unmatchedEpEntries) {
-          const episodes = entry.episodes || [];
-          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${episodes
-            .map(
-              (ep) =>
-                `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`,
-            )
-            .join(', ')}</div>`;
-        }
-        html += '</div>';
-      }
-    }
-
-    html += `<div class="bgm-mp-popup-actions">
-        <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? '' : ' disabled style="opacity:0.5"'}>创建人物</button>
-      </div>`;
+    html += '</div>';
   }
+
+  if (episodesData) {
+    const matched = Object.entries(episodesData.matched || {});
+    const unmatched = Object.entries(episodesData.unmatched || {});
+    if (matched.length) {
+      html += '<div class="bgm-mp-result-list">';
+      html += '<div class="bgm-mp-section-title">缺失剧集关联：</div>';
+      for (const [sid, entry] of matched) {
+        const parts = Object.entries(entry.episodes || {}).map(
+          ([pid, labels]) => `${POSITION_IDS[2]?.[pid] || pid}：${genAppearEps(labels)}`,
+        );
+        html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> ${parts.join('，')}</div>`;
+      }
+      html += '</div>';
+    }
+    if (unmatched.length) {
+      html += '<div class="bgm-mp-result-list">';
+      html += '<div class="bgm-mp-section-title">疑似缺失剧集关联：</div>';
+      for (const [sid, entry] of unmatched) {
+        html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || '#' + sid}</a></strong> - ${(
+          entry.episodes || []
+        )
+          .map(
+            (ep) =>
+              `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`,
+          )
+          .join(', ')}</div>`;
+      }
+      html += '</div>';
+    }
+  }
+
+  if (!hasData) {
+    html = '<div class="bgm-mp-empty-hint">未找到缺失关联</div>';
+  }
+
+  html += `<div class="bgm-mp-popup-actions">
+      <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? '' : ' disabled style="opacity:0.5"'}>创建人物</button>
+    </div>`;
 
   content.innerHTML = html;
 
-  if (!hasNetworkError) {
-    document.querySelector('#bgm-mp-create-btn').onclick = () => {
-      if (!hasData) return;
-      localStorage.setItem(
-        'bgm-mp-pending',
-        JSON.stringify({
-          personName,
-          typeCode,
-          subjectsData,
-          episodesData,
-        }),
-      );
-      window.open('/person/new');
-    };
-  }
+  document.querySelector('#bgm-mp-create-btn').onclick = () => {
+    if (!hasData) return;
+    const allSubjects = {};
+    for (const [t, data] of Object.entries(subjectsByType)) {
+      for (const [sid, entry] of Object.entries(data)) {
+        allSubjects[`${t}:${sid}`] = { ...entry, _type: Number(t) };
+      }
+    }
+    localStorage.setItem(
+      'bgm-mp-pending',
+      JSON.stringify({
+        personName: personName,
+        subjectsData: allSubjects,
+        episodesData,
+      }),
+    );
+    window.open('/person/new');
+  };
 }
 
 export function initPersonNewPage() {
@@ -364,74 +416,22 @@ export function initPersonPage() {
   if (!personId) return;
   try {
     const data = JSON.parse(raw);
-    const typeExt = { 1: 'book', 2: 'anime', 3: 'music', 4: 'game', 6: 'real' }[data.typeCode];
-    if (!typeExt) return;
-    location.href = `/person/${personId}/add_related/${typeExt}`;
-  } catch (_e) {
-    /* ignore */
-  }
-}
-
-let _pendingData = null;
-export function getPendingData() {
-  return _pendingData;
-}
-
-export function processPendingData() {
-  const raw = localStorage.getItem('bgm-mp-pending');
-  if (!raw) return;
-
-  const referrer = document.referrer;
-  if (!referrer.includes('/person/new') && !referrer.match(/\/person\/\d+$/)) return;
-
-  try {
-    const data = JSON.parse(raw);
-    _pendingData = data;
-    if (!data.subjectsData) {
-      localStorage.removeItem('bgm-mp-pending');
-      return;
-    }
-
-    for (const [sid, entry] of Object.entries(data.subjectsData)) {
-      for (const posId of entry.positions || []) {
-        const li = addSubjectLi(Number(sid), posId, entry.name);
-        if (li && li.classList.contains('old')) {
-          li.style.background =
-            document.documentElement.getAttribute('data-theme') === 'dark'
-              ? 'rgba(255, 248, 165, 0.08)'
-              : 'rgba(255, 248, 165, 0.2)';
-        }
+    const typeExts = { 1: 'book', 2: 'anime', 3: 'music', 4: 'game', 6: 'real' };
+    const typeNamesFull = { 1: '书籍', 2: '动画', 3: '音乐', 4: '游戏', 6: '三次元' };
+    if (data.subjectsData) {
+      const types = [
+        ...new Set(
+          Object.values(data.subjectsData)
+            .map((e) => e._type)
+            .filter(Boolean),
+        ),
+      ];
+      if (types.length >= 1) {
+        const ext = typeExts[types[0]];
+        if (ext) location.href = `/person/${personId}/add_related/${ext}`;
       }
     }
-
-    if (data.episodesData?.matched) {
-      for (const [sid, entry] of Object.entries(data.episodesData.matched)) {
-        for (const [posId, labels] of Object.entries(entry.episodes || {})) {
-          const li = addSubjectLi(Number(sid), Number(posId), entry.name);
-          const epInput = li.querySelector('[name$="[appear_eps]"]');
-          if (epInput) {
-            epInput.value = genAppearEps(labels);
-            if (li.classList.contains('old')) {
-              li.style.background =
-                document.documentElement.getAttribute('data-theme') === 'dark'
-                  ? 'rgba(255, 248, 165, 0.08)'
-                  : 'rgba(255, 248, 165, 0.2)';
-            }
-          }
-        }
-      }
-    }
-
-    if (Object.keys(data.episodesData?.unmatched || {}).length) {
-      const allUnmatched = Object.entries(data.episodesData.unmatched).map(([sid, entry]) => ({
-        sid,
-        entry,
-      }));
-      showPendingEps(allUnmatched, data.personName, data.typeCode);
-    }
-
-    localStorage.removeItem('bgm-mp-pending');
   } catch (e) {
-    localStorage.removeItem('bgm-mp-pending');
+    console.error('initPersonPage failed:', e);
   }
 }

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.1.2
+// @version      0.1.4
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -87,6 +87,102 @@ html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input {
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input:focus {
   border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 25%);
+}
+
+.bgm-mp-toggle {
+  appearance: none;
+  width: 40px;
+  height: 22px;
+  background: #dcdfe6;
+  border-radius: 11px;
+  border: none;
+  cursor: pointer;
+  position: relative;
+  transition: background 0.25s ease;
+  flex-shrink: 0;
+  margin: 0;
+}
+
+.bgm-mp-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  background: #fff;
+  border-radius: 50%;
+  transition: transform 0.25s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.bgm-mp-toggle:checked {
+  background: var(--primary-color, #f09199);
+}
+
+.bgm-mp-toggle:checked::after {
+  transform: translateX(18px);
+}
+
+html[data-theme='dark'] .bgm-mp-toggle {
+  background: #404040;
+}
+
+html[data-theme='dark'] .bgm-mp-toggle::after {
+  background: #dcdcdc;
+}
+
+.bgm-mp-type-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.bgm-mp-type-label {
+  font-size: 13px;
+  color: #303133;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+html[data-theme='dark'] .bgm-mp-type-label {
+  color: #dcdcdc;
+}
+
+.bgm-mp-popup-types {
+  display: flex;
+  gap: 5px;
+  margin-left: 8px;
+  margin-right: auto;
+}
+
+.bgm-mp-popup-type {
+  font-size: 11px;
+  color: #909399;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 3px;
+  border-radius: 4px;
+}
+
+.bgm-mp-popup-type:hover {
+  background: rgba(240, 145, 153, 0.1);
+}
+
+.bgm-mp-popup-type input:checked + * {
+  color: var(--primary-color, #f09199);
+}
+
+html[data-theme='dark'] .bgm-mp-popup-type {
+  color: #9a9a9a;
+}
+
+html[data-theme='dark'] .bgm-mp-popup-type:hover {
+  background: rgba(240, 145, 153, 0.15);
 }
 
 #bgm-mp-container {
@@ -398,6 +494,23 @@ html[data-theme='dark'] .bgm-mp-spinner {
   font-weight: 700;
 }
 
+.bgm-mp-type-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.bgm-mp-type-title {
+  font-weight: 600;
+  color: var(--primary-color, #f09199);
+  margin-bottom: 6px;
+}
+
+html[data-theme='dark'] .bgm-mp-type-title {
+  color: var(--primary-color, #f09199);
+}
+
 .bgm-mp-empty-hint {
   color: #909399;
   margin-bottom: 8px;
@@ -439,6 +552,17 @@ html[data-theme='dark'] .bgm-mp-name-link {
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
+}
+
+ul.cat a.bgm-mp-has-remaining::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--primary-color, #f09199);
+  border-radius: 50%;
+  margin-right: 4px;
+  vertical-align: middle;
 }`;
 document.head.appendChild(styleEl);
 
@@ -798,6 +922,411 @@ document.head.appendChild(styleEl);
     return [...rangeParts, ...others].join(",");
   }
 
+  // src/search.js
+  var createFetch = (method) => async (url, body) => {
+    const options = method === "POST" ? { method, body: JSON.stringify(body) } : { method };
+    try {
+      const response = await fetch(url, options);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      return await response.json();
+    } catch (e) {
+      console.error(e);
+      return null;
+    }
+  };
+  var fetchPost = createFetch("POST");
+  var postSearch = async (cat, keyword, filter) => {
+    const url = `https://api.bgm.tv/v0/search/${cat}?limit=1`;
+    const body = { keyword, filter };
+    const result = await fetchPost(url, body);
+    return result?.data;
+  };
+  var searchPrsn = (keyword) => postSearch("persons", keyword);
+  function normalize(name) {
+    return name.replace(/\s/g, "").replaceAll("-", "").replace(/[\u30A1-\u30F6]/g, function(match) {
+      return String.fromCharCode(match.charCodeAt(0) - 96);
+    }).replace(/[\uFF21-\uFF5A]/g, function(match) {
+      return String.fromCharCode(match.charCodeAt(0) - 65248);
+    }).toLowerCase();
+  }
+
+  // src/person.js
+  async function checkExistingPerson(personName) {
+    const result = { aliased: null, directMatch: null, aliasedMulti: null };
+    try {
+      let aliased = null;
+      const provider = getProvider();
+      try {
+        const res = await fetch(`${provider}/api/aliases/${encodeURIComponent(personName)}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            aliased = data[0];
+            if (data.length > 1) {
+              result.aliasedMulti = data;
+            }
+          }
+        }
+      } catch (e) {
+        console.error("aliases API failed:", e);
+      }
+      if (!aliased) {
+        aliased = await window.personAliasQuery?.(personName);
+      }
+      if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
+      const searchResults = await searchPrsn(personName);
+      const first = searchResults?.[0];
+      if (first && normalize(personName) === normalize(first.name)) {
+        result.directMatch = { name: first.name, id: first.id };
+      }
+    } catch (e) {
+      console.error("checkExistingPerson failed:", e);
+    }
+    return result;
+  }
+
+  // src/subject-page.js
+  var cacheKey = (name, t, target) => `mp:${name}:${t}:${target}`;
+  var LOADING_MSGS = [
+    "\u5750\u548C\u653E\u5BBD",
+    "\u6B63\u5728\u51C6\u5907\u6570\u636E<br>\u8BF7\u52FF\u2122\u5173\u95ED\u8BA1\u7B97\u673A",
+    "\u597D\u4E1C\u897F\u5C31\u8981\u6765\u4E86\uFF01",
+    () => `\u4F60\u5DF2\u5B8C\u6210${10 * (2 + Math.floor(Math.random() * 7))}%`,
+    "\u6B63\u5728\u5904\u7406\u4E00\u4E9B\u4E8B\u60C5",
+    "\u4F60\u6B63\u5728\u6210\u529F\uFF01",
+    "\u4E0D\u5DE7\u7684\u662F\uFF0C\u5B83\u82B1\u8D39\u7684\u65F6\u95F4\u6BD4\u901A\u5E38\u8981\u957F",
+    "\u518D\u7B49\u4E00\u4E0B\u4E0B\u5C31\u597D\u4E86",
+    "\u8FD9\u901A\u5E38\u4E0D\u4F1A\u592A\u4E45",
+    "\u6211\u4EEC\u6B63\u5728\u5E2E\u4F60\u641E\u5B9A\u4E00\u5207"
+  ];
+  function randomMsg() {
+    const m = LOADING_MSGS[Math.floor(Math.random() * LOADING_MSGS.length)];
+    return typeof m === "function" ? m() : m;
+  }
+  function initSubjectPage() {
+    if (getShow() === "off") return;
+    const href = document.querySelector(".focus").href.split("/").pop();
+    const typeCode = { anime: 2, book: 1, music: 3, game: 4, real: 6 }[href] || 0;
+    if (!typeCode) return;
+    const posNames = new Set(Object.values(POSITION_IDS[typeCode] || {}));
+    const infobox = document.querySelector("#infobox");
+    if (!infobox) return;
+    const DELIM_RE = /[()[\]{}（）<>《》「」『』【】+×·→/／、,，;；：&＆\\等]+/;
+    infobox.querySelectorAll("li:not(.sub_container):not(.sub_group)").forEach((li) => {
+      const tip = li.querySelector(".tip");
+      if (!tip) return;
+      const fieldName = tip.textContent.replace(/[:：]\s*$/, "").trim();
+      if (!posNames.has(fieldName)) return;
+      const linked = /* @__PURE__ */ new Set();
+      li.querySelectorAll("a").forEach((a) => linked.add(a.textContent.trim()));
+      const clone = li.cloneNode(true);
+      clone.querySelectorAll("a, .tip").forEach((el) => el.remove());
+      const text = clone.textContent;
+      const names = text.split(DELIM_RE).map((s) => s.trim()).filter(Boolean);
+      names.sort((a, b) => b.length - a.length);
+      let tipHTML = "";
+      if (tip) {
+        tipHTML = tip.outerHTML;
+        tip.remove();
+      }
+      const unlinked = names.filter((n) => !linked.has(n));
+      if (unlinked.length) {
+        const nameRE = new RegExp(
+          `(?<=^|[^<\\w])(${unlinked.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})([^<\\w]|$)`,
+          "g"
+        );
+        const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT, {
+          acceptNode: (node) => node.parentElement.closest("a, .tip") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
+        });
+        const tNodes = [];
+        while (walker.nextNode()) tNodes.push(walker.currentNode);
+        for (const node of tNodes) {
+          const html = node.textContent.replace(
+            nameRE,
+            (_, name, p3) => `<a class="bgm-mp-name bgm-mp-name-link" data-name="${name}">${name}</a>${p3}`
+          );
+          if (html !== node.textContent) {
+            const span = document.createElement("span");
+            span.innerHTML = html;
+            node.replaceWith(...span.childNodes);
+          }
+        }
+      }
+      if (tipHTML) li.insertAdjacentHTML("afterbegin", tipHTML);
+    });
+    document.querySelectorAll(".bgm-mp-name").forEach((a) => {
+      a.addEventListener("click", () => openSubjectPopup(a.dataset.name, typeCode));
+    });
+  }
+  var _abortController = null;
+  function openSubjectPopup(personName, typeCode) {
+    if (_abortController) _abortController.abort();
+    _abortController = new AbortController();
+    const signal = _abortController.signal;
+    const existing = document.querySelector(".bgm-mp-subject-popup");
+    if (existing) existing.remove();
+    const provider = getProvider();
+    const popup = document.createElement("div");
+    popup.className = "bgm-mp-notify bgm-mp-subject-popup";
+    const handle = document.createElement("div");
+    handle.className = "staff-tip-handle";
+    const typeNames = { 1: "\u4E66", 2: "\u52A8", 3: "\u4E50", 4: "\u6E38", 6: "\u5B9E" };
+    const typeChecks = [1, 2, 3, 4, 6].map(
+      (t) => `<label class="bgm-mp-popup-type"><input type="checkbox" class="bgm-mp-type-check" value="${t}"${t === typeCode ? " checked" : ""}>${typeNames[t]}</label>`
+    ).join("");
+    handle.innerHTML = `<strong>${personName}</strong><span class="bgm-mp-popup-types">${typeChecks}</span><button class="bgm-mp-notify-close">&times;</button>`;
+    const content = document.createElement("div");
+    content.className = "staff-tip-content";
+    popup.append(handle, content);
+    document.body.appendChild(popup);
+    content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
+    popup.querySelector(".bgm-mp-notify-close").onclick = () => {
+      _abortController.abort();
+      popup.remove();
+    };
+    let offX = 0, offY = 0;
+    function cx(e) {
+      return e.touches ? e.touches[0].clientX : e.clientX;
+    }
+    function cy(e) {
+      return e.touches ? e.touches[0].clientY : e.clientY;
+    }
+    handle.onmousedown = handle.ontouchstart = (e) => {
+      if (e.target.closest(".bgm-mp-notify-close, .bgm-mp-popup-type, .bgm-mp-popup-types")) return;
+      const rect = popup.getBoundingClientRect();
+      popup.style.transform = "none";
+      popup.style.left = rect.left + "px";
+      popup.style.top = rect.top + "px";
+      offX = cx(e) - rect.left;
+      offY = cy(e) - rect.top;
+      document.onmousemove = document.ontouchmove = (ev) => {
+        popup.style.left = cx(ev) - offX + "px";
+        popup.style.top = cy(ev) - offY + "px";
+      };
+      document.onmouseup = document.ontouchend = () => {
+        document.onmousemove = document.ontouchmove = null;
+      };
+    };
+    const doMultiFetch = (existing2, targetParam) => {
+      if (!_ready) return;
+      const checked = [...popup.querySelectorAll(".bgm-mp-type-check:checked")].map(
+        (c) => Number(c.value)
+      );
+      const targetId = (existing2?.aliased?.id || existing2?.directMatch?.id || 0).toString();
+      const encoded = encodeURIComponent(personName);
+      let uncached = [];
+      let cached = {};
+      for (const t of checked) {
+        const key = cacheKey(encoded, t, targetId);
+        const cachedData = sessionStorage.getItem(key);
+        if (cachedData) {
+          try {
+            cached[t] = JSON.parse(cachedData);
+          } catch {
+            uncached.push(t);
+          }
+        } else {
+          uncached.push(t);
+        }
+      }
+      if (uncached.length === 0) {
+        renderResults(content, cached, null, encoded, personName);
+        return;
+      }
+      _abortController.abort();
+      _abortController = new AbortController();
+      const sig = _abortController.signal;
+      content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
+      fetchMultiType(personName, provider, sig, content, targetParam, uncached, cached, targetId);
+    };
+    popup.querySelectorAll(".bgm-mp-type-check").forEach((cb) => {
+      cb.addEventListener("change", () => doMultiFetch(_existing, _targetParam));
+    });
+    let _existing = null, _targetParam = "", _ready = false;
+    (async () => {
+      const existing2 = await checkExistingPerson(personName);
+      _existing = existing2;
+      let targetParam = "";
+      if (existing2.aliased) targetParam = `&target=${existing2.aliased.id}`;
+      else if (existing2.directMatch) targetParam = `&target=${existing2.directMatch.id}`;
+      _targetParam = targetParam;
+      _ready = true;
+      const hasExisting = existing2.aliased || existing2.directMatch;
+      if (hasExisting) {
+        let warningHtml = "";
+        if (existing2.aliased) {
+          if (existing2.aliasedMulti && existing2.aliasedMulti.length > 1) {
+            warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u5339\u914D\u5230\u591A\u4E2A\u4EBA\u7269\uFF0C\u5DF2\u53D6\u7B2C\u4E00\u4E2A\uFF1A</div>`;
+            for (const p of existing2.aliasedMulti) {
+              warningHtml += `<a class="l" href="/person/${p.id}" target="_blank">${p.name}</a> `;
+            }
+            warningHtml += "</div>";
+          } else {
+            warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u7684\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.aliased.id}" target="_blank">${existing2.aliased.name}</a></div>`;
+          }
+        }
+        if (existing2.directMatch) {
+          warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u540C\u540D\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.directMatch.id}" target="_blank">${existing2.directMatch.name}</a></div>`;
+        }
+        warningHtml += '<div class="staff-confirm-section" id="bgm-mp-confirm-btn">\u4ECD\u7136\u52A0\u8F7D</div>';
+        content.innerHTML = warningHtml;
+        document.querySelector("#bgm-mp-confirm-btn").onclick = () => {
+          document.querySelector("#bgm-mp-confirm-btn").remove();
+          doMultiFetch(existing2, targetParam);
+        };
+      } else {
+        doMultiFetch(existing2, targetParam);
+      }
+    })();
+  }
+  async function fetchMultiType(personName, provider, signal, content, targetParam, types, cached, targetId) {
+    const encodedName = encodeURIComponent(personName);
+    let subjectsByType = { ...cached }, episodesData = null;
+    const fetches = types.map(
+      (t) => fetch(`${provider}/api/persons/${encodedName}/missing-subjects?type=${t}${targetParam}`, {
+        signal
+      }).then((res) => res.ok ? res.json() : null).then((data) => {
+        if (data && Object.keys(data).length) {
+          sessionStorage.setItem(cacheKey(encodedName, t, targetId), JSON.stringify(data));
+        }
+        return { type: t, data };
+      }).catch((e) => {
+        if (e.name === "AbortError") throw e;
+        console.error(`missing-subjects type=${t} failed:`, e);
+        return { type: t, data: null };
+      })
+    );
+    try {
+      const results = await Promise.all(fetches);
+      for (const r of results) {
+        if (r.data && Object.keys(r.data).length) {
+          subjectsByType[r.type] = r.data;
+        }
+      }
+    } catch (e) {
+      if (e.name !== "AbortError") throw e;
+      return;
+    }
+    if (types.includes(2)) {
+      try {
+        const epQuery = targetParam ? "?" + targetParam.slice(1) : "";
+        const epRes = await fetch(
+          `${provider}/api/persons/${encodedName}/missing-episodes${epQuery}`,
+          { signal }
+        );
+        if (epRes.ok) episodesData = await epRes.json();
+      } catch (e) {
+        if (e.name === "AbortError") return;
+      }
+    }
+    renderResults(content, subjectsByType, episodesData, encodedName, personName);
+  }
+  function renderResults(content, subjectsByType, episodesData, encodedName, personName) {
+    const typeNamesFull = { 1: "\u4E66\u7C4D", 2: "\u52A8\u753B", 3: "\u97F3\u4E50", 4: "\u6E38\u620F", 6: "\u4E09\u6B21\u5143" };
+    const totalEntries = Object.values(subjectsByType).reduce((c, d) => c + Object.keys(d).length, 0);
+    const hasData = totalEntries || episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length);
+    let html = "";
+    if (totalEntries) {
+      html += '<div class="bgm-mp-result-list">';
+      html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u6761\u76EE\u5173\u8054\uFF1A</div>';
+      for (const t of [2, 1, 3, 4, 6]) {
+        const data = subjectsByType[t];
+        if (!data) continue;
+        html += `<div class="bgm-mp-type-section"><div class="bgm-mp-type-title">${typeNamesFull[t]}</div>`;
+        for (const [sid, entry] of Object.entries(data)) {
+          const posNames = (entry.positions || []).map((pid) => POSITION_IDS[t]?.[pid] || pid).join("\u3001");
+          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${posNames}</div>`;
+        }
+        html += "</div>";
+      }
+      html += "</div>";
+    }
+    if (episodesData) {
+      const matched = Object.entries(episodesData.matched || {});
+      const unmatched = Object.entries(episodesData.unmatched || {});
+      if (matched.length) {
+        html += '<div class="bgm-mp-result-list">';
+        html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
+        for (const [sid, entry] of matched) {
+          const parts = Object.entries(entry.episodes || {}).map(
+            ([pid, labels]) => `${POSITION_IDS[2]?.[pid] || pid}\uFF1A${genAppearEps(labels)}`
+          );
+          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> ${parts.join("\uFF0C")}</div>`;
+        }
+        html += "</div>";
+      }
+      if (unmatched.length) {
+        html += '<div class="bgm-mp-result-list">';
+        html += '<div class="bgm-mp-section-title">\u7591\u4F3C\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
+        for (const [sid, entry] of unmatched) {
+          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${(entry.episodes || []).map(
+            (ep) => `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`
+          ).join(", ")}</div>`;
+        }
+        html += "</div>";
+      }
+    }
+    if (!hasData) {
+      html = '<div class="bgm-mp-empty-hint">\u672A\u627E\u5230\u7F3A\u5931\u5173\u8054</div>';
+    }
+    html += `<div class="bgm-mp-popup-actions">
+      <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? "" : ' disabled style="opacity:0.5"'}>\u521B\u5EFA\u4EBA\u7269</button>
+    </div>`;
+    content.innerHTML = html;
+    document.querySelector("#bgm-mp-create-btn").onclick = () => {
+      if (!hasData) return;
+      const allSubjects = {};
+      for (const [t, data] of Object.entries(subjectsByType)) {
+        for (const [sid, entry] of Object.entries(data)) {
+          allSubjects[`${t}:${sid}`] = { ...entry, _type: Number(t) };
+        }
+      }
+      localStorage.setItem(
+        "bgm-mp-pending",
+        JSON.stringify({
+          personName,
+          subjectsData: allSubjects,
+          episodesData
+        })
+      );
+      window.open("/person/new");
+    };
+  }
+  function initPersonNewPage() {
+    const raw = localStorage.getItem("bgm-mp-pending");
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      const input = document.querySelector("#crt_name");
+      if (input && data.personName) input.value = data.personName;
+    } catch (_e) {
+    }
+  }
+  function initPersonPage() {
+    const raw = localStorage.getItem("bgm-mp-pending");
+    if (!raw) return;
+    const personId2 = location.pathname.match(/\/person\/(\d+)/)?.[1];
+    if (!personId2) return;
+    try {
+      const data = JSON.parse(raw);
+      const typeExts = { 1: "book", 2: "anime", 3: "music", 4: "game", 6: "real" };
+      const typeNamesFull = { 1: "\u4E66\u7C4D", 2: "\u52A8\u753B", 3: "\u97F3\u4E50", 4: "\u6E38\u620F", 6: "\u4E09\u6B21\u5143" };
+      if (data.subjectsData) {
+        const types = [
+          ...new Set(
+            Object.values(data.subjectsData).map((e) => e._type).filter(Boolean)
+          )
+        ];
+        if (types.length >= 1) {
+          const ext = typeExts[types[0]];
+          if (ext) location.href = `/person/${personId2}/add_related/${ext}`;
+        }
+      }
+    } catch (e) {
+      console.error("initPersonPage failed:", e);
+    }
+  }
+
   // src/popup.js
   function showPendingEps(allUnmatched, personName, type2) {
     const existing = document.querySelector(".bgm-mp-notify");
@@ -1014,16 +1543,18 @@ document.head.appendChild(styleEl);
       if (pending && pending.subjectsData && Object.keys(pending.subjectsData).length) {
         const resEntries = Object.entries(pending.subjectsData);
         let none = true;
-        for (const [id, entry] of resEntries) {
+        for (const [key, entry] of resEntries) {
+          if ((entry._type || 0) !== type) continue;
+          const sid = key.split(":").pop();
           for (const pos of entry.positions || []) {
             if (position && String(pos) !== position) continue;
             const existing = document.querySelector(
-              `#crtRelateSubjects li:has([href="/subject/${id}"])`
+              `#crtRelateSubjects li:has([href="/subject/${sid}"])`
             );
             if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
               none = false;
               subjectList = [
-                { id: Number(id), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }
+                { id: Number(sid), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }
               ];
               addRelateSubject(0, "submitForm");
               document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
@@ -1087,363 +1618,6 @@ document.head.appendChild(styleEl);
     document.querySelector("#indexCatBox").after(container);
     processPendingData();
   }
-
-  // src/search.js
-  var createFetch = (method) => async (url, body) => {
-    const options = method === "POST" ? { method, body: JSON.stringify(body) } : { method };
-    try {
-      const response = await fetch(url, options);
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-      return await response.json();
-    } catch (e) {
-      console.error(e);
-      return null;
-    }
-  };
-  var fetchPost = createFetch("POST");
-  var postSearch = async (cat, keyword, filter) => {
-    const url = `https://api.bgm.tv/v0/search/${cat}?limit=1`;
-    const body = { keyword, filter };
-    const result = await fetchPost(url, body);
-    return result?.data;
-  };
-  var searchPrsn = (keyword) => postSearch("persons", keyword);
-  function normalize(name) {
-    return name.replace(/\s/g, "").replaceAll("-", "").replace(/[\u30A1-\u30F6]/g, function(match) {
-      return String.fromCharCode(match.charCodeAt(0) - 96);
-    }).replace(/[\uFF21-\uFF5A]/g, function(match) {
-      return String.fromCharCode(match.charCodeAt(0) - 65248);
-    }).toLowerCase();
-  }
-
-  // src/person.js
-  async function checkExistingPerson(personName) {
-    const result = { aliased: null, directMatch: null, aliasedMulti: null };
-    try {
-      let aliased = null;
-      const provider = getProvider();
-      try {
-        const res = await fetch(`${provider}/api/aliases/${encodeURIComponent(personName)}`);
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data) && data.length > 0) {
-            aliased = data[0];
-            if (data.length > 1) {
-              result.aliasedMulti = data;
-            }
-          }
-        }
-      } catch (e) {
-        console.error("aliases API failed:", e);
-      }
-      if (!aliased) {
-        aliased = await window.personAliasQuery?.(personName);
-      }
-      if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
-      const searchResults = await searchPrsn(personName);
-      const first = searchResults?.[0];
-      if (first && normalize(personName) === normalize(first.name)) {
-        result.directMatch = { name: first.name, id: first.id };
-      }
-    } catch (e) {
-      console.error("checkExistingPerson failed:", e);
-    }
-    return result;
-  }
-
-  // src/subject-page.js
-  var LOADING_MSGS = [
-    "\u5750\u548C\u653E\u5BBD",
-    "\u6B63\u5728\u51C6\u5907\u6570\u636E<br>\u8BF7\u52FF\u2122\u5173\u95ED\u8BA1\u7B97\u673A",
-    "\u597D\u4E1C\u897F\u5C31\u8981\u6765\u4E86\uFF01",
-    () => `\u4F60\u5DF2\u5B8C\u6210${10 * (2 + Math.floor(Math.random() * 7))}%`,
-    "\u6B63\u5728\u5904\u7406\u4E00\u4E9B\u4E8B\u60C5",
-    "\u4F60\u6B63\u5728\u6210\u529F\uFF01",
-    "\u4E0D\u5DE7\u7684\u662F\uFF0C\u5B83\u82B1\u8D39\u7684\u65F6\u95F4\u6BD4\u901A\u5E38\u8981\u957F",
-    "\u518D\u7B49\u4E00\u4E0B\u4E0B\u5C31\u597D\u4E86",
-    "\u8FD9\u901A\u5E38\u4E0D\u4F1A\u592A\u4E45",
-    "\u6211\u4EEC\u6B63\u5728\u5E2E\u4F60\u641E\u5B9A\u4E00\u5207"
-  ];
-  function randomMsg() {
-    const m = LOADING_MSGS[Math.floor(Math.random() * LOADING_MSGS.length)];
-    return typeof m === "function" ? m() : m;
-  }
-  function initSubjectPage() {
-    if (getShow() === "off") return;
-    const href = document.querySelector(".focus").href.split("/").pop();
-    const typeCode = { anime: 2, book: 1, music: 3, game: 4, real: 6 }[href] || 0;
-    if (!typeCode) return;
-    const posNames = new Set(Object.values(POSITION_IDS[typeCode] || {}));
-    const infobox = document.querySelector("#infobox");
-    if (!infobox) return;
-    const DELIM_RE = /[()[\]{}（）<>《》「」『』【】+×·→/／、,，;；：&＆\\等]+/;
-    infobox.querySelectorAll("li:not(.sub_container):not(.sub_group)").forEach((li) => {
-      const tip = li.querySelector(".tip");
-      if (!tip) return;
-      const fieldName = tip.textContent.replace(/[:：]\s*$/, "").trim();
-      if (!posNames.has(fieldName)) return;
-      const linked = /* @__PURE__ */ new Set();
-      li.querySelectorAll("a").forEach((a) => linked.add(a.textContent.trim()));
-      const clone = li.cloneNode(true);
-      clone.querySelectorAll("a, .tip").forEach((el) => el.remove());
-      const text = clone.textContent;
-      const names = text.split(DELIM_RE).map((s) => s.trim()).filter(Boolean);
-      names.sort((a, b) => b.length - a.length);
-      let tipHTML = "";
-      if (tip) {
-        tipHTML = tip.outerHTML;
-        tip.remove();
-      }
-      const unlinked = names.filter((n) => !linked.has(n));
-      if (unlinked.length) {
-        const nameRE = new RegExp(
-          `(?<=^|[^<\\w])(${unlinked.map((n) => n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})([^<\\w]|$)`,
-          "g"
-        );
-        const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT, {
-          acceptNode: (node) => node.parentElement.closest("a, .tip") ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT
-        });
-        const tNodes = [];
-        while (walker.nextNode()) tNodes.push(walker.currentNode);
-        for (const node of tNodes) {
-          const html = node.textContent.replace(
-            nameRE,
-            (_, name, p3) => `<a class="bgm-mp-name bgm-mp-name-link" data-name="${name}">${name}</a>${p3}`
-          );
-          if (html !== node.textContent) {
-            const span = document.createElement("span");
-            span.innerHTML = html;
-            node.replaceWith(...span.childNodes);
-          }
-        }
-      }
-      if (tipHTML) li.insertAdjacentHTML("afterbegin", tipHTML);
-    });
-    document.querySelectorAll(".bgm-mp-name").forEach((a) => {
-      a.addEventListener("click", () => openSubjectPopup(a.dataset.name, typeCode));
-    });
-  }
-  var _abortController = null;
-  function openSubjectPopup(personName, typeCode) {
-    if (_abortController) _abortController.abort();
-    _abortController = new AbortController();
-    const signal = _abortController.signal;
-    const existing = document.querySelector(".bgm-mp-subject-popup");
-    if (existing) existing.remove();
-    const provider = getProvider();
-    const popup = document.createElement("div");
-    popup.className = "bgm-mp-notify bgm-mp-subject-popup";
-    const handle = document.createElement("div");
-    handle.className = "staff-tip-handle";
-    handle.innerHTML = `<strong>${personName}</strong><button class="bgm-mp-notify-close">&times;</button>`;
-    const content = document.createElement("div");
-    content.className = "staff-tip-content";
-    popup.append(handle, content);
-    document.body.appendChild(popup);
-    content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
-    popup.querySelector(".bgm-mp-notify-close").onclick = () => {
-      _abortController.abort();
-      popup.remove();
-    };
-    let offX = 0, offY = 0;
-    function cx(e) {
-      return e.touches ? e.touches[0].clientX : e.clientX;
-    }
-    function cy(e) {
-      return e.touches ? e.touches[0].clientY : e.clientY;
-    }
-    handle.onmousedown = handle.ontouchstart = (e) => {
-      if (e.target.closest(".bgm-mp-notify-close")) return;
-      const rect = popup.getBoundingClientRect();
-      popup.style.transform = "none";
-      popup.style.left = rect.left + "px";
-      popup.style.top = rect.top + "px";
-      offX = cx(e) - rect.left;
-      offY = cy(e) - rect.top;
-      document.onmousemove = document.ontouchmove = (ev) => {
-        popup.style.left = cx(ev) - offX + "px";
-        popup.style.top = cy(ev) - offY + "px";
-      };
-      document.onmouseup = document.ontouchend = () => {
-        document.onmousemove = document.ontouchmove = null;
-      };
-    };
-    (async () => {
-      const existing2 = await checkExistingPerson(personName);
-      let targetParam = "";
-      if (existing2.aliased) targetParam = `&target=${existing2.aliased.id}`;
-      else if (existing2.directMatch) targetParam = `&target=${existing2.directMatch.id}`;
-      const hasExisting = existing2.aliased || existing2.directMatch;
-      if (hasExisting) {
-        let warningHtml = "";
-        if (existing2.aliased) {
-          if (existing2.aliasedMulti && existing2.aliasedMulti.length > 1) {
-            warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u5339\u914D\u5230\u591A\u4E2A\u4EBA\u7269\uFF0C\u5DF2\u53D6\u7B2C\u4E00\u4E2A\uFF1A</div>`;
-            for (const p of existing2.aliasedMulti) {
-              warningHtml += `<a class="l" href="/person/${p.id}" target="_blank">${p.name}</a> `;
-            }
-            warningHtml += "</div>";
-          } else {
-            warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u7684\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.aliased.id}" target="_blank">${existing2.aliased.name}</a></div>`;
-          }
-        }
-        if (existing2.directMatch) {
-          warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u540C\u540D\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.directMatch.id}" target="_blank">${existing2.directMatch.name}</a></div>`;
-        }
-        warningHtml += '<div class="staff-confirm-section" id="bgm-mp-confirm-btn">\u4ECD\u7136\u52A0\u8F7D</div>';
-        content.innerHTML = warningHtml;
-        document.querySelector("#bgm-mp-confirm-btn").onclick = () => {
-          document.querySelector("#bgm-mp-confirm-btn").remove();
-          fetchAndRenderResults(
-            personName,
-            typeCode,
-            provider,
-            signal,
-            content,
-            existing2,
-            targetParam
-          );
-        };
-      } else {
-        await fetchAndRenderResults(
-          personName,
-          typeCode,
-          provider,
-          signal,
-          content,
-          existing2,
-          targetParam
-        );
-      }
-    })();
-  }
-  async function fetchAndRenderResults(personName, typeCode, provider, signal, content, existing, targetParam) {
-    const typeParam = typeCode ? `?type=${typeCode}` : "";
-    const encodedName = encodeURIComponent(personName);
-    let subjectsData = null, episodesData = null, aborted = false;
-    try {
-      const subjRes = await fetch(
-        `${provider}/api/persons/${encodedName}/missing-subjects${typeParam}${targetParam}`,
-        { signal }
-      );
-      if (!subjRes.ok) {
-        subjectsData = null;
-      } else {
-        subjectsData = await subjRes.json();
-      }
-    } catch (e) {
-      if (e.name === "AbortError") {
-        aborted = true;
-        return;
-      }
-    }
-    if (typeCode === 2) {
-      try {
-        const epQuery = targetParam ? "?" + targetParam.slice(1) : "";
-        const epRes = await fetch(
-          `${provider}/api/persons/${encodedName}/missing-episodes${epQuery}`,
-          { signal }
-        );
-        if (epRes.ok) {
-          episodesData = await epRes.json();
-        }
-      } catch (e) {
-        if (e.name === "AbortError") {
-          aborted = true;
-          return;
-        }
-      }
-    }
-    if (aborted) return;
-    const hasNetworkError = subjectsData === null;
-    const subjEntries = hasNetworkError ? [] : Object.entries(subjectsData || {});
-    const hasData = subjEntries.length || episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length);
-    let html = "";
-    if (hasNetworkError) {
-      html = '<div class="staff-error-section"><div class="staff-error-title">\u83B7\u53D6\u5931\u8D25\uFF0C\u8BF7\u68C0\u67E5API\u5730\u5740\u6216\u7F51\u7EDC</div></div>';
-    } else if (!hasData) {
-      html = '<div class="bgm-mp-empty-hint">\u672A\u627E\u5230\u7F3A\u5931\u5173\u8054</div>';
-    } else {
-      if (subjEntries.length) {
-        html += '<div class="bgm-mp-result-list">';
-        html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u6761\u76EE\u5173\u8054\uFF1A</div>';
-        for (const [sid, entry] of subjEntries) {
-          const posNames = (entry.positions || []).map((pid) => POSITION_IDS[typeCode]?.[pid] || pid).join("\u3001");
-          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${posNames}</div>`;
-        }
-        html += "</div>";
-      }
-      if (episodesData) {
-        const matchedEpEntries = Object.entries(episodesData.matched || {});
-        const unmatchedEpEntries = Object.entries(episodesData.unmatched || {});
-        if (matchedEpEntries.length) {
-          html += '<div class="bgm-mp-result-list">';
-          html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
-          for (const [sid, entry] of matchedEpEntries) {
-            const posMap = entry.episodes || {};
-            const parts = Object.entries(posMap).map(
-              ([pid, labels]) => `${POSITION_IDS[typeCode]?.[pid] || pid}\uFF1A${genAppearEps(labels)}`
-            );
-            html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> ${parts.join("\uFF0C")}</div>`;
-          }
-          html += "</div>";
-        }
-        if (unmatchedEpEntries.length) {
-          html += '<div class="bgm-mp-result-list">';
-          html += '<div class="bgm-mp-section-title">\u7591\u4F3C\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
-          for (const [sid, entry] of unmatchedEpEntries) {
-            const episodes = entry.episodes || [];
-            html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${episodes.map(
-              (ep) => `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`
-            ).join(", ")}</div>`;
-          }
-          html += "</div>";
-        }
-      }
-      html += `<div class="bgm-mp-popup-actions">
-        <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? "" : ' disabled style="opacity:0.5"'}>\u521B\u5EFA\u4EBA\u7269</button>
-      </div>`;
-    }
-    content.innerHTML = html;
-    if (!hasNetworkError) {
-      document.querySelector("#bgm-mp-create-btn").onclick = () => {
-        if (!hasData) return;
-        localStorage.setItem(
-          "bgm-mp-pending",
-          JSON.stringify({
-            personName,
-            typeCode,
-            subjectsData,
-            episodesData
-          })
-        );
-        window.open("/person/new");
-      };
-    }
-  }
-  function initPersonNewPage() {
-    const raw = localStorage.getItem("bgm-mp-pending");
-    if (!raw) return;
-    try {
-      const data = JSON.parse(raw);
-      const input = document.querySelector("#crt_name");
-      if (input && data.personName) input.value = data.personName;
-    } catch (_e) {
-    }
-  }
-  function initPersonPage() {
-    const raw = localStorage.getItem("bgm-mp-pending");
-    if (!raw) return;
-    const personId2 = location.pathname.match(/\/person\/(\d+)/)?.[1];
-    if (!personId2) return;
-    try {
-      const data = JSON.parse(raw);
-      const typeExt = { 1: "book", 2: "anime", 3: "music", 4: "game", 6: "real" }[data.typeCode];
-      if (!typeExt) return;
-      location.href = `/person/${personId2}/add_related/${typeExt}`;
-    } catch (_e) {
-    }
-  }
   var _pendingData = null;
   function getPendingData() {
     return _pendingData;
@@ -1452,7 +1626,7 @@ document.head.appendChild(styleEl);
     const raw = localStorage.getItem("bgm-mp-pending");
     if (!raw) return;
     const referrer = document.referrer;
-    if (!referrer.includes("/person/new") && !referrer.match(/\/person\/\d+$/)) return;
+    if (!referrer.includes("/person/new") && !referrer.match(/\/person\/(\d+)/)) return;
     try {
       const data = JSON.parse(raw);
       _pendingData = data;
@@ -1460,15 +1634,32 @@ document.head.appendChild(styleEl);
         localStorage.removeItem("bgm-mp-pending");
         return;
       }
-      for (const [sid, entry] of Object.entries(data.subjectsData)) {
+      const typeMap = { book: 1, anime: 2, music: 3, game: 4, real: 6 };
+      const pageType = typeMap[location.pathname.split("/").pop()] || 0;
+      const matching = {};
+      const remaining = {};
+      let hasRemaining = false;
+      for (const [key, entry] of Object.entries(data.subjectsData)) {
+        if ((entry._type || 0) === pageType) {
+          matching[key] = entry;
+        } else {
+          remaining[key] = entry;
+          hasRemaining = true;
+        }
+      }
+      let consumed = true;
+      for (const [key, entry] of Object.entries(matching)) {
         for (const posId of entry.positions || []) {
-          const li = addSubjectLi(Number(sid), posId, entry.name);
+          const li = addSubjectLi(Number(key.split(":").pop()), posId, entry.name);
+          if (li && !li.classList.contains("old")) {
+            consumed = false;
+          }
           if (li && li.classList.contains("old")) {
             li.style.background = document.documentElement.getAttribute("data-theme") === "dark" ? "rgba(255, 248, 165, 0.08)" : "rgba(255, 248, 165, 0.2)";
           }
         }
       }
-      if (data.episodesData?.matched) {
+      if (pageType === 2 && data.episodesData?.matched) {
         for (const [sid, entry] of Object.entries(data.episodesData.matched)) {
           for (const [posId, labels] of Object.entries(entry.episodes || {})) {
             const li = addSubjectLi(Number(sid), Number(posId), entry.name);
@@ -1482,17 +1673,60 @@ document.head.appendChild(styleEl);
           }
         }
       }
-      if (Object.keys(data.episodesData?.unmatched || {}).length) {
+      if (pageType === 2 && Object.keys(data.episodesData?.unmatched || {}).length) {
         const allUnmatched = Object.entries(data.episodesData.unmatched).map(([sid, entry]) => ({
           sid,
           entry
         }));
-        showPendingEps(allUnmatched, data.personName, data.typeCode);
+        showPendingEps(allUnmatched, data.personName, 2);
       }
-      localStorage.removeItem("bgm-mp-pending");
+      if (hasRemaining) {
+        localStorage.setItem(
+          "bgm-mp-pending",
+          JSON.stringify({
+            personName: data.personName,
+            subjectsData: remaining,
+            episodesData: null
+          })
+        );
+      } else {
+        localStorage.removeItem("bgm-mp-pending");
+      }
+      markRemainingTypes(remaining);
+      if (hasRemaining && consumed) {
+        const typeExts = { 1: "book", 2: "anime", 3: "music", 4: "game", 6: "real" };
+        const nextType = [
+          ...new Set(
+            Object.values(remaining).map((e) => e._type).filter(Boolean)
+          )
+        ][0];
+        if (nextType) {
+          const personIdMatch = location.pathname.match(/\/person\/(\d+)/);
+          if (personIdMatch)
+            location.href = `/person/${personIdMatch[1]}/add_related/${typeExts[nextType]}`;
+        }
+      }
     } catch (e) {
       localStorage.removeItem("bgm-mp-pending");
     }
+  }
+  function markRemainingTypes(remaining) {
+    const cat = document.querySelector("ul.cat");
+    if (!cat) return;
+    const types = new Set(
+      Object.values(remaining).map((e) => e._type).filter(Boolean)
+    );
+    const typeExts = { 1: "book", 2: "anime", 3: "music", 4: "game", 6: "real" };
+    cat.querySelectorAll("a").forEach((a) => {
+      a.classList.remove("bgm-mp-has-remaining");
+      const href = a.getAttribute("href") || "";
+      for (const [t, ext] of Object.entries(typeExts)) {
+        if (types.has(Number(t)) && href.endsWith("/" + ext)) {
+          a.classList.add("bgm-mp-has-remaining");
+          return;
+        }
+      }
+    });
   }
 
   // src/index.js
@@ -1529,8 +1763,8 @@ document.head.appendChild(styleEl);
             <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, "&quot;")}">
           </div>
           <div class="bgm-mp-row">
-            <label for="bgm-mp-show">\u6761\u76EE\u9875\u663E\u793A\u53EF\u80FD\u7684\u672A\u5173\u8054\u4EBA\u7269</label>
-            <input type="checkbox" id="bgm-mp-show"${show === "on" ? " checked" : ""}>
+            <label for="bgm-mp-show">\u6761\u76EE\u9875\u663E\u793A\u672A\u5173\u8054\u4EBA\u7269</label>
+            <input type="checkbox" class="bgm-mp-toggle" id="bgm-mp-show"${show === "on" ? " checked" : ""}>
           </div>
         </div>`
         );

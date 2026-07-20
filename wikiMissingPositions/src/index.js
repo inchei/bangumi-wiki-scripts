@@ -36,8 +36,8 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
             <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, '&quot;')}">
           </div>
           <div class="bgm-mp-row">
-            <label for="bgm-mp-show">条目页显示可能的未关联人物</label>
-            <input type="checkbox" id="bgm-mp-show"${show === 'on' ? ' checked' : ''}>
+            <label for="bgm-mp-show">条目页显示未关联人物</label>
+            <input type="checkbox" class="bgm-mp-toggle" id="bgm-mp-show"${show === 'on' ? ' checked' : ''}>
           </div>
         </div>`;
     },

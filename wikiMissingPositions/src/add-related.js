@@ -2,7 +2,6 @@ import { POSITION_IDS } from './position-ids.js';
 import { getProvider } from './api.js';
 import { genAppearEps, parseAppearEps, sortAppearEps } from './appear-eps.js';
 import { showPendingEps } from './popup.js';
-import { processPendingData, getPendingData } from './subject-page.js';
 
 let select, type, nameInput, epNameInput, epBtn, personId;
 
@@ -135,16 +134,18 @@ export function initAddRelated() {
     if (pending && pending.subjectsData && Object.keys(pending.subjectsData).length) {
       const resEntries = Object.entries(pending.subjectsData);
       let none = true;
-      for (const [id, entry] of resEntries) {
+      for (const [key, entry] of resEntries) {
+        if ((entry._type || 0) !== type) continue;
+        const sid = key.split(':').pop();
         for (const pos of entry.positions || []) {
           if (position && String(pos) !== position) continue;
           const existing = document.querySelector(
-            `#crtRelateSubjects li:has([href="/subject/${id}"])`,
+            `#crtRelateSubjects li:has([href="/subject/${sid}"])`,
           );
           if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
             none = false;
             subjectList = [
-              { id: Number(id), type_id: type, name: entry.name, name_cn: '', url_mod: 'subject' },
+              { id: Number(sid), type_id: type, name: entry.name, name_cn: '', url_mod: 'subject' },
             ];
             addRelateSubject(0, 'submitForm');
             document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
@@ -212,4 +213,137 @@ export function initAddRelated() {
   document.querySelector('#indexCatBox').after(container);
 
   processPendingData();
+}
+
+let _pendingData = null;
+export function getPendingData() {
+  return _pendingData;
+}
+
+export function processPendingData() {
+  const raw = localStorage.getItem('bgm-mp-pending');
+  if (!raw) return;
+
+  const referrer = document.referrer;
+  if (!referrer.includes('/person/new') && !referrer.match(/\/person\/(\d+)/)) return;
+
+  try {
+    const data = JSON.parse(raw);
+    _pendingData = data;
+    if (!data.subjectsData) {
+      localStorage.removeItem('bgm-mp-pending');
+      return;
+    }
+
+    const typeMap = { book: 1, anime: 2, music: 3, game: 4, real: 6 };
+    const pageType = typeMap[location.pathname.split('/').pop()] || 0;
+
+    const matching = {};
+    const remaining = {};
+    let hasRemaining = false;
+    for (const [key, entry] of Object.entries(data.subjectsData)) {
+      if ((entry._type || 0) === pageType) {
+        matching[key] = entry;
+      } else {
+        remaining[key] = entry;
+        hasRemaining = true;
+      }
+    }
+
+    let consumed = true;
+    for (const [key, entry] of Object.entries(matching)) {
+      for (const posId of entry.positions || []) {
+        const li = addSubjectLi(Number(key.split(':').pop()), posId, entry.name);
+        if (li && !li.classList.contains('old')) {
+          consumed = false;
+        }
+        if (li && li.classList.contains('old')) {
+          li.style.background =
+            document.documentElement.getAttribute('data-theme') === 'dark'
+              ? 'rgba(255, 248, 165, 0.08)'
+              : 'rgba(255, 248, 165, 0.2)';
+        }
+      }
+    }
+
+    if (pageType === 2 && data.episodesData?.matched) {
+      for (const [sid, entry] of Object.entries(data.episodesData.matched)) {
+        for (const [posId, labels] of Object.entries(entry.episodes || {})) {
+          const li = addSubjectLi(Number(sid), Number(posId), entry.name);
+          const epInput = li.querySelector('[name$="[appear_eps]"]');
+          if (epInput) {
+            epInput.value = genAppearEps(labels);
+            if (li.classList.contains('old')) {
+              li.style.background =
+                document.documentElement.getAttribute('data-theme') === 'dark'
+                  ? 'rgba(255, 248, 165, 0.08)'
+                  : 'rgba(255, 248, 165, 0.2)';
+            }
+          }
+        }
+      }
+    }
+
+    if (pageType === 2 && Object.keys(data.episodesData?.unmatched || {}).length) {
+      const allUnmatched = Object.entries(data.episodesData.unmatched).map(([sid, entry]) => ({
+        sid,
+        entry,
+      }));
+      showPendingEps(allUnmatched, data.personName, 2);
+    }
+
+    if (hasRemaining) {
+      localStorage.setItem(
+        'bgm-mp-pending',
+        JSON.stringify({
+          personName: data.personName,
+          subjectsData: remaining,
+          episodesData: null,
+        }),
+      );
+    } else {
+      localStorage.removeItem('bgm-mp-pending');
+    }
+
+    markRemainingTypes(remaining);
+
+    if (hasRemaining && consumed) {
+      const typeExts = { 1: 'book', 2: 'anime', 3: 'music', 4: 'game', 6: 'real' };
+      const nextType = [
+        ...new Set(
+          Object.values(remaining)
+            .map((e) => e._type)
+            .filter(Boolean),
+        ),
+      ][0];
+      if (nextType) {
+        const personIdMatch = location.pathname.match(/\/person\/(\d+)/);
+        if (personIdMatch)
+          location.href = `/person/${personIdMatch[1]}/add_related/${typeExts[nextType]}`;
+      }
+    }
+  } catch (e) {
+    localStorage.removeItem('bgm-mp-pending');
+  }
+}
+
+function markRemainingTypes(remaining) {
+  const cat = document.querySelector('ul.cat');
+  if (!cat) return;
+  const types = new Set(
+    Object.values(remaining)
+      .map((e) => e._type)
+      .filter(Boolean),
+  );
+  const typeExts = { 1: 'book', 2: 'anime', 3: 'music', 4: 'game', 6: 'real' };
+  cat.querySelectorAll('a').forEach((a) => {
+    a.classList.remove('bgm-mp-has-remaining');
+    const href = a.getAttribute('href') || '';
+    for (const [t, ext] of Object.entries(typeExts)) {
+      if (types.has(Number(t)) && href.endsWith('/' + ext)) {
+        a.classList.add('bgm-mp-has-remaining');
+        return;
+      }
+    }
+  });
 }

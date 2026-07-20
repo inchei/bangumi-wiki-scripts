@@ -2,6 +2,8 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+**IMPORTANT: NEVER commit changes unless the user explicitly asks you to. The pre-commit hook auto-bumps version numbers and builds dist files, so committing has permanent side effects. Always ask before committing.**
+
 ## Repository Overview
 
 This is a monorepo for [Bangumi](https://bgm.tv) wiki automation:
