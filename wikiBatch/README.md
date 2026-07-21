@@ -2,12 +2,15 @@
 
 批量更新 [Bangumi](https://bgm.tv/) 条目/角色/人物 Wiki 信息的用户脚本。支持编辑 Wcode（Infobox）、标签和系列状态，并提供提交前 diff 预览。
 
+视觉风格与 [bgq](https://github.com/anomalyco/bangumi-wiki-scripts/tree/main/bgq) 前端统一。
+
 ## 功能特性
 
 - **两种提交方式**：支持 Private API (PATCH) 和旧版表单 API (POST)
 - **三种实体类型**：条目 (subject)、角色 (character)、人物 (person)
 - **批量编辑**：通过 CSV 文件批量更新多个条目的 Wcode、标签和系列状态
-- **Diff 预览**：提交前展示修改内容的可视化差异对比
+- **GitHub 风格 Diff 预览**：基于 [git-diff-view](https://github.com/MrWangJustToDo/git-diff-view) (Svelte 5) 的 split view 差异对比，支持语法高亮
+- **全屏界面**：工具面板占满整个窗口，设置页和处理页在宽屏下左右分栏
 - **断点续传**：自动保存处理进度，刷新页面后可继续
 - **编辑摘要锁定**：可固定编辑摘要，批量应用相同摘要
 - **重复检测**：24 小时内有人编辑过的条目会高亮提示
@@ -79,7 +82,7 @@ id,作者,platform,tags,series
 
 ```
 wikiBatch/
-├── build.js              # 构建脚本 (esbuild)
+├── build.js              # 构建脚本 (esbuild + esbuild-svelte)
 ├── header.js             # ==UserScript== 元数据头
 ├── dist/
 │   └── wikiBatch.user.js # 构建输出
@@ -89,13 +92,15 @@ wikiBatch/
 │   ├── utils.ts          # 工具函数
 │   ├── ui.ts             # UI 辅助 (进度条、loading、状态消息)
 │   ├── csv.ts            # CSV 解析 (papaparse)
-│   ├── diff.ts           # Diff 显示 & Wcode 文本操作
+│   ├── diff.ts           # Diff 生成 & 渲染 (@git-diff-view/svelte)
 │   ├── api.ts            # API 调用 (获取条目、提交更新)
 │   ├── views.ts          # 视图切换
 │   ├── handlers.ts       # 按钮点击事件处理
 │   ├── dom.ts            # DOM 创建 & 事件绑定
-│   ├── styles.ts         # CDN 样式表注入
-│   ├── styles.css        # 应用样式 (独立 CSS 文件)
+│   ├── styles.ts         # CSS 注入 (GM_addStyle)
+│   ├── styles.css        # 应用样式
+│   ├── stubs/
+│   │   └── lowlight.ts   # @git-diff-view/lowlight 空桩（替代 lowlight 语法库，减包 1MB+）
 │   └── globals.d.ts      # GM_* API 类型声明
 ├── tsconfig.json
 ├── eslint.config.mjs
@@ -107,13 +112,27 @@ wikiBatch/
 ### 构建与检查
 
 ```bash
-pnpm build           # esbuild 打包 → dist/wikiBatch.user.js
+pnpm build           # esbuild + esbuild-svelte 打包 → dist/wikiBatch.user.js
 pnpm typecheck       # tsc --noEmit 类型检查
 pnpm lint            # ESLint
 pnpm lint:css        # Stylelint
 ```
 
-npm 依赖（`diff`、`diff2html`、`papaparse`、`@trim21/gm-fetch`）通过 esbuild 打包进单文件，无需 CDN `@require`。
+主要依赖（通过 esbuild 打包进单文件）：
+- **`@git-diff-view/svelte`** + **`svelte`** — GitHub 风格 diff 渲染（Svelte 5 编译为原生 DOM）
+- **`@git-diff-view/file`** — diff 生成引擎
+- **`papaparse`** — CSV 解析
+- **`@trim21/gm-fetch`** — PATCH API 请求
+
+构建时通过 esbuild alias 将 `@git-diff-view/lowlight` 替换为轻量桩文件（lowlight 包含所有语言语法高亮数据 ~1MB），仅对 `@git-diff-view/shiki` 标记 external 避免拉入 WASM。
+
+### 视觉风格
+
+完全对齐 bgq 前端的 [设计系统](https://github.com/anomalyco/bangumi-wiki-scripts/tree/main/bgq/frontend)：
+- **配色**：粉色主色 `#f09199`，链接蓝色 `#0084b4`，文字 `#303133`，边框 `#e4e7ed`
+- **组件**：36px 按钮 / 输入框，6px 圆角，粉色 focus ring，15px 卡片圆角
+- **字体**：系统字体栈 + PingFang SC / Microsoft YaHei CJK 支持
+- **布局**：全屏固定定位，宽屏（≥900px）左右分栏
 
 ### 开发约定
 

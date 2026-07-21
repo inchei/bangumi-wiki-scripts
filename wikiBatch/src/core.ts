@@ -41,6 +41,7 @@ export interface HistoryEntry {
 }
 
 export type ViewName = 'setup' | 'processing' | 'completed';
+export type DiffViewMode = 'split' | 'unified';
 
 export interface PreviousItem {
   id: string;
@@ -71,6 +72,7 @@ export interface State {
   retryCount: Record<string, number>;
   currentItemId: string | null;
   previousItem: PreviousItem | null;
+  diffViewMode: DiffViewMode;
 }
 
 export const state: State = {
@@ -96,6 +98,7 @@ export const state: State = {
     retryCount: {},
     currentItemId: null,
     previousItem: JSON.parse(localStorage.getItem('bgmPreviousItem') || 'null'),
+    diffViewMode: (localStorage.getItem('bgmDiffViewMode') as DiffViewMode) || 'split',
 };
 
 export function saveState(): void {
@@ -109,6 +112,7 @@ export function saveState(): void {
     if (state.previousItem) {
         localStorage.setItem('bgmPreviousItem', JSON.stringify(state.previousItem));
     }
+    localStorage.setItem('bgmDiffViewMode', state.diffViewMode);
 }
 
 export function getEntityApiConfig(type: EntityType, id: string): EntityConfig {
