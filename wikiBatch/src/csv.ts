@@ -9,6 +9,27 @@ const TYPE_MAP: Record<string, 'subject' | 'character' | 'person'> = {
     'person': 'person', 'prsn': 'person',
 };
 
+function loadCSVContent(csvContent: string, sourceLabel: string): void {
+    try {
+        state.csvData = parseCSV(csvContent);
+        state.currentIndex = 0;
+        state.retryCount = {};
+        state.previousItem = null;
+        localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
+        localStorage.setItem('bgmCurrentIndex', '0');
+        switchToSetupView();
+        showStatusMessage(sourceLabel + '加载成功');
+    } catch (error: unknown) {
+        showStatusMessage('CSV解析错误: ' + (error as Error).message);
+        console.error(error);
+    } finally {
+        hideLoadingOverlay();
+        document.querySelectorAll('#static-buttons-container button').forEach(btn => {
+            (btn as HTMLButtonElement).disabled = false;
+        });
+    }
+}
+
 export function handleFileUpload(this: HTMLInputElement, e: Event): void {
     const input = e.target as HTMLInputElement;
     const file = input.files?.[0];
@@ -21,27 +42,18 @@ export function handleFileUpload(this: HTMLInputElement, e: Event): void {
 
     const reader = new FileReader();
     reader.onload = function (event: ProgressEvent<FileReader>) {
-        try {
-            const csvContent = (event.target as FileReader).result as string;
-            state.csvData = parseCSV(csvContent);
-            state.currentIndex = 0;
-            state.retryCount = {};
-            state.previousItem = null;
-            localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
-            localStorage.setItem('bgmCurrentIndex', '0');
-            switchToSetupView();
-            showStatusMessage('CSV文件加载成功');
-        } catch (error: unknown) {
-            showStatusMessage('CSV解析错误: ' + (error as Error).message);
-            console.error(error);
-        } finally {
-            hideLoadingOverlay();
-            document.querySelectorAll('#static-buttons-container button').forEach(btn => {
-                (btn as HTMLButtonElement).disabled = false;
-            });
-        }
+        const csvContent = (event.target as FileReader).result as string;
+        loadCSVContent(csvContent, 'CSV文件');
     };
     reader.readAsText(file);
+}
+
+export function handlePasteCSV(csvContent: string): void {
+    document.querySelectorAll('#static-buttons-container button').forEach(btn => {
+        (btn as HTMLButtonElement).disabled = true;
+    });
+    showLoadingOverlay('正在解析粘贴的CSV...');
+    loadCSVContent(csvContent, '粘贴的CSV');
 }
 
 function parseCSV(csvContent: string): CsvItem[] {

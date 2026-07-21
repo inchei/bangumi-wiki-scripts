@@ -75,21 +75,33 @@ export function createStaticDOM(): void {
                             </button>
                         </div>
                     </div>
-                    <div class="edit-area" id="static-wcode-area">
-                        <label>Wcode:</label>
-                        <textarea id="static-wcode-input"></textarea>
-                    <div id="static-content-diff-container" class="diff-container"></div>
-                    </div>
-                    <div class="tags-edit-area" id="static-tags-area">
-                        <label>标签 (空格分隔):</label>
-                        <input type="text" id="static-tags-input">
-                    <div id="static-tags-diff-container" class="diff-container"></div>
-                    </div>
-                    <div class="series-edit-area" id="static-series-area">
-                        <label style="display: inline-flex; align-items: center;">
-                            <input type="checkbox" id="static-series-checkbox">
-                            标记为系列
-                        </label>
+                    <div class="edit-rows">
+                        <div class="edit-row">
+                            <div class="edit-area" id="static-wcode-area">
+                                <label>Wcode:</label>
+                                <textarea id="static-wcode-input"></textarea>
+                            </div>
+                            <div class="diff-section wcode-diff-section">
+                                <div class="diff-section-title">Wcode 变更</div>
+                                <div id="static-content-diff-container" class="diff-container"></div>
+                            </div>
+                        </div>
+                        <div class="edit-row">
+                            <div class="tags-edit-area" id="static-tags-area">
+                                <label>标签 (空格分隔):</label>
+                                <input type="text" id="static-tags-input">
+                            </div>
+                            <div class="diff-section tags-diff-section" id="static-tags-diff-section">
+                                <div class="diff-section-title">标签变更</div>
+                                <div id="static-tags-diff-container" class="diff-container"></div>
+                            </div>
+                        </div>
+                        <div class="edit-row edit-row-series">
+                            <div class="series-edit-area" id="static-series-area">
+                                <input type="checkbox" id="static-series-checkbox">
+                                <label for="static-series-checkbox" style="display: inline-flex; align-items: center;">标记为系列</label>
+                            </div>
+                        </div>
                     </div>
                     <div id="diff-error" style="color: #a72e2e; font-size: 14px; margin-top: 8px; display: none;"></div>
                     <div id="status-container" class="status-box"></div>

@@ -10,6 +10,7 @@ import {
     hideProgressBar,
     showProgressBar,
     updateProgressBar,
+    showStatusMessage,
 } from './ui';
 import {
     getFieldUpdates,
@@ -23,7 +24,7 @@ import {
     updateConfirmButtonState,
 } from './diff';
 import { isRecentUpdate } from './utils';
-import { handleFileUpload } from './csv';
+import { handleFileUpload, handlePasteCSV } from './csv';
 
 export function switchToSetupView(): void {
     state.currentView = 'setup';
@@ -37,61 +38,80 @@ export function switchToSetupView(): void {
         coreContent.innerHTML = `
             <div>
                 <h3 class="section-title">基本设置</h3>
+                <div class="setup-columns">
+                    <div class="setup-column">
+                        <div class="form-group">
+                            <label>提交方式选择</label>
+                            <div class="method-option-group">
+                                <input type="radio" id="method-patch" name="submit-method" value="patch" ${state.submitMethod === 'patch' ? 'checked' : ''}>
+                                <label for="method-patch">Private API</label>
+                                <input type="radio" id="method-post" name="submit-method" value="post" ${state.submitMethod === 'post' ? 'checked' : ''}>
+                                <label for="method-post">旧 API</label>
+                            </div>
+                        </div>
 
-                <div class="form-group">
-                    <label>提交方式选择</label>
-                    <div class="method-option-group">
-                        <span>
-                            <input type="radio" id="method-patch" name="submit-method" value="patch" ${state.submitMethod === 'patch' ? 'checked' : ''}>
-                            <label for="method-patch">Private API</label>
-                        </span>
-                        <span style="margin-left: 10px;">
-                            <input type="radio" id="method-post" name="submit-method" value="post" ${state.submitMethod === 'post' ? 'checked' : ''}>
-                            <label for="method-post">旧 API</label>
-                        </span>
+                        <div id="patch-method-options" class="form-group ${state.submitMethod === 'patch' ? '' : 'hidden'}">
+                            <label for="setup-access-token">Access Token</label>
+                            <input type="password" id="setup-access-token" value="${state.accessToken}">
+                            <p class="formhash-hint">
+                                你可以在<a href="https://next.bgm.tv/demo/access-token" target="_blank">个人令牌页</a>中获取 Access Token
+                            </p>
+                        </div>
+
+                        <div id="post-method-options" class="form-group ${state.submitMethod === 'post' ? '' : 'hidden'}">
+                            <label for="setup-formhash">Formhash</label>
+                            <input type="text" id="setup-formhash" value="${state.formhash}">
+                            <p class="formhash-hint">
+                                如何获取formhash：<br>
+                                1. 打开条目编辑页面（如 <a href="https://bgm.tv/subject/354667/edit_detail">https://bgm.tv/subject/354667/edit_detail</a>）<br>
+                                2. 在浏览器控制台执行：<code>document.querySelector('[name=formhash]').value</code><br>
+                                3. 将返回的值复制到上方输入框
+                            </p>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Diff 显示模式</label>
+                            <div class="method-option-group">
+                                <input type="radio" id="diff-mode-split" name="diff-view-mode" value="split" ${state.diffViewMode === 'split' ? 'checked' : ''}>
+                                <label for="diff-mode-split">左右对照</label>
+                                <input type="radio" id="diff-mode-unified" name="diff-view-mode" value="unified" ${state.diffViewMode === 'unified' ? 'checked' : ''}>
+                                <label for="diff-mode-unified">上下统一</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="setup-column">
+                        <div class="form-group">
+                            <label for="setup-csv-file">CSV文件 (包含type、ID、要更新的字段列、tags列或series列)</label>
+                            <div class="file-upload-group">
+                                <button type="button" class="secondary" id="setup-csv-btn">
+                                    <i class="fas fa-upload"></i> 选择 CSV 文件
+                                </button>
+                                <button type="button" class="secondary" id="setup-paste-csv-btn">
+                                    <i class="fas fa-paste"></i> 从剪贴板粘贴
+                                </button>
+                                <span class="file-upload-name" id="setup-csv-file-name"></span>
+                            </div>
+                            <input type="file" id="setup-csv-file" accept=".csv" class="file-upload-input">
+                            ${state.csvData ? `<div class="csv-loaded-info">已加载CSV: ${state.csvData.length} 条记录</div>` : ''}
+                            <p class="csv-hint">
+                                type列可选值为 subject（条目）、character/crt（角色）、person/prsn（人物），不填默认为subject<br>
+                                tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签<br>
+                                series列使用true或false表示是否标记为系列<br>
+                                角色和人物仅支持 Private API 提交方式
+                            </p>
+                        </div>
+                        ${state.csvData ? `
+                        <div class="form-group">
+                            <label>处理进度</label>
+                            <div class="progress-bar-container">
+                                <div class="progress-bar" style="width: ${(state.currentIndex / state.csvData.length) * 100}%"></div>
+                            </div>
+                            <div class="progress-info">上次进度: ${state.currentIndex}/${state.csvData.length}</div>
+                            <button id="setup-reset-progress" class="secondary" style="margin-top: 10px;">重置进度</button>
+                        </div>
+                        ` : ''}
                     </div>
                 </div>
-
-                <div id="patch-method-options" class="form-group ${state.submitMethod === 'patch' ? '' : 'hidden'}">
-                    <label for="setup-access-token">Access Token</label>
-                    <input type="password" id="setup-access-token" value="${state.accessToken}">
-                    <p class="formhash-hint">
-                        你可以在<a href="https://next.bgm.tv/demo/access-token" target="_blank">个人令牌页</a>中获取 Access Token
-                    </p>
-                </div>
-
-                <div id="post-method-options" class="form-group ${state.submitMethod === 'post' ? '' : 'hidden'}">
-                    <label for="setup-formhash">Formhash</label>
-                    <input type="text" id="setup-formhash" value="${state.formhash}">
-                    <p class="formhash-hint">
-                        如何获取formhash：<br>
-                        1. 打开条目编辑页面（如 <a href="https://bgm.tv/subject/354667/edit_detail">https://bgm.tv/subject/354667/edit_detail</a>）<br>
-                        2. 在浏览器控制台执行：<code>document.querySelector('[name=formhash]').value</code><br>
-                        3. 将返回的值复制到上方输入框
-                    </p>
-                </div>
-
-                <div class="form-group">
-                    <label for="setup-csv-file">CSV文件 (包含type、ID、要更新的字段列、tags列或series列)</label>
-                    <input type="file" id="setup-csv-file" accept=".csv">
-                    ${state.csvData ? `<div style="margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 14px;">已加载CSV: ${state.csvData.length} 条记录</div>` : ''}
-                    <p style="font-size: 13px; color: #666; margin-top: 5px;">
-                        type列可选值为 subject（条目）、character/crt（角色）、person/prsn（人物），不填默认为subject<br>
-                        tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签<br>
-                        series列使用true或false表示是否标记为系列<br>
-                        角色和人物仅支持 Private API 提交方式
-                    </p>
-                </div>
-                ${state.csvData ? `
-                <div class="form-group">
-                    <label>处理进度</label>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar" style="width: ${(state.currentIndex / state.csvData.length) * 100}%"></div>
-                    </div>
-                    <div style="margin-top: 8px; color: #666; font-size: 14px;">上次进度: ${state.currentIndex}/${state.csvData.length}</div>
-                    <button id="setup-reset-progress" class="secondary" style="margin-top: 10px;">重置进度</button>
-                </div>
-                ` : ''}
             </div>
         `;
     }
@@ -131,9 +151,48 @@ export function switchToSetupView(): void {
         });
     });
 
+    const diffModeRadios = document.querySelectorAll('input[name="diff-view-mode"]');
+    diffModeRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            state.diffViewMode = (e.target as HTMLInputElement).value as 'split' | 'unified';
+            localStorage.setItem('bgmDiffViewMode', state.diffViewMode);
+        });
+    });
+
     const csvFileInput = document.getElementById('setup-csv-file') as HTMLInputElement | null;
     if (csvFileInput) {
         csvFileInput.addEventListener('change', handleFileUpload);
+        csvFileInput.addEventListener('change', () => {
+            const name = csvFileInput.files?.[0]?.name || '';
+            const nameEl = document.getElementById('setup-csv-file-name');
+            if (nameEl) nameEl.textContent = name;
+        });
+    }
+
+    const csvBtn = document.getElementById('setup-csv-btn') as HTMLButtonElement | null;
+    if (csvBtn && csvFileInput) {
+        csvBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            csvFileInput.click();
+        });
+    }
+
+    const pasteCsvBtn = document.getElementById('setup-paste-csv-btn') as HTMLButtonElement | null;
+    if (pasteCsvBtn) {
+        pasteCsvBtn.addEventListener('click', async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                if (!text || !text.trim()) {
+                    showStatusMessage('剪贴板内容不是有效的CSV');
+                    return;
+                }
+                const nameEl = document.getElementById('setup-csv-file-name');
+                if (nameEl) nameEl.textContent = '已从剪贴板粘贴';
+                handlePasteCSV(text);
+            } catch (err) {
+                showStatusMessage('读取剪贴板失败: ' + (err as Error).message);
+            }
+        });
     }
 }
 
@@ -230,7 +289,7 @@ export function switchToProcessingView(itemData: {
     if (contentDiffSection) contentDiffSection.style.display = 'block';
 
     const tagsArea = document.getElementById('static-tags-area');
-    const tagsDiffSection = document.getElementById('static-tags-diff-container');
+    const tagsDiffSection = document.getElementById('static-tags-diff-section');
     if (entityType === 'subject') {
         const tagsInput = document.getElementById('static-tags-input') as HTMLInputElement;
         const newTags = applyTagUpdates(oldTags, tagUpdates);

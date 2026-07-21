@@ -1,5 +1,6 @@
-import * as Diff from 'diff';
-import { Diff2HtmlUI } from 'diff2html/lib/ui/js/diff2html-ui-slim';
+import { generateDiffFile } from '@git-diff-view/file';
+import { DiffView, DiffModeEnum } from '@git-diff-view/svelte';
+import { mount, unmount } from 'svelte';
 import { state, type EntityType, type TagUpdates, type SeriesUpdate, type CsvItem } from './core';
 import { sanitizeRegExp, arraysEqual } from './utils';
 
@@ -75,30 +76,48 @@ export function updateDiffDisplay(oldText: string, newText: string, containerId:
     try {
         const normalizedOld = (oldText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
         const normalizedNew = (newText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-        const fileName = `条目 ${state.currentSubjectData?.name || '未知名称'} - ${state.currentItemId}`;
-        const diffString = Diff.createPatch(fileName, normalizedOld, normalizedNew);
-        const configuration: Record<string, unknown> = {
-            drawFileList: false,
-            fileListToggle: false,
-            fileContentToggle: false,
-            matching: 'lines',
-            highlight: false,
-        };
+        const oldFileName = '编辑前';
+        const newFileName = '编辑后';
+
+        const file = generateDiffFile(oldFileName, normalizedOld, newFileName, normalizedNew, 'text', 'text', { context: 1 });
+        file.init();
+        file.buildSplitDiffLines();
 
         const container = document.getElementById(containerId);
         if (!container) return;
-        const diff2htmlUi = new Diff2HtmlUI(container, diffString, configuration);
-        diff2htmlUi.draw();
 
-        const scripts = container.querySelectorAll('script');
-        scripts.forEach(script => {
-            const newScript = document.createElement('script');
-            Array.from(script.attributes).forEach(attr => {
-                newScript.setAttribute(attr.name, attr.value);
-            });
-            newScript.textContent = script.textContent;
-            script.parentNode!.replaceChild(newScript, script);
+        const oldInstance = (container as any)._diffViewInstance;
+        if (oldInstance) {
+            unmount(oldInstance);
+        }
+
+        container.innerHTML = '';
+
+        const instance = mount(DiffView, {
+            target: container,
+            props: {
+                diffFile: file,
+                diffViewMode: state.diffViewMode === 'unified' ? DiffModeEnum.Unified : DiffModeEnum.Split,
+                diffViewFontSize: 13,
+                diffViewTheme: 'light',
+                diffViewHighlight: true,
+                diffViewWrap: true,
+            },
         });
+        (container as any)._diffViewInstance = instance;
+
+        if (containerId === 'static-content-diff-container') {
+            setTimeout(() => {
+                const textarea = document.getElementById('static-wcode-input') as HTMLTextAreaElement | null;
+                if (!textarea) return;
+                const editRow = textarea.closest('.edit-row') as HTMLElement | null;
+                if (!editRow) return;
+                const diffSection = editRow.querySelector('.diff-section') as HTMLElement | null;
+                if (!diffSection) return;
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, diffSection.offsetHeight) + 'px';
+            }, 0);
+        }
 
         const diffError = document.getElementById('diff-error');
         if (diffError) diffError.style.display = 'none';

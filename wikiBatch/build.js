@@ -8,6 +8,7 @@
 const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
+const sveltePlugin = require('esbuild-svelte');
 
 const ROOT = __dirname;
 const SRC = path.join(ROOT, 'src');
@@ -27,6 +28,12 @@ async function build() {
         loader: {
             '.css': 'text',
         },
+        plugins: [sveltePlugin()],
+        alias: {
+            '@git-diff-view/lowlight': path.join(SRC, 'stubs/lowlight.ts'),
+        },
+        external: ['@git-diff-view/shiki'],
+        logLevel: 'error',
         minify: true,
         banner: {
             js: HEADER + '\n',
