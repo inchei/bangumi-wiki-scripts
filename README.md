@@ -59,6 +59,27 @@
 | [find_duplicate_isbns.py](find_duplicate_isbns.py) | 查找重复 ISBN 的条目（限 9784 开头的日本出版物） |
 | [person_alias.py](person_alias.py) | 生成人物别名 JSON 数据（一对多映射），供 bgq API 或 wikiPersonAlias 脚本使用 |
 | [check_volume_order.py](check_volume_order.py) | 检查单行本卷序一致性 |
+| [extract_col.py](extract_col.py) | 从 CSV 列的 `key：value` 或 `name（role）` 中提取信息到新列 |
+
+### extract_col 列提取
+
+从 CSV 指定列中按 key 提取信息到新列，支持两种数据格式：
+
+- **key：value** 格式：`音响制作担当：白崎恵理` → 提取 `白崎恵理` 到新列，原列移除该项
+- **name（key）** 格式：`西田達三(动作作画监督)` → 提取 `西田達三` 到新列，原列移除该项
+
+```bash
+# key：value 格式
+python3 extract_col.py data.csv 音响 音响制作担当
+
+# name（key）格式
+python3 extract_col.py data.csv staff 动作作画监督
+
+# 重命名新列
+python3 extract_col.py data.csv 制作人员 辅佐 --new-col 演出助手
+```
+
+输出文件名默认为 `<输入>_extracted.csv`，提取失败的行写入 `<输入>_failed.csv`。
 
 ## GitHub Actions
 
