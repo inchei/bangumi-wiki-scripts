@@ -402,13 +402,52 @@ function renderResults(content, subjectsByType, episodesData, encodedName, perso
   };
 }
 
-export function initPersonNewPage() {
-  const raw = localStorage.getItem('bgm-mp-pending');
-  if (!raw) return;
+export async function initPersonNewPage() {
+  const params = new URLSearchParams(location.search);
+
+  // 1. localStorage
+  let raw = localStorage.getItem('bgm-mp-pending');
+
+  // 2. If bgm_mp param present, try postMessage from opener (HTML page)
+  if (!raw && params.has('bgm_mp') && window.opener) {
+    raw = await new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(null), 3000);
+      const handler = (e) => {
+        if (e.data && e.data.type === 'bgm_mp_data' && e.data.data) {
+          clearTimeout(timer);
+          window.removeEventListener('message', handler);
+          resolve(e.data.data);
+        }
+      };
+      window.addEventListener('message', handler);
+      window.opener.postMessage({ type: 'bgm_mp_request' }, '*');
+    });
+  }
+
+  // 3. Fallback to window.name
+  if (!raw) {
+    raw = window.name && window.name.startsWith('{') ? window.name : null;
+  }
+
+  if (!raw) {
+    const nameParam = params.get('name');
+    if (nameParam) {
+      const input = document.querySelector('#crt_name');
+      if (input) input.value = nameParam;
+    }
+    return;
+  }
   try {
     const data = JSON.parse(raw);
     const input = document.querySelector('#crt_name');
     if (input && data.personName) input.value = data.personName;
+    localStorage.setItem('bgm-mp-pending', raw);
+    window.name = '';
+    if (params.has('bgm_mp')) {
+      params.delete('bgm_mp');
+      const qs = params.toString();
+      history.replaceState(null, '', qs ? location.pathname + '?' + qs : location.pathname);
+    }
   } catch (_e) {
     /* ignore */
   }

@@ -1,0 +1,66 @@
+name: update missing persons
+
+on:
+  schedule:
+    - cron: '0 6 * * 3'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+env:
+  DUCKDB_VERSION: "1.2.0"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v5
+
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: 下载 DuckDB
+        run: |
+          curl -fsSL "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-linux-amd64.zip" -o /tmp/duckdb.zip
+          python3 -c "import zipfile; zipfile.ZipFile('/tmp/duckdb.zip').extractall('bgq/bin/')"
+          chmod +x bgq/bin/duckdb
+
+      - name: 下载 Bangumi 归档
+        run: bash bgq/download-archive.sh bangumi_archive
+
+      - name: 构建 DuckDB 数据库
+        run: |
+          mkdir -p bgq/bin
+          bgq/bin/duckdb bgq/bangumi.db -c "
+            CREATE TABLE subjects AS SELECT * FROM read_json_auto('bangumi_archive/subject.jsonlines');
+            CREATE TABLE persons AS SELECT id, name FROM read_json_auto('bangumi_archive/person.jsonlines');
+          "
+
+      - name: 生成别名 JSON
+        run: uv run person_alias.py
+
+      - name: 运行缺失人物检测
+        run: |
+          uv run find_missing_persons.py --multi
+          mkdir -p _site
+          cp -r docs/missing-persons _site/missing-persons
+
+      - name: 配置 GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: 上传 Pages 构建产物
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '_site'
+
+      - name: 部署到 GitHub Pages
+        uses: actions/deploy-pages@v4
