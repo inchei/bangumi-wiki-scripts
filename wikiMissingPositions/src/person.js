@@ -1,8 +1,9 @@
-import { searchPrsn, normalize } from './search.js';
+import { searchPrsnAll, normalize } from './search.js';
 import { getProvider } from './api.js';
 
 export async function checkExistingPerson(personName) {
-  const result = { aliased: null, directMatch: null, aliasedMulti: null };
+  const result = { aliased: null, aliasedMulti: null, directMatches: null };
+  const normalized = normalize(personName);
   try {
     let aliased = null;
     const provider = getProvider();
@@ -24,10 +25,16 @@ export async function checkExistingPerson(personName) {
       aliased = await window.personAliasQuery?.(personName);
     }
     if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
-    const searchResults = await searchPrsn(personName);
-    const first = searchResults?.[0];
-    if (first && normalize(personName) === normalize(first.name)) {
-      result.directMatch = { name: first.name, id: first.id };
+
+    const searchResults = await searchPrsnAll(personName);
+    if (searchResults) {
+      const matches = searchResults.filter((r) => normalized === normalize(r.name));
+      if (matches.length) {
+        result.directMatches = matches.map((r) => {
+          const cn = (r.infobox || []).find((f) => f.key === '简体中文名');
+          return { name: r.name, id: r.id, display: cn?.value || r.name };
+        });
+      }
     }
   } catch (e) {
     console.error('checkExistingPerson failed:', e);

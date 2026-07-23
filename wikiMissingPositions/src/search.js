@@ -12,14 +12,15 @@ const createFetch = (method) => async (url, body) => {
 
 const fetchPost = createFetch('POST');
 
-const postSearch = async (cat, keyword, filter) => {
-  const url = `https://api.bgm.tv/v0/search/${cat}?limit=1`;
+const postSearch = async (cat, keyword, filter, limit = 1) => {
+  const url = `https://api.bgm.tv/v0/search/${cat}?limit=${limit}`;
   const body = { keyword, filter };
   const result = await fetchPost(url, body);
   return result?.data;
 };
 
 export const searchPrsn = (keyword) => postSearch('persons', keyword);
+export const searchPrsnAll = (keyword) => postSearch('persons', keyword, undefined, 5);
 
 export function normalize(name) {
   return name

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.1.4
+// @version      0.1.5
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -935,13 +935,13 @@ document.head.appendChild(styleEl);
     }
   };
   var fetchPost = createFetch("POST");
-  var postSearch = async (cat, keyword, filter) => {
-    const url = `https://api.bgm.tv/v0/search/${cat}?limit=1`;
+  var postSearch = async (cat, keyword, filter, limit = 1) => {
+    const url = `https://api.bgm.tv/v0/search/${cat}?limit=${limit}`;
     const body = { keyword, filter };
     const result = await fetchPost(url, body);
     return result?.data;
   };
-  var searchPrsn = (keyword) => postSearch("persons", keyword);
+  var searchPrsnAll = (keyword) => postSearch("persons", keyword, void 0, 5);
   function normalize(name) {
     return name.replace(/\s/g, "").replaceAll("-", "").replace(/[\u30A1-\u30F6]/g, function(match) {
       return String.fromCharCode(match.charCodeAt(0) - 96);
@@ -952,7 +952,8 @@ document.head.appendChild(styleEl);
 
   // src/person.js
   async function checkExistingPerson(personName) {
-    const result = { aliased: null, directMatch: null, aliasedMulti: null };
+    const result = { aliased: null, aliasedMulti: null, directMatches: null };
+    const normalized = normalize(personName);
     try {
       let aliased = null;
       const provider = getProvider();
@@ -974,10 +975,15 @@ document.head.appendChild(styleEl);
         aliased = await window.personAliasQuery?.(personName);
       }
       if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
-      const searchResults = await searchPrsn(personName);
-      const first = searchResults?.[0];
-      if (first && normalize(personName) === normalize(first.name)) {
-        result.directMatch = { name: first.name, id: first.id };
+      const searchResults = await searchPrsnAll(personName);
+      if (searchResults) {
+        const matches = searchResults.filter((r) => normalized === normalize(r.name));
+        if (matches.length) {
+          result.directMatches = matches.map((r) => {
+            const cn = (r.infobox || []).find((f) => f.key === "\u7B80\u4F53\u4E2D\u6587\u540D");
+            return { name: r.name, id: r.id, display: cn?.value || r.name };
+          });
+        }
       }
     } catch (e) {
       console.error("checkExistingPerson failed:", e);
@@ -1112,7 +1118,7 @@ document.head.appendChild(styleEl);
       const checked = [...popup.querySelectorAll(".bgm-mp-type-check:checked")].map(
         (c) => Number(c.value)
       );
-      const targetId = (existing2?.aliased?.id || existing2?.directMatch?.id || 0).toString();
+      const targetId = (existing2?.aliased?.id || existing2?.directMatches?.[0]?.id || 0).toString();
       const encoded = encodeURIComponent(personName);
       let uncached = [];
       let cached = {};
@@ -1148,10 +1154,10 @@ document.head.appendChild(styleEl);
       _existing = existing2;
       let targetParam = "";
       if (existing2.aliased) targetParam = `&target=${existing2.aliased.id}`;
-      else if (existing2.directMatch) targetParam = `&target=${existing2.directMatch.id}`;
+      else if (existing2.directMatches) targetParam = `&target=${existing2.directMatches[0].id}`;
       _targetParam = targetParam;
       _ready = true;
-      const hasExisting = existing2.aliased || existing2.directMatch;
+      const hasExisting = existing2.aliased || existing2.directMatches;
       if (hasExisting) {
         let warningHtml = "";
         if (existing2.aliased) {
@@ -1165,8 +1171,12 @@ document.head.appendChild(styleEl);
             warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u7684\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.aliased.id}" target="_blank">${existing2.aliased.name}</a></div>`;
           }
         }
-        if (existing2.directMatch) {
-          warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u540C\u540D\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.directMatch.id}" target="_blank">${existing2.directMatch.name}</a></div>`;
+        if (existing2.directMatches) {
+          warningHtml += '<div class="staff-warning-section"><div class="staff-warning-title">\u540C\u540D\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div>';
+          for (const p of existing2.directMatches) {
+            warningHtml += `<a class="l" href="/person/${p.id}" target="_blank">${p.display || p.name}</a> `;
+          }
+          warningHtml += "</div>";
         }
         warningHtml += '<div class="staff-confirm-section" id="bgm-mp-confirm-btn">\u4ECD\u7136\u52A0\u8F7D</div>';
         content.innerHTML = warningHtml;

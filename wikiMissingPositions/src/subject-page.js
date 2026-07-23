@@ -167,7 +167,7 @@ export function openSubjectPopup(personName, typeCode) {
     const checked = [...popup.querySelectorAll('.bgm-mp-type-check:checked')].map((c) =>
       Number(c.value),
     );
-    const targetId = (existing?.aliased?.id || existing?.directMatch?.id || 0).toString();
+    const targetId = (existing?.aliased?.id || existing?.directMatches?.[0]?.id || 0).toString();
     const encoded = encodeURIComponent(personName);
 
     let uncached = [];
@@ -211,11 +211,11 @@ export function openSubjectPopup(personName, typeCode) {
     _existing = existing;
     let targetParam = '';
     if (existing.aliased) targetParam = `&target=${existing.aliased.id}`;
-    else if (existing.directMatch) targetParam = `&target=${existing.directMatch.id}`;
+    else if (existing.directMatches) targetParam = `&target=${existing.directMatches[0].id}`;
     _targetParam = targetParam;
     _ready = true;
 
-    const hasExisting = existing.aliased || existing.directMatch;
+    const hasExisting = existing.aliased || existing.directMatches;
 
     if (hasExisting) {
       let warningHtml = '';
@@ -230,8 +230,13 @@ export function openSubjectPopup(personName, typeCode) {
           warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">别名为「${personName}」的人物已存在：</div><a class="l" href="/person/${existing.aliased.id}" target="_blank">${existing.aliased.name}</a></div>`;
         }
       }
-      if (existing.directMatch) {
-        warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">同名人物已存在：</div><a class="l" href="/person/${existing.directMatch.id}" target="_blank">${existing.directMatch.name}</a></div>`;
+      if (existing.directMatches) {
+        warningHtml +=
+          '<div class="staff-warning-section"><div class="staff-warning-title">同名人物已存在：</div>';
+        for (const p of existing.directMatches) {
+          warningHtml += `<a class="l" href="/person/${p.id}" target="_blank">${p.display || p.name}</a> `;
+        }
+        warningHtml += '</div>';
       }
       warningHtml += '<div class="staff-confirm-section" id="bgm-mp-confirm-btn">仍然加载</div>';
       content.innerHTML = warningHtml;
