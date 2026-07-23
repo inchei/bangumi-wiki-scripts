@@ -75,7 +75,7 @@ jobs:
         if: ${{ env.BANGUMI_TOKEN != '' }}
         env:
           BANGUMI_TOKEN: ${{ secrets.BANGUMI_TOKEN }}
-        run: python3 find_dup_person_name.py | python3 sync_index.py --index 100490
+        run: python3 find_dup_person_name.py | uv run sync_index.py --index 100490
 
       - name: gzip 压缩
         run: gzip -9 -c ${{ env.ALIAS_JSON }} > ${{ env.ALIAS_GZ }}
