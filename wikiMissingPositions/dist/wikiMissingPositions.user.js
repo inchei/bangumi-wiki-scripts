@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.1.5
+// @version      0.1.6
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -1302,13 +1302,45 @@ document.head.appendChild(styleEl);
       window.open("/person/new");
     };
   }
-  function initPersonNewPage() {
-    const raw = localStorage.getItem("bgm-mp-pending");
-    if (!raw) return;
+  async function initPersonNewPage() {
+    const params = new URLSearchParams(location.search);
+    let raw = localStorage.getItem("bgm-mp-pending");
+    if (!raw && params.has("bgm_mp") && window.opener) {
+      raw = await new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(null), 3e3);
+        const handler = (e) => {
+          if (e.data && e.data.type === "bgm_mp_data" && e.data.data) {
+            clearTimeout(timer);
+            window.removeEventListener("message", handler);
+            resolve(e.data.data);
+          }
+        };
+        window.addEventListener("message", handler);
+        window.opener.postMessage({ type: "bgm_mp_request" }, "*");
+      });
+    }
+    if (!raw) {
+      raw = window.name && window.name.startsWith("{") ? window.name : null;
+    }
+    if (!raw) {
+      const nameParam = params.get("name");
+      if (nameParam) {
+        const input = document.querySelector("#crt_name");
+        if (input) input.value = nameParam;
+      }
+      return;
+    }
     try {
       const data = JSON.parse(raw);
       const input = document.querySelector("#crt_name");
       if (input && data.personName) input.value = data.personName;
+      localStorage.setItem("bgm-mp-pending", raw);
+      window.name = "";
+      if (params.has("bgm_mp")) {
+        params.delete("bgm_mp");
+        const qs = params.toString();
+        history.replaceState(null, "", qs ? location.pathname + "?" + qs : location.pathname);
+      }
     } catch (_e) {
     }
   }

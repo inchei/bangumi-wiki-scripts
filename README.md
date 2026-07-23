@@ -61,6 +61,7 @@
 | [check_volume_order.py](check_volume_order.py) | 检查单行本卷序一致性 |
 | [find_dup_person_name.py](find_dup_person_name.py) | 查找简体中文名同名人物，输出 CSV 供 `sync_index.py` 同步到目录 |
 | [extract_col.py](extract_col.py) | 从 CSV 列的 `key：value` 或 `name（role）` 中提取信息到新列 |
+| [find_missing_persons.py](find_missing_persons.py) | 扫描动画条目 infobox 职位字段，找出出现 ≥2 次但未创建为人物的人员，生成 HTML 列表 |
 
 ### extract_col 列提取
 
@@ -82,9 +83,31 @@ python3 extract_col.py data.csv 制作人员 辅佐 --new-col 演出助手
 
 输出文件名默认为 `<输入>_extracted.csv`，提取失败的行写入 `<输入>_failed.csv`。
 
+### find_missing_persons 缺失人物检测
+
+扫描动画条目 infobox 中的职位字段（如人物设定、作画监督、音响监督等），提取姓名并与 Bangumi 已有人员对比，找出出现次数 ≥2 但尚未创建为人物的人员名单。
+
+数据源自动检测：优先使用 `bgq/bangumi.db`（DuckDB，~15s），无 DB 时降级为 JSONLines（~47s）。已知人物判断同时参考 `person.jsonlines` 主名和 `person_alias.json` 别名。
+
+输出：
+- **单文件模式**（默认）：`missing_persons.html`，自包含所有数据
+- **分页模式**（`--multi`）：输出到 `docs/missing-persons/index.html` + `part-1..N.html`，每页 2000 人
+
+HTML 页面中每人显示出现次数和关联条目列表（可展开），点击「创建」按钮自动搜索 `api.bgm.tv`，如果人物已存在则显示链接，否则打开 `bgm.tv/person/new` 预填姓名。需要 [wikiMissingPositions](https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/wikiMissingPositions/dist/wikiMissingPositions.user.js) 用户脚本和 [bangumi 组件](https://bgm.tv/dev/app/6476) 配合完成一键创建与关联。
+
+```bash
+# 单文件输出
+uv run find_missing_persons.py
+
+# 分页输出（用于 GitHub Pages 部署）
+uv run find_missing_persons.py --multi
+```
+
+结果每周三自动更新到 [GitHub Pages](https://inchei.github.io/bangumi-wiki-scripts/missing-persons/)。
+
 ## GitHub Actions
 
-- **数据更新**（每周二自动运行）→ [GitHub Pages](https://inchei.github.io/bangumi-wiki-scripts/) 查看筛选结果，`data-latest` Release 包含人物别名数据
+- **数据更新**（每周三自动运行）→ [GitHub Pages](https://inchei.github.io/bangumi-wiki-scripts/) 查看筛选结果，`data-latest` Release 包含人物别名数据
 - **二进制构建**（bgq 代码变更时触发）→ `latest` Release：跨平台压缩包
 
 ### 网页端查看筛选结果
