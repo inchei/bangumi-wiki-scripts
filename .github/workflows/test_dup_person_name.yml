@@ -1,0 +1,25 @@
+name: find duplicate person names
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 下载 Bangumi 归档
+        run: bash bgq/download-archive.sh bangumi_archive
+
+      - name: 同步同名人物到目录 100490
+        env:
+          BANGUMI_TOKEN: ${{ secrets.BANGUMI_TOKEN }}
+        run: python3 find_dup_person_name.py | python3 sync_index.py --index 100490
