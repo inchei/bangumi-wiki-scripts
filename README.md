@@ -59,6 +59,7 @@
 | [find_duplicate_isbns.py](find_duplicate_isbns.py) | 查找重复 ISBN 的条目（限 9784 开头的日本出版物） |
 | [person_alias.py](person_alias.py) | 生成人物别名 JSON 数据（一对多映射），供 bgq API 或 wikiPersonAlias 脚本使用 |
 | [check_volume_order.py](check_volume_order.py) | 检查单行本卷序一致性 |
+| [find_dup_person_name.py](find_dup_person_name.py) | 查找简体中文名同名人物，输出 CSV 供 `sync_index.py` 同步到目录 |
 | [extract_col.py](extract_col.py) | 从 CSV 列的 `key：value` 或 `name（role）` 中提取信息到新列 |
 
 ### extract_col 列提取
@@ -108,7 +109,7 @@ done
 
 ```bash
 # 管道模式（类型自动从 CSV 列名推断：person_id→person, character_id→character, id→subject）
-export BANGUMI_TOKEN=your_token
+export =your_token
 ./bgq/bin/bgq query --config index_filters/example.yaml --data-dir bangumi_archive --format csv \
   | python sync_index.py --index 12345
 
@@ -125,6 +126,14 @@ python sync_index.py --index 12345 --csv results/some-filter.csv --dry-run
 - 行序即目录排序
 
 **目录过滤器**：`index_filters/` 目录下的 YAML 需包含 `target_index` 和 `target` 字段。可 fork 本仓库，设置 `BANGUMI_TOKEN` secret，设置 `test_sync_indices.yml` 的 cron，并删除其他 `.yml` 文件，开启并使用 GitHub Actions 同步自己的目录。
+
+### 同名人物同步
+
+`find_dup_person_name.py` 从 `person.jsonlines` 提取所有有 `简体中文名` 的人物，按名字分组，将同名（≥2人）的人物输出为 CSV，支持 `order` 列（同名人物共享同一序号）：
+
+```bash
+python3 find_dup_person_name.py | python3 sync_index.py --index <目录ID>
+```
 
 批量同步所有目录（或用于 cron）：
 

@@ -116,7 +116,7 @@ def build_desc(row: dict, columns: list[str], id_col: str, has_index_desc: bool)
         return row.get("index_desc", "")
     parts = []
     for col in columns:
-        if col == id_col or col.endswith("_id") or col == "index_desc":
+        if col == id_col or col.endswith("_id") or col == "index_desc" or col == "order":
             continue
         val = row.get(col, "").strip()
         if val:
@@ -136,6 +136,7 @@ def sync(
     delay: float = REQUEST_DELAY,
 ):
     has_index_desc = "index_desc" in columns
+    has_order_col = "order" in columns
 
     operations = 0
     current_delay = delay
@@ -151,8 +152,12 @@ def sync(
     for i, row in enumerate(rows):
         sid = int(row[id_col])
         result_ids.append(sid)
+        if has_order_col:
+            order_val = int(row["order"])
+        else:
+            order_val = i + 1
         result_map[sid] = {
-            "order": i + 1,
+            "order": order_val,
             "desc": build_desc(row, columns, id_col, has_index_desc),
         }
 
