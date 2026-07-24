@@ -4,9 +4,10 @@
 
 ## 快速开始
 
-1. 从 [GitHub Releases](https://github.com/inchei/bangumi-wiki-scripts/releases/latest) 下载的对应平台压缩包
-2. 从 https://github.com/bangumi/Archive/releases/tag/archive 下载最新数据并解压到上述文件夹内
-3. 在上述文件夹打开终端模拟器，运行 `./bgq serve --data-dir ./bangumi_archive` （Windows 将 `./bgq` 替换为 `bgq.exe`）
+1. 从 [GitHub Releases](https://github.com/inchei/bangumi-wiki-scripts/releases/latest) 下载对应平台压缩包
+2. 安装 DuckDB CLI，参见[官网](https://duckdb.org/install/?environment=cli)
+3. 从 https://github.com/bangumi/Archive/releases/tag/archive 下载最新数据并解压到上述文件夹内
+4. 在上述文件夹打开终端模拟器，运行 `./bgq serve --data-dir ./bangumi_archive` （Windows 将 `./bgq` 替换为 `bgq.exe`）
 
 ## 准备数据
 
@@ -21,7 +22,7 @@ chmod +x download-archive.sh
 
 ### 前提
 
-若使用 GitHub Releases 二进制包，由于只含 `bgq` + `duckdb`，设置 cron 前还需满足以下条件：
+若使用 GitHub Releases 二进制包，设置 cron 前还需满足以下条件：
 
 ```bash
 # download-archive.sh
@@ -70,9 +71,19 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 
 ## 安装
 
-从 [GitHub Releases](https://github.com/inchei/bangumi-wiki-scripts/releases/latest) 下载对应平台的压缩包（已包含 `bgq` 和 `duckdb`）
+### 前提
 
-或从源码编译：
+bgq 运行时依赖 [DuckDB CLI](https://duckdb.org/) 执行 SQL，须自行安装至 `PATH` 或通过 `DUCKDB_PATH` 环境变量指定。
+
+安装方式参见[官网](https://duckdb.org/install/?environment=cli)。
+
+> 仅测试 DuckDB v1.2.0 和 v1.5.4，其他版本可能存在问题。
+
+### 从 GitHub Releases 安装
+
+下载对应平台压缩包，解压后即可使用（需自行安装 DuckDB CLI）。
+
+### 从源码编译
 
 ```bash
 cd bgq
@@ -83,10 +94,6 @@ cp -r frontend/dist internal/server/dist
 
 # 编译 Go 二进制
 go build -o bin/bgq ./cmd/bgq/
-
-# 下载对应平台 DuckDB CLI，也可以使用发行版包，后续配置链接或环境变量即可
-curl -L https://github.com/duckdb/duckdb/releases/download/v1.2.0/duckdb_cli-linux-amd64.zip -o duckdb.zip
-unzip duckdb.zip -d bin/
 ```
 
 ## Docker 部署
