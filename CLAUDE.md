@@ -72,7 +72,7 @@ pnpm format:check                          # Check formatting (CI)
 ### DuckDB CLI (runtime dependency)
 
 ```bash
-curl -L https://github.com/duckdb/duckdb/releases/download/v1.2.0/duckdb_cli-linux-amd64.zip -o duckdb.zip
+curl -L https://github.com/duckdb/duckdb/releases/download/v1.5.4/duckdb_cli-linux-amd64.zip -o duckdb.zip
 unzip duckdb.zip -d bgq/bin/
 ```
 

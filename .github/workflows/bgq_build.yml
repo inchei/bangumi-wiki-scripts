@@ -15,9 +15,6 @@ on:
 permissions:
   contents: write
 
-env:
-  DUCKDB_VERSION: "1.2.0"
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,27 +23,21 @@ jobs:
         include:
           - goos: linux
             goarch: amd64
-            duckdb_suffix: linux-amd64
             archive_suffix: tar.gz
           - goos: linux
             goarch: arm64
-            duckdb_suffix: linux-aarch64
             archive_suffix: tar.gz
           - goos: darwin
             goarch: arm64
-            duckdb_suffix: osx-universal
             archive_suffix: tar.gz
           - goos: darwin
             goarch: amd64
-            duckdb_suffix: osx-universal
             archive_suffix: tar.gz
           - goos: windows
             goarch: amd64
-            duckdb_suffix: windows-amd64
             archive_suffix: zip
           - goos: windows
             goarch: arm64
-            duckdb_suffix: windows-arm64
             archive_suffix: zip
     steps:
       - name: 拉取代码
@@ -83,12 +74,6 @@ jobs:
           fi
           go build -o "bgq${EXT}" ./cmd/bgq/
 
-      - name: 下载 DuckDB
-        run: |
-          curl -fsSL "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-${{ matrix.duckdb_suffix }}.zip" -o /tmp/duckdb.zip
-          python3 -c "import zipfile; zipfile.ZipFile('/tmp/duckdb.zip').extractall('/tmp/duckdb-extract/')"
-          ls -la /tmp/duckdb-extract/
-
       - name: 打包
         run: |
           PKG_NAME="bgq-${{ matrix.goos }}-${{ matrix.goarch }}"
@@ -99,13 +84,6 @@ jobs:
             EXT=".exe"
           fi
           cp "bgq/bgq${EXT}" "/tmp/${PKG_NAME}/"
-
-          if [ "${{ matrix.goos }}" = "windows" ]; then
-            cp /tmp/duckdb-extract/duckdb.exe "/tmp/${PKG_NAME}/"
-          else
-            cp /tmp/duckdb-extract/duckdb "/tmp/${PKG_NAME}/"
-            chmod +x "/tmp/${PKG_NAME}/duckdb"
-          fi
 
           cp bgq/README.md "/tmp/${PKG_NAME}/"
 
