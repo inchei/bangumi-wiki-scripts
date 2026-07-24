@@ -65,23 +65,25 @@ func printUsage() {
   bgq ingest --data-dir <数据目录> --db <数据库路径>
   bgq missing subjects <人名> --type <条目类型> --db <数据库>
   bgq missing episodes <人名> [--db <数据库>]
+  bgq missing persons [--db <数据库>] [--archive-dir <归档目录>]
   bgq version
   bgq help
 
-子命令:
+ 子命令:
   query       执行筛选查询（从YAML配置文件）
   serve       启动Web界面
   ingest      将数据导入DuckDB数据库（加速后续查询）
-  missing     检查缺失的条目 staff 关联或剧集标注
+  missing     检查缺失的条目 staff 关联、剧集标注 或 缺失人物
   interactive 交互式模式（兼容旧版Python脚本）
   version     显示版本信息
   help        显示此帮助信息
 
-示例:
+ 示例:
   bgq query --config query.yaml
   bgq serve --listen :8080
   bgq serve --dev
   bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
+  bgq missing persons --db ./bangumi.db --archive-dir ./bangumi_archive --multi
   bgq query --interactive`)
 }
 

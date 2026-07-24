@@ -63,6 +63,7 @@ jobs:
           bgq/bin/duckdb bgq/bangumi.db -c "
             CREATE TABLE subjects AS SELECT * FROM read_json_auto('bangumi_archive/subject.jsonlines');
             CREATE TABLE persons AS SELECT id, name FROM read_json_auto('bangumi_archive/person.jsonlines');
+            CREATE TABLE subject_relations AS SELECT * FROM read_json_auto('bangumi_archive/subject-relations.jsonlines');
           "
 
       - name: 检查重复条目
@@ -125,8 +126,10 @@ jobs:
         run: uv run .github/scripts/results_to_html.py
 
       - name: 生成缺失人物列表
+        env:
+          DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
         run: |
-          uv run find_missing_persons.py --multi
+          bgq/bin/bgq missing persons --db bgq/bangumi.db --archive-dir bangumi_archive --aliases-file person_alias.json
           cp -r docs/missing-persons _site/missing-persons
 
       - name: 同步目录

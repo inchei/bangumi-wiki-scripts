@@ -25,13 +25,24 @@ func findDefaultDB(candidates []string) string {
 }
 
 func cmdMissing(args []string) {
-	if len(args) < 2 {
+	if len(args) < 1 {
 		fmt.Fprintln(os.Stderr, "用法: bgq missing subjects <人名> --type <条目类型> [--db <数据库>]")
 		fmt.Fprintln(os.Stderr, "       bgq missing episodes <人名> [--db <数据库>]")
+		fmt.Fprintln(os.Stderr, "       bgq missing persons [--db <数据库>] [--archive-dir <归档目录>] [--aliases-file <别名文件>]")
 		os.Exit(1)
 	}
 
 	subcommand := args[0]
+	if subcommand == "persons" {
+		cmdMissingPersons(args[1:])
+		return
+	}
+	if len(args) < 2 {
+		fmt.Fprintln(os.Stderr, "用法: bgq missing subjects <人名> --type <条目类型> [--db <数据库>]")
+		fmt.Fprintln(os.Stderr, "       bgq missing episodes <人名> [--db <数据库>]")
+		fmt.Fprintln(os.Stderr, "       bgq missing persons [--db <数据库>] [--archive-dir <归档目录>] [--aliases-file <别名文件>]")
+		os.Exit(1)
+	}
 	name := args[1]
 	var dbPath string
 
@@ -282,6 +293,61 @@ WHERE LOWER(REPLACE(REPLACE(TRIM(p.name), '　', ''), ' ', '')) = LOWER(REPLACE(
 		linked[pid][sid] = epSet
 	}
 	return linked
+}
+
+func cmdMissingPersons(args []string) {
+	var dbPath, archiveDir, aliasFile, outputDir string
+
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--db":
+			if i+1 < len(args) {
+				dbPath = args[i+1]
+				i++
+			}
+		case "--archive-dir":
+			if i+1 < len(args) {
+				archiveDir = args[i+1]
+				i++
+			}
+		case "--aliases-file":
+			if i+1 < len(args) {
+				aliasFile = args[i+1]
+				i++
+			}
+		case "--output-dir":
+			if i+1 < len(args) {
+				outputDir = args[i+1]
+				i++
+			}
+		}
+	}
+
+	if dbPath == "" {
+		dbPath = findDefaultDB([]string{"bangumi.db", "bgq/bangumi.db", "../bangumi.db"})
+	}
+	if dbPath == "" {
+		fmt.Fprintln(os.Stderr, "错误: 未找到 bangumi.db，请先运行 bgq ingest 或指定 --db 参数")
+		os.Exit(1)
+	}
+
+	if archiveDir == "" {
+		archiveDir = resolveArchiveDir("bangumi_archive", "bgq/bangumi_archive", "../bangumi_archive")
+	}
+
+	if aliasFile == "" {
+		for _, p := range []string{"person_alias.json", "bgq/../person_alias.json", "../person_alias.json"} {
+			if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
+				aliasFile = p
+				break
+			}
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), missingQueryTimeout)
+	defer cancel()
+
+	runMissingPersons(ctx, dbPath, archiveDir, aliasFile, "", outputDir)
 }
 
 func positionsName(pidStr string) string {
