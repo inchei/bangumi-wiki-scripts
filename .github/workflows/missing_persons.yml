@@ -28,11 +28,24 @@ jobs:
       - name: 安装 uv
         uses: astral-sh/setup-uv@v5
 
+      - name: 设置 Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: bgq/go.mod
+          cache-dependency-path: bgq/go.sum
+
       - name: 下载 DuckDB
         run: |
           curl -fsSL "https://github.com/duckdb/duckdb/releases/download/v${DUCKDB_VERSION}/duckdb_cli-linux-amd64.zip" -o /tmp/duckdb.zip
           python3 -c "import zipfile; zipfile.ZipFile('/tmp/duckdb.zip').extractall('bgq/bin/')"
           chmod +x bgq/bin/duckdb
+
+      - name: 构建 bgq
+        run: |
+          cd bgq
+          mkdir -p internal/server/dist
+          touch internal/server/dist/.keep
+          go build -o bin/bgq ./cmd/bgq/
 
       - name: 下载 Bangumi 归档
         run: bash bgq/download-archive.sh bangumi_archive
@@ -43,14 +56,17 @@ jobs:
           bgq/bin/duckdb bgq/bangumi.db -c "
             CREATE TABLE subjects AS SELECT * FROM read_json_auto('bangumi_archive/subject.jsonlines');
             CREATE TABLE persons AS SELECT id, name FROM read_json_auto('bangumi_archive/person.jsonlines');
+            CREATE TABLE subject_relations AS SELECT * FROM read_json_auto('bangumi_archive/subject-relations.jsonlines');
           "
 
       - name: 生成别名 JSON
         run: uv run person_alias.py
 
       - name: 运行缺失人物检测
+        env:
+          DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
         run: |
-          uv run find_missing_persons.py --multi
+          bgq/bin/bgq missing persons --db bgq/bangumi.db --archive-dir bangumi_archive --aliases-file person_alias.json
           mkdir -p _site
           cp -r docs/missing-persons _site/missing-persons
 

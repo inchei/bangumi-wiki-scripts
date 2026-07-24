@@ -85,7 +85,7 @@ python3 extract_col.py data.csv 制作人员 辅佐 --new-col 演出助手
 
 ### find_missing_persons 缺失人物检测
 
-扫描动画条目 infobox 中的职位字段（如人物设定、作画监督、音响监督等），提取姓名并与 Bangumi 已有人员对比，找出出现次数 ≥2 但尚未创建为人物的人员名单。
+扫描书籍/动画/音乐/游戏/三次元条目 infobox 中的职位字段，提取姓名并与 Bangumi 已有人员对比，找出出现次数 ≥2 但尚未创建为人物的人员名单。
 
 数据源自动检测：优先使用 `bgq/bangumi.db`（DuckDB，~15s），无 DB 时降级为 JSONLines（~47s）。已知人物判断同时参考 `person.jsonlines` 主名和 `person_alias.json` 别名。
 
@@ -103,7 +103,7 @@ uv run find_missing_persons.py
 uv run find_missing_persons.py --multi
 ```
 
-结果每周三自动更新到 [GitHub Pages](https://inchei.github.io/bangumi-wiki-scripts/missing-persons/)。
+覆盖条目类型：书籍（作者、作画、插图等）、动画（人物设定、作画监督等）、音乐（艺术家、作曲等）、游戏（开发、发行、剧本等）、三次元（导演、编剧等）。结果每周三自动更新到 [GitHub Pages](https://inchei.github.io/bangumi-wiki-scripts/missing-persons/)。
 
 ## GitHub Actions
 
