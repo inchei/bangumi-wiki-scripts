@@ -1,0 +1,181 @@
+body {
+  font-family: -apple-system, sans-serif;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+details {
+  margin: 0.3em 0;
+}
+
+summary {
+  cursor: pointer;
+  font-size: 1.05em;
+}
+
+summary .count {
+  color: #888;
+  font-weight: normal;
+  font-size: 0.85em;
+}
+
+summary .type {
+  color: #999;
+  font-weight: normal;
+  font-size: 0.75em;
+}
+
+.btn-create {
+  font-size: 0.7em;
+  margin-left: 0.5em;
+  cursor: pointer;
+  padding: 0 0.5em;
+  border: 1px solid #4caf50;
+  border-radius: 3px;
+  background: #e8f5e9;
+  color: #2e7d32;
+  vertical-align: middle;
+}
+
+.btn-create:hover {
+  background: #c8e6c9;
+}
+
+ul {
+  margin: 0.3em 0 0.5em 1.5em;
+  padding: 0;
+}
+
+li {
+  margin: 0.15em 0;
+  font-size: 0.9em;
+}
+
+li .pos {
+  color: #888;
+  font-size: 0.85em;
+  margin-left: 0.3em;
+}
+
+.sr {
+  margin: 0.2em 0 0.2em 1.5em;
+  font-size: 0.9em;
+  padding: 0.3em 0.6em;
+  border-radius: 3px;
+}
+
+.sr-found {
+  background: #e8f5e9;
+}
+
+.sr-missing {
+  background: #fff3e0;
+}
+
+.sr a {
+  margin-right: 0.5em;
+}
+
+.nav {
+  margin-bottom: 1em;
+}
+
+.nav a {
+  margin-right: 1em;
+}
+
+h1 {
+  margin-bottom: 0.3em;
+}
+
+.stats {
+  color: #666;
+  font-size: 0.9em;
+  margin-bottom: 1.5em;
+}
+
+.type-dir summary {
+  cursor: pointer;
+  font-size: 1.1em;
+  margin: 0.2em 0;
+}
+
+.type-dir .cnt {
+  color: #888;
+  font-weight: normal;
+  font-size: 0.85em;
+}
+
+.type-dir .parts {
+  margin: 0.3em 0 0.5em 1.5em;
+}
+
+.type-dir .parts a {
+  margin-right: 0.8em;
+}
+
+.section-title {
+  font-size: 1.2em;
+  margin: 0.5em 0;
+}
+
+.section-note {
+  color: #999;
+  font-weight: normal;
+  font-size: 0.85em;
+}
+
+.section-divider {
+  border: none;
+  border-top: 1px solid #e0e0e0;
+  margin: 1.5em 0;
+}
+
+.btn-relate-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  margin-left: 0.5em;
+}
+
+.btn-relate {
+  font-size: 0.7em;
+  cursor: pointer;
+  padding: 0 0.5em;
+  border: 1px solid #ff9800;
+  border-radius: 3px;
+  background: #fff3e0;
+  color: #e65100;
+  vertical-align: middle;
+}
+
+.btn-relate:hover {
+  background: #ffe0b2;
+}
+
+.btn-relate:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.relate-select {
+  font-size: 0.7em;
+  padding: 0 0.3em;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  background: #fff;
+  vertical-align: middle;
+  max-width: 180px;
+}
+
+.relate-link {
+  font-size: 0.7em;
+  vertical-align: middle;
+  text-decoration: none;
+  color: #1976d2;
+}
+
+.relate-link:hover {
+  text-decoration: underline;
+}

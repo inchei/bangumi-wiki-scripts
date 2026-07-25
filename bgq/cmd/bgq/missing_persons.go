@@ -3,8 +3,10 @@ package main
 import (
 	"bufio"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
+	"html"
 	"html/template"
 	"os"
 	"path/filepath"
@@ -94,6 +96,16 @@ var noiseSubstringsCJK = []string{
 	"デザイン", "グラフィック", "サウンド", "エフェクト", "キャラクター",
 	"プログラム", "プログラミング", "シナリオ", "プランナー", "ディレクター",
 	"ライター", "イラスト", "モンスター", "ロボット", "メカ", "メイン",
+}
+
+var personCNNameRe = regexp.MustCompile(`\|\s*简体中文名\s*=\s*([^\n|]*)`)
+
+func extractPersonCNName(infobox string) string {
+	m := personCNNameRe.FindStringSubmatch(infobox)
+	if len(m) >= 2 {
+		return strings.TrimSpace(m[1])
+	}
+	return ""
 }
 
 var noiseEnRe = regexp.MustCompile(`(?i)\b(?:` +
@@ -232,12 +244,14 @@ func isLikelyPerson(name string) bool {
 	return true
 }
 
-func loadKnownPersons(personFile, aliasFile string) (map[string]bool, error) {
+func loadKnownPersons(personFile, aliasFile string) (map[string]bool, map[string][]int, map[int]string, error) {
 	known := make(map[string]bool)
+	knownIDs := make(map[string][]int)
+	idToName := make(map[int]string)
 
 	f, err := os.Open(personFile)
 	if err != nil {
-		return nil, fmt.Errorf("打开 person.jsonlines 失败: %w", err)
+		return nil, nil, nil, fmt.Errorf("打开 person.jsonlines 失败: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 
@@ -245,17 +259,36 @@ func loadKnownPersons(personFile, aliasFile string) (map[string]bool, error) {
 	scanner.Buffer(make([]byte, 1024*1024), 10*1024*1024)
 	for scanner.Scan() {
 		var p struct {
-			Name string `json:"name"`
+			ID      int    `json:"id"`
+			Name    string `json:"name"`
+			Infobox string `json:"infobox"`
 		}
 		if err := json.Unmarshal(scanner.Bytes(), &p); err != nil {
 			continue
 		}
 		if p.Name != "" {
-			known[normalizePersonName(p.Name)] = true
+			norm := normalizePersonName(p.Name)
+			known[norm] = true
+			knownIDs[norm] = append(knownIDs[norm], p.ID)
+			if p.ID > 0 {
+				display := p.Name
+				if cn := extractPersonCNName(p.Infobox); cn != "" {
+					display = cn
+				}
+				idToName[p.ID] = display
+			}
+		}
+		// Also match by CN name from infobox
+		if cn := extractPersonCNName(p.Infobox); cn != "" && cn != p.Name {
+			normCN := normalizePersonName(cn)
+			if normCN != normalizePersonName(p.Name) {
+				known[normCN] = true
+				knownIDs[normCN] = append(knownIDs[normCN], p.ID)
+			}
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("读取 person.jsonlines 失败: %w", err)
+		return nil, nil, nil, fmt.Errorf("读取 person.jsonlines 失败: %w", err)
 	}
 
 	if aliasFile != "" {
@@ -267,7 +300,7 @@ func loadKnownPersons(personFile, aliasFile string) (map[string]bool, error) {
 		}
 	}
 
-	return known, nil
+	return known, knownIDs, idToName, nil
 }
 
 func loadCharacterNames(archiveDir string, dbPath string) (map[string]bool, error) {
@@ -442,6 +475,60 @@ func firstSubjectKey(subjects map[string]*subjectInfo) string {
 	return ""
 }
 
+type personIDName struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
+type missingRelatedPerson struct {
+	DisplayName       string
+	KeyNorm           string
+	Count             int
+	Subjects          map[string]*subjectInfo
+	TypeCounts        map[int]int
+	ExistingPersonIDs []personIDName
+}
+
+const missingRelatedMinCount = 1
+
+func collectRelated(personSubjects map[string]*missingPerson, existing map[string]bool, knownIDs map[string][]int, idToName map[int]string) []*missingRelatedPerson {
+	var related []*missingRelatedPerson
+	for keyNorm, entry := range personSubjects {
+		if !existing[keyNorm] {
+			continue
+		}
+		ids := knownIDs[keyNorm]
+		if len(ids) == 0 {
+			continue
+		}
+		if len(entry.Subjects) < missingRelatedMinCount {
+			continue
+		}
+		entry.Count = len(entry.Subjects)
+		entry.DisplayName = entry.Subjects[firstSubjectKey(entry.Subjects)].DisplayName
+		pairs := make([]personIDName, len(ids))
+		for i, pid := range ids {
+			name := idToName[pid]
+			if name == "" {
+				name = fmt.Sprintf("ID:%d", pid)
+			}
+			pairs[i] = personIDName{ID: pid, Name: name}
+		}
+		related = append(related, &missingRelatedPerson{
+			DisplayName:       entry.DisplayName,
+			KeyNorm:           keyNorm,
+			Count:             entry.Count,
+			Subjects:          entry.Subjects,
+			TypeCounts:        entry.TypeCounts,
+			ExistingPersonIDs: pairs,
+		})
+	}
+	sort.Slice(related, func(i, j int) bool {
+		return related[i].Count > related[j].Count
+	})
+	return related
+}
+
 func pendingJS(missing []*missingPerson) template.JS {
 	type subData struct {
 		Name      string `json:"name"`
@@ -479,6 +566,53 @@ func pendingJS(missing []*missingPerson) template.JS {
 	return template.JS(b)
 }
 
+func pendingRelatedJS(related []*missingRelatedPerson) template.JS {
+	type subData struct {
+		Name      string `json:"name"`
+		Positions []int  `json:"positions"`
+		Type      int    `json:"_type"`
+	}
+	type idName struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+	type relPerson struct {
+		PersonName       string             `json:"personName"`
+		SubjectsData     map[string]subData `json:"subjectsData"`
+		EpisodesData     interface{}        `json:"episodesData"`
+		RelatedPersonIDs []idName           `json:"relatedPersonIds"`
+	}
+
+	var result []relPerson
+	for _, mp := range related {
+		ids := make([]idName, len(mp.ExistingPersonIDs))
+		for i, p := range mp.ExistingPersonIDs {
+			ids[i] = idName(p)
+		}
+		rp := relPerson{
+			PersonName:       mp.DisplayName,
+			SubjectsData:     make(map[string]subData, len(mp.Subjects)),
+			EpisodesData:     nil,
+			RelatedPersonIDs: ids,
+		}
+		for skey, si := range mp.Subjects {
+			posIDs := make([]int, 0, len(si.PosIDs))
+			for pid := range si.PosIDs {
+				posIDs = append(posIDs, pid)
+			}
+			sort.Ints(posIDs)
+			rp.SubjectsData[skey] = subData{
+				Name:      si.SubjectName,
+				Positions: posIDs,
+				Type:      si.SubjectType,
+			}
+		}
+		result = append(result, rp)
+	}
+	b, _ := json.Marshal(result)
+	return template.JS(b)
+}
+
 func posTableJS() template.JS {
 	var parts []string
 	for _, id := range allPosIDs {
@@ -488,31 +622,148 @@ func posTableJS() template.JS {
 	return template.JS(strings.Join(parts, ","))
 }
 
-const pageCSS = `body{font-family:-apple-system,sans-serif;max-width:800px;margin:0 auto;padding:20px}
-details{margin:.3em 0}summary{cursor:pointer;font-size:1.05em}summary .count{color:#888;font-weight:normal;font-size:.85em}
-summary .type{color:#999;font-weight:normal;font-size:.75em}
-.btn-create{font-size:.7em;margin-left:.5em;cursor:pointer;padding:0 .5em;border:1px solid #4caf50;border-radius:3px;background:#e8f5e9;color:#2e7d32;vertical-align:middle}
-.btn-create:hover{background:#c8e6c9}ul{margin:.3em 0 .5em 1.5em;padding:0}li{margin:.15em 0;font-size:.9em}
-li .pos{color:#888;font-size:.85em;margin-left:.3em}
-.sr{margin:.2em 0 .2em 1.5em;font-size:.9em;padding:.3em .6em;border-radius:3px}
-.sr-found{background:#e8f5e9}.sr-missing{background:#fff3e0}.sr a{margin-right:.5em}
-.nav{margin-bottom:1em}.nav a{margin-right:1em}
-h1{margin-bottom:.3em}.stats{color:#666;font-size:.9em;margin-bottom:1.5em}
-.type-dir summary{cursor:pointer;font-size:1.1em;margin:.2em 0}.type-dir .cnt{color:#888;font-weight:normal;font-size:.85em}
-.type-dir .parts{margin:.3em 0 .5em 1.5em}.type-dir .parts a{margin-right:.8em}`
+//go:embed templates/missing_persons.css
+var pageCSS string
 
-const pageJS = `
-function normalize(s){return s.replace(/[\s-]/g,'').replace(/[\u30A1-\u30F6]/g,function(m){return String.fromCharCode(m.charCodeAt(0)-0x60)}).replace(/[\uFF21-\uFF5A]/g,function(m){return String.fromCharCode(m.charCodeAt(0)-0xFEE0)}).toLowerCase()}
-function renderSubjects(idx,container){var data=_pendingData[idx];if(!data||!data.subjectsData)return;var ul=document.createElement('ul');var entries=Object.entries(data.subjectsData).sort(function(a,b){return a[0].localeCompare(b[0])});for(var i=0;i<entries.length;i++){var parts=entries[i][0].split(':');var stype=parseInt(parts[0]);var sid=parts[1];var entry=entries[i][1];var li=document.createElement('li');li.innerHTML='<span class="type">['+(_typeNames[stype]||stype)+']</span> <a href="https://bgm.tv/subject/'+sid+'" target="_blank">'+entry.name+'</a> <span class="pos">['+entry.positions.map(function(p){return _posNames[p]||p}).join('\u3001')+']</span>';ul.appendChild(li)}container.appendChild(ul)}
-document.addEventListener('click',function(e){var det=e.target.closest('details.person');if(!det||det.querySelector('ul'))return;renderSubjects(parseInt(det.dataset.idx),det)})
-function showResult(btn,html,className){var sr=btn.parentElement.querySelector('.sr');if(!sr){sr=document.createElement('div');sr.className='sr';btn.parentElement.insertBefore(sr,btn.nextSibling)}sr.className='sr '+className;sr.innerHTML=html}
-window.addEventListener('message',function(e){if(e.data&&e.data.type==='bgm_mp_request'&&_bgmMpPending){e.source.postMessage({type:'bgm_mp_data',data:_bgmMpPending},'*')}})
-document.addEventListener('click',function(e){var btn=e.target.closest('.btn-create');if(!btn)return;var idx=parseInt(btn.dataset.idx);var name=btn.dataset.name;_bgmMpPending=JSON.stringify(_pendingData[idx]);showResult(btn,'\u641C\u7D22\u4E2D\u2026','sr-loading');fetch('https://api.bgm.tv/v0/search/persons?limit=5',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({keyword:name})}).then(function(r){return r.json()}).then(function(data){var matches=(data.data||[]).filter(function(p){return normalize(p.name)===normalize(name)});if(matches.length){_bgmMpPending=null;var links=matches.map(function(p){return '<a href="https://bgm.tv/person/'+p.id+'" target="_blank">'+p.name+' (ID:'+p.id+')</a>'}).join(' ');showResult(btn,'\u2705 '+links,'sr-found');return}showResult(btn,'\u2796 \u672A\u521B\u5EFA','sr-missing');window.open('https://bgm.tv/person/new?name='+encodeURIComponent(name)+'&bgm_mp=1','_blank')}).catch(function(){showResult(btn,'\u641C\u7D22\u5931\u8D25','sr-loading')})})`
+//go:embed templates/missing_page.js
+var missingPageJS string
+
+//go:embed templates/related_page.js
+var relatedPageJS string
+
+//go:embed templates/index.html
+var indexHTML string
+
+//go:embed templates/missing_page.html
+var missingPageHTML string
+
+//go:embed templates/related_page.html
+var relatedPageHTML string
+
+var indexTpl = template.Must(template.New("index").Parse(indexHTML))
+var missingPageTpl = template.Must(template.New("missing").Parse(missingPageHTML))
+var relatedPageTpl = template.Must(template.New("related").Parse(relatedPageHTML))
+
+func filterAlreadyLinked(ctx context.Context, dbPath string, related []*missingRelatedPerson) []*missingRelatedPerson {
+	if len(related) == 0 {
+		return related
+	}
+
+	personIDSet := make(map[int]bool)
+	for _, rp := range related {
+		for _, p := range rp.ExistingPersonIDs {
+			personIDSet[p.ID] = true
+		}
+	}
+	if len(personIDSet) == 0 {
+		return related
+	}
+
+	var idList strings.Builder
+	first := true
+	for pid := range personIDSet {
+		if !first {
+			idList.WriteString(",")
+		}
+		fmt.Fprintf(&idList, "%d", pid)
+		first = false
+	}
+
+	sql := fmt.Sprintf(`
+SELECT sp.subject_id, sp.person_id, sp.position
+FROM subject_persons sp
+WHERE sp.person_id IN (%s)
+`, idList.String())
+
+	engine := query.NewEngine(dbPath, "")
+	result, err := engine.ExecuteRaw(ctx, sql)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "警告: 查询已关联数据失败: %v\n", err)
+		return related
+	}
+
+	// linkedMap: personID -> subjectID -> set of positionIDs
+	linkedMap := make(map[int]map[int]map[int]bool)
+	for _, row := range result.Rows {
+		if len(row) < 3 {
+			continue
+		}
+		pid, _ := strconv.Atoi(row[1])
+		sid, _ := strconv.Atoi(row[0])
+		pos, _ := strconv.Atoi(row[2])
+		if linkedMap[pid] == nil {
+			linkedMap[pid] = make(map[int]map[int]bool)
+		}
+		if linkedMap[pid][sid] == nil {
+			linkedMap[pid][sid] = make(map[int]bool)
+		}
+		linkedMap[pid][sid][pos] = true
+	}
+
+	filtered := make([]*missingRelatedPerson, 0, len(related))
+	for _, rp := range related {
+		newSubjects := make(map[string]*subjectInfo)
+		for skey, si := range rp.Subjects {
+			sid := parseSubjectID(skey)
+			newPosIDs := make(map[int]struct{})
+			for pos := range si.PosIDs {
+				isLinked := false
+				for _, p := range rp.ExistingPersonIDs {
+					if linkedMap[p.ID] != nil && linkedMap[p.ID][sid] != nil && linkedMap[p.ID][sid][pos] {
+						isLinked = true
+						break
+					}
+				}
+				if !isLinked {
+					newPosIDs[pos] = struct{}{}
+				}
+			}
+			if len(newPosIDs) > 0 {
+				newSubjects[skey] = &subjectInfo{
+					SubjectName: si.SubjectName,
+					DisplayName: si.DisplayName,
+					SubjectType: si.SubjectType,
+					PosIDs:      newPosIDs,
+				}
+			}
+		}
+		if len(newSubjects) > 0 {
+			newTypeCounts := make(map[int]int)
+			for _, si := range newSubjects {
+				newTypeCounts[si.SubjectType]++
+			}
+			rr := *rp
+			rr.Subjects = newSubjects
+			rr.Count = len(newSubjects)
+			rr.TypeCounts = newTypeCounts
+			filtered = append(filtered, &rr)
+		}
+	}
+	// Re-sort after Count may have changed
+	sort.Slice(filtered, func(i, j int) bool {
+		return filtered[i].Count > filtered[j].Count
+	})
+	return filtered
+}
+
+func parseSubjectID(skey string) int {
+	// skey format: "{type}:{id}" (e.g., "2:123")
+	parts := strings.SplitN(skey, ":", 2)
+	if len(parts) == 2 {
+		id, _ := strconv.Atoi(parts[1])
+		return id
+	}
+	return 0
+}
 
 type personTplData struct {
-	Idx   int
-	Name  string
-	Count int
+	Idx             int
+	Name            string
+	Count           int
+	FirstPersonID   int
+	FirstPersonName string
+	MultiMatch      bool
+	SelectOptions   template.HTML
 }
 
 type partLinkTplData struct {
@@ -526,26 +777,6 @@ type typeLinkTplData struct {
 	Parts    []partLinkTplData
 }
 
-var indexTpl = template.Must(template.New("index").Parse(`<!DOCTYPE html>
-<html lang="zh">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>缺失的人物</title>
-<style>{{.CSS}}</style>
-</head>
-<body>
-<h1>缺失的人物</h1>
-<p class="stats">扫描 {{.SubjectCount}} 个条目，发现 {{.TotalMissing}} 个在 ≥{{.MinCount}} 个条目中出现但未创建的人物</p>
-<p class="stats">生成于 {{.GeneratedDate}} — 需要 <a href="https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/wikiMissingPositions/dist/wikiMissingPositions.user.js" target="_blank">wikiMissingPositions</a> 用户脚本 / <a href="https://bgm.tv/dev/app/6476" target="_blank">bangumi 组件</a> 配合。</p>
-<div class="type-dir">
-{{range .TypeLinks}}<details><summary>{{.TypeName}} <span class="cnt">({{.Count}}人)</span></summary><div class="parts">
-{{range .Parts}}<a href="{{.Href}}">{{.Label}}</a>
-{{end}}</div></details>
-{{end}}</div>
-</body>
-</html>`))
-
 type typePageTplData struct {
 	CSS         template.CSS
 	JS          template.JS
@@ -556,38 +787,10 @@ type typePageTplData struct {
 	PendingData template.JS
 	PosTable    template.JS
 	Persons     []personTplData
+	PageKind    string
 }
 
-var typePageTpl = template.Must(template.New("type").Parse(`<!DOCTYPE html>
-<html lang="zh">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{.Title}}</title>
-<style>{{.CSS}}</style>
-</head>
-<body>
-<div class="nav">
-  <a href="index.html">&#x2190; 返回首页</a>
-{{if .PrevLink}}  <a href="{{.PrevLink}}">&#x2190; 上一页</a>{{end}}
-{{if .NextLink}}  <a href="{{.NextLink}}">下一页 &#x2192;</a>{{end}}
-</div>
-{{if .PageInfo}}<p>{{.PageInfo}}</p>{{end}}
-
-{{range .Persons}}<details class="person" data-idx="{{.Idx}}">
-  <summary>{{.Name}} <span class="count">({{.Count}})</span>
-    <button class="btn-create" data-idx="{{.Idx}}" data-name="{{.Name}}">创建</button>
-  </summary>
-</details>
-{{end}}
-
-<script>{{.JS}}</script>
-<script>var _pendingData = {{.PendingData}};var _bgmMpPending = null;</script>
-<script>var _posNames = { {{.PosTable}} };var _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
-</body>
-</html>`))
-
-func writeIndexHTML(outputDir string, subjCount, totalMissing int, typeLinks []typeLinkTplData) error {
+func writeIndexHTML(outputDir string, subjCount, totalMissing, totalRelated int, missingLinks, relatedLinks []typeLinkTplData) error {
 	f, err := os.Create(filepath.Join(outputDir, "index.html"))
 	if err != nil {
 		return err
@@ -597,13 +800,14 @@ func writeIndexHTML(outputDir string, subjCount, totalMissing int, typeLinks []t
 		"CSS":           template.CSS(pageCSS),
 		"SubjectCount":  subjCount,
 		"TotalMissing":  totalMissing,
+		"TotalRelated":  totalRelated,
 		"MinCount":      missingPersonsMinCount,
 		"GeneratedDate": time.Now().Format("2006-01-02"),
-		"TypeLinks":     typeLinks,
+		"TypeLinks":     append(missingLinks, relatedLinks...),
 	})
 }
 
-func writeTypePage(outputDir, tname string, tcode int, missing []*missingPerson, partNum, totalParts int) error {
+func writeMissingPage(outputDir, tname string, tcode int, entries []*missingPerson, partNum, totalParts int) error {
 	var filename string
 	if totalParts == 1 {
 		filename = fmt.Sprintf("type-%d", tcode)
@@ -631,8 +835,8 @@ func writeTypePage(outputDir, tname string, tcode int, missing []*missingPerson,
 		pageInfo = fmt.Sprintf("第 %d/%d 页", partNum, totalParts)
 	}
 
-	persons := make([]personTplData, len(missing))
-	for i, mp := range missing {
+	persons := make([]personTplData, len(entries))
+	for i, mp := range entries {
 		persons[i] = personTplData{Idx: i, Name: mp.DisplayName, Count: mp.Count}
 	}
 
@@ -641,14 +845,79 @@ func writeTypePage(outputDir, tname string, tcode int, missing []*missingPerson,
 		return err
 	}
 	defer func() { _ = f.Close() }()
-	return typePageTpl.Execute(f, typePageTplData{
+	return missingPageTpl.Execute(f, typePageTplData{
 		CSS:         template.CSS(pageCSS),
-		JS:          template.JS(pageJS),
+		JS:          template.JS(missingPageJS),
 		Title:       title,
 		PrevLink:    prevLink,
 		NextLink:    nextLink,
 		PageInfo:    pageInfo,
-		PendingData: pendingJS(missing),
+		PendingData: pendingJS(entries),
+		PosTable:    posTableJS(),
+		Persons:     persons,
+		PageKind:    tname,
+	})
+}
+
+func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRelatedPerson, partNum, totalParts int) error {
+	var filename string
+	if totalParts == 1 {
+		filename = fmt.Sprintf("type-%d-related", tcode)
+	} else {
+		filename = fmt.Sprintf("type-%d-related-part-%d", tcode, partNum)
+	}
+
+	var prevLink, nextLink string
+	if partNum > 1 {
+		prevLink = fmt.Sprintf("type-%d-related-part-%d.html", tcode, partNum-1)
+	}
+	if partNum < totalParts {
+		nextLink = fmt.Sprintf("type-%d-related-part-%d.html", tcode, partNum+1)
+	}
+
+	var title string
+	if totalParts > 1 {
+		title = fmt.Sprintf("%s中缺失关联的人物 - 第 %d/%d 页", tname, partNum, totalParts)
+	} else {
+		title = fmt.Sprintf("%s中缺失关联的人物", tname)
+	}
+
+	var pageInfo string
+	if totalParts > 1 {
+		pageInfo = fmt.Sprintf("第 %d/%d 页", partNum, totalParts)
+	}
+
+	persons := make([]personTplData, len(entries))
+	for i, rp := range entries {
+		pd := personTplData{Idx: i, Name: rp.DisplayName, Count: rp.Count}
+		if len(rp.ExistingPersonIDs) > 0 {
+			pd.FirstPersonID = rp.ExistingPersonIDs[0].ID
+			pd.FirstPersonName = rp.ExistingPersonIDs[0].Name
+			pd.MultiMatch = len(rp.ExistingPersonIDs) > 1
+			if pd.MultiMatch {
+				var opts strings.Builder
+				for _, p := range rp.ExistingPersonIDs {
+					fmt.Fprintf(&opts, `<option value="%d">%s (ID:%d)</option>`, p.ID, html.EscapeString(p.Name), p.ID)
+				}
+				pd.SelectOptions = template.HTML(opts.String())
+			}
+		}
+		persons[i] = pd
+	}
+
+	f, err := os.Create(filepath.Join(outputDir, filename+".html"))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = f.Close() }()
+	return relatedPageTpl.Execute(f, typePageTplData{
+		CSS:         template.CSS(pageCSS),
+		JS:          template.JS(relatedPageJS),
+		Title:       title,
+		PrevLink:    prevLink,
+		NextLink:    nextLink,
+		PageInfo:    pageInfo,
+		PendingData: pendingRelatedJS(entries),
 		PosTable:    posTableJS(),
 		Persons:     persons,
 	})
@@ -656,7 +925,7 @@ func writeTypePage(outputDir, tname string, tcode int, missing []*missingPerson,
 
 const chunkSize = 2000
 
-func writeMultiTypePages(missing []*missingPerson, outputDir string, subjCount int) error {
+func writeMultiTypePages(missing []*missingPerson, related []*missingRelatedPerson, outputDir string, subjCount int) error {
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("创建输出目录失败: %w", err)
 	}
@@ -668,14 +937,24 @@ func writeMultiTypePages(missing []*missingPerson, outputDir string, subjCount i
 		}
 	}
 
-	var typeLinks []typeLinkTplData
-	orderedTypes := sortedTypesByCount(typeMissing)
+	typeRelated := make(map[int][]*missingRelatedPerson)
+	for _, rp := range related {
+		for t := range rp.TypeCounts {
+			typeRelated[t] = append(typeRelated[t], rp)
+		}
+	}
 
-	for _, t := range orderedTypes {
+	var missingLinks, relatedLinks []typeLinkTplData
+
+	// Missing persons pages
+	for _, t := range sortedTypesByCountLens(typeMissing) {
 		people := typeMissing[t]
 		tname := subjectTypeNames[t]
 		totalType := len(people)
 		totalParts := (totalType + chunkSize - 1) / chunkSize
+		if totalParts == 0 {
+			totalParts = 1
+		}
 
 		var partLinks []partLinkTplData
 		for partNum := 1; partNum <= totalParts; partNum++ {
@@ -686,7 +965,7 @@ func writeMultiTypePages(missing []*missingPerson, outputDir string, subjCount i
 			}
 			chunk := people[start:end]
 
-			if err := writeTypePage(outputDir, tname, t, chunk, partNum, totalParts); err != nil {
+			if err := writeMissingPage(outputDir, tname, t, chunk, partNum, totalParts); err != nil {
 				return err
 			}
 
@@ -696,27 +975,67 @@ func writeMultiTypePages(missing []*missingPerson, outputDir string, subjCount i
 			} else {
 				fname = fmt.Sprintf("type-%d-part-%d", t, partNum)
 			}
-			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (%d人)\n", tname, outputDir, fname, len(chunk))
+			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (缺失:%d)\n", tname, outputDir, fname, len(chunk))
 			label := "浏览"
 			if totalParts > 1 {
 				label = fmt.Sprintf("第%d页", partNum)
 			}
 			partLinks = append(partLinks, partLinkTplData{Href: fname + ".html", Label: label})
 		}
-		typeLinks = append(typeLinks, typeLinkTplData{TypeName: tname, Count: totalType, Parts: partLinks})
+		missingLinks = append(missingLinks, typeLinkTplData{TypeName: tname + "缺失", Count: totalType, Parts: partLinks})
+	}
+
+	// Related persons pages
+	for _, t := range sortedTypesByCountLens(typeRelated) {
+		people := typeRelated[t]
+		tname := subjectTypeNames[t]
+		totalType := len(people)
+		totalParts := (totalType + chunkSize - 1) / chunkSize
+		if totalParts == 0 {
+			totalParts = 1
+		}
+
+		var partLinks []partLinkTplData
+		for partNum := 1; partNum <= totalParts; partNum++ {
+			start := (partNum - 1) * chunkSize
+			end := start + chunkSize
+			if end > totalType {
+				end = totalType
+			}
+			chunk := people[start:end]
+
+			if err := writeRelatedPage(outputDir, tname, t, chunk, partNum, totalParts); err != nil {
+				return err
+			}
+
+			var fname string
+			if totalParts == 1 {
+				fname = fmt.Sprintf("type-%d-related", t)
+			} else {
+				fname = fmt.Sprintf("type-%d-related-part-%d", t, partNum)
+			}
+			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (关联缺失:%d)\n", tname, outputDir, fname, len(chunk))
+			label := "浏览"
+			if totalParts > 1 {
+				label = fmt.Sprintf("第%d页", partNum)
+			}
+			partLinks = append(partLinks, partLinkTplData{Href: fname + ".html", Label: label})
+		}
+		relatedLinks = append(relatedLinks, typeLinkTplData{TypeName: tname + "关联缺失", Count: totalType, Parts: partLinks})
 	}
 
 	totalMissing := len(missing)
-	return writeIndexHTML(outputDir, subjCount, totalMissing, typeLinks)
+	totalRelated := len(related)
+	return writeIndexHTML(outputDir, subjCount, totalMissing, totalRelated, missingLinks, relatedLinks)
 }
 
-func sortedTypesByCount(typeMissing map[int][]*missingPerson) []int {
-	types := make([]int, 0, len(typeMissing))
-	for t := range typeMissing {
+func sortedTypesByCountLens[T any](typeMap map[int][]T) []int {
+	types := make([]int, 0, len(typeMap))
+	for t := range typeMap {
 		types = append(types, t)
 	}
 	sort.Slice(types, func(i, j int) bool {
-		return len(typeMissing[types[i]]) > len(typeMissing[types[j]])
+		return len(typeMap[types[i]]) > len(typeMap[types[j]])
 	})
 	return types
 }
@@ -753,7 +1072,7 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	if personFile == "" {
 		personFile = filepath.Join(archiveDir, "person.jsonlines")
 	}
-	existing, err := loadKnownPersons(personFile, aliasFile)
+	existing, knownIDs, idToName, err := loadKnownPersons(personFile, aliasFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "错误: %v\n", err)
 		os.Exit(1)
@@ -775,12 +1094,25 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 
 	fmt.Fprintf(os.Stderr, "筛选缺失人物中...\n")
 	missing := filterMissing(personSubjects, existing)
+	related := collectRelated(personSubjects, existing, knownIDs, idToName)
 	t3 := time.Now()
-	totalMissing := len(missing)
-	fmt.Fprintf(os.Stderr, "  缺失且 ≥%d 次出现的人数: %d\n", missingPersonsMinCount, totalMissing)
+	fmt.Fprintf(os.Stderr, "  初步缺失: %d, 初步关联缺失: %d\n", len(missing), len(related))
 	fmt.Fprintf(os.Stderr, "  耗时: %.1fs\n", t3.Sub(t2b).Seconds())
 
-	if totalMissing == 0 {
+	if len(related) > 0 {
+		fmt.Fprintf(os.Stderr, "过滤已关联人物中...\n")
+		beforeFilter := len(related)
+		related = filterAlreadyLinked(ctx, dbPath, related)
+		fmt.Fprintf(os.Stderr, "  关联缺失过滤后: %d → %d (移除已关联 %d)\n", beforeFilter, len(related), beforeFilter-len(related))
+		fmt.Fprintf(os.Stderr, "  耗时: %.1fs\n", time.Since(t3).Seconds())
+	}
+
+	totalMissing := len(missing)
+	totalRelated := len(related)
+	fmt.Fprintf(os.Stderr, "  缺失且 ≥%d 次出现的人数: %d\n", missingPersonsMinCount, totalMissing)
+	fmt.Fprintf(os.Stderr, "  关联缺失且 ≥%d 次出现的人数: %d\n", missingRelatedMinCount, totalRelated)
+
+	if totalMissing == 0 && totalRelated == 0 {
 		fmt.Fprintln(os.Stderr, "没有需要处理的人物")
 		return
 	}
@@ -789,7 +1121,7 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	if outputDir == "" {
 		outputDir = "docs/missing-persons"
 	}
-	if err := writeMultiTypePages(missing, outputDir, len(records)); err != nil {
+	if err := writeMultiTypePages(missing, related, outputDir, len(records)); err != nil {
 		fmt.Fprintf(os.Stderr, "错误: %v\n", err)
 		os.Exit(1)
 	}

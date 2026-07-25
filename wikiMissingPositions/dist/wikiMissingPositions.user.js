@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.1.6
+// @version      0.1.8
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -1661,14 +1661,30 @@ document.head.appendChild(styleEl);
     processPendingData();
   }
   var _pendingData = null;
+  var _relateBackdoor = false;
   function getPendingData() {
     return _pendingData;
   }
   function processPendingData() {
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.has("bgm_mp_relate") && window.opener && !localStorage.getItem("bgm-mp-pending")) {
+      const handler = (e) => {
+        if (e.data && e.data.type === "bgm_mp_relate_data" && e.data.data) {
+          window.removeEventListener("message", handler);
+          _relateBackdoor = true;
+          localStorage.setItem("bgm-mp-pending", e.data.data);
+          processPendingData();
+        }
+      };
+      window.addEventListener("message", handler);
+      window.opener.postMessage({ type: "bgm_mp_relate_request" }, "*");
+      return;
+    }
     const raw = localStorage.getItem("bgm-mp-pending");
     if (!raw) return;
     const referrer = document.referrer;
-    if (!referrer.includes("/person/new") && !referrer.match(/\/person\/(\d+)/)) return;
+    if (!_relateBackdoor && !referrer.includes("/person/new") && !referrer.match(/\/person\/(\d+)/))
+      return;
     try {
       const data = JSON.parse(raw);
       _pendingData = data;

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{.Title}}</title>
+<style>{{.CSS}}</style>
+</head>
+<body>
+<div class="nav">
+  <a href="index.html">&#x2190; 返回首页</a>
+{{if .PrevLink}}  <a href="{{.PrevLink}}">&#x2190; 上一页</a>{{end}}
+{{if .NextLink}}  <a href="{{.NextLink}}">下一页 &#x2192;</a>{{end}}
+</div>
+{{if .PageInfo}}<p>{{.PageInfo}}</p>{{end}}
+
+<h2 class="section-title">{{.PageKind}}中缺失的人物</h2>
+{{range .Persons}}<details class="person" data-idx="{{.Idx}}">
+  <summary>{{.Name}} <span class="count">({{.Count}})</span>
+    <button class="btn-create" data-idx="{{.Idx}}" data-name="{{.Name}}">创建</button>
+  </summary>
+</details>
+{{else}}<p>暂无</p>{{end}}
+
+<script>{{.JS}}</script>
+<script>var _pendingData = {{.PendingData}};var _bgmMpPending = null;</script>
+<script>var _posNames = { {{.PosTable}} };var _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
+</body>
+</html>

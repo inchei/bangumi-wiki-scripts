@@ -216,16 +216,33 @@ export function initAddRelated() {
 }
 
 let _pendingData = null;
+let _relateBackdoor = false;
 export function getPendingData() {
   return _pendingData;
 }
 
 export function processPendingData() {
+  const urlParams = new URLSearchParams(location.search);
+  if (urlParams.has('bgm_mp_relate') && window.opener && !localStorage.getItem('bgm-mp-pending')) {
+    const handler = (e) => {
+      if (e.data && e.data.type === 'bgm_mp_relate_data' && e.data.data) {
+        window.removeEventListener('message', handler);
+        _relateBackdoor = true;
+        localStorage.setItem('bgm-mp-pending', e.data.data);
+        processPendingData();
+      }
+    };
+    window.addEventListener('message', handler);
+    window.opener.postMessage({ type: 'bgm_mp_relate_request' }, '*');
+    return;
+  }
+
   const raw = localStorage.getItem('bgm-mp-pending');
   if (!raw) return;
 
   const referrer = document.referrer;
-  if (!referrer.includes('/person/new') && !referrer.match(/\/person\/(\d+)/)) return;
+  if (!_relateBackdoor && !referrer.includes('/person/new') && !referrer.match(/\/person\/(\d+)/))
+    return;
 
   try {
     const data = JSON.parse(raw);

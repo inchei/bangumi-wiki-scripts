@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{.Title}}</title>
+<style>{{.CSS}}</style>
+</head>
+<body>
+<div class="nav">
+  <a href="index.html">&#x2190; 返回首页</a>
+{{if .PrevLink}}  <a href="{{.PrevLink}}">&#x2190; 上一页</a>{{end}}
+{{if .NextLink}}  <a href="{{.NextLink}}">下一页 &#x2192;</a>{{end}}
+</div>
+{{if .PageInfo}}<p>{{.PageInfo}}</p>{{end}}
+
+<h2 class="section-title">缺失关联的人物<span class="section-note">（同名已存在，可直接关联）</span></h2>
+{{range .Persons}}<details class="person person-related" data-idx="{{.Idx}}" data-related="1">
+  <summary>{{.Name}} <span class="count">({{.Count}})</span>
+    <span class="btn-relate-wrap">
+      {{if .MultiMatch}}<select class="relate-select">{{.SelectOptions}}</select>{{end}}
+      <a class="relate-link" href="https://bgm.tv/person/{{.FirstPersonID}}" target="_blank">查看</a>
+      <button class="btn-relate" data-idx="{{.Idx}}" data-name="{{.Name}}">关联</button>
+    </span>
+    <button class="btn-create" data-idx="{{.Idx}}" data-name="{{.Name}}" data-force="1">创建</button>
+  </summary>
+</details>
+{{else}}<p>暂无</p>{{end}}
+
+<script>{{.JS}}</script>
+<script>var _relatedData = {{.PendingData}};</script>
+<script>var _bgmMpRelateData = null;</script>
+<script>var _bgmMpPending = null;</script>
+<script>var _posNames = { {{.PosTable}} };var _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
+</body>
+</html>
