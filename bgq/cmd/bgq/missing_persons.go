@@ -244,14 +244,15 @@ func isLikelyPerson(name string) bool {
 	return true
 }
 
-func loadKnownPersons(personFile, aliasFile string) (map[string]bool, map[string][]int, map[int]string, error) {
+func loadKnownPersons(personFile, aliasFile string) (map[string]bool, map[string][]int, map[int]string, map[string]bool, error) {
 	known := make(map[string]bool)
 	knownIDs := make(map[string][]int)
 	idToName := make(map[int]string)
+	aliasNorm := make(map[string]bool)
 
 	f, err := os.Open(personFile)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("打开 person.jsonlines 失败: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("打开 person.jsonlines 失败: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 
@@ -288,19 +289,38 @@ func loadKnownPersons(personFile, aliasFile string) (map[string]bool, map[string
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, nil, nil, fmt.Errorf("读取 person.jsonlines 失败: %w", err)
+		return nil, nil, nil, nil, fmt.Errorf("读取 person.jsonlines 失败: %w", err)
 	}
 
 	if aliasFile != "" {
 		ad, err := loadAliasesFile(aliasFile)
 		if err == nil {
 			for alias := range ad.aliases {
+				if !known[alias] {
+					aliasNorm[alias] = true
+				}
 				known[alias] = true
+				indices := ad.aliases[alias]
+				for _, idx := range indices {
+					if idx >= 0 && idx < len(ad.persons) {
+						pid := ad.persons[idx].ID
+						already := false
+						for _, existing := range knownIDs[alias] {
+							if existing == pid {
+								already = true
+								break
+							}
+						}
+						if !already {
+							knownIDs[alias] = append(knownIDs[alias], pid)
+						}
+					}
+				}
 			}
 		}
 	}
 
-	return known, knownIDs, idToName, nil
+	return known, knownIDs, idToName, aliasNorm, nil
 }
 
 func loadCharacterNames(archiveDir string, dbPath string) (map[string]bool, error) {
@@ -487,11 +507,12 @@ type missingRelatedPerson struct {
 	Subjects          map[string]*subjectInfo
 	TypeCounts        map[int]int
 	ExistingPersonIDs []personIDName
+	FromAlias         bool
 }
 
 const missingRelatedMinCount = 1
 
-func collectRelated(personSubjects map[string]*missingPerson, existing map[string]bool, knownIDs map[string][]int, idToName map[int]string) []*missingRelatedPerson {
+func collectRelated(personSubjects map[string]*missingPerson, existing map[string]bool, knownIDs map[string][]int, idToName map[int]string, aliasNorm map[string]bool) []*missingRelatedPerson {
 	var related []*missingRelatedPerson
 	for keyNorm, entry := range personSubjects {
 		if !existing[keyNorm] {
@@ -521,6 +542,7 @@ func collectRelated(personSubjects map[string]*missingPerson, existing map[strin
 			Subjects:          entry.Subjects,
 			TypeCounts:        entry.TypeCounts,
 			ExistingPersonIDs: pairs,
+			FromAlias:         aliasNorm[keyNorm],
 		})
 	}
 	sort.Slice(related, func(i, j int) bool {
@@ -764,6 +786,7 @@ type personTplData struct {
 	FirstPersonName string
 	MultiMatch      bool
 	SelectOptions   template.HTML
+	FromAlias       bool
 }
 
 type partLinkTplData struct {
@@ -889,7 +912,7 @@ func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRela
 
 	persons := make([]personTplData, len(entries))
 	for i, rp := range entries {
-		pd := personTplData{Idx: i, Name: rp.DisplayName, Count: rp.Count}
+		pd := personTplData{Idx: i, Name: rp.DisplayName, Count: rp.Count, FromAlias: rp.FromAlias}
 		if len(rp.ExistingPersonIDs) > 0 {
 			pd.FirstPersonID = rp.ExistingPersonIDs[0].ID
 			pd.FirstPersonName = rp.ExistingPersonIDs[0].Name
@@ -1072,7 +1095,7 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	if personFile == "" {
 		personFile = filepath.Join(archiveDir, "person.jsonlines")
 	}
-	existing, knownIDs, idToName, err := loadKnownPersons(personFile, aliasFile)
+	existing, knownIDs, idToName, aliasNorm, err := loadKnownPersons(personFile, aliasFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "错误: %v\n", err)
 		os.Exit(1)
@@ -1094,7 +1117,7 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 
 	fmt.Fprintf(os.Stderr, "筛选缺失人物中...\n")
 	missing := filterMissing(personSubjects, existing)
-	related := collectRelated(personSubjects, existing, knownIDs, idToName)
+	related := collectRelated(personSubjects, existing, knownIDs, idToName, aliasNorm)
 	t3 := time.Now()
 	fmt.Fprintf(os.Stderr, "  初步缺失: %d, 初步关联缺失: %d\n", len(missing), len(related))
 	fmt.Fprintf(os.Stderr, "  耗时: %.1fs\n", t3.Sub(t2b).Seconds())

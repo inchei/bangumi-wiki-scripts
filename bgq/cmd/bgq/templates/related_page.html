@@ -19,7 +19,7 @@
   <summary>{{.Name}} <span class="count">({{.Count}})</span>
     <span class="btn-relate-wrap">
       {{if .MultiMatch}}<select class="relate-select">{{.SelectOptions}}</select>{{end}}
-      <a class="relate-link" href="https://bgm.tv/person/{{.FirstPersonID}}" target="_blank">查看</a>
+      <a class="relate-link" href="https://bgm.tv/person/{{.FirstPersonID}}" target="_blank">查看{{if .FromAlias}}（别名）{{end}}</a>
       <button class="btn-relate" data-idx="{{.Idx}}" data-name="{{.Name}}">关联</button>
     </span>
     <button class="btn-create" data-idx="{{.Idx}}" data-name="{{.Name}}" data-force="1">创建</button>
