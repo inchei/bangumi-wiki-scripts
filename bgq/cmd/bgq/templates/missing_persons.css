@@ -1,8 +1,18 @@
+:root {
+  color-scheme: light dark;
+}
+
 body {
   font-family: -apple-system, sans-serif;
   max-width: 800px;
   margin: 0 auto;
   padding: 20px;
+  background: Canvas;
+  color: CanvasText;
+}
+
+a {
+  color: LinkText;
 }
 
 details {
@@ -90,7 +100,7 @@ h1 {
 }
 
 .stats {
-  color: #666;
+  color: GrayText;
   font-size: 0.9em;
   margin-bottom: 1.5em;
 }
@@ -121,7 +131,7 @@ h1 {
 }
 
 .section-note {
-  color: #999;
+  color: GrayText;
   font-weight: normal;
   font-size: 0.85em;
 }
@@ -173,9 +183,47 @@ h1 {
   font-size: 0.7em;
   vertical-align: middle;
   text-decoration: none;
-  color: #1976d2;
 }
 
 .relate-link:hover {
   text-decoration: underline;
+}
+
+@media (prefers-color-scheme: dark) {
+  .btn-create {
+    background: #1b5e20;
+    color: #a5d6a7;
+    border-color: #388e3c;
+  }
+  .btn-create:hover {
+    background: #2e7d32;
+  }
+  .btn-relate {
+    background: #e65100;
+    color: #ffe0b2;
+    border-color: #ff9800;
+  }
+  .btn-relate:hover {
+    background: #bf360c;
+  }
+  .relate-select {
+    background: #333;
+    color: CanvasText;
+    border-color: #555;
+  }
+  .sr-found {
+    background: #1b5e20;
+  }
+  .sr-missing {
+    background: #e65100;
+  }
+  summary .count,
+  summary .type,
+  li .pos,
+  .type-dir .cnt {
+    color: #999;
+  }
+  .section-divider {
+    border-top-color: #333;
+  }
 }
