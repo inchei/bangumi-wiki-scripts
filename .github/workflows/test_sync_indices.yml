@@ -33,6 +33,9 @@ jobs:
           touch internal/server/dist/.keep
           go build -o bin/bgq ./cmd/bgq/
 
+      - name: 安装 uv
+        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+
       - name: 下载 Bangumi 归档
         run: bash bgq/download-archive.sh bangumi_archive
 
