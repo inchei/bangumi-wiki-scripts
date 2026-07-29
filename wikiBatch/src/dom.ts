@@ -1,4 +1,4 @@
-import { state, saveState } from './core';
+import { state, saveState, type ThemeMode } from './core';
 import { switchToSetupView } from './views';
 import { hideStatusMessage } from './ui';
 import {
@@ -12,6 +12,52 @@ import {
     handleProcessingViewButtons,
     handleCompletedViewButtons,
 } from './handlers';
+
+import { spriteDataUrl } from './sprite';
+
+const themeOrder: ThemeMode[] = ['light', 'dark', 'system'];
+const spriteCols = 7;
+const spriteW = 40;
+let logoCol = Math.floor(Math.random() * spriteCols);
+
+function cycleLogo(): void {
+    logoCol = (logoCol + 1) % spriteCols;
+    const el = document.getElementById('bgm-tool-logo-sprite');
+    if (el) el.style.backgroundPosition = `${-logoCol * spriteW}px 0`;
+}
+
+function applyTheme(mode: ThemeMode): void {
+    const container = document.getElementById('bgm-tool-container');
+    if (!container) return;
+    const isDark =
+        mode === 'dark' ||
+        (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    if (isDark) {
+        container.setAttribute('data-theme', 'dark');
+    } else {
+        container.removeAttribute('data-theme');
+    }
+}
+
+function cycleTheme(): void {
+    const idx = themeOrder.indexOf(state.theme);
+    state.theme = themeOrder[(idx + 1) % themeOrder.length];
+    localStorage.setItem('bgmTheme', state.theme);
+    applyTheme(state.theme);
+    updateThemeButton();
+}
+
+function updateThemeButton(): void {
+    const btn = document.getElementById('bgm-tool-theme');
+    if (!btn) return;
+    const icons: Record<string, string> = {
+        light: '<i class="fas fa-sun"></i>',
+        dark: '<i class="fas fa-moon"></i>',
+        system: '<i class="fas fa-adjust"></i>',
+    };
+    btn.innerHTML = icons[state.theme] || icons.system;
+    btn.title = '主题: ' + state.theme;
+}
 
 function createFloatButton(): HTMLElement {
     let floatBtn = document.getElementById('bgm-float-button');
@@ -45,8 +91,13 @@ export function createStaticDOM(): void {
     container.id = 'bgm-tool-container';
     container.innerHTML = `
         <div id="bgm-tool-header">
-            bangumi wiki 批量更新工具
+            <div id="bgm-tool-header-logo">
+                <div id="bgm-tool-logo-sprite" style="background: url(${spriteDataUrl}) no-repeat; background-size: 280px 75px; background-position: ${-logoCol * 40}px 0;"></div>
+                <span>批量更新</span>
+            </div>
+            <span class="header-spacer"></span>
             <div id="bgm-tool-header-actions">
+                <span id="bgm-tool-theme" title="主题"><i class="fas fa-adjust"></i></span>
                 <span id="bgm-tool-settings" title="设置"><i class="fas fa-cog"></i></span>
                 <span id="bgm-tool-close">×</span>
             </div>
@@ -81,9 +132,11 @@ export function createStaticDOM(): void {
                                 <label>Wcode:</label>
                                 <textarea id="static-wcode-input"></textarea>
                             </div>
-                            <div class="diff-section wcode-diff-section">
-                                <div class="diff-section-title">Wcode 变更</div>
-                                <div id="static-content-diff-container" class="diff-container"></div>
+                            <div>
+                                <div class="diff-section-label">Wcode 变更</div>
+                                <div class="diff-section wcode-diff-section">
+                                    <div id="static-content-diff-container" class="diff-container"></div>
+                                </div>
                             </div>
                         </div>
                         <div class="edit-row">
@@ -136,6 +189,24 @@ export function createStaticDOM(): void {
             switchToSetupView();
         });
     }
+
+    const themeBtn = document.getElementById('bgm-tool-theme');
+    if (themeBtn) {
+        themeBtn.addEventListener('click', cycleTheme);
+    }
+
+    const logo = document.getElementById('bgm-tool-header-logo');
+    if (logo) {
+        logo.addEventListener('click', cycleLogo);
+    }
+
+    applyTheme(state.theme);
+    updateThemeButton();
+    window
+        .matchMedia('(prefers-color-scheme: dark)')
+        .addEventListener('change', () => {
+            if (state.theme === 'system') applyTheme('system');
+        });
 
     bindEditRegionEvents();
 

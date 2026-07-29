@@ -5,6 +5,12 @@ import { state, type EntityType, type TagUpdates, type SeriesUpdate, type CsvIte
 import { sanitizeRegExp, arraysEqual } from './utils';
 import { INFOBOX_FIELD_ORDER, INFOBOX_HEADER_MAP } from './infobox-field-order';
 
+export function getResolvedTheme(): 'light' | 'dark' {
+    if (state.theme === 'dark') return 'dark';
+    if (state.theme === 'light') return 'light';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
 export function getCurrentEntityType(): EntityType {
     return state.entityType || 'subject';
 }
@@ -99,7 +105,7 @@ export function updateDiffDisplay(oldText: string, newText: string, containerId:
                 diffFile: file,
                 diffViewMode: state.diffViewMode === 'unified' ? DiffModeEnum.Unified : DiffModeEnum.Split,
                 diffViewFontSize: 13,
-                diffViewTheme: 'light',
+                diffViewTheme: getResolvedTheme(),
                 diffViewHighlight: true,
                 diffViewWrap: true,
             },

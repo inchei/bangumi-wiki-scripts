@@ -1,6 +1,6 @@
 /* stylelint-disable no-descending-specificity */
 
-/* ===== CSS Variables (scoped to container) ===== */
+/* ===== CSS Variables & Layout (scoped to container) ===== */
 #bgm-tool-container {
     --accent: #f09199;
     --accent-hover: #e07a85;
@@ -43,6 +43,24 @@
     line-height: 1.6;
 }
 
+/* ===== Dark Mode ===== */
+#bgm-tool-container[data-theme="dark"] {
+    --accent-hover: #f5a3aa;
+    --accent-light: rgb(240 145 153 / 12%);
+    --accent-border: rgb(240 145 153 / 25%);
+    --white: #2d2e2f;
+    --bg: #1e1e1f;
+    --bg-alt: #353637;
+    --text: #dcdcdc;
+    --text-secondary: #9a9a9a;
+    --text-placeholder: #666;
+    --border: #404040;
+    --border-light: #383838;
+    --link: #2ea6ff;
+    --link-hover: #5cb8ff;
+    --shadow-subtle: 0 0 0 2px rgb(255 255 255 / 4%);
+}
+
 .hidden {
     display: none !important;
 }
@@ -57,15 +75,32 @@
     font-weight: 700;
     color: var(--text);
     display: flex;
-    justify-content: space-between;
     align-items: center;
     flex-shrink: 0;
     box-shadow: var(--shadow-subtle);
 }
 
+#bgm-tool-header-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#bgm-tool-logo-sprite {
+    width: 40px;
+    height: 50px;
+    border-radius: 6px;
+    flex-shrink: 0;
+}
+
+.header-spacer {
+    flex: 1;
+}
+
 #bgm-tool-header-actions {
     display: flex;
     gap: 4px;
+    margin-left: auto;
 }
 
 #bgm-tool-header-actions span {
@@ -367,6 +402,14 @@
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-light);
     color: var(--text);
+}
+
+.diff-section-label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: normal;
+    font-size: 13px;
+    color: var(--text-secondary);
 }
 
 /* ===== Logs ===== */
@@ -879,6 +922,54 @@
 #status-container {
     margin: 12px 0;
     display: none;
+}
+
+/* ===== Dark Mode Overrides ===== */
+#bgm-tool-container[data-theme="dark"] #bgm-loading-overlay {
+    background: rgb(0 0 0 / 60%);
+}
+
+#bgm-tool-container[data-theme="dark"] #bgm-status-message {
+    background: #555;
+}
+
+#bgm-tool-container[data-theme="dark"] .status-box.success {
+    background: rgb(103 194 58 / 10%);
+    color: #85ce61;
+    border-color: rgb(103 194 58 / 20%);
+}
+
+#bgm-tool-container[data-theme="dark"] .status-box.error {
+    background: rgb(245 108 108 / 10%);
+    border-color: rgb(245 108 108 / 20%);
+}
+
+#bgm-tool-container[data-theme="dark"] .status-box.warning {
+    background: rgb(230 162 60 / 10%);
+    border-color: rgb(230 162 60 / 20%);
+}
+
+#bgm-tool-container[data-theme="dark"] .log-success {
+    background: rgb(103 194 58 / 10%);
+    color: #85ce61;
+}
+
+#bgm-tool-container[data-theme="dark"] .log-error {
+    background: rgb(245 108 108 / 10%);
+}
+
+#bgm-tool-container[data-theme="dark"] .log-info {
+    background: var(--white);
+    color: var(--text);
+}
+
+#bgm-tool-container[data-theme="dark"] button.danger {
+    color: #f56c6c;
+    border-color: #f56c6c;
+}
+
+#bgm-tool-container[data-theme="dark"] button.danger:hover {
+    background: rgb(245 108 108 / 10%);
 }
 
 /* ===== Float Button ===== */
