@@ -17,7 +17,6 @@ import {
     updateProgressBar,
     showStatusMessage,
 } from './ui';
-import { sanitizeRegExp } from './utils';
 
 export function startProcessing(): void {
     if (state.submitMethod === 'patch' && !state.accessToken) {
@@ -68,11 +67,6 @@ export function processNextItem(isRetry: boolean = false): void {
 
     const currentItem = state.csvData![state.currentIndex];
     const entityType = currentItem.type || 'subject';
-
-    if (entityType !== 'subject' && state.submitMethod === 'post') {
-        showStatusMessage('角色和人物仅支持 Private API (PATCH) 提交方式，请在设置中切换');
-        return;
-    }
 
     if (!isRetry) {
         updateProgressBar(state.currentIndex, state.totalItems);
@@ -180,28 +174,53 @@ export function submitUpdate(
             .catch(error => {
                 onError(error instanceof Error ? error : new Error(String(error)));
             });
-    } else if (entityType === 'subject') {
+    } else {
         const formattedInfobox = newWcode.replace(/\n/g, '\r\n');
 
         const formData = new FormData();
         formData.append('formhash', state.formhash);
-        formData.append('subject_title', state.currentSubjectData?.name || '');
-        formData.append('platform', state.currentSubjectData?.platform || '');
-        formData.append('subject_infobox', formattedInfobox);
-        formData.append('subject_summary', state.currentSubjectData?.summary || '');
-        formData.append('subject_meta_tags', newTags.join(' '));
         formData.append('editSummary', commitMessage);
-        formData.append('series', newSeries ? '1' : '0');
-        formData.append('submit', '提交');
+
+        if (entityType === 'subject') {
+            formData.append('subject_title', state.currentSubjectData?.name || '');
+            formData.append('platform', state.currentSubjectData?.platform || '');
+            formData.append('subject_infobox', formattedInfobox);
+            formData.append('subject_summary', state.currentSubjectData?.summary || '');
+            formData.append('subject_meta_tags', newTags.join(' '));
+            formData.append('series', newSeries ? '1' : '0');
+            formData.append('submit', '提交');
+        } else if (entityType === 'person') {
+            formData.append('crt_name', state.currentSubjectData?.name || '');
+            formData.append('crt_infobox', formattedInfobox);
+            formData.append('crt_summary', state.currentSubjectData?.summary || '');
+            const profession = state.currentSubjectData?.profession;
+            if (profession) {
+                for (const [key, val] of Object.entries(profession)) {
+                    if (val) formData.append(`prsn_pro[${key}]`, '1');
+                }
+            }
+            formData.append('picfile', '');
+            formData.append('submit', '改好了');
+        } else {
+            formData.append('crt_name', state.currentSubjectData?.name || '');
+            formData.append('crt_infobox', formattedInfobox);
+            formData.append('crt_summary', state.currentSubjectData?.summary || '');
+            formData.append('picfile', '');
+            formData.append('submit', '改好了');
+        }
 
         const formParams = new URLSearchParams();
         formData.forEach((value, key) => {
             formParams.append(key, value as string);
         });
 
+        const postUrl = entityType === 'subject'
+            ? `https://bgm.tv/subject/${itemId}/new_revision`
+            : `https://bgm.tv/${entityType}/${itemId}/edit`;
+
         GM.xmlHttpRequest({
             method: 'POST',
-            url: `https://bgm.tv/subject/${itemId}/new_revision`,
+            url: postUrl,
             data: formParams.toString(),
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
@@ -209,8 +228,7 @@ export function submitUpdate(
             onload: function (response) {
                 hideLoadingOverlay();
 
-                const successPattern = new RegExp(`${sanitizeRegExp(itemName)} 的新描述`);
-                if (successPattern.test(response.responseText)) {
+                if (response.finalUrl === postUrl) {
                     onError(new Error('更新失败，可能是formhash无效或权限不足'));
                 } else {
                     onSuccess();
@@ -229,7 +247,5 @@ export function submitUpdate(
                 onError(new Error('请求超时'));
             },
         });
-    } else {
-        onError(new Error('角色和人物仅支持 Private API (PATCH) 提交方式'));
     }
 }

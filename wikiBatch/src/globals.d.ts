@@ -10,7 +10,7 @@ declare namespace GM {
     url: string;
     data?: string;
     headers?: Record<string, string>;
-    onload?: (response: { responseText: string; status: number }) => void;
+    onload?: (response: { responseText: string; status: number; finalUrl: string }) => void;
     onerror?: (response: { message?: string }) => void;
     onabort?: () => void;
     ontimeout?: () => void;

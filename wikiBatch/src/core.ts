@@ -32,6 +32,7 @@ export interface WikiData {
   series?: boolean;
   platform?: string;
   summary?: string;
+  profession?: Record<string, boolean>;
 }
 
 export interface HistoryEntry {
