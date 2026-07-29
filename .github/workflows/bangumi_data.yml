@@ -72,6 +72,11 @@ jobs:
       - name: 生成别名 JSON
         run: uv run person_alias.py
 
+      - name: 查找可转换简体中文名的人物/角色
+        run: |
+          mkdir -p results
+          uv run find_missing_cn_name.py bangumi_archive results
+
       - name: 查找同名人物
         if: ${{ env.BANGUMI_TOKEN != '' }}
         env:
@@ -165,8 +170,12 @@ jobs:
             每周自动更新的人物别名数据。
 
             - `person_alias.json.gz` — 人物别名数据
+            - `missing-cn-name-person.csv` — 可自动转换简体中文名的人物列表
+            - `missing-cn-name-character.csv` — 可自动转换简体中文名的角色列表
           files: |
             ${{ env.ALIAS_GZ }}
+            results/missing-cn-name-person.csv
+            results/missing-cn-name-character.csv
           draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
