@@ -6,8 +6,7 @@ import { sanitizeRegExp, arraysEqual } from './utils';
 import { INFOBOX_FIELD_ORDER, INFOBOX_HEADER_MAP } from './infobox-field-order';
 
 export function getCurrentEntityType(): EntityType {
-    if (!state.csvData || state.currentIndex >= state.csvData.length) return 'subject';
-    return state.csvData[state.currentIndex]?.type || 'subject';
+    return state.entityType || 'subject';
 }
 
 export function checkForUpdates(): boolean {
@@ -147,8 +146,7 @@ export function getFieldUpdates(csvItem: CsvItem, _oldInfobox: string): Record<s
 }
 
 export function getTagUpdates(csvItem: CsvItem, _oldTags: string[]): TagUpdates {
-    const entityType = csvItem.type || 'subject';
-    if (entityType !== 'subject') {
+    if (state.entityType !== 'subject') {
         return { add: [], remove: [] };
     }
 
@@ -170,8 +168,7 @@ export function getTagUpdates(csvItem: CsvItem, _oldTags: string[]): TagUpdates 
 }
 
 export function getSeriesUpdate(csvItem: CsvItem, oldSeries: boolean): SeriesUpdate {
-    const entityType = csvItem.type || 'subject';
-    if (entityType !== 'subject') {
+    if (state.entityType !== 'subject') {
         return { hasUpdate: false };
     }
 

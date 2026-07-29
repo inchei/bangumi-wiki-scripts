@@ -27,7 +27,7 @@ export function handleProcessingViewButtons(btnId: string): void {
     const subjectData = state.currentSubjectData;
     const itemId = currentItem?.id || state.currentItemId || '';
     const itemName = subjectData?.name || '未知名称';
-    const entityType = currentItem?.type || 'subject';
+    const entityType = state.entityType || 'subject';
 
     function makePreviousItem(): PreviousItem {
         return { id: itemId, name: itemName, type: entityType };

@@ -66,7 +66,7 @@ export function processNextItem(isRetry: boolean = false): void {
     }
 
     const currentItem = state.csvData![state.currentIndex];
-    const entityType = currentItem.type || 'subject';
+    const entityType = state.entityType || 'subject';
 
     if (!isRetry) {
         updateProgressBar(state.currentIndex, state.totalItems);
@@ -130,7 +130,7 @@ export function submitUpdate(
 ): void {
     state.processing = true;
 
-    const entityType = currentItem.type || 'subject';
+    const entityType = state.entityType || 'subject';
 
     if (state.submitMethod === 'patch') {
         const { wikiPath, patchBodyKey } = getEntityApiConfig(entityType, itemId);

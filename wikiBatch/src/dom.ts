@@ -191,13 +191,11 @@ function bindEditRegionEvents(): void {
             lockCommitBtn.innerHTML = '<i class="fas fa-lock-open"></i>';
             lockCommitBtn.title = '固定编辑摘要';
 
-            const csvItem = state.csvData?.[state.currentIndex];
-            const entityType = csvItem?.type || 'subject';
             state.currentCommitMessage = generateCommitMessage(
                 state.currentFieldUpdates,
                 state.currentTagUpdates,
                 state.currentSeriesUpdate,
-                entityType,
+                state.entityType,
             );
             commitInput2.value = state.currentCommitMessage;
         }

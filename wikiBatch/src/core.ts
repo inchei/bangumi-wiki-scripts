@@ -1,6 +1,5 @@
 export interface CsvItem {
   id: string;
-  type: 'subject' | 'character' | 'person';
   tags?: string;
   series?: string;
   [field: string]: string | undefined;
@@ -54,6 +53,7 @@ export interface State {
   accessToken: string;
   formhash: string;
   submitMethod: 'patch' | 'post';
+  entityType: EntityType;
   csvData: CsvItem[] | null;
   currentIndex: number;
   totalItems: number;
@@ -80,6 +80,7 @@ export const state: State = {
     accessToken: GM_getValue('bgmAccessToken') || '',
     formhash: GM_getValue('bgmFormhash') || '',
     submitMethod: (GM_getValue('bgmSubmitMethod') as 'patch' | 'post') || 'patch',
+    entityType: (localStorage.getItem('bgmEntityType') as EntityType) || 'subject',
     csvData: JSON.parse(localStorage.getItem('bgmCsvData') || 'null'),
     currentIndex: parseInt(localStorage.getItem('bgmCurrentIndex') || '0'),
     totalItems: 0,
@@ -106,6 +107,7 @@ export function saveState(): void {
     GM_setValue('bgmAccessToken', state.accessToken);
     GM_setValue('bgmFormhash', state.formhash);
     GM_setValue('bgmSubmitMethod', state.submitMethod);
+    localStorage.setItem('bgmEntityType', state.entityType);
     localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
     localStorage.setItem('bgmCurrentIndex', state.currentIndex.toString());
     localStorage.setItem('bgmIsCommitMessageLocked', state.isCommitMessageLocked.toString());

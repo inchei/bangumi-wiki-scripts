@@ -54,7 +54,8 @@ export function switchToSetupView(): void {
                             <label for="setup-access-token">Access Token</label>
                             <input type="password" id="setup-access-token" value="${state.accessToken}">
                             <p class="formhash-hint">
-                                你可以在<a href="https://next.bgm.tv/demo/access-token" target="_blank">个人令牌页</a>中获取 Access Token
+                                在<a href="https://next.bgm.tv/demo/access-token" target="_blank">个人令牌页</a>获取 Access Token<br>
+                                限速严重可切换为旧 API
                             </p>
                         </div>
 
@@ -81,7 +82,7 @@ export function switchToSetupView(): void {
                     </div>
                     <div class="setup-column">
                         <div class="form-group">
-                            <label for="setup-csv-file">CSV文件 (包含type、ID、要更新的字段列、tags列或series列)</label>
+                            <label for="setup-csv-file">CSV文件 (包含ID列、要更新的字段列、tags列或series列)</label>
                             <div class="file-upload-group">
                                 <button type="button" class="secondary" id="setup-csv-btn">
                                     <i class="fas fa-upload"></i> 选择 CSV 文件
@@ -94,10 +95,9 @@ export function switchToSetupView(): void {
                             <input type="file" id="setup-csv-file" accept=".csv" class="file-upload-input">
                             ${state.csvData ? `<div class="csv-loaded-info">已加载CSV: ${state.csvData.length} 条记录</div>` : ''}
                             <p class="csv-hint">
-                                type列可选值为 subject（条目）、character/crt（角色）、person/prsn（人物），不填默认为subject<br>
+                                必备ID列，条目id，人物person_id，角色character_id<br>
                                 tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签<br>
                                 series列使用true或false表示是否标记为系列<br>
-                                角色和人物仅支持 Private API 提交方式
                             </p>
                         </div>
                         ${state.csvData ? `
@@ -206,7 +206,7 @@ export function switchToProcessingView(itemData: {
     state.currentSubjectData = wikiData;
     state.currentItemId = currentItem.id;
 
-    const entityType = currentItem.type || 'subject';
+    const entityType = state.entityType || 'subject';
 
     state.currentWcode = null;
     state.currentTags = null;
@@ -347,9 +347,8 @@ export function switchToProcessingErrorView(currentItem: CsvItem, errorMsg: stri
     updateProgressBar(state.currentIndex, state.totalItems);
 
     const itemId = currentItem.id;
-    const entityType = currentItem.type || 'subject';
     const TYPE_LABELS: Record<string, string> = { subject: '条目', character: '角色', person: '人物' };
-    const typeLabel = TYPE_LABELS[entityType] || '条目';
+    const typeLabel = TYPE_LABELS[state.entityType] || '条目';
 
     const currentRetryCount = (state.retryCount[itemId] || 0) + 1;
     state.retryCount[itemId] = currentRetryCount;
@@ -358,7 +357,7 @@ export function switchToProcessingErrorView(currentItem: CsvItem, errorMsg: stri
         coreContent.innerHTML = `
             <div>
                 <div class="item-info">
-                    当前${typeLabel}：<a href="https://bgm.tv/${entityType}/${itemId}" target="_blank">查看${typeLabel}</a>（${itemId}）
+                    当前${typeLabel}：<a href="https://bgm.tv/${state.entityType}/${itemId}" target="_blank">查看${typeLabel}</a>（${itemId}）
                 </div>
                 <div class="status-box error">
                     无法获取${typeLabel}信息: ${errorMsg}
@@ -397,16 +396,14 @@ export function switchToUpdateErrorView(errorMsg: string): void {
     const subjectData = state.currentSubjectData;
     const itemName = subjectData?.name || '未知名称';
 
-    const csvItem = state.csvData ? state.csvData[state.currentIndex] : null;
-    const entityType = csvItem?.type || 'subject';
     const TYPE_LABELS: Record<string, string> = { subject: '条目', character: '角色', person: '人物' };
-    const typeLabel = TYPE_LABELS[entityType] || '条目';
+    const typeLabel = TYPE_LABELS[state.entityType] || '条目';
 
     if (coreContent) {
         coreContent.innerHTML = `
             <div>
                 <div class="item-info">
-                    当前${typeLabel}：<a href="https://bgm.tv/${entityType}/${itemId}" target="_blank">${itemName}</a>（${itemId}）
+                    当前${typeLabel}：<a href="https://bgm.tv/${state.entityType}/${itemId}" target="_blank">${itemName}</a>（${itemId}）
                 </div>
                 <div class="status-box error">
                     提交更新失败: ${errorMsg}

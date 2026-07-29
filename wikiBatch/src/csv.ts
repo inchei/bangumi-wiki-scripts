@@ -3,11 +3,6 @@ import { state, type CsvItem } from './core';
 import { showLoadingOverlay, hideLoadingOverlay, showStatusMessage } from './ui';
 import { switchToSetupView } from './views';
 
-const TYPE_MAP: Record<string, 'subject' | 'character' | 'person'> = {
-    'subject': 'subject',
-    'character': 'character', 'crt': 'character',
-    'person': 'person', 'prsn': 'person',
-};
 
 function loadCSVContent(csvContent: string, sourceLabel: string): void {
     try {
@@ -73,24 +68,24 @@ function parseCSV(csvContent: string): CsvItem[] {
         throw new Error('CSV文件为空或格式错误');
     }
 
-    const idIndex = headers.findIndex(h => h.toLowerCase() === 'id');
-    if (idIndex === -1) {
-        throw new Error('CSV必须包含"ID"列');
+    const idHeader = headers.find(h => /^(person_id|character_id|id)$/i.test(h));
+    if (!idHeader) {
+        throw new Error('CSV必须包含"id"、"person_id"或"character_id"列');
     }
 
-    const typeIndex = headers.findIndex(h => h.toLowerCase() === 'type');
-    const fieldNames = headers.filter((h, i) => i !== idIndex && i !== typeIndex);
+    state.entityType = 'subject';
+    if (/^person_id$/i.test(idHeader)) state.entityType = 'person';
+    else if (/^character_id$/i.test(idHeader)) state.entityType = 'character';
+
+    const fieldNames = headers.filter(h => h !== idHeader);
 
     const data: CsvItem[] = [];
 
     for (const row of result.data) {
-        const id = row[headers[idIndex]]?.trim();
+        const id = row[idHeader]?.trim();
         if (!id) continue;
 
-        const rawType = typeIndex !== -1
-            ? (row[headers[typeIndex]]?.trim().toLowerCase() || 'subject')
-            : 'subject';
-        const item: CsvItem = { id, type: TYPE_MAP[rawType] || 'subject' };
+        const item: CsvItem = { id };
 
         for (const fieldName of fieldNames) {
             const val = row[fieldName];
