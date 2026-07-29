@@ -3,6 +3,7 @@ import { DiffView, DiffModeEnum } from '@git-diff-view/svelte';
 import { mount, unmount } from 'svelte';
 import { state, type EntityType, type TagUpdates, type SeriesUpdate, type CsvItem } from './core';
 import { sanitizeRegExp, arraysEqual } from './utils';
+import { INFOBOX_FIELD_ORDER, INFOBOX_HEADER_MAP } from './infobox-field-order';
 
 export function getCurrentEntityType(): EntityType {
     if (!state.csvData || state.currentIndex >= state.csvData.length) return 'subject';
@@ -110,12 +111,7 @@ export function updateDiffDisplay(oldText: string, newText: string, containerId:
             setTimeout(() => {
                 const textarea = document.getElementById('static-wcode-input') as HTMLTextAreaElement | null;
                 if (!textarea) return;
-                const editRow = textarea.closest('.edit-row') as HTMLElement | null;
-                if (!editRow) return;
-                const diffSection = editRow.querySelector('.diff-section') as HTMLElement | null;
-                if (!diffSection) return;
-                textarea.style.height = 'auto';
-                textarea.style.height = Math.min(textarea.scrollHeight, diffSection.offsetHeight) + 'px';
+                textarea.style.height = '';
             }, 0);
         }
 
@@ -192,8 +188,28 @@ export function getSeriesUpdate(csvItem: CsvItem, oldSeries: boolean): SeriesUpd
     };
 }
 
+function getTemplateName(infobox: string): string | null {
+    const m = infobox.match(/{{Infobox\s+(.+?)$/m);
+    if (!m) return null;
+    return INFOBOX_HEADER_MAP[m[1]] || null;
+}
+
+function findInsertIndex(lines: string[], fieldOrder: string[], fieldIdx: number): number {
+    for (let i = 1; i < lines.length; i++) {
+        const m = lines[i].match(/^\|([^|=]+?)\s*=/);
+        if (m && fieldOrder.indexOf(m[1]) > fieldIdx) {
+            return i;
+        }
+    }
+    return lines.length - 1;
+}
+
 export function updateInfobox(oldInfobox: string, fieldUpdates: Record<string, string>): string {
+    const templateName = getTemplateName(oldInfobox);
+    const fieldOrder = templateName ? INFOBOX_FIELD_ORDER[templateName] : null;
+
     let newInfobox = oldInfobox;
+    const pendingAdd: Array<{ field: string; value: string; fieldIdx: number }> = [];
 
     Object.entries(fieldUpdates).forEach(([field, value]) => {
         value = value.replaceAll('\\n', '\n');
@@ -201,11 +217,35 @@ export function updateInfobox(oldInfobox: string, fieldUpdates: Record<string, s
         if (regex.test(newInfobox)) {
             newInfobox = newInfobox.replace(regex, `|${field}= ${value}`);
         } else {
-            const lines = newInfobox.split('\n');
-            lines.splice(-1, 0, `|${field}= ${value}`);
-            newInfobox = lines.join('\n');
+            pendingAdd.push({
+                field,
+                value,
+                fieldIdx: fieldOrder ? fieldOrder.indexOf(field) : -1,
+            });
         }
     });
+
+    if (pendingAdd.length > 0) {
+        if (fieldOrder) {
+            pendingAdd.sort((a, b) => {
+                if (a.fieldIdx === -1 && b.fieldIdx === -1) return 0;
+                if (a.fieldIdx === -1) return 1;
+                if (b.fieldIdx === -1) return -1;
+                return a.fieldIdx - b.fieldIdx;
+            });
+        }
+
+        const lines = newInfobox.split('\n');
+        for (let i = pendingAdd.length - 1; i >= 0; i--) {
+            const f = pendingAdd[i];
+            if (fieldOrder && f.fieldIdx >= 0) {
+                lines.splice(findInsertIndex(lines, fieldOrder, f.fieldIdx), 0, `|${f.field}= ${f.value}`);
+            } else {
+                lines.splice(-1, 0, `|${f.field}= ${f.value}`);
+            }
+        }
+        newInfobox = lines.join('\n');
+    }
 
     return newInfobox;
 }

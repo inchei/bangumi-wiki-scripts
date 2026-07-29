@@ -419,7 +419,16 @@
     box-sizing: border-box;
     line-height: 1.6;
     color: var(--text);
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+#edit-regions {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 }
 
 #core-content {
@@ -512,6 +521,8 @@
     flex-direction: column;
     gap: 16px;
     min-width: 0;
+    min-height: 0;
+    flex: 1;
 }
 
 .edit-row-series .series-edit-area {
@@ -539,11 +550,14 @@
     margin: 0;
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
 }
 
 .edit-area textarea {
     width: 100%;
-    height: auto;
+    flex: 1;
+    min-height: 100px;
     padding: 12px;
     box-sizing: border-box;
     border: 1px solid var(--border);
