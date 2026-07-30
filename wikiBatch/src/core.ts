@@ -85,7 +85,7 @@ export const state: State = {
     entityType: (localStorage.getItem('bgmEntityType') as EntityType) || 'subject',
     csvData: JSON.parse(localStorage.getItem('bgmCsvData') || 'null'),
     currentIndex: parseInt(localStorage.getItem('bgmCurrentIndex') || '0'),
-    totalItems: 0,
+    totalItems: parseInt(localStorage.getItem('bgmTotalItems') || '0'),
     processing: false,
     paused: false,
     currentView: 'setup',
@@ -99,7 +99,7 @@ export const state: State = {
     currentCommitMessage: null,
     isCommitMessageLocked: localStorage.getItem('bgmIsCommitMessageLocked') === 'true' || false,
     lockedCommitMessage: localStorage.getItem('bgmLockedCommitMessage') || '',
-    retryCount: {},
+    retryCount: JSON.parse(GM_getValue('bgmRetryCount', '{}')),
     currentItemId: null,
     previousItem: JSON.parse(localStorage.getItem('bgmPreviousItem') || 'null'),
     diffViewMode: (localStorage.getItem('bgmDiffViewMode') as DiffViewMode) || 'split',
@@ -113,6 +113,8 @@ export function saveState(): void {
     localStorage.setItem('bgmEntityType', state.entityType);
     localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
     localStorage.setItem('bgmCurrentIndex', state.currentIndex.toString());
+    localStorage.setItem('bgmTotalItems', state.totalItems.toString());
+    GM_setValue('bgmRetryCount', JSON.stringify(state.retryCount));
     localStorage.setItem('bgmIsCommitMessageLocked', state.isCommitMessageLocked.toString());
     localStorage.setItem('bgmLockedCommitMessage', state.lockedCommitMessage);
     if (state.previousItem) {

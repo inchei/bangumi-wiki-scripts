@@ -5,6 +5,7 @@ import { showStatusMessage, showLoadingOverlay, hideLoadingOverlay } from './ui'
 import { switchToSetupView, switchToUpdateErrorView } from './views';
 import { resetProcessingState } from './utils';
 import { saveState } from './core';
+import { authorizeWithGitHub, uploadToGist, downloadFromGist, clearGistAuth } from './gist-sync';
 
 export function handleSetupViewButtons(btnId: string): void {
     switch (btnId) {
@@ -18,6 +19,62 @@ export function handleSetupViewButtons(btnId: string): void {
             localStorage.setItem('bgmCurrentIndex', '0');
             switchToSetupView();
             break;
+        case 'sync-auth-btn':
+            handleSyncAuth();
+            break;
+        case 'sync-upload-btn':
+            handleSyncUpload();
+            break;
+        case 'sync-download-btn':
+            handleSyncDownload();
+            break;
+        case 'sync-clear-btn':
+            clearGistAuth();
+            switchToSetupView();
+            break;
+    }
+}
+
+async function handleSyncAuth(): Promise<void> {
+    const statusEl = document.getElementById('sync-status')
+    if (!statusEl) return
+    const btn = document.getElementById('sync-auth-btn') as HTMLButtonElement
+    if (btn) btn.disabled = true
+    await authorizeWithGitHub(statusEl)
+    if (btn) btn.disabled = false
+    switchToSetupView()
+}
+
+async function handleSyncUpload(): Promise<void> {
+    const statusEl = document.getElementById('sync-status')
+    if (!statusEl) return
+    saveState()
+    statusEl.textContent = '正在上传...'
+    try {
+        await uploadToGist()
+        statusEl.textContent = '上传成功: ' + new Date().toLocaleString()
+    } catch (e) {
+        statusEl.textContent = '上传失败: ' + (e as Error).message
+    }
+}
+
+async function handleSyncDownload(): Promise<void> {
+    const statusEl = document.getElementById('sync-status')
+    if (!statusEl) return
+    statusEl.textContent = '正在下载...'
+    try {
+        await downloadFromGist()
+        // Reload state from localStorage
+        state.csvData = JSON.parse(localStorage.getItem('bgmCsvData') || 'null')
+        state.currentIndex = parseInt(localStorage.getItem('bgmCurrentIndex') || '0')
+        state.entityType = (localStorage.getItem('bgmEntityType') as any) || 'subject'
+        state.totalItems = parseInt(localStorage.getItem('bgmTotalItems') || '0')
+        state.retryCount = JSON.parse(GM_getValue('bgmRetryCount', '{}'))
+        state.previousItem = JSON.parse(localStorage.getItem('bgmPreviousItem') || 'null')
+        statusEl.textContent = '下载成功: ' + new Date().toLocaleString()
+        switchToSetupView()
+    } catch (e) {
+        statusEl.textContent = '下载失败: ' + (e as Error).message
     }
 }
 

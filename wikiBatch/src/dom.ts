@@ -245,11 +245,8 @@ export function createStaticDOM(): void {
     switchToSetupView();
 }
 
-function bindEventDelegation(): void {
-    const buttonsContainer = document.getElementById('static-buttons-container');
-    if (!buttonsContainer) return;
-
-    buttonsContainer.addEventListener('click', (e) => {
+function delegateClick(container: HTMLElement): void {
+    container.addEventListener('click', (e) => {
         const targetBtn = (e.target as HTMLElement).closest('button');
         if (!targetBtn) return;
 
@@ -268,6 +265,13 @@ function bindEventDelegation(): void {
                 break;
         }
     });
+}
+
+function bindEventDelegation(): void {
+    const buttonsContainer = document.getElementById('static-buttons-container');
+    if (buttonsContainer) delegateClick(buttonsContainer);
+    const coreContent = document.getElementById('core-content');
+    if (coreContent) delegateClick(coreContent);
 }
 
 function bindEditRegionEvents(): void {

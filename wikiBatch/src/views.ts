@@ -117,6 +117,25 @@ export function switchToSetupView(): void {
                         ` : ''}
                     </div>
                 </div>
+                <div class="sync-section" style="margin-top:20px;border-top:1px solid var(--border-color);padding-top:16px">
+                    <h3 class="section-title">跨设备同步</h3>
+                    <div id="sync-status" style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">未同步</div>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <button type="button" class="secondary" id="sync-auth-btn">
+                            <i class="fab fa-github"></i> 授权 GitHub
+                        </button>
+                        <button type="button" class="secondary" id="sync-upload-btn">
+                            <i class="fas fa-upload"></i> 上传进度
+                        </button>
+                        <button type="button" class="secondary" id="sync-download-btn">
+                            <i class="fas fa-download"></i> 下载进度
+                        </button>
+                        <button type="button" class="secondary" id="sync-clear-btn">
+                            <i class="fas fa-trash-alt"></i> 清除授权
+                        </button>
+                    </div>
+
+                </div>
             </div>
         `;
     }
@@ -233,6 +252,17 @@ export function switchToSetupView(): void {
                 showStatusMessage('读取剪贴板失败: ' + (err as Error).message);
             }
         });
+    }
+
+    const statusEl = document.getElementById('sync-status');
+    if (statusEl) {
+        const token = GM_getValue('bgmGistToken', '');
+        if (token) {
+            const gistId = GM_getValue('bgmGistId', '');
+            statusEl.textContent = gistId ? '已同步 (Gist: ' + gistId.slice(0, 8) + '…)' : '已授权 GitHub';
+        } else {
+            statusEl.textContent = '未同步';
+        }
     }
 }
 

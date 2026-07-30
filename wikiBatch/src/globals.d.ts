@@ -4,6 +4,10 @@ declare function GM_setValue(key: string, value: string): void;
 
 declare function GM_getValue(key: string, defaultValue?: string): string;
 
+declare function GM_deleteValue(key: string): void;
+
+declare function GM_openInTab(url: string): void;
+
 declare namespace GM {
   function xmlHttpRequest(details: {
     method: string;
