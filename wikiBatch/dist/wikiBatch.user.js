@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bangumi wiki 批量更新工具
 // @namespace    http://tampermonkey.net/
-// @version      9.8
+// @version      9.9
 // @description  支持两种提交方式，可在设置页面选择，支持编辑Wcode、标签和系列状态
 // @author       You
 // @match        https://next.bgm.tv/
@@ -11,6 +11,9 @@
 // @grant        GM.xmlHttpRequest
 // @grant        GM_deleteValue
 // @grant        GM_openInTab
+// @connect      bgm.tv
+// @connect      github.com
+// @connect      api.github.com
 // @license      MIT
 // ==/UserScript==
 
@@ -240,7 +243,9 @@ ${r}
 `).replace(/\r/g,`
 `),r=(e||"").replace(/\r\n/g,`
 `).replace(/\r/g,`
-`),l=sf("\u7F16\u8F91\u524D",i,"\u7F16\u8F91\u540E",r,"text","text",{context:1});l.init(),l.buildSplitDiffLines();let d=document.getElementById(n);if(!d)return;let u=d._diffViewInstance;u&&zo(u),d.innerHTML="";let c=qr(Zs,{target:d,props:{diffFile:l,diffViewMode:k.diffViewMode==="unified"?Pt.Unified:Pt.Split,diffViewFontSize:13,diffViewTheme:wv(),diffViewHighlight:!0,diffViewWrap:!0}});d._diffViewInstance=c,n==="static-content-diff-container"&&setTimeout(()=>{let p=document.getElementById("static-wcode-input");p&&(p.style.height="")},0);let f=document.getElementById("diff-error");f&&(f.style.display="none")}catch(i){console.error("Diff generation error:",i);let r=document.getElementById("diff-error");r&&(r.textContent=`\u5DEE\u5F02\u663E\u793A\u9519\u8BEF: ${i.message}`,r.style.display="block")}}function ea(t,e,n){let i=t.join(" "),r=e.join(" ");Xo(i,r,n)}function Su(t,e){let n={};return Object.keys(t).forEach(i=>{if(!["id","tags","series","type"].includes(i.toLowerCase())){let r=t[i];r!==void 0&&(n[i]=r)}}),n}function Cu(t,e){if(k.entityType!=="subject")return{add:[],remove:[]};let i=(t.tags||"").split(" ").filter(a=>a),r=[],o=[];return i.forEach(a=>{a.startsWith("-")?o.push(a.slice(1)):r.push(a)}),{add:r,remove:o}}function Nu(t,e){if(k.entityType!=="subject")return{hasUpdate:!1};if(t.series===void 0||t.series===null||t.series==="")return{hasUpdate:!1};let n=t.series.trim().toLowerCase(),i=n==="true"||n==="1"||n==="yes";return{hasUpdate:i!==e,newValue:i}}function yv(t){let e=t.match(/{{Infobox\s+(.+?)$/m);return e&&Iu[e[1]]||null}function Ev(t,e,n){for(let i=1;i<t.length;i++){let r=t[i].match(/^\|([^|=]+?)\s*=/);if(r&&e.indexOf(r[1])>n)return i}return t.length-1}function $u(t,e){let n=yv(t),i=n?ku[n]:null,r=t,o=[];if(Object.entries(e).forEach(([a,l])=>{l=l.replaceAll("\\n",`
+`),l=sf("\u7F16\u8F91\u524D",i,"\u7F16\u8F91\u540E",r,"text","text",{context:1});l.init(),l.buildSplitDiffLines();let d=document.getElementById(n);if(!d)return;let u=d._diffViewInstance;u&&zo(u),d.innerHTML="";let c=qr(Zs,{target:d,props:{diffFile:l,diffViewMode:k.diffViewMode==="unified"?Pt.Unified:Pt.Split,diffViewFontSize:13,diffViewTheme:wv(),diffViewHighlight:!0,diffViewWrap:!0}});d._diffViewInstance=c,n==="static-content-diff-container"&&setTimeout(()=>{let p=document.getElementById("static-wcode-input");p&&(p.style.height="")},0);let f=document.getElementById("diff-error");f&&(f.style.display="none")}catch(i){console.error("Diff generation error:",i);let r=document.getElementById("diff-error");r&&(r.textContent=`\u5DEE\u5F02\u663E\u793A\u9519\u8BEF: ${i.message}`,r.style.display="block")}}function ea(t,e,n){let i=t.join(`
+`),r=e.join(`
+`);Xo(i,r,n)}function Su(t,e){let n={};return Object.keys(t).forEach(i=>{if(!["id","tags","series","type"].includes(i.toLowerCase())){let r=t[i];r!==void 0&&(n[i]=r)}}),n}function Cu(t,e){if(k.entityType!=="subject")return{add:[],remove:[]};let i=(t.tags||"").split(" ").filter(a=>a),r=[],o=[];return i.forEach(a=>{a.startsWith("-")?o.push(a.slice(1)):r.push(a)}),{add:r,remove:o}}function Nu(t,e){if(k.entityType!=="subject")return{hasUpdate:!1};if(t.series===void 0||t.series===null||t.series==="")return{hasUpdate:!1};let n=t.series.trim().toLowerCase(),i=n==="true"||n==="1"||n==="yes";return{hasUpdate:i!==e,newValue:i}}function yv(t){let e=t.match(/{{Infobox\s+(.+?)$/m);return e&&Iu[e[1]]||null}function Ev(t,e,n){for(let i=1;i<t.length;i++){let r=t[i].match(/^\|([^|=]+?)\s*=/);if(r&&e.indexOf(r[1])>n)return i}return t.length-1}function $u(t,e){let n=yv(t),i=n?ku[n]:null,r=t,o=[];if(Object.entries(e).forEach(([a,l])=>{l=l.replaceAll("\\n",`
 `);let d=new RegExp(`\\|${Eu(a)}\\s*=.*`,"i");d.test(r)?r=r.replace(d,`|${a}= ${l}`):o.push({field:a,value:l,fieldIdx:i?i.indexOf(a):-1})}),o.length>0){i&&o.sort((l,d)=>l.fieldIdx===-1&&d.fieldIdx===-1?0:l.fieldIdx===-1?1:d.fieldIdx===-1?-1:l.fieldIdx-d.fieldIdx);let a=r.split(`
 `);for(let l=o.length-1;l>=0;l--){let d=o[l];i&&d.fieldIdx>=0?a.splice(Ev(a,i,d.fieldIdx),0,`|${d.field}= ${d.value}`):a.splice(-1,0,`|${d.field}= ${d.value}`)}r=a.join(`
 `)}return r}function Du(t,e){let n=new Set(t);return e.add.forEach(i=>n.add(i)),e.remove.forEach(i=>n.delete(i)),[...n]}var Fu=sd(Tu());function Mu(t,e){try{k.csvData=Av(t),k.currentIndex=0,k.retryCount={},k.previousItem=null,localStorage.setItem("bgmCsvData",JSON.stringify(k.csvData)),localStorage.setItem("bgmCurrentIndex","0"),Gn(),en(e+"\u52A0\u8F7D\u6210\u529F")}catch(n){en("CSV\u89E3\u6790\u9519\u8BEF: "+n.message),console.error(n)}finally{vn(),document.querySelectorAll("#static-buttons-container button").forEach(n=>{n.disabled=!1})}}function Hu(t){let n=t.target.files?.[0];if(!n)return;document.querySelectorAll("#static-buttons-container button").forEach(r=>{r.disabled=!0}),Gi("\u6B63\u5728\u89E3\u6790CSV\u6587\u4EF6...");let i=new FileReader;i.onload=function(r){let o=r.target.result;Mu(o,"CSV\u6587\u4EF6")},i.readAsText(n)}function Bu(t){document.querySelectorAll("#static-buttons-container button").forEach(e=>{e.disabled=!0}),Gi("\u6B63\u5728\u89E3\u6790\u7C98\u8D34\u7684CSV..."),Mu(t,"\u7C98\u8D34\u7684CSV")}function Av(t){let e=Fu.default.parse(t,{header:!0,skipEmptyLines:!0,transform:a=>a.trim()});if(e.errors.length){let a=e.errors[0];throw new Error(`\u7B2C${a.row!==void 0?a.row+1:"?"}\u884C: ${a.message}`)}let n=e.meta.fields;if(!n||n.length===0)throw new Error("CSV\u6587\u4EF6\u4E3A\u7A7A\u6216\u683C\u5F0F\u9519\u8BEF");let i=n.find(a=>/^(person_id|character_id|id)$/i.test(a));if(!i)throw new Error('CSV\u5FC5\u987B\u5305\u542B"id"\u3001"person_id"\u6216"character_id"\u5217');k.entityType="subject",/^person_id$/i.test(i)?k.entityType="person":/^character_id$/i.test(i)&&(k.entityType="character");let r=n.filter(a=>a!==i),o=[];for(let a of e.data){let l=a[i]?.trim();if(!l)continue;let d={id:l};for(let u of r){let c=a[u];c!==void 0&&(d[u]=c.trim())}o.push(d)}if(o.length===0)throw new Error("\u672A\u627E\u5230\u6709\u6548\u7684\u6570\u636E\u884C");return o}function Gn(){k.currentView="setup";let t=document.getElementById("core-content"),e=document.getElementById("static-buttons-container");document.getElementById("edit-regions").style.display="none",ad(),t&&(t.innerHTML=`
@@ -344,6 +349,11 @@ ${r}
                     </div>
 
                 </div>
+                <div style="margin-top:20px;border-top:1px solid var(--border-color);padding-top:14px;text-align:center">
+                    <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/wikiBatch" target="_blank" style="color:var(--text-secondary);font-size:13px;text-decoration:none">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                </div>
             </div>
         `),e&&(e.innerHTML=`
             <button id="setup-start-processing" class="primary">\u5F00\u59CB\u5904\u7406</button>
@@ -356,7 +366,7 @@ ${r}
             <a href="${V}" target="_blank">
                 ${k.previousItem.name}\uFF08${k.previousItem.id}\uFF09
             </a>
-        `,E.style.display="block"}else E&&(E.style.display="none");let h=document.getElementById("static-commit-input"),b=document.getElementById("static-lock-commit"),A=so(p,m,g,r);h.value=k.isCommitMessageLocked?k.lockedCommitMessage:A,b.innerHTML=`<i class="fas ${k.isCommitMessageLocked?"fa-lock":"fa-lock-open"}"></i>`,b.title=k.isCommitMessageLocked?"\u89E3\u9501\u7F16\u8F91\u6458\u8981":"\u56FA\u5B9A\u7F16\u8F91\u6458\u8981";let T=document.getElementById("static-wcode-input"),M=document.getElementById("static-content-diff-container"),U=$u(u,p);T.value=U,Xo(u,U,"static-content-diff-container"),M&&(M.style.display="block");let P=document.getElementById("static-tags-area"),J=document.getElementById("static-tags-diff-section");if(r==="subject"){let F=document.getElementById("static-tags-input"),V=Du(c,m);F.value=V.join(" "),ea(c,V,"static-tags-diff-container"),P&&(P.style.display="block"),J&&(J.style.display="block")}else P&&(P.style.display="none"),J&&(J.style.display="none");let ee=document.getElementById("static-series-area");if(r==="subject"){let F=document.getElementById("static-series-checkbox"),V=g.hasUpdate?g.newValue:f;F.checked=V,k.currentSeries=V,ee&&(ee.style.display="block")}else ee&&(ee.style.display="none");let re=ji(r,e.id).editPagePath.replace("/edit",""),q=x[r]||"\u6761\u76EE";o&&(o.innerHTML=`
+        `,E.style.display="block"}else E&&(E.style.display="none");let h=document.getElementById("static-commit-input"),b=document.getElementById("static-lock-commit"),A=so(p,m,g,r);h.value=k.isCommitMessageLocked?k.lockedCommitMessage:A,b.innerHTML=`<i class="fas ${k.isCommitMessageLocked?"fa-lock":"fa-lock-open"}"></i>`,b.title=k.isCommitMessageLocked?"\u89E3\u9501\u7F16\u8F91\u6458\u8981":"\u56FA\u5B9A\u7F16\u8F91\u6458\u8981";let T=document.getElementById("static-wcode-input"),M=document.getElementById("static-content-diff-container"),U=$u(u,p);T.value=U,Xo(u,U,"static-content-diff-container"),M&&(M.style.display="block");let P=document.getElementById("static-tags-area"),J=document.getElementById("static-tags-diff-wrapper");if(r==="subject"){let F=document.getElementById("static-tags-input"),V=Du(c,m);F.value=V.join(" "),ea(c,V,"static-tags-diff-container"),P&&(P.style.display="block"),J&&(J.style.display="block")}else P&&(P.style.display="none"),J&&(J.style.display="none");let ee=document.getElementById("static-series-area");if(r==="subject"){let F=document.getElementById("static-series-checkbox"),V=g.hasUpdate?g.newValue:f;F.checked=V,k.currentSeries=V,ee&&(ee.style.display="block")}else ee&&(ee.style.display="none");let re=ji(r,e.id).editPagePath.replace("/edit",""),q=x[r]||"\u6761\u76EE";o&&(o.innerHTML=`
             <div>
                 <div class="item-info">
                     \u5F53\u524D${q}\uFF1A<a href="${re}" target="_blank">${d}</a>\uFF08${e.id}\uFF09[${q}]
@@ -424,9 +434,9 @@ ${r}
             </div>
             <span class="header-spacer"></span>
             <div id="bgm-tool-header-actions">
-                <span id="bgm-tool-theme" title="\u4E3B\u9898"><i class="fas fa-adjust"></i></span>
-                <span id="bgm-tool-settings" title="\u8BBE\u7F6E"><i class="fas fa-cog"></i></span>
-                <span id="bgm-tool-close"><i class="fas fa-sign-out-alt"></i></span>
+                <button id="bgm-tool-theme" title="\u4E3B\u9898" tabindex="0"><i class="fas fa-adjust"></i></button>
+                <button id="bgm-tool-settings" title="\u8BBE\u7F6E" tabindex="0"><i class="fas fa-cog"></i></button>
+                <button id="bgm-tool-close" title="\u5173\u95ED" tabindex="0"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
         <div id="bgm-tool-progress">
@@ -445,7 +455,7 @@ ${r}
 
                     <div class="last-update-info" id="static-last-update"></div>
                     <div class="commit-message-area" id="static-commit-area">
-                        <label>\u7F16\u8F91\u6458\u8981:</label>
+                        <label for="static-commit-input">\u7F16\u8F91\u6458\u8981</label>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <input type="text" id="static-commit-input" placeholder="\u8BF7\u8F93\u5165\u7F16\u8F91\u6458\u8981" style="flex-grow: 1;">
                             <button id="static-lock-commit" class="secondary" title="${k.isCommitMessageLocked?"\u89E3\u9501\u7F16\u8F91\u6458\u8981":"\u56FA\u5B9A\u7F16\u8F91\u6458\u8981"}">
@@ -456,7 +466,7 @@ ${r}
                     <div class="edit-rows">
                         <div class="edit-row">
                             <div class="edit-area" id="static-wcode-area">
-                                <label>Wcode:</label>
+                                <label for="static-wcode-input">Wcode</label>
                                 <textarea id="static-wcode-input"></textarea>
                             </div>
                             <div>
@@ -468,19 +478,22 @@ ${r}
                         </div>
                         <div class="edit-row">
                             <div class="tags-edit-area" id="static-tags-area">
-                                <label>\u6807\u7B7E (\u7A7A\u683C\u5206\u9694):</label>
+                                <label for="static-tags-input">\u6807\u7B7E (\u7A7A\u683C\u5206\u9694)</label>
                                 <input type="text" id="static-tags-input">
                             </div>
-                            <div class="diff-section tags-diff-section" id="static-tags-diff-section">
-                                <div class="diff-section-title">\u6807\u7B7E\u53D8\u66F4</div>
-                                <div id="static-tags-diff-container" class="diff-container"></div>
+                            <div id="static-tags-diff-wrapper">
+                                <div class="diff-section-label">\u6807\u7B7E\u53D8\u66F4</div>
+                                <div class="diff-section tags-diff-section" id="static-tags-diff-section">
+                                    <div id="static-tags-diff-container" class="diff-container"></div>
+                                </div>
                             </div>
                         </div>
-                        <div class="edit-row edit-row-series">
-                            <div class="series-edit-area" id="static-series-area">
+                        <div class="edit-row" id="static-series-area">
+                            <label class="toggle-switch">
                                 <input type="checkbox" id="static-series-checkbox">
-                                <label for="static-series-checkbox" style="display: inline-flex; align-items: center;">\u6807\u8BB0\u4E3A\u7CFB\u5217</label>
-                            </div>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <label for="static-series-checkbox">\u6807\u8BB0\u4E3A\u7CFB\u5217</label>
                         </div>
                     </div>
                     <div id="diff-error" style="color: #a72e2e; font-size: 14px; margin-top: 8px; display: none;"></div>
@@ -515,7 +528,7 @@ ${r}
     --shadow-subtle: 0 0 0 2px rgb(0 0 0 / 4%);
     --transition: all 0.2s ease;
     /* stylelint-disable-next-line value-keyword-case */
-    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --font: system-ui, -apple-system, sans-serif;
     --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
 
     position: fixed;
@@ -533,6 +546,7 @@ ${r}
     box-sizing: border-box;
     font-family: var(--font);
     font-size: 13px;
+    outline: none;
     color: var(--text);
     line-height: 1.6;
 }
@@ -584,9 +598,11 @@ ${r}
     display: flex;
     align-items: center;
     gap: 10px;
+    outline: none;
 }
 
 #bgm-tool-logo-sprite {
+    outline: none;
     width: 40px;
     height: 50px;
     border-radius: 6px;
@@ -603,7 +619,7 @@ ${r}
     margin-left: auto;
 }
 
-#bgm-tool-header-actions span {
+#bgm-tool-header-actions button {
     cursor: pointer;
     color: var(--text-secondary);
     font-size: 16px;
@@ -613,10 +629,13 @@ ${r}
     align-items: center;
     justify-content: center;
     border-radius: 6px;
+    border: none;
+    background: transparent;
     transition: all 0.15s;
+    padding: 0;
 }
 
-#bgm-tool-header-actions span:hover {
+#bgm-tool-header-actions button:hover {
     background: var(--accent-light);
     color: var(--accent);
 }
@@ -725,7 +744,6 @@ ${r}
     cursor: pointer;
     transition: var(--transition);
     white-space: nowrap;
-    outline: none;
 }
 
 #bgm-tool-container button.primary {
@@ -772,9 +790,8 @@ ${r}
 #bgm-tool-container label {
     display: block;
     margin-bottom: 4px;
-    font-weight: normal;
+    font-weight: 400;
     font-size: 13px;
-    color: var(--text-secondary);
 }
 
 #bgm-tool-container input[type="radio"],
@@ -908,12 +925,15 @@ ${r}
     color: var(--text);
 }
 
-.diff-section-label {
+.diff-section-label,
+.edit-area label,
+.tags-edit-area label,
+.commit-message-area label {
     display: block;
     margin-bottom: 4px;
-    font-weight: normal;
+    font-weight: 400;
     font-size: 13px;
-    color: var(--text-secondary);
+    color: var(--text);
 }
 
 /* ===== Logs ===== */
@@ -1075,10 +1095,6 @@ ${r}
     flex: 1;
 }
 
-.edit-row-series .series-edit-area {
-    max-width: 400px;
-}
-
 @media (width >= 960px) {
     .edit-row {
         flex-direction: row;
@@ -1088,10 +1104,6 @@ ${r}
         flex: 1;
         min-width: 0;
         overflow: auto;
-    }
-
-    .edit-row-series {
-        flex-direction: row;
     }
 }
 
@@ -1152,20 +1164,66 @@ ${r}
     outline: none;
 }
 
-.series-edit-area {
-    margin: 0;
+#static-series-area {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    background: var(--bg-alt);
-    border-radius: 6px;
 }
 
-.series-edit-area label {
+#static-series-area label {
+    display: inline-block;
     margin-bottom: 0;
-    color: var(--text);
     cursor: pointer;
+}
+
+/* Apple-style toggle switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: var(--border);
+    transition: 0.2s;
+    border-radius: 26px;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 22px;
+    width: 22px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #fff;
+    transition: 0.2s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(18px);
+}
+
+.toggle-switch input:focus-visible + .toggle-slider {
+    box-shadow: 0 0 0 2px var(--accent);
 }
 
 .last-update-info {
@@ -1372,6 +1430,12 @@ ${r}
     color: var(--text);
 }
 
+.method-option-group input[type="radio"]:focus-visible + label {
+    outline: 2px solid -webkit-focus-ring-color;
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+}
+
 .method-option-group input[type="radio"]:checked + label {
     background: var(--white);
     color: var(--text);
@@ -1499,8 +1563,7 @@ ${r}
     cursor: pointer;
     z-index: 9998;
     transition: all 0.2s ease;
-    /* stylelint-disable-next-line value-keyword-case */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-family: system-ui, -apple-system, sans-serif;
 }
 
 #bgm-float-button:hover {

@@ -19,7 +19,7 @@
     --shadow-subtle: 0 0 0 2px rgb(0 0 0 / 4%);
     --transition: all 0.2s ease;
     /* stylelint-disable-next-line value-keyword-case */
-    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    --font: system-ui, -apple-system, sans-serif;
     --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
 
     position: fixed;
@@ -37,6 +37,7 @@
     box-sizing: border-box;
     font-family: var(--font);
     font-size: 13px;
+    outline: none;
     color: var(--text);
     line-height: 1.6;
 }
@@ -88,9 +89,11 @@
     display: flex;
     align-items: center;
     gap: 10px;
+    outline: none;
 }
 
 #bgm-tool-logo-sprite {
+    outline: none;
     width: 40px;
     height: 50px;
     border-radius: 6px;
@@ -107,7 +110,7 @@
     margin-left: auto;
 }
 
-#bgm-tool-header-actions span {
+#bgm-tool-header-actions button {
     cursor: pointer;
     color: var(--text-secondary);
     font-size: 16px;
@@ -117,10 +120,13 @@
     align-items: center;
     justify-content: center;
     border-radius: 6px;
+    border: none;
+    background: transparent;
     transition: all 0.15s;
+    padding: 0;
 }
 
-#bgm-tool-header-actions span:hover {
+#bgm-tool-header-actions button:hover {
     background: var(--accent-light);
     color: var(--accent);
 }
@@ -229,7 +235,6 @@
     cursor: pointer;
     transition: var(--transition);
     white-space: nowrap;
-    outline: none;
 }
 
 #bgm-tool-container button.primary {
@@ -276,9 +281,8 @@
 #bgm-tool-container label {
     display: block;
     margin-bottom: 4px;
-    font-weight: normal;
+    font-weight: 400;
     font-size: 13px;
-    color: var(--text-secondary);
 }
 
 #bgm-tool-container input[type="radio"],
@@ -412,12 +416,15 @@
     color: var(--text);
 }
 
-.diff-section-label {
+.diff-section-label,
+.edit-area label,
+.tags-edit-area label,
+.commit-message-area label {
     display: block;
     margin-bottom: 4px;
-    font-weight: normal;
+    font-weight: 400;
     font-size: 13px;
-    color: var(--text-secondary);
+    color: var(--text);
 }
 
 /* ===== Logs ===== */
@@ -579,10 +586,6 @@
     flex: 1;
 }
 
-.edit-row-series .series-edit-area {
-    max-width: 400px;
-}
-
 @media (width >= 960px) {
     .edit-row {
         flex-direction: row;
@@ -592,10 +595,6 @@
         flex: 1;
         min-width: 0;
         overflow: auto;
-    }
-
-    .edit-row-series {
-        flex-direction: row;
     }
 }
 
@@ -656,20 +655,66 @@
     outline: none;
 }
 
-.series-edit-area {
-    margin: 0;
+#static-series-area {
     display: flex;
+    flex-direction: row;
     align-items: center;
     gap: 8px;
-    padding: 8px 12px;
-    background: var(--bg-alt);
-    border-radius: 6px;
 }
 
-.series-edit-area label {
+#static-series-area label {
+    display: inline-block;
     margin-bottom: 0;
-    color: var(--text);
     cursor: pointer;
+}
+
+/* Apple-style toggle switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 26px;
+    flex-shrink: 0;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: var(--border);
+    transition: 0.2s;
+    border-radius: 26px;
+}
+
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    height: 22px;
+    width: 22px;
+    left: 2px;
+    bottom: 2px;
+    background-color: #fff;
+    transition: 0.2s;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgb(0 0 0 / 15%);
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: var(--accent);
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+    transform: translateX(18px);
+}
+
+.toggle-switch input:focus-visible + .toggle-slider {
+    box-shadow: 0 0 0 2px var(--accent);
 }
 
 .last-update-info {
@@ -876,6 +921,12 @@
     color: var(--text);
 }
 
+.method-option-group input[type="radio"]:focus-visible + label {
+    outline: 2px solid -webkit-focus-ring-color;
+    outline: 2px solid Highlight;
+    outline-offset: 2px;
+}
+
 .method-option-group input[type="radio"]:checked + label {
     background: var(--white);
     color: var(--text);
@@ -1003,8 +1054,7 @@
     cursor: pointer;
     z-index: 9998;
     transition: all 0.2s ease;
-    /* stylelint-disable-next-line value-keyword-case */
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    font-family: system-ui, -apple-system, sans-serif;
 }
 
 #bgm-float-button:hover {

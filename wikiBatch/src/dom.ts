@@ -127,9 +127,9 @@ export function createStaticDOM(): void {
             </div>
             <span class="header-spacer"></span>
             <div id="bgm-tool-header-actions">
-                <span id="bgm-tool-theme" title="主题"><i class="fas fa-adjust"></i></span>
-                <span id="bgm-tool-settings" title="设置"><i class="fas fa-cog"></i></span>
-                <span id="bgm-tool-close"><i class="fas fa-sign-out-alt"></i></span>
+                <button id="bgm-tool-theme" title="主题" tabindex="0"><i class="fas fa-adjust"></i></button>
+                <button id="bgm-tool-settings" title="设置" tabindex="0"><i class="fas fa-cog"></i></button>
+                <button id="bgm-tool-close" title="关闭" tabindex="0"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
         <div id="bgm-tool-progress">
@@ -148,7 +148,7 @@ export function createStaticDOM(): void {
 
                     <div class="last-update-info" id="static-last-update"></div>
                     <div class="commit-message-area" id="static-commit-area">
-                        <label>编辑摘要:</label>
+                        <label for="static-commit-input">编辑摘要</label>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <input type="text" id="static-commit-input" placeholder="请输入编辑摘要" style="flex-grow: 1;">
                             <button id="static-lock-commit" class="secondary" title="${state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要'}">
@@ -159,7 +159,7 @@ export function createStaticDOM(): void {
                     <div class="edit-rows">
                         <div class="edit-row">
                             <div class="edit-area" id="static-wcode-area">
-                                <label>Wcode:</label>
+                                <label for="static-wcode-input">Wcode</label>
                                 <textarea id="static-wcode-input"></textarea>
                             </div>
                             <div>
@@ -171,19 +171,22 @@ export function createStaticDOM(): void {
                         </div>
                         <div class="edit-row">
                             <div class="tags-edit-area" id="static-tags-area">
-                                <label>标签 (空格分隔):</label>
+                                <label for="static-tags-input">标签 (空格分隔)</label>
                                 <input type="text" id="static-tags-input">
                             </div>
-                            <div class="diff-section tags-diff-section" id="static-tags-diff-section">
-                                <div class="diff-section-title">标签变更</div>
-                                <div id="static-tags-diff-container" class="diff-container"></div>
+                            <div id="static-tags-diff-wrapper">
+                                <div class="diff-section-label">标签变更</div>
+                                <div class="diff-section tags-diff-section" id="static-tags-diff-section">
+                                    <div id="static-tags-diff-container" class="diff-container"></div>
+                                </div>
                             </div>
                         </div>
-                        <div class="edit-row edit-row-series">
-                            <div class="series-edit-area" id="static-series-area">
+                        <div class="edit-row" id="static-series-area">
+                            <label class="toggle-switch">
                                 <input type="checkbox" id="static-series-checkbox">
-                                <label for="static-series-checkbox" style="display: inline-flex; align-items: center;">标记为系列</label>
-                            </div>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <label for="static-series-checkbox">标记为系列</label>
                         </div>
                     </div>
                     <div id="diff-error" style="color: #a72e2e; font-size: 14px; margin-top: 8px; display: none;"></div>

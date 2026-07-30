@@ -133,8 +133,8 @@ export function updateDiffDisplay(oldText: string, newText: string, containerId:
 }
 
 export function updateTagsDiffDisplay(oldTags: string[], newTags: string[], containerId: string): void {
-    const oldText = oldTags.join(' ');
-    const newText = newTags.join(' ');
+    const oldText = oldTags.join('\n');
+    const newText = newTags.join('\n');
     updateDiffDisplay(oldText, newText, containerId);
 }
 

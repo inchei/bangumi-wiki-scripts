@@ -38,9 +38,7 @@
   --error-pre-bg: #fff5f5;
   --dropdown-bg: rgb(254 254 254 / 82%);
   --dropdown-shadow: 0 4px 24px rgb(80 80 80 / 12%);
-  --font:
-    -apple-system, blinkmacsystemfont, "Segoe UI", "PingFang SC",
-    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --font: system-ui, -apple-system, sans-serif;
   --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
 }
 

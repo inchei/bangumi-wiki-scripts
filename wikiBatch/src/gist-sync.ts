@@ -94,7 +94,7 @@ export async function authorizeWithGitHub(statusEl: HTMLElement): Promise<void> 
   let deviceResp: DeviceCodeResponse
   try {
     deviceResp = await requestDeviceCode()
-  } catch (e) {
+  } catch {
     statusEl.textContent = '网络错误，无法连接 GitHub'
     return
   }

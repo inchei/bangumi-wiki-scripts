@@ -136,6 +136,11 @@ export function switchToSetupView(): void {
                     </div>
 
                 </div>
+                <div style="margin-top:20px;border-top:1px solid var(--border-color);padding-top:14px;text-align:center">
+                    <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/wikiBatch" target="_blank" style="color:var(--text-secondary);font-size:13px;text-decoration:none">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                </div>
             </div>
         `;
     }
@@ -359,17 +364,17 @@ export function switchToProcessingView(itemData: {
     if (contentDiffSection) contentDiffSection.style.display = 'block';
 
     const tagsArea = document.getElementById('static-tags-area');
-    const tagsDiffSection = document.getElementById('static-tags-diff-section');
+    const tagsDiffWrapper = document.getElementById('static-tags-diff-wrapper');
     if (entityType === 'subject') {
         const tagsInput = document.getElementById('static-tags-input') as HTMLInputElement;
         const newTags = applyTagUpdates(oldTags, tagUpdates);
         tagsInput.value = newTags.join(' ');
         updateTagsDiffDisplay(oldTags, newTags, 'static-tags-diff-container');
         if (tagsArea) tagsArea.style.display = 'block';
-        if (tagsDiffSection) tagsDiffSection.style.display = 'block';
+        if (tagsDiffWrapper) tagsDiffWrapper.style.display = 'block';
     } else {
         if (tagsArea) tagsArea.style.display = 'none';
-        if (tagsDiffSection) tagsDiffSection.style.display = 'none';
+        if (tagsDiffWrapper) tagsDiffWrapper.style.display = 'none';
     }
 
     const seriesArea = document.getElementById('static-series-area');
