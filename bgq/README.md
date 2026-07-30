@@ -4,9 +4,15 @@
 
 ## 演示
 
-![demo](https://lsky.ry.mk/i/2026/06/27/06f793ffe6c91.webp)
+<p align="center">
+  <img alt="demo" src="https://lsky.ry.mk/i/2026/06/27/06f793ffe6c91.webp">
+</p>
 
-<https://bgq.iccci.cc.cd>
+<p align="center">
+  <a href="https://bgq.iccci.cc.cd">https://bgq.iccci.cc.cd</a><br>
+  <a href="https://goscreenapi.com/is-bgq.iccci.cc.cd-down"><img alt="bgq.iccci.cc.cd uptime" src="https://goscreenapi.com/badge/uptime/bgq.iccci.cc.cd.svg"></a>
+  <a href="https://goscreenapi.com/is-bgq.iccci.cc.cd-down"><img alt="bgq.iccci.cc.cd status" src="https://goscreenapi.com/badge/status/bgq.iccci.cc.cd.svg"></a>
+</p>
 
 ## 快速开始
 
