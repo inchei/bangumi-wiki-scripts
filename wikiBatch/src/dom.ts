@@ -20,6 +20,34 @@ const spriteCols = 7;
 const spriteW = 40;
 let logoCol = Math.floor(Math.random() * spriteCols);
 
+const TOOL_ID = 'bgm-tool-container';
+const FLOAT_ID = 'bgm-float-button';
+let hiddenElements: Array<{ el: Element; origDisplay: string }> | null = null;
+
+function hidePageContent(): void {
+    if (hiddenElements) return;
+    hiddenElements = [];
+    const children = Array.from(document.body.children);
+    for (const child of children) {
+        const id = (child as HTMLElement).id;
+        if (id === TOOL_ID || id === FLOAT_ID) continue;
+        if (child.tagName === 'SCRIPT') continue;
+        hiddenElements.push({
+            el: child,
+            origDisplay: (child as HTMLElement).style.display || '',
+        });
+        (child as HTMLElement).style.display = 'none';
+    }
+}
+
+function restorePageContent(): void {
+    if (!hiddenElements) return;
+    for (const { el, origDisplay } of hiddenElements) {
+        (el as HTMLElement).style.display = origDisplay;
+    }
+    hiddenElements = null;
+}
+
 function cycleLogo(): void {
     logoCol = (logoCol + 1) % spriteCols;
     const el = document.getElementById('bgm-tool-logo-sprite');
@@ -68,9 +96,10 @@ function createFloatButton(): HTMLElement {
         document.body.appendChild(floatBtn);
 
         floatBtn.addEventListener('click', () => {
-            const container = document.getElementById('bgm-tool-container');
+            const container = document.getElementById(TOOL_ID);
             if (container) {
                 container.style.display = 'flex';
+                hidePageContent();
                 if (floatBtn) floatBtn.style.display = 'none';
             }
         });
@@ -82,8 +111,9 @@ export function createStaticDOM(): void {
     const floatBtn = createFloatButton();
     floatBtn.style.display = 'none';
 
-    if (document.getElementById('bgm-tool-container')) {
-        document.getElementById('bgm-tool-container')!.style.display = 'flex';
+    if (document.getElementById(TOOL_ID)) {
+        document.getElementById(TOOL_ID)!.style.display = 'flex';
+        hidePageContent();
         return;
     }
 
@@ -99,7 +129,7 @@ export function createStaticDOM(): void {
             <div id="bgm-tool-header-actions">
                 <span id="bgm-tool-theme" title="主题"><i class="fas fa-adjust"></i></span>
                 <span id="bgm-tool-settings" title="设置"><i class="fas fa-cog"></i></span>
-                <span id="bgm-tool-close">×</span>
+                <span id="bgm-tool-close"><i class="fas fa-sign-out-alt"></i></span>
             </div>
         </div>
         <div id="bgm-tool-progress">
@@ -169,6 +199,7 @@ export function createStaticDOM(): void {
         <div id="bgm-status-message"></div>
     `;
     document.body.appendChild(container);
+    hidePageContent();
 
     bindEventDelegation();
 
@@ -176,6 +207,7 @@ export function createStaticDOM(): void {
     if (closeBtn) {
         closeBtn.addEventListener('click', () => {
             container.style.display = 'none';
+            restorePageContent();
             const fb = createFloatButton();
             fb.style.display = 'flex';
             hideStatusMessage();

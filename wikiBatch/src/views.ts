@@ -61,12 +61,16 @@ export function switchToSetupView(): void {
 
                         <div id="post-method-options" class="form-group ${state.submitMethod === 'post' ? '' : 'hidden'}">
                             <label for="setup-formhash">Formhash</label>
-                            <input type="text" id="setup-formhash" value="${state.formhash}">
+                            <div style="display:flex;gap:8px">
+                                <input type="text" id="setup-formhash" value="${state.formhash}" style="flex:1">
+                                <button type="button" class="secondary" id="setup-fetch-formhash"><i class="fas fa-magic"></i> 自动获取</button>
+                            </div>
                             <p class="formhash-hint">
                                 如何获取formhash：<br>
                                 1. 打开条目编辑页面（如 <a href="https://bgm.tv/subject/354667/edit_detail">https://bgm.tv/subject/354667/edit_detail</a>）<br>
                                 2. 在浏览器控制台执行：<code>document.querySelector('[name=formhash]').value</code><br>
-                                3. 将返回的值复制到上方输入框
+                                3. 将返回的值复制到上方输入框<br>
+                                <strong>自动获取</strong>：通过后台请求编辑页面自动提取 formhash（需已登录）
                             </p>
                         </div>
 
@@ -98,6 +102,7 @@ export function switchToSetupView(): void {
                                 必备ID列，条目id，人物person_id，角色character_id<br>
                                 tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签<br>
                                 series列使用true或false表示是否标记为系列<br>
+                                可使用 <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/bgq" target="_blank">Bangumi Query</a> 辅助生成（<a href="https://bgq.iccci.cc.cd" target="_blank">demo</a>）
                             </p>
                         </div>
                         ${state.csvData ? `
@@ -135,6 +140,41 @@ export function switchToSetupView(): void {
         formhashInput.addEventListener('input', (e) => {
             state.formhash = (e.target as HTMLInputElement).value;
             GM_setValue('bgmFormhash', state.formhash);
+        });
+    }
+
+    const fetchBtn = document.getElementById('setup-fetch-formhash') as HTMLButtonElement | null;
+    if (fetchBtn) {
+        fetchBtn.addEventListener('click', () => {
+            if (!formhashInput) return;
+            fetchBtn.disabled = true;
+            fetchBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> 获取中...';
+            GM.xmlHttpRequest({
+                method: 'GET',
+                url: 'https://bgm.tv/subject/1/edit_detail',
+                onload: (resp) => {
+                    try {
+                        const match = resp.responseText.match(/<input[^>]*name="formhash"[^>]*value="([^"]+)"/);
+                        if (match && match[1]) {
+                            state.formhash = match[1];
+                            GM_setValue('bgmFormhash', state.formhash);
+                            formhashInput.value = match[1];
+                        } else {
+                            alert('无法从页面提取 formhash，请确保已登录 Bangumi');
+                        }
+                    } catch {
+                        alert('解析编辑页面失败');
+                    } finally {
+                        fetchBtn.disabled = false;
+                        fetchBtn.innerHTML = '<i class="fas fa-magic"></i> 自动获取';
+                    }
+                },
+                onerror: () => {
+                    alert('网络请求失败，请手动获取 formhash');
+                    fetchBtn.disabled = false;
+                    fetchBtn.innerHTML = '<i class="fas fa-magic"></i> 自动获取';
+                },
+            });
         });
     }
 

@@ -23,12 +23,9 @@
     --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
 
     position: fixed;
-    top: 0;
-    left: 0;
-    transform: none;
-    width: 100%;
-    height: 100%;
-    max-width: none;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
     background: var(--bg);
     border: none;
     border-radius: 0;
@@ -37,6 +34,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    box-sizing: border-box;
     font-family: var(--font);
     font-size: 13px;
     color: var(--text);
@@ -78,6 +76,12 @@
     align-items: center;
     flex-shrink: 0;
     box-shadow: var(--shadow-subtle);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+@media (width < 640px) {
+    #bgm-tool-header { padding: 0 16px; }
 }
 
 #bgm-tool-header-logo {
@@ -128,6 +132,10 @@
     border-bottom: 1px solid var(--border-light);
     display: none;
     flex-shrink: 0;
+}
+
+@media (width < 640px) {
+    #bgm-tool-progress { padding: 10px 16px; }
 }
 
 #progress-inner {
@@ -450,32 +458,23 @@
 /* ===== Layout ===== */
 .loading-container {
     position: relative;
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-#bgm-tool-body {
-    padding: 28px 36px;
-    flex-grow: 1;
-    box-sizing: border-box;
-    line-height: 1.6;
-    color: var(--text);
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
-
-#edit-regions {
     flex: 1;
     min-height: 0;
     display: flex;
     flex-direction: column;
 }
 
-#core-content {
-    width: 100%;
+#bgm-tool-body {
+    padding: 28px 36px;
+    flex: 1;
+    min-height: 0;
+    box-sizing: border-box;
+    line-height: 1.6;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-wrap: anywhere;
 }
 
 .buttons-container {
@@ -487,6 +486,18 @@
     gap: 8px;
     box-sizing: border-box;
     flex-shrink: 0;
+    width: 100%;
+}
+
+#edit-regions {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#core-content {
+    width: 100%;
 }
 
 /* ===== Loading Overlay ===== */
@@ -895,6 +906,8 @@
     font-family: var(--font-mono);
     font-size: 12px;
     color: var(--accent);
+    word-break: break-all;
+    overflow-wrap: anywhere;
 }
 
 .formhash-hint a {
