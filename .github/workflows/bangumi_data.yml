@@ -127,6 +127,11 @@ jobs:
           echo ""
           echo "  筛选完成: ${success} 成功, ${fail} 失败"
 
+      - name: 检查单行本卷序
+        env:
+          DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
+        run: uv run check_volume_order.py --db bgq/bangumi.db --output _site/volume_order_report.html
+
       - name: 转换为 HTML
         run: uv run .github/scripts/results_to_html.py
 

@@ -1,6 +1,12 @@
-# bgq — Bangumi Query 筛选工具
+# Bangumi Query
 
 基于 DuckDB 的 [Bangumi Archive](https://github.com/bangumi/Archive) 条目筛选工具，支持 YAML 配置文件、命令行交互、Web 界面三种使用方式。
+
+## 演示
+
+![demo](https://lsky.ry.mk/i/2026/06/27/06f793ffe6c91.webp)
+
+<https://bgq.iccci.cc.cd>
 
 ## 快速开始
 
