@@ -666,9 +666,9 @@ var indexTpl = template.Must(template.New("index").Parse(indexHTML))
 var missingPageTpl = template.Must(template.New("missing").Parse(missingPageHTML))
 var relatedPageTpl = template.Must(template.New("related").Parse(relatedPageHTML))
 
-func filterAlreadyLinked(ctx context.Context, dbPath string, related []*missingRelatedPerson) []*missingRelatedPerson {
+func filterAlreadyLinked(ctx context.Context, dbPath string, related []*missingRelatedPerson) ([]*missingRelatedPerson, error) {
 	if len(related) == 0 {
-		return related
+		return related, nil
 	}
 
 	personIDSet := make(map[int]bool)
@@ -678,7 +678,7 @@ func filterAlreadyLinked(ctx context.Context, dbPath string, related []*missingR
 		}
 	}
 	if len(personIDSet) == 0 {
-		return related
+		return related, nil
 	}
 
 	var idList strings.Builder
@@ -700,8 +700,7 @@ WHERE sp.person_id IN (%s)
 	engine := query.NewEngine(dbPath, "")
 	result, err := engine.ExecuteRaw(ctx, sql)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "警告: 查询已关联数据失败: %v\n", err)
-		return related
+		return nil, fmt.Errorf("查询已关联数据失败（数据库是否缺少 subject_persons 表？请使用 bgq ingest 建库）: %w", err)
 	}
 
 	// linkedMap: personID -> subjectID -> set of positionIDs
@@ -765,7 +764,7 @@ WHERE sp.person_id IN (%s)
 	sort.Slice(filtered, func(i, j int) bool {
 		return filtered[i].Count > filtered[j].Count
 	})
-	return filtered
+	return filtered, nil
 }
 
 func parseSubjectID(skey string) int {
@@ -1125,7 +1124,12 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	if len(related) > 0 {
 		fmt.Fprintf(os.Stderr, "过滤已关联人物中...\n")
 		beforeFilter := len(related)
-		related = filterAlreadyLinked(ctx, dbPath, related)
+		var ferr error
+		related, ferr = filterAlreadyLinked(ctx, dbPath, related)
+		if ferr != nil {
+			fmt.Fprintf(os.Stderr, "错误: %v\n", ferr)
+			os.Exit(1)
+		}
 		fmt.Fprintf(os.Stderr, "  关联缺失过滤后: %d → %d (移除已关联 %d)\n", beforeFilter, len(related), beforeFilter-len(related))
 		fmt.Fprintf(os.Stderr, "  耗时: %.1fs\n", time.Since(t3).Seconds())
 	}

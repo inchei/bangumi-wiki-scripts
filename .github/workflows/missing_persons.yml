@@ -51,13 +51,7 @@ jobs:
         run: bash bgq/download-archive.sh bangumi_archive
 
       - name: 构建 DuckDB 数据库
-        run: |
-          mkdir -p bgq/bin
-          bgq/bin/duckdb bgq/bangumi.db -c "
-            CREATE TABLE subjects AS SELECT * FROM read_json_auto('bangumi_archive/subject.jsonlines');
-            CREATE TABLE persons AS SELECT id, name FROM read_json_auto('bangumi_archive/person.jsonlines');
-            CREATE TABLE subject_relations AS SELECT * FROM read_json_auto('bangumi_archive/subject-relations.jsonlines');
-          "
+        run: bgq/bin/bgq ingest --data-dir bangumi_archive --db bgq/bangumi.db
 
       - name: 生成别名 JSON
         run: uv run person_alias.py

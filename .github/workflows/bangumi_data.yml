@@ -59,12 +59,7 @@ jobs:
         run: bash bgq/download-archive.sh bangumi_archive
 
       - name: 构建 DuckDB 数据库
-        run: |
-          bgq/bin/duckdb bgq/bangumi.db -c "
-            CREATE TABLE subjects AS SELECT * FROM read_json_auto('bangumi_archive/subject.jsonlines');
-            CREATE TABLE persons AS SELECT id, name FROM read_json_auto('bangumi_archive/person.jsonlines');
-            CREATE TABLE subject_relations AS SELECT * FROM read_json_auto('bangumi_archive/subject-relations.jsonlines');
-          "
+        run: bgq/bin/bgq ingest --data-dir bangumi_archive --db bgq/bangumi.db
 
       - name: 检查重复条目
         run: uv run find_duplicate_isbns.py
