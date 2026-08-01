@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.1.8
+// @version      0.1.9
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -1333,7 +1333,12 @@ document.head.appendChild(styleEl);
     try {
       const data = JSON.parse(raw);
       const input = document.querySelector("#crt_name");
-      if (input && data.personName) input.value = data.personName;
+      if (!input || !data.personName) {
+        localStorage.removeItem("bgm-mp-pending");
+        window.name = "";
+        return;
+      }
+      input.value = data.personName;
       localStorage.setItem("bgm-mp-pending", raw);
       window.name = "";
       if (params.has("bgm_mp")) {
@@ -1342,6 +1347,7 @@ document.head.appendChild(styleEl);
         history.replaceState(null, "", qs ? location.pathname + "?" + qs : location.pathname);
       }
     } catch (_e) {
+      localStorage.removeItem("bgm-mp-pending");
     }
   }
   function initPersonPage() {
@@ -1351,17 +1357,26 @@ document.head.appendChild(styleEl);
     if (!personId2) return;
     try {
       const data = JSON.parse(raw);
+      if (!data.subjectsData) return;
+      if (data.personId != null) {
+        if (String(data.personId) !== personId2) return;
+      } else if (!document.referrer.includes("/person/new")) {
+        return;
+      }
       const typeExts = { 1: "book", 2: "anime", 3: "music", 4: "game", 6: "real" };
-      const typeNamesFull = { 1: "\u4E66\u7C4D", 2: "\u52A8\u753B", 3: "\u97F3\u4E50", 4: "\u6E38\u620F", 6: "\u4E09\u6B21\u5143" };
-      if (data.subjectsData) {
-        const types = [
-          ...new Set(
-            Object.values(data.subjectsData).map((e) => e._type).filter(Boolean)
-          )
-        ];
-        if (types.length >= 1) {
-          const ext = typeExts[types[0]];
-          if (ext) location.href = `/person/${personId2}/add_related/${ext}`;
+      const types = [
+        ...new Set(
+          Object.values(data.subjectsData).map((e) => e._type).filter(Boolean)
+        )
+      ];
+      if (types.length >= 1) {
+        const ext = typeExts[types[0]];
+        if (ext) {
+          if (data.personId == null) {
+            data.personId = Number(personId2);
+          }
+          localStorage.setItem("bgm-mp-pending", JSON.stringify(data));
+          location.href = `/person/${personId2}/add_related/${ext}`;
         }
       }
     } catch (e) {
@@ -1692,6 +1707,7 @@ document.head.appendChild(styleEl);
         localStorage.removeItem("bgm-mp-pending");
         return;
       }
+      if (data.personId != null && String(data.personId) !== personId) return;
       const typeMap = { book: 1, anime: 2, music: 3, game: 4, real: 6 };
       const pageType = typeMap[location.pathname.split("/").pop()] || 0;
       const matching = {};
@@ -1744,7 +1760,8 @@ document.head.appendChild(styleEl);
           JSON.stringify({
             personName: data.personName,
             subjectsData: remaining,
-            episodesData: null
+            episodesData: null,
+            personId: data.personId
           })
         );
       } else {

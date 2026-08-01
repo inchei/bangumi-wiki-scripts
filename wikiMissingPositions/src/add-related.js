@@ -251,6 +251,8 @@ export function processPendingData() {
       localStorage.removeItem('bgm-mp-pending');
       return;
     }
+    // pending 已绑定到某个人物，且当前页不是该人物时直接忽略
+    if (data.personId != null && String(data.personId) !== personId) return;
 
     const typeMap = { book: 1, anime: 2, music: 3, game: 4, real: 6 };
     const pageType = typeMap[location.pathname.split('/').pop()] || 0;
@@ -316,6 +318,7 @@ export function processPendingData() {
           personName: data.personName,
           subjectsData: remaining,
           episodesData: null,
+          personId: data.personId,
         }),
       );
     } else {

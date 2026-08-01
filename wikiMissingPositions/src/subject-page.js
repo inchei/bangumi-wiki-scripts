@@ -440,7 +440,12 @@ export async function initPersonNewPage() {
   try {
     const data = JSON.parse(raw);
     const input = document.querySelector('#crt_name');
-    if (input && data.personName) input.value = data.personName;
+    if (!input || !data.personName) {
+      localStorage.removeItem('bgm-mp-pending');
+      window.name = '';
+      return;
+    }
+    input.value = data.personName;
     localStorage.setItem('bgm-mp-pending', raw);
     window.name = '';
     if (params.has('bgm_mp')) {
@@ -449,6 +454,7 @@ export async function initPersonNewPage() {
       history.replaceState(null, '', qs ? location.pathname + '?' + qs : location.pathname);
     }
   } catch (_e) {
+    localStorage.removeItem('bgm-mp-pending');
     /* ignore */
   }
 }
@@ -460,19 +466,32 @@ export function initPersonPage() {
   if (!personId) return;
   try {
     const data = JSON.parse(raw);
+    if (!data.subjectsData) return;
+
+    // 已绑定目标人物：只在该人物页跳转关联，其他人物页直接忽略
+    if (data.personId != null) {
+      if (String(data.personId) !== personId) return;
+    } else if (!document.referrer.includes('/person/new')) {
+      // 未绑定且非刚从 /person/new 创建完成，不自动跳转
+      return;
+    }
+
     const typeExts = { 1: 'book', 2: 'anime', 3: 'music', 4: 'game', 6: 'real' };
-    const typeNamesFull = { 1: '书籍', 2: '动画', 3: '音乐', 4: '游戏', 6: '三次元' };
-    if (data.subjectsData) {
-      const types = [
-        ...new Set(
-          Object.values(data.subjectsData)
-            .map((e) => e._type)
-            .filter(Boolean),
-        ),
-      ];
-      if (types.length >= 1) {
-        const ext = typeExts[types[0]];
-        if (ext) location.href = `/person/${personId}/add_related/${ext}`;
+    const types = [
+      ...new Set(
+        Object.values(data.subjectsData)
+          .map((e) => e._type)
+          .filter(Boolean),
+      ),
+    ];
+    if (types.length >= 1) {
+      const ext = typeExts[types[0]];
+      if (ext) {
+        if (data.personId == null) {
+          data.personId = Number(personId);
+        }
+        localStorage.setItem('bgm-mp-pending', JSON.stringify(data));
+        location.href = `/person/${personId}/add_related/${ext}`;
       }
     }
   } catch (e) {
