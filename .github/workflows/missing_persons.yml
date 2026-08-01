@@ -64,6 +64,21 @@ jobs:
           mkdir -p _site
           cp -r docs/missing-persons _site/missing-persons
 
+      - name: 合并现有站点
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          site_url="$(gh api repos/$GITHUB_REPOSITORY/pages --jq '.html_url // empty' 2>/dev/null || true)"
+          if [ -z "$site_url" ]; then
+            site_url="https://${GITHUB_REPOSITORY_OWNER}.github.io/${GITHUB_REPOSITORY#*/}/"
+          fi
+          if [ -n "$site_url" ]; then
+            echo "现有站点: $site_url，下载并保留其他页面"
+            wget -q -m -np -nH --cut-dirs=1 -X missing-persons -e robots=off -P _site "$site_url" || true
+          else
+            echo "未获取到 Pages URL，跳过合并"
+          fi
+
       - name: 配置 GitHub Pages
         uses: actions/configure-pages@v5
 
