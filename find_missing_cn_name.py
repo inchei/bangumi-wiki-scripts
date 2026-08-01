@@ -25,7 +25,7 @@ HAS_KANA = re.compile(r'[\u3040-\u309f\u30a0-\u30ff]')
 INFOBOX_CN = re.compile(r'\|\s*简体中文名\s*=\s*([^\n|]*)')
 
 # Characters whose jp2t output is worse than input (e.g., variant/obsolete form)
-JP2T_EXCLUDE = {'\u6643', '\u90ce', '\u614e', '\u885b', '\u7814', '\u7dd2', '\u840c', '\u53d9', '\u9905', '\u9271', '\u90f7', '\u95d8', '\u7ffb', '\u4e88'}  # 晃, 郎, 慎, 衛, 研, 緒, 萌, 叙, 餅, 鉱, 郷, 闘, 翻, 予
+JP2T_EXCLUDE = {'\u6643', '\u90ce', '\u614e', '\u885b', '\u7814', '\u7dd2', '\u840c', '\u53d9', '\u9905', '\u9271', '\u90f7', '\u95d8', '\u7ffb', '\u4e88', '\u6b20', '\u7f36', '\u8912', '\u6e0b', '\u4e26', '\u74f6'}  # 晃, 郎, 慎, 衛, 研, 緒, 萌, 叙, 餅, 鉱, 郷, 闘, 翻, 予, 欠, 缶, 褒, 渋, 並, 瓶
 
 # Characters that whole-string t2s/tw2s/hk2s should not touch (e.g., name-specific chars)
 T2S_EXCLUDE = {'\u7895', '\u7a1c'}  # 碕→埼, 稜→棱 (人名用字不改)
@@ -64,6 +64,12 @@ VARIANT_MAP = str.maketrans({
     '\u7690': '\u768b',  # 皐 → 皋
     '\u95d8': '\u6597',  # 闘 → 斗
     '\u98dc': '\u7ffb',  # 飜 → 翻
+    '\u53e1': '\u777f',  # 叡 → 睿
+    '\u69ea': '\u6982',  # 槪 → 概
+    '\u5d5c': '\u5d0e',  # 嵜 → 崎
+    '\u5036': '\u4ff1',  # 倶 → 俱
+    '\u6e0b': '\u6da9',  # 渋 → 涩
+    '\u9162': '\u918b',  # 酢 → 醋
 })
 
 
