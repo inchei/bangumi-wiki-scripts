@@ -23,6 +23,42 @@ import (
 const seriesRelationType = 1002
 const missingPersonsMinCount = 2
 
+// noRelationQuery hard-codes the "无关联人物" (invalid person) filter: a person
+// with no staff entries, no character associations, and no person relations.
+// This is the filter previously defined in index_filters/invalid_person.yaml,
+// inlined so the missing persons check can flag such people directly.
+const noRelationQuery = `
+SELECT p.person_id, p.name
+FROM persons p
+WHERE NOT EXISTS (SELECT 1 FROM subject_persons sp WHERE sp.person_id = p.person_id)
+  AND NOT EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id)
+  AND NOT EXISTS (SELECT 1 FROM person_relations pr WHERE pr.person_id = p.person_id)
+ORDER BY p.person_id
+LIMIT 2000`
+
+// loadNoRelationPersonIDs returns the set of "无关联人物" (invalid person) IDs —
+// persons with no staff entries, no character associations, and no person
+// relations. Missing persons check uses this to classify related persons that
+// currently have no relations (i.e. worth linking, not garbage).
+func loadNoRelationPersonIDs(ctx context.Context, dbPath string) (map[int]bool, error) {
+	engine := query.NewEngine(dbPath, "")
+	res, err := engine.ExecuteRaw(ctx, noRelationQuery)
+	if err != nil {
+		return nil, err
+	}
+	ids := make(map[int]bool, len(res.Rows))
+	for _, row := range res.Rows {
+		if len(row) < 1 {
+			continue
+		}
+		id, _ := strconv.Atoi(row[0])
+		if id > 0 {
+			ids[id] = true
+		}
+	}
+	return ids, nil
+}
+
 var musicExtraPositions = map[int]string{
 	30:   "主题歌编曲",
 	31:   "主题歌作曲",
@@ -812,7 +848,7 @@ type typePageTplData struct {
 	PageKind    string
 }
 
-func writeIndexHTML(outputDir string, subjCount, totalMissing, totalRelated int, missingLinks, relatedLinks []typeLinkTplData) error {
+func writeIndexHTML(outputDir string, subjCount, totalMissing, totalRelated, totalBare int, missingLinks, relatedLinks, bareLinks []typeLinkTplData) error {
 	f, err := os.Create(filepath.Join(outputDir, "index.html"))
 	if err != nil {
 		return err
@@ -823,9 +859,11 @@ func writeIndexHTML(outputDir string, subjCount, totalMissing, totalRelated int,
 		"SubjectCount":  subjCount,
 		"TotalMissing":  totalMissing,
 		"TotalRelated":  totalRelated,
+		"TotalBare":     totalBare,
 		"MinCount":      missingPersonsMinCount,
 		"GeneratedDate": time.Now().Format("2006-01-02"),
 		"TypeLinks":     append(missingLinks, relatedLinks...),
+		"BareLinks":     bareLinks,
 	})
 }
 
@@ -881,27 +919,35 @@ func writeMissingPage(outputDir, tname string, tcode int, entries []*missingPers
 	})
 }
 
-func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRelatedPerson, partNum, totalParts int) error {
+func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRelatedPerson, partNum, totalParts int, suffix string) error {
 	var filename string
 	if totalParts == 1 {
-		filename = fmt.Sprintf("type-%d-related", tcode)
+		filename = fmt.Sprintf("type-%d-%s", tcode, suffix)
 	} else {
-		filename = fmt.Sprintf("type-%d-related-part-%d", tcode, partNum)
+		filename = fmt.Sprintf("type-%d-%s-part-%d", tcode, suffix, partNum)
 	}
 
 	var prevLink, nextLink string
 	if partNum > 1 {
-		prevLink = fmt.Sprintf("type-%d-related-part-%d.html", tcode, partNum-1)
+		prevLink = fmt.Sprintf("type-%d-%s-part-%d.html", tcode, suffix, partNum-1)
 	}
 	if partNum < totalParts {
-		nextLink = fmt.Sprintf("type-%d-related-part-%d.html", tcode, partNum+1)
+		nextLink = fmt.Sprintf("type-%d-%s-part-%d.html", tcode, suffix, partNum+1)
 	}
 
 	var title string
-	if totalParts > 1 {
-		title = fmt.Sprintf("%s中缺失关联的人物 - 第 %d/%d 页", tname, partNum, totalParts)
+	if suffix == "related-bare" {
+		if totalParts > 1 {
+			title = fmt.Sprintf("%s中缺失关联的无关联人物 - 第 %d/%d 页", tname, partNum, totalParts)
+		} else {
+			title = fmt.Sprintf("%s中缺失关联的无关联人物", tname)
+		}
 	} else {
-		title = fmt.Sprintf("%s中缺失关联的人物", tname)
+		if totalParts > 1 {
+			title = fmt.Sprintf("%s中缺失关联的人物 - 第 %d/%d 页", tname, partNum, totalParts)
+		} else {
+			title = fmt.Sprintf("%s中缺失关联的人物", tname)
+		}
 	}
 
 	var pageInfo string
@@ -947,7 +993,7 @@ func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRela
 
 const chunkSize = 2000
 
-func writeMultiTypePages(missing []*missingPerson, related []*missingRelatedPerson, outputDir string, subjCount int) error {
+func writeMultiTypePages(missing []*missingPerson, related, relatedBare []*missingRelatedPerson, outputDir string, subjCount int) error {
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("创建输出目录失败: %w", err)
 	}
@@ -966,7 +1012,14 @@ func writeMultiTypePages(missing []*missingPerson, related []*missingRelatedPers
 		}
 	}
 
-	var missingLinks, relatedLinks []typeLinkTplData
+	typeBare := make(map[int][]*missingRelatedPerson)
+	for _, rp := range relatedBare {
+		for t := range rp.TypeCounts {
+			typeBare[t] = append(typeBare[t], rp)
+		}
+	}
+
+	var missingLinks, relatedLinks, bareLinks []typeLinkTplData
 
 	// Missing persons pages
 	for _, t := range sortedTypesByCountLens(typeMissing) {
@@ -1008,8 +1061,31 @@ func writeMultiTypePages(missing []*missingPerson, related []*missingRelatedPers
 	}
 
 	// Related persons pages
-	for _, t := range sortedTypesByCountLens(typeRelated) {
-		people := typeRelated[t]
+	relatedLinks, err := buildRelatedTypeLinks(outputDir, typeRelated, "related", "关联缺失", "关联缺失")
+	if err != nil {
+		return err
+	}
+
+	// No-relation (无关联) related persons pages
+	bareLinks, err = buildRelatedTypeLinks(outputDir, typeBare, "related-bare", "无关联", "无关联关联缺失")
+	if err != nil {
+		return err
+	}
+
+	totalMissing := len(missing)
+	totalRelated := len(related)
+	totalBare := len(relatedBare)
+	return writeIndexHTML(outputDir, subjCount, totalMissing, totalRelated, totalBare, missingLinks, relatedLinks, bareLinks)
+}
+
+// buildRelatedTypeLinks renders related-person pages (one per subject type,
+// chunked) and returns the per-type directory links. suffix is used in page
+// filenames (e.g. "related" → type-1-related.html), linkLabel is the text on
+// each type link, and logLabel is used in progress output.
+func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPerson, suffix, linkLabel, logLabel string) ([]typeLinkTplData, error) {
+	var links []typeLinkTplData
+	for _, t := range sortedTypesByCountLens(typeMap) {
+		people := typeMap[t]
 		tname := subjectTypeNames[t]
 		totalType := len(people)
 		totalParts := (totalType + chunkSize - 1) / chunkSize
@@ -1026,29 +1102,26 @@ func writeMultiTypePages(missing []*missingPerson, related []*missingRelatedPers
 			}
 			chunk := people[start:end]
 
-			if err := writeRelatedPage(outputDir, tname, t, chunk, partNum, totalParts); err != nil {
-				return err
+			if err := writeRelatedPage(outputDir, tname, t, chunk, partNum, totalParts, suffix); err != nil {
+				return nil, err
 			}
 
 			var fname string
 			if totalParts == 1 {
-				fname = fmt.Sprintf("type-%d-related", t)
+				fname = fmt.Sprintf("type-%d-%s", t, suffix)
 			} else {
-				fname = fmt.Sprintf("type-%d-related-part-%d", t, partNum)
+				fname = fmt.Sprintf("type-%d-%s-part-%d", t, suffix, partNum)
 			}
-			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (关联缺失:%d)\n", tname, outputDir, fname, len(chunk))
+			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (%s:%d)\n", tname, outputDir, fname, logLabel, len(chunk))
 			label := "浏览"
 			if totalParts > 1 {
 				label = fmt.Sprintf("第%d页", partNum)
 			}
 			partLinks = append(partLinks, partLinkTplData{Href: fname + ".html", Label: label})
 		}
-		relatedLinks = append(relatedLinks, typeLinkTplData{TypeName: tname + "关联缺失", Count: totalType, Parts: partLinks})
+		links = append(links, typeLinkTplData{TypeName: tname + linkLabel, Count: totalType, Parts: partLinks})
 	}
-
-	totalMissing := len(missing)
-	totalRelated := len(related)
-	return writeIndexHTML(outputDir, subjCount, totalMissing, totalRelated, missingLinks, relatedLinks)
+	return links, nil
 }
 
 func sortedTypesByCountLens[T any](typeMap map[int][]T) []int {
@@ -1121,6 +1194,7 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	fmt.Fprintf(os.Stderr, "  初步缺失: %d, 初步关联缺失: %d\n", len(missing), len(related))
 	fmt.Fprintf(os.Stderr, "  耗时: %.1fs\n", t3.Sub(t2b).Seconds())
 
+	var relatedBare []*missingRelatedPerson
 	if len(related) > 0 {
 		fmt.Fprintf(os.Stderr, "过滤已关联人物中...\n")
 		beforeFilter := len(related)
@@ -1132,14 +1206,40 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 		}
 		fmt.Fprintf(os.Stderr, "  关联缺失过滤后: %d → %d (移除已关联 %d)\n", beforeFilter, len(related), beforeFilter-len(related))
 		fmt.Fprintf(os.Stderr, "  耗时: %.1fs\n", time.Since(t3).Seconds())
+
+		fmt.Fprintf(os.Stderr, "区分无关联人物中...\n")
+		noRel, err := loadNoRelationPersonIDs(ctx, dbPath)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "错误: %v\n", err)
+			os.Exit(1)
+		}
+		relatedBare = make([]*missingRelatedPerson, 0, len(related))
+		normal := related[:0]
+		for _, rp := range related {
+			isBare := false
+			for _, p := range rp.ExistingPersonIDs {
+				if noRel[p.ID] {
+					isBare = true
+					break
+				}
+			}
+			if isBare {
+				relatedBare = append(relatedBare, rp)
+			} else {
+				normal = append(normal, rp)
+			}
+		}
+		related = normal
+		fmt.Fprintf(os.Stderr, "  其中无关联人物: %d, 其余关联缺失: %d\n", len(relatedBare), len(related))
 	}
 
 	totalMissing := len(missing)
 	totalRelated := len(related)
+	totalBare := len(relatedBare)
 	fmt.Fprintf(os.Stderr, "  缺失且 ≥%d 次出现的人数: %d\n", missingPersonsMinCount, totalMissing)
-	fmt.Fprintf(os.Stderr, "  关联缺失且 ≥%d 次出现的人数: %d\n", missingRelatedMinCount, totalRelated)
+	fmt.Fprintf(os.Stderr, "  关联缺失且 ≥%d 次出现的人数: %d (其中无关联 %d)\n", missingRelatedMinCount, totalRelated, totalBare)
 
-	if totalMissing == 0 && totalRelated == 0 {
+	if totalMissing == 0 && totalRelated == 0 && totalBare == 0 {
 		fmt.Fprintln(os.Stderr, "没有需要处理的人物")
 		return
 	}
@@ -1148,7 +1248,7 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	if outputDir == "" {
 		outputDir = "docs/missing-persons"
 	}
-	if err := writeMultiTypePages(missing, related, outputDir, len(records)); err != nil {
+	if err := writeMultiTypePages(missing, related, relatedBare, outputDir, len(records)); err != nil {
 		fmt.Fprintf(os.Stderr, "错误: %v\n", err)
 		os.Exit(1)
 	}

@@ -8,11 +8,16 @@
 </head>
 <body>
 <h1>缺失的人物</h1>
-<p class="stats">扫描 {{.SubjectCount}} 个条目，发现 {{.TotalMissing}} 个在 ≥{{.MinCount}} 个条目中出现但未创建的人物{{if .TotalRelated}}，{{.TotalRelated}} 个同名已存在但可能缺失关联的人物{{end}}</p>
+<p class="stats">扫描 {{.SubjectCount}} 个条目，发现 {{.TotalMissing}} 个在 ≥{{.MinCount}} 个条目中出现但未创建的人物{{if .TotalRelated}}，{{.TotalRelated}} 个同名已存在但可能缺失关联的人物{{end}}{{if .TotalBare}}，其中 {{.TotalBare}} 个为无任何关联的人物（需优先处理）{{end}}</p>
 <p class="stats">生成于 {{.GeneratedDate}} — 需要 <a href="https://raw.githubusercontent.com/inchei/bangumi-wiki-scripts/main/wikiMissingPositions/dist/wikiMissingPositions.user.js" target="_blank">wikiMissingPositions</a> 用户脚本 / <a href="https://bgm.tv/dev/app/6476" target="_blank">bangumi 组件</a> 配合。</p>
 <div class="type-dir">
 {{range .TypeLinks}}<details><summary>{{.TypeName}} <span class="cnt">({{.Count}}人)</span></summary><div class="parts">
 {{range .Parts}}<a href="{{.Href}}">{{.Label}}</a>
+{{end}}</div></details>
+{{end}}{{if .BareLinks}}<details open><summary>无关联人物关联缺失 <span class="cnt">({{.TotalBare}}人)</span></summary><div class="parts">
+{{range .BareLinks}}<details><summary>{{.TypeName}} <span class="cnt">({{.Count}}人)</span></summary><div class="parts">
+{{range .Parts}}<a href="{{.Href}}">{{.Label}}</a>
+{{end}}</div></details>
 {{end}}</div></details>
 {{end}}</div>
 </body>
