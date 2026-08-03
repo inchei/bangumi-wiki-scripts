@@ -13,7 +13,7 @@ COPY bgq/go.mod bgq/go.sum ./
 RUN go mod download
 COPY bgq/ .
 COPY --from=frontend /app/frontend/dist/ internal/server/dist/
-RUN CGO_ENABLED=0 go build -o bin/bgq ./cmd/bgq/
+RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/bgq ./cmd/bgq/
 
 # 阶段 3：运行（需要 glibc 运行 DuckDB CLI）
 FROM debian:bookworm-slim

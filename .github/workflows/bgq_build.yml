@@ -72,7 +72,7 @@ jobs:
           if [ "${{ matrix.goos }}" = "windows" ]; then
             EXT=".exe"
           fi
-          go build -o "bgq${EXT}" ./cmd/bgq/
+          go build -ldflags="-s -w" -o "bgq${EXT}" ./cmd/bgq/
 
       - name: 打包
         run: |
