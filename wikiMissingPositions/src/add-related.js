@@ -223,7 +223,7 @@ export function getPendingData() {
 
 export function processPendingData() {
   const urlParams = new URLSearchParams(location.search);
-  if (urlParams.has('bgm_mp_relate') && window.opener && !localStorage.getItem('bgm-mp-pending')) {
+  if (urlParams.has('bgm_mp_relate') && window.opener && !_relateBackdoor) {
     const handler = (e) => {
       if (e.data && e.data.type === 'bgm_mp_relate_data' && e.data.data) {
         window.removeEventListener('message', handler);

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.1.9
+// @version      0.1.10
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -731,7 +731,21 @@ document.head.appendChild(styleEl);
       165: "\u8272\u5F69\u8BBE\u8BA1\u52A9\u7406",
       166: "\u6444\u5F71\u76D1\u7763\u52A9\u7406",
       167: "\u5236\u4F5C\u7BA1\u7406\u52A9\u7406",
-      168: "\u8BBE\u5B9A\u5236\u4F5C\u52A9\u7406"
+      168: "\u8BBE\u5B9A\u5236\u4F5C\u52A9\u7406",
+      169: "\u526A\u8F91\u52A9\u7406",
+      170: "\u5BA3\u4F20\u534F\u529B",
+      171: "\u5EFA\u6A21/\u6A21\u578B",
+      172: "\u89C6\u89C9\u5F00\u53D1/\u5916\u89C2\u5F00\u53D1",
+      173: "\u52A8\u753B\u5BFC\u6F14",
+      174: "\u53D1\u884C",
+      175: "\u539F\u4F5C\u534F\u529B",
+      176: "\u88FD\u4F5C\u534F\u529B",
+      177: "\u88FD\u4F5C\u7EDF\u62EC",
+      178: "\u5236\u4F5C\u4E8B\u52A1",
+      179: "OP\u30FBED \u52A8\u753B\u5236\u4F5C",
+      180: "3DCG \u5BFC\u6F14\u52A9\u7406",
+      181: "CG \u5BFC\u6F14\u52A9\u7406",
+      182: "\u5236\u4F5C\u5236\u7247\u4EBA"
     },
     1: {
       2001: "\u4F5C\u8005",
@@ -746,7 +760,11 @@ document.head.appendChild(styleEl);
       2010: "\u811A\u672C",
       2011: "\u4E66\u7CFB",
       2012: "\u51FA\u54C1\u65B9",
-      2013: "\u56FE\u4E66\u54C1\u724C"
+      2013: "\u56FE\u4E66\u54C1\u724C",
+      2014: "\u7F16\u8457",
+      2015: "\u6784\u6210",
+      2016: "\u76D1\u4FEE",
+      2017: "\u89E3\u8BF4"
     },
     4: {
       1001: "\u5F00\u53D1",
@@ -781,7 +799,9 @@ document.head.appendChild(styleEl);
       1030: "\u97F3\u54CD\u76D1\u7763",
       1031: "\u4F5C\u753B\u76D1\u7763",
       1032: "\u5236\u4F5C\u4EBA",
-      1033: "\u6D77\u62A5"
+      1033: "\u6D77\u62A5",
+      1034: "UI",
+      1035: "\u914D\u97F3\u5BFC\u6F14"
     },
     3: {
       3001: "\u827A\u672F\u5BB6",
@@ -798,7 +818,15 @@ document.head.appendChild(styleEl);
       3012: "\u6BCD\u5E26\u5236\u4F5C",
       3013: "\u6DF7\u97F3",
       3014: "\u4E50\u5668",
-      3015: "\u58F0\u4E50"
+      3015: "\u58F0\u4E50",
+      3016: "\u5FF5\u767D/\u65C1\u767D",
+      3017: "\u4EBA\u58F0\u7F16\u8F91",
+      3018: "\u4EBA\u58F0\u6307\u5BFC",
+      3019: "\u5BA2\u4E32",
+      3020: "\u97F3\u54CD\u76D1\u7763",
+      3021: "\u5408\u5531",
+      3022: "\u548C\u58F0",
+      3023: "\u8BBE\u8BA1"
     },
     6: {
       4001: "\u539F\u4F5C",
@@ -822,7 +850,29 @@ document.head.appendChild(styleEl);
       4019: "\u51FA\u54C1",
       4020: "\u914D\u97F3\u5BFC\u6F14",
       4021: "\u5F55\u97F3",
-      4022: "\u6D77\u62A5"
+      4022: "\u6D77\u62A5",
+      4023: "\u4F01\u5212/\u7B56\u5212",
+      4024: "\u526F\u5BFC\u6F14",
+      4025: "\u7F8E\u672F",
+      4026: "\u8054\u5408\u5236\u7247\u4EBA/\u526F\u5236\u7247\u4EBA",
+      4027: "\u52A8\u4F5C\u5BFC\u6F14/\u6B66\u672F\u6307\u5BFC",
+      4028: "\u7279\u6280\u6307\u5BFC",
+      4029: "\u7279\u6444\u5BFC\u6F14",
+      4030: "\u5B9E\u62CD\u7279\u6548",
+      4031: "\u89C6\u89C9\u7279\u6548",
+      4032: "3DCG",
+      4033: "\u8BBE\u5B9A",
+      4034: "\u4EBA\u7269\u8BBE\u8BA1/\u76AE\u5957\u8BBE\u8BA1",
+      4035: "\u9020\u578B\u8BBE\u8BA1",
+      4036: "\u751F\u7269\u8BBE\u8BA1",
+      4037: "\u602A\u517D\u8BBE\u8BA1",
+      4038: "\u627F\u5236\u65B9/\u6444\u5236",
+      4039: "\u5BA3\u4F20",
+      4040: "\u534F\u529B",
+      4041: "\u7279\u522B\u9E23\u8C22",
+      4042: "\u97F3\u54CD\u76D1\u7763",
+      4043: "\u540E\u671F",
+      4044: "\u53D1\u884C"
     }
   };
 
@@ -1682,7 +1732,7 @@ document.head.appendChild(styleEl);
   }
   function processPendingData() {
     const urlParams = new URLSearchParams(location.search);
-    if (urlParams.has("bgm_mp_relate") && window.opener && !localStorage.getItem("bgm-mp-pending")) {
+    if (urlParams.has("bgm_mp_relate") && window.opener && !_relateBackdoor) {
       const handler = (e) => {
         if (e.data && e.data.type === "bgm_mp_relate_data" && e.data.data) {
           window.removeEventListener("message", handler);
