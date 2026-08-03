@@ -18,6 +18,8 @@ import {
     showStatusMessage,
 } from './ui';
 
+let fetchLock = false;
+
 export function startProcessing(): void {
     if (state.submitMethod === 'patch' && !state.accessToken) {
         showStatusMessage('请输入Access Token');
@@ -37,6 +39,7 @@ export function startProcessing(): void {
     state.totalItems = state.csvData.length;
     state.processing = true;
     state.paused = false;
+    fetchLock = false;
 
     const coreContent = document.getElementById('core-content');
     if (coreContent) {
@@ -58,7 +61,7 @@ export function startProcessing(): void {
 }
 
 export function processNextItem(isRetry: boolean = false): void {
-    if (state.paused || !state.processing) return;
+    if (state.paused || !state.processing || fetchLock) return;
 
     if (state.currentIndex >= state.totalItems) {
         switchToCompletedView();
@@ -86,6 +89,7 @@ export function processNextItem(isRetry: boolean = false): void {
         'Accept': 'application/json',
     };
 
+    fetchLock = true;
     Promise.all([
         GM_fetch(wikiPath, { headers }),
         GM_fetch(historyPath, { headers }),
@@ -99,19 +103,23 @@ export function processNextItem(isRetry: boolean = false): void {
             return { currentItem, wikiData, historyData };
         })
         .then((itemData) => {
+            if (!state.processing) return;
             state.retryCount[itemData.currentItem.id] = 0;
             hideLoadingOverlay();
             document.querySelectorAll('#static-buttons-container button').forEach(btn => {
                 (btn as HTMLButtonElement).disabled = false;
             });
+            fetchLock = false;
 
             switchToProcessingView(itemData);
         })
         .catch((error: Error) => {
+            if (!state.processing) return;
             hideLoadingOverlay();
             document.querySelectorAll('#static-buttons-container button').forEach(btn => {
                 (btn as HTMLButtonElement).disabled = false;
             });
+            fetchLock = false;
 
             switchToProcessingErrorView(currentItem, error.message);
         });
@@ -128,6 +136,8 @@ export function submitUpdate(
     onSuccess: () => void,
     onError: (error: Error) => void,
 ): void {
+    if (state.processing) return;
+
     state.processing = true;
 
     const entityType = state.entityType || 'subject';
@@ -169,9 +179,11 @@ export function submitUpdate(
             })
             .then(() => {
                 hideLoadingOverlay();
+                state.processing = false;
                 onSuccess();
             })
             .catch(error => {
+                state.processing = false;
                 onError(error instanceof Error ? error : new Error(String(error)));
             });
     } else {
@@ -227,6 +239,7 @@ export function submitUpdate(
             },
             onload: function (response) {
                 hideLoadingOverlay();
+                state.processing = false;
 
                 if (response.finalUrl === postUrl) {
                     onError(new Error('更新失败，可能是formhash无效或权限不足'));
@@ -236,14 +249,17 @@ export function submitUpdate(
             },
             onerror: function (error) {
                 hideLoadingOverlay();
+                state.processing = false;
                 onError(new Error(`网络错误: ${error.message}`));
             },
             onabort: function () {
                 hideLoadingOverlay();
+                state.processing = false;
                 onError(new Error('请求已中止'));
             },
             ontimeout: function () {
                 hideLoadingOverlay();
+                state.processing = false;
                 onError(new Error('请求超时'));
             },
         });
