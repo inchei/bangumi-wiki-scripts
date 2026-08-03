@@ -127,9 +127,9 @@ export function createStaticDOM(): void {
             </div>
             <span class="header-spacer"></span>
             <div id="bgm-tool-header-actions">
-                <button id="bgm-tool-theme" title="主题" tabindex="0"><i class="fas fa-adjust"></i></button>
-                <button id="bgm-tool-settings" title="设置" tabindex="0"><i class="fas fa-cog"></i></button>
-                <button id="bgm-tool-close" title="关闭" tabindex="0"><i class="fas fa-sign-out-alt"></i></button>
+                <button id="bgm-tool-theme" class="btn btn-default" title="主题" tabindex="0"><i class="fas fa-adjust"></i></button>
+                <button id="bgm-tool-settings" class="btn btn-default" title="设置" tabindex="0"><i class="fas fa-cog"></i></button>
+                <button id="bgm-tool-close" class="btn btn-default" title="关闭" tabindex="0"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
         <div id="bgm-tool-progress">

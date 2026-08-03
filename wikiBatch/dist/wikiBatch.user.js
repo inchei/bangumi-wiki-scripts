@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bangumi wiki 批量更新工具
 // @namespace    http://tampermonkey.net/
-// @version      9.10
+// @version      9.12
 // @description  支持两种提交方式，可在设置页面选择，支持编辑Wcode、标签和系列状态
 // @author       You
 // @match        https://next.bgm.tv/
@@ -434,9 +434,9 @@ ${r}
             </div>
             <span class="header-spacer"></span>
             <div id="bgm-tool-header-actions">
-                <button id="bgm-tool-theme" title="\u4E3B\u9898" tabindex="0"><i class="fas fa-adjust"></i></button>
-                <button id="bgm-tool-settings" title="\u8BBE\u7F6E" tabindex="0"><i class="fas fa-cog"></i></button>
-                <button id="bgm-tool-close" title="\u5173\u95ED" tabindex="0"><i class="fas fa-sign-out-alt"></i></button>
+                <button id="bgm-tool-theme" class="btn btn-default" title="\u4E3B\u9898" tabindex="0"><i class="fas fa-adjust"></i></button>
+                <button id="bgm-tool-settings" class="btn btn-default" title="\u8BBE\u7F6E" tabindex="0"><i class="fas fa-cog"></i></button>
+                <button id="bgm-tool-close" class="btn btn-default" title="\u5173\u95ED" tabindex="0"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
         <div id="bgm-tool-progress">
@@ -575,7 +575,7 @@ ${r}
 
 /* ===== Header ===== */
 #bgm-tool-header {
-    padding: 0 36px;
+    padding: 0 24px;
     height: 56px;
     background: var(--white);
     border-bottom: 1px solid var(--border);
@@ -584,6 +584,7 @@ ${r}
     color: var(--text);
     display: flex;
     align-items: center;
+    gap: 24px;
     flex-shrink: 0;
     box-shadow: var(--shadow-subtle);
     width: 100%;
@@ -597,7 +598,7 @@ ${r}
 #bgm-tool-header-logo {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     outline: none;
 }
 
@@ -615,34 +616,26 @@ ${r}
 
 #bgm-tool-header-actions {
     display: flex;
-    gap: 4px;
+    gap: 20px;
     margin-left: auto;
 }
 
-#bgm-tool-header-actions button {
-    cursor: pointer;
-    color: var(--text-secondary);
-    font-size: 16px;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 6px;
-    border: none;
-    background: transparent;
-    transition: all 0.15s;
+/* Reuse bgq button classes in the header (mirrors bgq .header .btn overrides) */
+#bgm-tool-header-actions button.btn {
     padding: 0;
+    border: none;
+    font-size: 16px;
+    cursor: pointer;
 }
 
-#bgm-tool-header-actions button:hover {
-    background: var(--accent-light);
+#bgm-tool-header-actions button.btn:hover {
     color: var(--accent);
+    border-color: var(--accent);
 }
 
 /* ===== Progress Bar ===== */
 #bgm-tool-progress {
-    padding: 10px 36px;
+    padding: 10px 24px;
     background: var(--white);
     border-bottom: 1px solid var(--border-light);
     display: none;
@@ -730,6 +723,36 @@ ${r}
 }
 
 /* ===== Buttons ===== */
+
+/* Shared .btn classes, same definitions as bgq frontend */
+#bgm-tool-container .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+#bgm-tool-container .btn-default {
+    background: var(--white);
+    color: var(--text);
+    border: 1px solid var(--border);
+}
+
+#bgm-tool-container .btn-default:hover {
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
 #bgm-tool-container button {
     display: inline-flex;
     align-items: center;
