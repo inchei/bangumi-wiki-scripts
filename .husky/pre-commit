@@ -1,21 +1,80 @@
-#!/bin/sh
+#!/bin/bash
+
+# Version bump strategy: interactive per-commit prompt.
+# For each userscript with staged source changes, ask the level:
+#   Enter = patch, m = minor, M = major, s = skip (no bump)
+# Interactive detection uses stderr ([ -t 2 ]): git redirects hook stdin to
+# /dev/null, so read must go through /dev/tty. Non-TTY (CI / GUI commits):
+# fall back to skip (no auto bump).
 
 bump_version() {
   file="$1"
+  level="$2"
   old_version=$(grep -o '@version\s\+[0-9.]\+' "$file" | awk '{print $2}')
   if [ -z "$old_version" ]; then
     echo "  ⚠ $file: @version not found, skip bump"
-    return
+    return 1
   fi
-  last=$(echo "$old_version" | rev | cut -d. -f1 | rev)
-  prefix=$(echo "$old_version" | sed "s/\.$last$//")
-  new_version="${prefix}.$((last + 1))"
+  IFS='.' read -ra parts <<< "$old_version"
+  n=${#parts[@]}
+  case "$level" in
+    patch)
+      parts[$((n - 1))]=$((parts[n - 1] + 1))
+      ;;
+    minor)
+      if [ "$n" -ge 2 ]; then
+        parts[$((n - 2))]=$((parts[n - 2] + 1))
+        parts[$((n - 1))]=0
+      else
+        parts[0]=$((parts[0] + 1))
+      fi
+      ;;
+    major)
+      parts[0]=$((parts[0] + 1))
+      for ((i = 1; i < n; i++)); do parts[$i]=0; done
+      ;;
+  esac
+  new_version=$(IFS='.'; echo "${parts[*]}")
   if [ "$OSTYPE" = "darwin"* ]; then
     sed -i '' "s/@version\s\+$old_version/@version      $new_version/" "$file"
   else
     sed -i "s/@version\s\+$old_version/@version      $new_version/" "$file"
   fi
   echo "  🔖 $file: $old_version → $new_version"
+}
+
+prompt_bump() {
+  file="$1"
+  label="$2"
+  cur=$(grep -o '@version\s\+[0-9.]\+' "$file" | awk '{print $2}')
+  if [ -z "$cur" ]; then
+    echo "  ⚠ $file: @version not found, skip bump" >&2
+    echo skip
+    return 1
+  fi
+  echo "  🔖 $label: current v$cur" >&2
+  while true; do
+    printf '     bump level? [Enter=patch, m=minor, M=major, s=skip]: ' >&2
+    read -r choice < /dev/tty || { echo skip; return 0; }
+    case "$choice" in
+      '' | p | patch) echo patch; return 0 ;;
+      m | minor) echo minor; return 0 ;;
+      M | major) echo major; return 0 ;;
+      s | skip | n | no) echo skip; return 0 ;;
+      *) echo '     (invalid choice, try again)' >&2 ;;
+    esac
+  done
+}
+
+maybe_bump() {
+  file="$1"
+  label="$2"
+  if [ -t 2 ]; then
+    level=$(prompt_bump "$file" "$label")
+  else
+    level=skip
+  fi
+  [ "$level" != "skip" ] && bump_version "$file" "$level"
 }
 
 GO_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.go$' || true)
@@ -39,7 +98,7 @@ if [ -n "$FE_FILES" ]; then
 fi
 
 if [ -n "$MP_FILES" ]; then
-  bump_version wikiMissingPositions/header.js
+  maybe_bump wikiMissingPositions/header.js "wikiMissingPositions"
   cd wikiMissingPositions
   if ! (pnpm lint && pnpm lint:css && pnpm format:check && pnpm build); then
     cd ..
@@ -51,7 +110,7 @@ if [ -n "$MP_FILES" ]; then
 fi
 
 if [ -n "$PA_FILES" ]; then
-  bump_version wikiPersonAlias/wikiPersonAlias.user.js
+  maybe_bump wikiPersonAlias/wikiPersonAlias.user.js "wikiPersonAlias"
   cd wikiPersonAlias
   if ! (pnpm lint && pnpm format:check); then
     cd ..
@@ -63,7 +122,7 @@ if [ -n "$PA_FILES" ]; then
 fi
 
 if [ -n "$WB_FILES" ]; then
-  bump_version wikiBatch/header.js
+  maybe_bump wikiBatch/header.js "wikiBatch"
   cd wikiBatch
   if ! (pnpm lint && pnpm lint:css && pnpm typecheck && pnpm build); then
     cd ..
