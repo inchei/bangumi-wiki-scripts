@@ -17,7 +17,7 @@
 <h2 class="section-title">{{.PageKind}}中缺失的人物</h2>
 {{range .Persons}}<details class="person" data-idx="{{.Idx}}">
   <summary>{{.Name}} <span class="count">({{.Count}})</span>
-    <button class="btn-create" data-idx="{{.Idx}}" data-name="{{.Name}}">创建</button>
+    <a class="btn-create" href="#create-{{.Idx}}" data-idx="{{.Idx}}" data-name="{{.Name}}">创建</a>
   </summary>
 </details>
 {{else}}<p>暂无</p>{{end}}

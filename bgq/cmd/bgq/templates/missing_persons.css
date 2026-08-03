@@ -15,6 +15,10 @@ a {
   color: LinkText;
 }
 
+a:visited {
+  color: VisitedText;
+}
+
 details {
   margin: 0.3em 0;
 }
@@ -46,10 +50,17 @@ summary .type {
   background: #e8f5e9;
   color: #2e7d32;
   vertical-align: middle;
+  text-decoration: none;
 }
 
 .btn-create:hover {
   background: #c8e6c9;
+}
+
+.btn-create:visited {
+  background: #d7d7d7;
+  color: #888;
+  border-color: #bbb;
 }
 
 ul {
@@ -158,10 +169,17 @@ h1 {
   background: #fff3e0;
   color: #e65100;
   vertical-align: middle;
+  text-decoration: none;
 }
 
 .btn-relate:hover {
   background: #ffe0b2;
+}
+
+.btn-relate:visited {
+  background: #d7d7d7;
+  color: #888;
+  border-color: #bbb;
 }
 
 .btn-relate:disabled {
@@ -205,6 +223,12 @@ h1 {
   }
   .btn-relate:hover {
     background: #bf360c;
+  }
+  .btn-create:visited,
+  .btn-relate:visited {
+    background: #444;
+    color: #999;
+    border-color: #666;
   }
   .relate-select {
     background: #333;
