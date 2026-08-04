@@ -262,12 +262,82 @@ func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleDebug(w http.ResponseWriter, r *http.Request) {
-	resp := map[string]bool{
-		"duckdb_exists":   fileExists(query.GetDuckDBPath()),
-		"db_exists":       fileExists(s.dbPath),
-		"data_dir_exists": fileExists(s.dataDir),
+	resp := map[string]interface{}{
+		"duckdb_mtime": formatMtime(modTime(query.GetDuckDBPath())),
+		"binary_mtime": formatMtime(modTime(exePath())),
+		"db_mtime":     formatMtime(modTime(s.dbPath)),
+		"data_mtime":   formatMtime(dataVersionTime(s.dataDir)),
 	}
 	writeJSON(w, http.StatusOK, resp)
+}
+
+func exePath() string {
+	p, err := os.Executable()
+	if err != nil {
+		return ""
+	}
+	return p
+}
+
+func modTime(path string) time.Time {
+	if path == "" {
+		return time.Time{}
+	}
+	fi, err := os.Stat(path)
+	if err != nil {
+		return time.Time{}
+	}
+	return fi.ModTime()
+}
+
+// dataVersionTime returns the bangumi data update time recorded in
+// data_version.json ({"created_at": "<RFC3339>"}), written by
+// download-archive.sh. Falls back to the newest .jsonlines file mtime if the
+// version file is missing or unparseable.
+func dataVersionTime(dataDir string) time.Time {
+	data, err := os.ReadFile(filepath.Join(dataDir, "data_version.json"))
+	if err == nil {
+		var v struct {
+			CreatedAt string `json:"created_at"`
+		}
+		if json.Unmarshal(data, &v) == nil && v.CreatedAt != "" {
+			if t, err := time.Parse(time.RFC3339, v.CreatedAt); err == nil {
+				return t
+			}
+		}
+	}
+	return newestJSONLMtime(dataDir)
+}
+
+// newestJSONLMtime returns the newest modification time among the .jsonlines
+// data files in dir, falling back to the directory mtime.
+func newestJSONLMtime(dir string) time.Time {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return time.Time{}
+	}
+	var latest time.Time
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), ".jsonlines") {
+			continue
+		}
+		if info, err := e.Info(); err == nil && info.ModTime().After(latest) {
+			latest = info.ModTime()
+		}
+	}
+	if latest.IsZero() {
+		if fi, err := os.Stat(dir); err == nil {
+			return fi.ModTime()
+		}
+	}
+	return latest
+}
+
+func formatMtime(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+	return t.UTC().Format(time.RFC3339)
 }
 
 func fileExists(path string) bool {
