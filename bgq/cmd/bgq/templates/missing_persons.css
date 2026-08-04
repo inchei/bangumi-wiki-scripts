@@ -207,6 +207,17 @@ h1 {
   text-decoration: underline;
 }
 
+.existing-name {
+  margin-left: 0.4em;
+  font-size: 0.85em;
+  color: #555;
+  vertical-align: middle;
+}
+
+.existing-name::before {
+  content: "→ ";
+}
+
 @media (prefers-color-scheme: dark) {
   .btn-create {
     background: #1b5e20;
@@ -244,7 +255,8 @@ h1 {
   summary .count,
   summary .type,
   li .pos,
-  .type-dir .cnt {
+  .type-dir .cnt,
+  .existing-name {
     color: #999;
   }
   .section-divider {

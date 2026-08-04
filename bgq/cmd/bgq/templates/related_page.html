@@ -14,15 +14,15 @@
 </div>
 {{if .PageInfo}}<p>{{.PageInfo}}</p>{{end}}
 
-<h2 class="section-title">缺失关联的人物<span class="section-note">（同名已存在，可直接关联）</span></h2>
+<h2 class="section-title">{{if eq .PageKind "variant"}}变体字同名的人物{{else}}缺失关联的人物{{end}}<span class="section-note">（同名已存在，可直接关联）</span></h2>
 {{range .Persons}}<details class="person person-related" data-idx="{{.Idx}}" data-related="1">
-  <summary>{{.Name}} <span class="count">({{.Count}})</span>
+  <summary>{{.Name}} <span class="count">({{.Count}})</span>{{if .FirstPersonName}}<span class="existing-name">{{.FirstPersonName}}</span>{{end}}
     <span class="btn-relate-wrap">
       {{if .MultiMatch}}<select class="relate-select">{{.SelectOptions}}</select>{{end}}
       <a class="relate-link" href="https://bgm.tv/person/{{.FirstPersonID}}" target="_blank">查看{{if .FromAlias}}（别名）{{end}}</a>
       <a class="btn-relate" href="#relate-{{.Idx}}" data-idx="{{.Idx}}" data-name="{{.Name}}">关联</a>
     </span>
-    <a class="btn-create" href="#create-{{.Idx}}" data-idx="{{.Idx}}" data-name="{{.Name}}" data-force="1">创建</a>
+    {{if $.AllowCreate}}<a class="btn-create" href="#create-{{.Idx}}" data-idx="{{.Idx}}" data-name="{{.Name}}" data-force="1">创建</a>{{end}}
   </summary>
 </details>
 {{else}}<p>暂无</p>{{end}}

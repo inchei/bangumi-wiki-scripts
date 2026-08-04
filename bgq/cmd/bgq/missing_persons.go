@@ -264,6 +264,111 @@ func normalizePersonName(name string) string {
 	return normalizeAlias(name)
 }
 
+// personNameVariantMap maps Japanese variant characters to the common form used
+// in person names (mirrors NORMALIZE_MAP in find_dup_person_name.py), so that
+// variant-spelling duplicates (e.g. 髙橋/高橋, 廣瀬/広瀬) can be recognized.
+var personNameVariantMap = map[rune]rune{
+	'\u9ad9': '\u9ad8', // 髙 → 高
+	'\u51a8': '\u5bcc', // 冨 → 富
+	'\ufa11': '\u5d0e', // 﨑 → 崎
+	'\u5d5c': '\u5d0e', // 嵜 → 崎
+	'\u90de': '\u90ce', // 郞 → 郎
+	'\u6801': '\u67f3', // 栁 → 柳
+	'\u4ff1': '\u5036', // 俱 → 倶
+	'\u59ec': '\u59eb', // 姬 → 姫
+	'\u5154': '\u514e', // 兔 → 兎
+	'\u820d': '\u820e', // 舍 → 舎
+	'\u885e': '\u885b', // 衞 → 衛
+	'\u615c': '\u614e', // 愼 → 慎
+	'\u9089': '\u8fba', // 邉 → 辺
+	'\u908a': '\u8fba', // 邊 → 辺
+	'\u6ff5': '\u6d5c', // 濵 → 浜
+	'\u6ff1': '\u6d5c', // 濱 → 浜
+	'\u5d8b': '\u5cf6', // 嶋 → 島
+	'\u6fa4': '\u6ca2', // 澤 → 沢
+	'\u5ee3': '\u5e83', // 廣 → 広
+	'\u703e': '\u702c', // 瀨 → 瀬
+	'\u9f4a': '\u6589', // 齊 → 斉
+	'\u9f52': '\u6592', // 齋 → 斎
+	'\u6afb': '\u685c', // 櫻 → 桜
+	'\u95dc': '\u95a2', // 關 → 関
+	'\u9ed1': '\u9ed2', // 黑 → 黒
+	'\u5fb7': '\u5fb3', // 德 → 徳
+	'\u9f8d': '\u7adc', // 龍 → 竜
+	'\u8207': '\u4e0e', // 與 → 与
+	'\u9435': '\u9244', // 鐵 → 鉄
+	'\u5dbd': '\u5cb3', // 嶽 → 岳
+	'\u7adc': '\u4e26', // 竝 → 並
+}
+
+// normalizePersonNameVariant maps variant characters in an alias-normalized
+// person name to their common form.
+func normalizePersonNameVariant(name string) string {
+	var buf strings.Builder
+	buf.Grow(len(name))
+	for _, r := range name {
+		if rep, ok := personNameVariantMap[r]; ok {
+			buf.WriteRune(rep)
+		} else {
+			buf.WriteRune(r)
+		}
+	}
+	return buf.String()
+}
+
+// buildVariantExistingIDs maps each existing-person key to its variant-normalized
+// form, so to-be-created persons can be checked for variant-spelling collisions.
+func buildVariantExistingIDs(knownIDs map[string][]int) map[string][]int {
+	out := make(map[string][]int)
+	for key, ids := range knownIDs {
+		vk := normalizePersonNameVariant(key)
+		out[vk] = append(out[vk], ids...)
+	}
+	return out
+}
+
+// splitVariantDupes moves to-be-created persons whose variant-normalized name
+// matches an existing person (e.g. 髙橋 → 高橋) out of the missing list into a
+// separate related-style list, so they can be linked instead of created.
+func splitVariantDupes(missing []*missingPerson, variantExistingIDs map[string][]int, idToRawName map[int]string) ([]*missingPerson, []*missingRelatedPerson) {
+	normal := make([]*missingPerson, 0, len(missing))
+	var dupes []*missingRelatedPerson
+	for _, mp := range missing {
+		vk := normalizePersonNameVariant(mp.KeyNorm)
+		ids := variantExistingIDs[vk]
+		if len(ids) == 0 {
+			normal = append(normal, mp)
+			continue
+		}
+		dupes = append(dupes, &missingRelatedPerson{
+			DisplayName:       mp.DisplayName,
+			KeyNorm:           mp.KeyNorm,
+			Count:             mp.Count,
+			Subjects:          mp.Subjects,
+			TypeCounts:        mp.TypeCounts,
+			ExistingPersonIDs: uniqueIDNames(ids, idToRawName),
+		})
+	}
+	return normal, dupes
+}
+
+func uniqueIDNames(ids []int, idToName map[int]string) []personIDName {
+	seen := make(map[int]bool, len(ids))
+	out := make([]personIDName, 0, len(ids))
+	for _, pid := range ids {
+		if seen[pid] {
+			continue
+		}
+		seen[pid] = true
+		name := idToName[pid]
+		if name == "" {
+			name = fmt.Sprintf("ID:%d", pid)
+		}
+		out = append(out, personIDName{ID: pid, Name: name})
+	}
+	return out
+}
+
 func isLikelyPerson(name string) bool {
 	if len(name) < 2 {
 		return false
@@ -280,15 +385,16 @@ func isLikelyPerson(name string) bool {
 	return true
 }
 
-func loadKnownPersons(personFile, aliasFile string) (map[string]bool, map[string][]int, map[int]string, map[string]bool, error) {
+func loadKnownPersons(personFile, aliasFile string) (map[string]bool, map[string][]int, map[int]string, map[int]string, map[string]bool, error) {
 	known := make(map[string]bool)
 	knownIDs := make(map[string][]int)
 	idToName := make(map[int]string)
+	idToRawName := make(map[int]string)
 	aliasNorm := make(map[string]bool)
 
 	f, err := os.Open(personFile)
 	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("打开 person.jsonlines 失败: %w", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("打开 person.jsonlines 失败: %w", err)
 	}
 	defer func() { _ = f.Close() }()
 
@@ -308,6 +414,7 @@ func loadKnownPersons(personFile, aliasFile string) (map[string]bool, map[string
 			known[norm] = true
 			knownIDs[norm] = append(knownIDs[norm], p.ID)
 			if p.ID > 0 {
+				idToRawName[p.ID] = p.Name
 				display := p.Name
 				if cn := extractPersonCNName(p.Infobox); cn != "" {
 					display = cn
@@ -325,7 +432,7 @@ func loadKnownPersons(personFile, aliasFile string) (map[string]bool, map[string
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("读取 person.jsonlines 失败: %w", err)
+		return nil, nil, nil, nil, nil, fmt.Errorf("读取 person.jsonlines 失败: %w", err)
 	}
 
 	if aliasFile != "" {
@@ -356,7 +463,7 @@ func loadKnownPersons(personFile, aliasFile string) (map[string]bool, map[string
 		}
 	}
 
-	return known, knownIDs, idToName, aliasNorm, nil
+	return known, knownIDs, idToName, idToRawName, aliasNorm, nil
 }
 
 func loadCharacterNames(archiveDir string, dbPath string) (map[string]bool, error) {
@@ -702,7 +809,7 @@ var indexTpl = template.Must(template.New("index").Parse(indexHTML))
 var missingPageTpl = template.Must(template.New("missing").Parse(missingPageHTML))
 var relatedPageTpl = template.Must(template.New("related").Parse(relatedPageHTML))
 
-func filterAlreadyLinked(ctx context.Context, dbPath string, related []*missingRelatedPerson) ([]*missingRelatedPerson, error) {
+func filterAlreadyLinked(ctx context.Context, dbPath string, related []*missingRelatedPerson, keepEmpty bool) ([]*missingRelatedPerson, error) {
 	if len(related) == 0 {
 		return related, nil
 	}
@@ -794,6 +901,15 @@ WHERE sp.person_id IN (%s)
 			rr.Count = len(newSubjects)
 			rr.TypeCounts = newTypeCounts
 			filtered = append(filtered, &rr)
+		} else if keepEmpty {
+			// All subjects already linked to the existing person — keep the
+			// entry with an empty list so it still prompts adding the variant
+			// spelling as an alias. Keep original TypeCounts so the entry is
+			// still grouped under its subject types.
+			rr := *rp
+			rr.Subjects = map[string]*subjectInfo{}
+			rr.Count = 0
+			filtered = append(filtered, &rr)
 		}
 	}
 	// Re-sort after Count may have changed
@@ -846,9 +962,10 @@ type typePageTplData struct {
 	PosTable    template.JS
 	Persons     []personTplData
 	PageKind    string
+	AllowCreate bool
 }
 
-func writeIndexHTML(outputDir string, subjCount, totalMissing, totalRelated, totalBare int, missingLinks, relatedLinks, bareLinks []typeLinkTplData) error {
+func writeIndexHTML(outputDir string, subjCount, totalMissing, totalRelated, totalBare, totalVariant int, missingLinks, relatedLinks, bareLinks, variantLinks []typeLinkTplData) error {
 	f, err := os.Create(filepath.Join(outputDir, "index.html"))
 	if err != nil {
 		return err
@@ -860,10 +977,12 @@ func writeIndexHTML(outputDir string, subjCount, totalMissing, totalRelated, tot
 		"TotalMissing":  totalMissing,
 		"TotalRelated":  totalRelated,
 		"TotalBare":     totalBare,
+		"TotalVariant":  totalVariant,
 		"MinCount":      missingPersonsMinCount,
 		"GeneratedDate": time.Now().Format("2006-01-02"),
 		"TypeLinks":     append(missingLinks, relatedLinks...),
 		"BareLinks":     bareLinks,
+		"VariantLinks":  variantLinks,
 	})
 }
 
@@ -936,13 +1055,20 @@ func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRela
 	}
 
 	var title string
-	if suffix == "related-bare" {
+	switch suffix {
+	case "related-bare":
 		if totalParts > 1 {
 			title = fmt.Sprintf("%s中缺失关联的无关联人物 - 第 %d/%d 页", tname, partNum, totalParts)
 		} else {
 			title = fmt.Sprintf("%s中缺失关联的无关联人物", tname)
 		}
-	} else {
+	case "variant":
+		if totalParts > 1 {
+			title = fmt.Sprintf("%s中变体字同名的人物 - 第 %d/%d 页", tname, partNum, totalParts)
+		} else {
+			title = fmt.Sprintf("%s中变体字同名的人物", tname)
+		}
+	default:
 		if totalParts > 1 {
 			title = fmt.Sprintf("%s中缺失关联的人物 - 第 %d/%d 页", tname, partNum, totalParts)
 		} else {
@@ -988,12 +1114,14 @@ func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRela
 		PendingData: pendingRelatedJS(entries),
 		PosTable:    posTableJS(),
 		Persons:     persons,
+		PageKind:    suffix,
+		AllowCreate: suffix != "variant",
 	})
 }
 
 const chunkSize = 2000
 
-func writeMultiTypePages(missing []*missingPerson, related, relatedBare []*missingRelatedPerson, outputDir string, subjCount int) error {
+func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variantDupes []*missingRelatedPerson, outputDir string, subjCount int) error {
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("创建输出目录失败: %w", err)
 	}
@@ -1019,7 +1147,14 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare []*missi
 		}
 	}
 
-	var missingLinks, relatedLinks, bareLinks []typeLinkTplData
+	typeVariant := make(map[int][]*missingRelatedPerson)
+	for _, rp := range variantDupes {
+		for t := range rp.TypeCounts {
+			typeVariant[t] = append(typeVariant[t], rp)
+		}
+	}
+
+	var missingLinks, relatedLinks, bareLinks, variantLinks []typeLinkTplData
 
 	// Missing persons pages
 	for _, t := range sortedTypesByCountLens(typeMissing) {
@@ -1072,10 +1207,18 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare []*missi
 		return err
 	}
 
+	// Variant-spelling same-name (变体同名) pages — to-be-created persons whose
+	// variant-normalized name matches an existing person, listed at the end.
+	variantLinks, err = buildRelatedTypeLinks(outputDir, typeVariant, "variant", "变体同名", "变体同名")
+	if err != nil {
+		return err
+	}
+
 	totalMissing := len(missing)
 	totalRelated := len(related)
 	totalBare := len(relatedBare)
-	return writeIndexHTML(outputDir, subjCount, totalMissing, totalRelated, totalBare, missingLinks, relatedLinks, bareLinks)
+	totalVariant := len(variantDupes)
+	return writeIndexHTML(outputDir, subjCount, totalMissing, totalRelated, totalBare, totalVariant, missingLinks, relatedLinks, bareLinks, variantLinks)
 }
 
 // buildRelatedTypeLinks renders related-person pages (one per subject type,
@@ -1167,7 +1310,7 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	if personFile == "" {
 		personFile = filepath.Join(archiveDir, "person.jsonlines")
 	}
-	existing, knownIDs, idToName, aliasNorm, err := loadKnownPersons(personFile, aliasFile)
+	existing, knownIDs, idToName, idToRawName, aliasNorm, err := loadKnownPersons(personFile, aliasFile)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "错误: %v\n", err)
 		os.Exit(1)
@@ -1194,12 +1337,30 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	fmt.Fprintf(os.Stderr, "  初步缺失: %d, 初步关联缺失: %d\n", len(missing), len(related))
 	fmt.Fprintf(os.Stderr, "  耗时: %.1fs\n", t3.Sub(t2b).Seconds())
 
+	fmt.Fprintf(os.Stderr, "检测变体字同名人物中...\n")
+	variantExistingIDs := buildVariantExistingIDs(knownIDs)
+	var variantDupes []*missingRelatedPerson
+	missing, variantDupes = splitVariantDupes(missing, variantExistingIDs, idToRawName)
+	fmt.Fprintf(os.Stderr, "  变体字归一后同名已存在: %d, 剩余实际缺失: %d\n", len(variantDupes), len(missing))
+
+	if len(variantDupes) > 0 {
+		fmt.Fprintf(os.Stderr, "过滤变体同名已关联条目中...\n")
+		beforeVariant := len(variantDupes)
+		var verr error
+		variantDupes, verr = filterAlreadyLinked(ctx, dbPath, variantDupes, true)
+		if verr != nil {
+			fmt.Fprintf(os.Stderr, "错误: %v\n", verr)
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stderr, "  变体同名过滤后: %d → %d (排除已关联 %d)\n", beforeVariant, len(variantDupes), beforeVariant-len(variantDupes))
+	}
+
 	var relatedBare []*missingRelatedPerson
 	if len(related) > 0 {
 		fmt.Fprintf(os.Stderr, "过滤已关联人物中...\n")
 		beforeFilter := len(related)
 		var ferr error
-		related, ferr = filterAlreadyLinked(ctx, dbPath, related)
+		related, ferr = filterAlreadyLinked(ctx, dbPath, related, false)
 		if ferr != nil {
 			fmt.Fprintf(os.Stderr, "错误: %v\n", ferr)
 			os.Exit(1)
@@ -1236,10 +1397,12 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	totalMissing := len(missing)
 	totalRelated := len(related)
 	totalBare := len(relatedBare)
+	totalVariant := len(variantDupes)
 	fmt.Fprintf(os.Stderr, "  缺失且 ≥%d 次出现的人数: %d\n", missingPersonsMinCount, totalMissing)
 	fmt.Fprintf(os.Stderr, "  关联缺失且 ≥%d 次出现的人数: %d (其中无关联 %d)\n", missingRelatedMinCount, totalRelated, totalBare)
+	fmt.Fprintf(os.Stderr, "  变体字同名且已存在的人数: %d\n", totalVariant)
 
-	if totalMissing == 0 && totalRelated == 0 && totalBare == 0 {
+	if totalMissing == 0 && totalRelated == 0 && totalBare == 0 && totalVariant == 0 {
 		fmt.Fprintln(os.Stderr, "没有需要处理的人物")
 		return
 	}
@@ -1248,7 +1411,7 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	if outputDir == "" {
 		outputDir = "docs/missing-persons"
 	}
-	if err := writeMultiTypePages(missing, related, relatedBare, outputDir, len(records)); err != nil {
+	if err := writeMultiTypePages(missing, related, relatedBare, variantDupes, outputDir, len(records)); err != nil {
 		fmt.Fprintf(os.Stderr, "错误: %v\n", err)
 		os.Exit(1)
 	}
