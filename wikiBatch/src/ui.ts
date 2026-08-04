@@ -6,7 +6,11 @@ export function showProgressBar(): void {
 export function updateProgressBar(current: number, total: number): void {
     const textEl = document.getElementById('progress-text');
     const barEl = document.getElementById('progress-bar');
-    if (textEl) textEl.textContent = `处理进度: ${current}/${total}`;
+    if (textEl) {
+        const width = String(total).length;
+        const padded = String(current).padStart(width, '\u2007');
+        textEl.textContent = `处理进度: ${padded}/${total}`;
+    }
     const percentage = total > 0 ? (current / total) * 100 : 0;
     if (barEl) barEl.style.width = `${percentage}%`;
 }
