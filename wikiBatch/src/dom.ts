@@ -6,6 +6,7 @@ import {
     updateDiffDisplay,
     updateTagsDiffDisplay,
     generateCommitMessage,
+    refreshDiffDisplays,
 } from './diff';
 import {
     handleSetupViewButtons,
@@ -73,6 +74,9 @@ function cycleTheme(): void {
     localStorage.setItem('bgmTheme', state.theme);
     applyTheme(state.theme);
     updateThemeButton();
+    if (state.currentView === 'processing') {
+        refreshDiffDisplays();
+    }
 }
 
 function updateThemeButton(): void {
@@ -240,7 +244,12 @@ export function createStaticDOM(): void {
     window
         .matchMedia('(prefers-color-scheme: dark)')
         .addEventListener('change', () => {
-            if (state.theme === 'system') applyTheme('system');
+            if (state.theme === 'system') {
+                applyTheme('system');
+                if (state.currentView === 'processing') {
+                    refreshDiffDisplays();
+                }
+            }
         });
 
     bindEditRegionEvents();

@@ -132,6 +132,26 @@ export function updateDiffDisplay(oldText: string, newText: string, containerId:
     }
 }
 
+export function refreshDiffDisplays(): void {
+    const subjectData = state.currentSubjectData;
+    if (!subjectData) return;
+
+    const entityType = getCurrentEntityType();
+    const oldInfobox = subjectData.infobox || '';
+    const newInfobox = (document.getElementById('static-wcode-input') as HTMLTextAreaElement | null)?.value;
+    if (newInfobox !== undefined) {
+        updateDiffDisplay(oldInfobox, newInfobox, 'static-content-diff-container');
+    }
+
+    if (entityType === 'subject') {
+        const oldTags = subjectData.metaTags || [];
+        const newTags = (document.getElementById('static-tags-input') as HTMLInputElement | null)?.value.split(' ').filter(t => t);
+        if (newTags !== undefined) {
+            updateTagsDiffDisplay(oldTags, newTags, 'static-tags-diff-container');
+        }
+    }
+}
+
 export function updateTagsDiffDisplay(oldTags: string[], newTags: string[], containerId: string): void {
     const oldText = oldTags.join('\n');
     const newText = newTags.join('\n');
