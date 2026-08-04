@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         bangumi wiki 批量更新工具
 // @namespace    http://tampermonkey.net/
-// @version      9.14
+// @version      1.0.0
 // @description  支持两种提交方式，可在设置页面选择，支持编辑Wcode、标签和系列状态
 // @author       You
 // @match        https://next.bgm.tv/
@@ -931,7 +931,7 @@ ${r}
 
 .diff-section {
     margin: 0;
-    padding: 16px;
+    overflow: hidden;
     background: var(--white);
     border: 1px solid var(--border-light);
     border-radius: 10px;

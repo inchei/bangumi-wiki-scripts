@@ -424,7 +424,7 @@
 
 .diff-section {
     margin: 0;
-    padding: 16px;
+    overflow: hidden;
     background: var(--white);
     border: 1px solid var(--border-light);
     border-radius: 10px;
