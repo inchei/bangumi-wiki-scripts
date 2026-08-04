@@ -50,13 +50,6 @@ export function startProcessing(): void {
         `;
     }
 
-    const buttonsContainer = document.getElementById('static-buttons-container');
-    if (buttonsContainer) {
-        buttonsContainer.innerHTML = `
-            <button id="process-cancel" class="danger">取消</button>
-        `;
-    }
-
     processNextItem();
 }
 
@@ -136,10 +129,6 @@ export function submitUpdate(
     onSuccess: () => void,
     onError: (error: Error) => void,
 ): void {
-    if (state.processing) return;
-
-    state.processing = true;
-
     const entityType = state.entityType || 'subject';
 
     if (state.submitMethod === 'patch') {
@@ -179,11 +168,9 @@ export function submitUpdate(
             })
             .then(() => {
                 hideLoadingOverlay();
-                state.processing = false;
                 onSuccess();
             })
             .catch(error => {
-                state.processing = false;
                 onError(error instanceof Error ? error : new Error(String(error)));
             });
     } else {
@@ -239,7 +226,6 @@ export function submitUpdate(
             },
             onload: function (response) {
                 hideLoadingOverlay();
-                state.processing = false;
 
                 if (response.finalUrl === postUrl) {
                     onError(new Error('更新失败，可能是formhash无效或权限不足'));
@@ -249,17 +235,14 @@ export function submitUpdate(
             },
             onerror: function (error) {
                 hideLoadingOverlay();
-                state.processing = false;
                 onError(new Error(`网络错误: ${error.message}`));
             },
             onabort: function () {
                 hideLoadingOverlay();
-                state.processing = false;
                 onError(new Error('请求已中止'));
             },
             ontimeout: function () {
                 hideLoadingOverlay();
-                state.processing = false;
                 onError(new Error('请求超时'));
             },
         });

@@ -11,6 +11,7 @@ import {
     showProgressBar,
     updateProgressBar,
     showStatusMessage,
+    hideLoadingOverlay,
 } from './ui';
 import {
     getFieldUpdates,
@@ -23,11 +24,15 @@ import {
     updateTagsDiffDisplay,
     updateConfirmButtonState,
 } from './diff';
-import { isRecentUpdate } from './utils';
+import { isRecentUpdate, resetProcessingState } from './utils';
 import { handleFileUpload, handlePasteCSV } from './csv';
 
 export function switchToSetupView(): void {
     state.currentView = 'setup';
+    state.processing = false;
+    state.paused = true;
+    resetProcessingState();
+    hideLoadingOverlay();
     const coreContent = document.getElementById('core-content');
     const buttonsContainer = document.getElementById('static-buttons-container');
 

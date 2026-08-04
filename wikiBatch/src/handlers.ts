@@ -91,15 +91,6 @@ export function handleProcessingViewButtons(btnId: string): void {
     }
 
     switch (btnId) {
-        case 'process-cancel': {
-            state.processing = false;
-            state.paused = true;
-            resetProcessingState();
-            switchToSetupView();
-            hideProgressBar();
-            break;
-        }
-
         case 'process-confirm-update': {
             const finalWcode = (document.getElementById('static-wcode-input') as HTMLTextAreaElement).value;
 
