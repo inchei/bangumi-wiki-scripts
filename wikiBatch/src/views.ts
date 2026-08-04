@@ -72,7 +72,7 @@ export function switchToSetupView(): void {
                             </div>
                             <p class="formhash-hint">
                                 如何获取formhash：<br>
-                                1. 打开条目编辑页面（如 <a href="https://bgm.tv/subject/354667/edit_detail">https://bgm.tv/subject/354667/edit_detail</a>）<br>
+                                1. 打开条目编辑页面（如 <a href="https://bgm.tv/subject/354667/edit_detail" target="_blank">https://bgm.tv/subject/354667/edit_detail</a>）<br>
                                 2. 在浏览器控制台执行：<code>document.querySelector('[name=formhash]').value</code><br>
                                 3. 将返回的值复制到上方输入框<br>
                                 <strong>自动获取</strong>：通过后台请求编辑页面自动提取 formhash（需已登录）

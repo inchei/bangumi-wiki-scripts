@@ -184,6 +184,24 @@ async function readGist(gistId: string): Promise<string> {
   const result = await resp.json()
   const file = result.files?.[GIST_FILE]
   if (!file) throw new Error('Gist 中未找到同步数据')
+
+  console.log('[wikiBatch] gist read:', {
+    size: file.size,
+    truncated: file.truncated,
+    hasContent: typeof file.content === 'string',
+  })
+
+  if (file.truncated && file.raw_url) {
+    console.log('[wikiBatch] gist content truncated, fetching raw_url...')
+    const rawResp = await GM_fetch(file.raw_url, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    })
+    if (!rawResp.ok) throw new Error(`读取原始文件失败: HTTP ${rawResp.status}`)
+    const raw = await rawResp.text()
+    console.log('[wikiBatch] gist raw content length:', raw.length)
+    return raw
+  }
+
   return file.content
 }
 
@@ -214,7 +232,15 @@ export async function downloadFromGist(): Promise<void> {
   }
 
   const content = await readGist(gistId)
-  const data: SyncData = JSON.parse(content)
+  console.log('[wikiBatch] parsed content length:', content.length)
+  let data: SyncData
+  try {
+    data = JSON.parse(content)
+  } catch (e) {
+    console.error('[wikiBatch] JSON.parse failed, content head:', content.slice(0, 200))
+    console.error('[wikiBatch] JSON.parse failed, content tail:', content.slice(-200))
+    throw new Error('同步数据解析失败', { cause: e })
+  }
   applySyncData(data)
 }
 
