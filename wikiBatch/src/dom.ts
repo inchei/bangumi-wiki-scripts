@@ -126,7 +126,7 @@ export function createStaticDOM(): void {
     container.innerHTML = `
         <div id="bgm-tool-header">
             <div id="bgm-tool-header-logo">
-                <div id="bgm-tool-logo-sprite" style="background: url(${spriteDataUrl}) no-repeat; background-size: 280px 75px; background-position: ${-logoCol * 40}px 0;"></div>
+                <div id="bgm-tool-logo-sprite" style="background-image: url(${spriteDataUrl}); background-position: ${-logoCol * spriteW}px 0;"></div>
                 <span>批量更新</span>
             </div>
             <span class="header-spacer"></span>
@@ -153,8 +153,8 @@ export function createStaticDOM(): void {
                     <div class="last-update-info" id="static-last-update"></div>
                     <div class="commit-message-area" id="static-commit-area">
                         <label for="static-commit-input">编辑摘要</label>
-                        <div style="display: flex; align-items: center; gap: 8px;">
-                            <input type="text" id="static-commit-input" placeholder="请输入编辑摘要" style="flex-grow: 1;">
+                        <div class="row-flex">
+                            <input type="text" id="static-commit-input" placeholder="请输入编辑摘要">
                             <button id="static-lock-commit" class="secondary" title="${state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要'}">
                                 <i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>
                             </button>
@@ -193,7 +193,7 @@ export function createStaticDOM(): void {
                             <label for="static-series-checkbox">标记为系列</label>
                         </div>
                     </div>
-                    <div id="diff-error" style="color: #a72e2e; font-size: 14px; margin-top: 8px; display: none;"></div>
+                    <div id="diff-error"></div>
                     <div id="status-container" class="status-box"></div>
                 </div>
             </div>

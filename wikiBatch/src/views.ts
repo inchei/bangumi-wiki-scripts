@@ -66,8 +66,8 @@ export function switchToSetupView(): void {
 
                         <div id="post-method-options" class="form-group ${state.submitMethod === 'post' ? '' : 'hidden'}">
                             <label for="setup-formhash">Formhash</label>
-                            <div style="display:flex;gap:8px">
-                                <input type="text" id="setup-formhash" value="${state.formhash}" style="flex:1">
+                            <div class="row-flex">
+                                <input type="text" id="setup-formhash" value="${state.formhash}">
                                 <button type="button" class="secondary" id="setup-fetch-formhash"><i class="fas fa-magic"></i> 自动获取</button>
                             </div>
                             <p class="formhash-hint">
@@ -117,15 +117,15 @@ export function switchToSetupView(): void {
                                 <div class="progress-bar" style="width: ${(state.currentIndex / state.csvData.length) * 100}%"></div>
                             </div>
                             <div class="progress-info">上次进度: ${state.currentIndex}/${state.csvData.length}</div>
-                            <button id="setup-reset-progress" class="secondary" style="margin-top: 10px;">重置进度</button>
+                            <button id="setup-reset-progress" class="secondary setup-reset-btn">重置进度</button>
                         </div>
                         ` : ''}
                     </div>
                 </div>
-                <div class="sync-section" style="margin-top:20px;border-top:1px solid var(--border-color);padding-top:16px">
+                <div class="sync-section">
                     <h3 class="section-title">跨设备同步</h3>
-                    <div id="sync-status" style="font-size:13px;color:var(--text-secondary);margin-bottom:8px">未同步</div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <div class="sync-status" id="sync-status">未同步</div>
+                    <div class="row-flex">
                         <button type="button" class="secondary" id="sync-auth-btn">
                             <i class="fab fa-github"></i> 授权 GitHub
                         </button>
@@ -141,8 +141,8 @@ export function switchToSetupView(): void {
                     </div>
 
                 </div>
-                <div style="margin-top:20px;border-top:1px solid var(--border-color);padding-top:14px;text-align:center">
-                    <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/wikiBatch" target="_blank" style="color:var(--text-secondary);font-size:13px;text-decoration:none">
+                <div class="setup-footer">
+                    <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/wikiBatch" target="_blank">
                         <i class="fab fa-github"></i> GitHub
                     </a>
                 </div>

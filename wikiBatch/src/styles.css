@@ -99,6 +99,8 @@
     height: 50px;
     border-radius: 6px;
     flex-shrink: 0;
+    background-repeat: no-repeat;
+    background-size: 280px 75px;
 }
 
 .header-spacer {
@@ -109,6 +111,7 @@
     display: flex;
     gap: 20px;
     margin-left: auto;
+    flex-wrap: wrap;
 }
 
 /* Reuse bgq button classes in the header (mirrors bgq .header .btn overrides) */
@@ -297,6 +300,18 @@
     cursor: not-allowed;
 }
 
+/* ===== Layout Helpers ===== */
+.row-flex {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.row-flex > .grow {
+    flex: 1;
+}
+
 /* ===== Form Controls ===== */
 #bgm-tool-container .form-group {
     margin-bottom: 20px;
@@ -344,6 +359,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    flex-wrap: wrap;
 }
 
 .file-upload-input {
@@ -417,6 +433,10 @@
     font-size: 13px;
 }
 
+.setup-reset-btn {
+    margin-top: 10px;
+}
+
 /* ===== Diff Containers ===== */
 .diff-container {
     overflow: hidden;
@@ -449,6 +469,14 @@
     font-weight: 400;
     font-size: 13px;
     color: var(--text);
+}
+
+/* ===== Diff Error ===== */
+#diff-error {
+    color: #a72e2e;
+    font-size: 14px;
+    margin-top: 8px;
+    display: none;
 }
 
 /* ===== Logs ===== */
@@ -509,15 +537,20 @@
 }
 
 .buttons-container {
-    padding: 16px 36px;
+    padding: 16px 24px;
     background: var(--white);
     border-top: 1px solid var(--border-light);
     display: flex;
     justify-content: flex-end;
     gap: 8px;
+    flex-wrap: wrap;
     box-sizing: border-box;
     flex-shrink: 0;
     width: 100%;
+}
+
+@media (width < 640px) {
+    .buttons-container { padding: 16px; }
 }
 
 #edit-regions {
@@ -681,7 +714,7 @@
 
 #static-series-area {
     display: flex;
-    flex-direction: row;
+    flex-flow: row wrap;
     align-items: center;
     gap: 8px;
 }
@@ -764,6 +797,13 @@
     background: var(--white);
     transition: var(--transition);
     box-sizing: border-box;
+    flex: 1;
+}
+
+#static-commit-input,
+#setup-formhash {
+    flex: 1;
+    min-width: 0;
 }
 
 .commit-message-area input:focus {
@@ -804,6 +844,32 @@
     padding-bottom: 8px;
     border-bottom: 1px solid var(--border-light);
     color: var(--text);
+}
+
+/* ===== Setup Sync & Footer ===== */
+.sync-section {
+    margin-top: 20px;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+}
+
+.sync-status {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.setup-footer {
+    margin-top: 20px;
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+    text-align: center;
+}
+
+.setup-footer a {
+    color: var(--text-secondary);
+    font-size: 13px;
+    text-decoration: none;
 }
 
 .item-info {
@@ -916,6 +982,7 @@
     display: flex;
     align-items: center;
     gap: 6px;
+    flex-wrap: wrap;
 }
 
 .method-option-group input[type="radio"] {
