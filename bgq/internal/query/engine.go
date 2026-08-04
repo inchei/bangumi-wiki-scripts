@@ -18,6 +18,11 @@ import (
 // DuckDBPath is the path to the DuckDB CLI binary.
 var DuckDBPath = "duckdb"
 
+// execSem limits the number of concurrent DuckDB subprocesses to protect the
+// server from unbounded concurrency (each query spawns a heavy DuckDB CLI
+// process against a multi-GB database).
+var execSem = make(chan struct{}, 4)
+
 // SetDuckDBPath allows setting the DuckDB binary path.
 func SetDuckDBPath(path string) {
 	DuckDBPath = path
@@ -100,14 +105,23 @@ func (e *Engine) executeSQL(ctx context.Context, sql string) (*QueryResult, erro
 	// Build DuckDB CLI command — use CSV mode (preserves column order, handles empty results)
 	args := []string{"-csv", "-f", tmpPath}
 
-	// If a persistent database exists, use it
+	// If a persistent database exists, use it in read-only mode so a query can
+	// never modify the underlying database file.
 	if e.dbPath != "" {
-		args = append([]string{e.dbPath}, args...)
+		args = append([]string{"-readonly", e.dbPath}, args...)
 	}
 
 	var stderr bytes.Buffer
 	cmd := exec.CommandContext(ctx, DuckDBPath, args...)
 	cmd.Stderr = &stderr
+
+	// Acquire a concurrency slot, aborting promptly if the context is cancelled.
+	select {
+	case execSem <- struct{}{}:
+		defer func() { <-execSem }()
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
 
 	output, err := cmd.Output()
 	if err != nil {

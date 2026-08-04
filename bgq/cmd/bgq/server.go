@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -127,12 +128,17 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string) {
 
 func corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
+		if origin := r.Header.Get("Origin"); origin != "" {
+			if isAllowedOrigin(origin) {
+				w.Header().Set("Access-Control-Allow-Origin", origin)
+				w.Header().Add("Vary", "Origin")
+				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+				w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Accept")
+			}
+			if r.Method == "OPTIONS" {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 		}
 		next.ServeHTTP(w, r)
 	})
@@ -143,6 +149,9 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusMethodNotAllowed, apiError{Error: "只支持POST请求"})
 		return
 	}
+
+	// Bound the request body to prevent memory exhaustion from oversized payloads.
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<20)
 
 	var req apiQueryRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -200,6 +209,9 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 	if cfg.Limit <= 0 {
 		cfg.Limit = 1000
 	}
+	if cfg.Limit > 10000 {
+		cfg.Limit = 10000
+	}
 
 	// Use database if configured
 	if s.dbPath != "" && cfg.Database == "" {
@@ -213,8 +225,10 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 		cfg.Output.Format = req.Format
 	}
 
-	// Execute query
-	ctx := r.Context()
+	// Execute query, bounding run time so a pathological query cannot pin
+	// the DuckDB subprocess indefinitely.
+	ctx, cancel := context.WithTimeout(r.Context(), 60*time.Second)
+	defer cancel()
 	engine := query.NewEngine(s.dbPath, s.dataDir)
 	result, err := engine.Execute(ctx, cfg)
 	if err != nil {
@@ -248,27 +262,10 @@ func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleDebug(w http.ResponseWriter, r *http.Request) {
-	absDataDir := s.dataDir
-	if !strings.HasPrefix(s.dataDir, "/") {
-		if cwd, err := os.Getwd(); err == nil {
-			absDataDir = filepath.Join(cwd, s.dataDir)
-		}
-	}
-	dataDirExists := false
-	if info, err := os.Stat(absDataDir); err == nil && info.IsDir() {
-		dataDirExists = true
-	}
-
-	files := s.listDataFiles()
-
-	resp := map[string]interface{}{
-		"duckdb_path":     query.GetDuckDBPath(),
+	resp := map[string]bool{
 		"duckdb_exists":   fileExists(query.GetDuckDBPath()),
-		"db_path":         s.dbPath,
-		"data_dir":        absDataDir,
-		"data_dir_exists": dataDirExists,
-		"data_files":      files,
-		"cwd":             getCWD(),
+		"db_exists":       fileExists(s.dbPath),
+		"data_dir_exists": fileExists(s.dataDir),
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -276,14 +273,6 @@ func (s *server) handleDebug(w http.ResponseWriter, r *http.Request) {
 func fileExists(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil
-}
-
-func getCWD() string {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return err.Error()
-	}
-	return cwd
 }
 
 func (s *server) handleStatic(w http.ResponseWriter, r *http.Request) {
@@ -308,28 +297,6 @@ func (s *server) inferBaseURL(r *http.Request) string {
 	return scheme + "://" + r.Host
 }
 
-func (s *server) listDataFiles() []map[string]string {
-	var files []map[string]string
-	entries, err := os.ReadDir(s.dataDir)
-	if err != nil {
-		return files
-	}
-	for _, entry := range entries {
-		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".jsonlines") {
-			info, err := entry.Info()
-			if err != nil {
-				continue
-			}
-			files = append(files, map[string]string{
-				"name": entry.Name(),
-				"size": fmt.Sprintf("%.1f MB", float64(info.Size())/(1024*1024)),
-			})
-		}
-	}
-	return files
-}
-
-// writeJSON writes a JSON response.
 func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)

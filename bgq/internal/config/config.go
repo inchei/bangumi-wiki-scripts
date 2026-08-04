@@ -8,6 +8,14 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	// maxFilterCount caps the total number of filter nodes in a query to bound
+	// SQL generation and execution cost.
+	maxFilterCount = 500
+	// maxFilterDepth caps filter nesting depth to prevent pathological recursion.
+	maxFilterDepth = 10
+)
+
 // Config is the top-level YAML configuration.
 type Config struct {
 	Database string     `yaml:"database,omitempty" json:"database,omitempty"`
@@ -439,11 +447,63 @@ func ParseYAML(data []byte) (*Config, error) {
 	return cfg, nil
 }
 
+// countFilterTree recursively counts filter nodes and the maximum nesting depth.
+// depth is the depth of the current node (top-level = 1).
+func countFilterTree(filters []Filter, depth int) (count int, maxDepth int) {
+	for _, f := range filters {
+		count++
+		if depth > maxDepth {
+			maxDepth = depth
+		}
+		childDepth := depth + 1
+		var nested [][]Filter
+		switch {
+		case f.Logic != nil:
+			nested = append(nested, f.Logic.Items)
+		case f.Relation != nil:
+			nested = append(nested, f.Relation.Conditions)
+		case f.PersonRelation != nil:
+			nested = append(nested, f.PersonRelation.Conditions)
+		case f.CharacterRelation != nil:
+			nested = append(nested, f.CharacterRelation.Conditions)
+		case f.Staff != nil:
+			nested = append(nested, f.Staff.Conditions)
+		case f.Character != nil:
+			nested = append(nested, f.Character.Conditions)
+		case f.PersonCharacter != nil:
+			nested = append(nested, f.PersonCharacter.Conditions, f.PersonCharacter.SubjectConditions)
+		case f.CharacterPerson != nil:
+			nested = append(nested, f.CharacterPerson.Conditions, f.CharacterPerson.SubjectConditions)
+		case f.Episode != nil:
+			if f.Episode.Logic != nil {
+				nested = append(nested, f.Episode.Logic.Items)
+			}
+		}
+		for _, ns := range nested {
+			c, m := countFilterTree(ns, childDepth)
+			count += c
+			if m > maxDepth {
+				maxDepth = m
+			}
+		}
+	}
+	return count, maxDepth
+}
+
 // Validate checks the configuration for errors.
 func (c *Config) Validate() error {
 	// data_dir/database will be provided via CLI if not in config
 	if len(c.Filters) == 0 {
 		return fmt.Errorf("至少需要一个筛选条件 (filters)")
+	}
+
+	// Bound filter tree size to prevent pathological query generation.
+	count, maxDepth := countFilterTree(c.Filters, 1)
+	if count > maxFilterCount {
+		return fmt.Errorf("筛选条件总数 %d 超过上限 %d", count, maxFilterCount)
+	}
+	if maxDepth > maxFilterDepth {
+		return fmt.Errorf("筛选嵌套深度 %d 超过上限 %d", maxDepth, maxFilterDepth)
 	}
 
 	for i, f := range c.Filters {

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"regexp"
 	"sort"
 	"strconv"
@@ -232,6 +233,24 @@ func indentSeriesFilter(hasSeries bool) string {
 
 var allowedHosts = []string{"bgm.tv", "bangumi.tv", "chii.in", "bgmmi.anibt.net", "bangumi.lol"}
 
+// isAllowedOrigin reports whether an Origin/Referer header value is from one of
+// the known Bangumi hosts (or a subdomain thereof). Host parsing prevents the
+// previous HasSuffix matching from accepting lookalike domains such as
+// "evilbgm.tv".
+func isAllowedOrigin(origin string) bool {
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	for _, h := range allowedHosts {
+		if host == h || strings.HasSuffix(host, "."+h) {
+			return true
+		}
+	}
+	return false
+}
+
 func allowedReferrer(r *http.Request) bool {
 	src := r.Header.Get("Origin")
 	if src == "" {
@@ -240,12 +259,7 @@ func allowedReferrer(r *http.Request) bool {
 	if src == "" {
 		return true // direct access (new tab, curl without referrer)
 	}
-	for _, h := range allowedHosts {
-		if strings.HasSuffix(src, h) {
-			return true
-		}
-	}
-	return false
+	return isAllowedOrigin(src)
 }
 
 func sortedKeys(m map[int]string) []int {
