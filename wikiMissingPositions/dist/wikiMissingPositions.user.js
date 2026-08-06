@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.2.0
+// @version      0.2.1
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -1435,8 +1435,8 @@ document.head.appendChild(styleEl);
   }
   async function initPersonNewPage() {
     const params = new URLSearchParams(location.search);
-    let raw = localStorage.getItem("bgm-mp-pending");
-    if (!raw && params.has("bgm_mp") && window.opener) {
+    let raw = null;
+    if (params.has("bgm_mp") && window.opener) {
       raw = await new Promise((resolve) => {
         const timer = setTimeout(() => resolve(null), 3e3);
         const handler = (e) => {
@@ -1449,6 +1449,9 @@ document.head.appendChild(styleEl);
         window.addEventListener("message", handler);
         window.opener.postMessage({ type: "bgm_mp_request" }, "*");
       });
+    }
+    if (!raw) {
+      raw = localStorage.getItem("bgm-mp-pending");
     }
     if (!raw) {
       raw = window.name && window.name.startsWith("{") ? window.name : null;

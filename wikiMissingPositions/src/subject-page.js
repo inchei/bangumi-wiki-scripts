@@ -440,11 +440,9 @@ function renderResults(content, subjectsByType, episodesData, encodedName, perso
 export async function initPersonNewPage() {
   const params = new URLSearchParams(location.search);
 
-  // 1. localStorage
-  let raw = localStorage.getItem('bgm-mp-pending');
-
-  // 2. If bgm_mp param present, try postMessage from opener (HTML page)
-  if (!raw && params.has('bgm_mp') && window.opener) {
+  // bgm_mp 参数存在时优先从 opener 的 HTML 页面获取最新 pending（可能已刷新为新人物）
+  let raw = null;
+  if (params.has('bgm_mp') && window.opener) {
     raw = await new Promise((resolve) => {
       const timer = setTimeout(() => resolve(null), 3000);
       const handler = (e) => {
@@ -459,7 +457,12 @@ export async function initPersonNewPage() {
     });
   }
 
-  // 3. Fallback to window.name
+  // Fallback to localStorage
+  if (!raw) {
+    raw = localStorage.getItem('bgm-mp-pending');
+  }
+
+  // Fallback to window.name
   if (!raw) {
     raw = window.name && window.name.startsWith('{') ? window.name : null;
   }
