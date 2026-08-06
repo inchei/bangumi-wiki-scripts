@@ -2,6 +2,11 @@ import { POSITION_IDS } from './position-ids.js';
 import { getProvider, getShow } from './api.js';
 import { genAppearEps } from './appear-eps.js';
 import { checkExistingPerson } from './person.js';
+import { BANGUMI_ERROR_TEXT, ourApiErrorText } from './errors.js';
+
+function errSection(html) {
+  return `<div class="staff-error-section">${html}</div>`;
+}
 
 const cacheKey = (name, t, target) => `mp:${name}:${t}:${target}`;
 
@@ -161,9 +166,10 @@ export function openSubjectPopup(personName, typeCode) {
     };
   };
 
+  const errs = { bangumi: false, ours: false };
+
   const doMultiFetch = (existing, targetParam) => {
     if (!_ready) return;
-
     const checked = [...popup.querySelectorAll('.bgm-mp-type-check:checked')].map((c) =>
       Number(c.value),
     );
@@ -187,7 +193,7 @@ export function openSubjectPopup(personName, typeCode) {
     }
 
     if (uncached.length === 0) {
-      renderResults(content, cached, null, encoded, personName);
+      renderResults(content, cached, null, encoded, personName, errs);
       return;
     }
 
@@ -195,7 +201,17 @@ export function openSubjectPopup(personName, typeCode) {
     _abortController = new AbortController();
     const sig = _abortController.signal;
     content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
-    fetchMultiType(personName, provider, sig, content, targetParam, uncached, cached, targetId);
+    fetchMultiType(
+      personName,
+      provider,
+      sig,
+      content,
+      targetParam,
+      uncached,
+      cached,
+      targetId,
+      errs,
+    );
   };
 
   popup.querySelectorAll('.bgm-mp-type-check').forEach((cb) => {
@@ -215,10 +231,15 @@ export function openSubjectPopup(personName, typeCode) {
     _targetParam = targetParam;
     _ready = true;
 
+    errs.bangumi = existing.bangumiError;
+    errs.ours = existing.aliasesError;
+
     const hasExisting = existing.aliased || existing.directMatches;
 
     if (hasExisting) {
       let warningHtml = '';
+      if (existing.bangumiError) warningHtml += errSection(BANGUMI_ERROR_TEXT);
+      if (existing.aliasesError) warningHtml += errSection(ourApiErrorText(personName));
       if (existing.aliased) {
         if (existing.aliasedMulti && existing.aliasedMulti.length > 1) {
           warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">别名为「${personName}」匹配到多个人物，已取第一个：</div>`;
@@ -260,6 +281,7 @@ async function fetchMultiType(
   types,
   cached,
   targetId,
+  errs,
 ) {
   const encodedName = encodeURIComponent(personName);
 
@@ -270,7 +292,13 @@ async function fetchMultiType(
     fetch(`${provider}/api/persons/${encodedName}/missing-subjects?type=${t}${targetParam}`, {
       signal,
     })
-      .then((res) => (res.ok ? res.json() : null))
+      .then((res) => {
+        if (!res.ok) {
+          errs.ours = true;
+          return null;
+        }
+        return res.json();
+      })
       .then((data) => {
         if (data && Object.keys(data).length) {
           sessionStorage.setItem(cacheKey(encodedName, t, targetId), JSON.stringify(data));
@@ -280,6 +308,7 @@ async function fetchMultiType(
       .catch((e) => {
         if (e.name === 'AbortError') throw e;
         console.error(`missing-subjects type=${t} failed:`, e);
+        errs.ours = true;
         return { type: t, data: null };
       }),
   );
@@ -304,15 +333,17 @@ async function fetchMultiType(
         { signal },
       );
       if (epRes.ok) episodesData = await epRes.json();
+      else errs.ours = true;
     } catch (e) {
       if (e.name === 'AbortError') return;
+      errs.ours = true;
     }
   }
 
-  renderResults(content, subjectsByType, episodesData, encodedName, personName);
+  renderResults(content, subjectsByType, episodesData, encodedName, personName, errs);
 }
 
-function renderResults(content, subjectsByType, episodesData, encodedName, personName) {
+function renderResults(content, subjectsByType, episodesData, encodedName, personName, errs) {
   const typeNamesFull = { 1: '书籍', 2: '动画', 3: '音乐', 4: '游戏', 6: '三次元' };
   const totalEntries = Object.values(subjectsByType).reduce((c, d) => c + Object.keys(d).length, 0);
   const hasData =
@@ -322,6 +353,10 @@ function renderResults(content, subjectsByType, episodesData, encodedName, perso
         Object.keys(episodesData.unmatched || {}).length));
 
   let html = '';
+
+  if (errs?.bangumi) html += errSection(BANGUMI_ERROR_TEXT);
+  // 已有可展示结果（含缓存）时，不提示土豆，避免与结果自相矛盾
+  if (!hasData && errs?.ours) html += errSection(ourApiErrorText(personName));
 
   if (totalEntries) {
     html += '<div class="bgm-mp-result-list">';
@@ -372,7 +407,7 @@ function renderResults(content, subjectsByType, episodesData, encodedName, perso
     }
   }
 
-  if (!hasData) {
+  if (!hasData && !errs?.bangumi && !errs?.ours) {
     html = '<div class="bgm-mp-empty-hint">未找到缺失关联</div>';
   }
 

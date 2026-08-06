@@ -2,8 +2,15 @@ import { POSITION_IDS } from './position-ids.js';
 import { getProvider } from './api.js';
 import { genAppearEps, parseAppearEps, sortAppearEps } from './appear-eps.js';
 import { showPendingEps } from './popup.js';
+import { ourApiErrorText } from './errors.js';
 
-let select, type, nameInput, epNameInput, epBtn, personId;
+let select, type, nameInput, epNameInput, epBtn, personId, statusBox;
+
+function setStatusBox(html) {
+  if (!statusBox) return;
+  statusBox.innerHTML = html || '';
+  statusBox.classList.toggle('show', Boolean(html));
+}
 
 export function addSubjectLi(sid, posId, name) {
   const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${sid}"])`);
@@ -54,7 +61,7 @@ export async function runEpisodeCheck() {
   const alias = epNameInput.value.trim();
   const queryName = alias || document.querySelector('.nameSingle').textContent.trim();
   epBtn.disabled = true;
-  epBtn.textContent = '获取中……';
+  setStatusBox('获取中……');
 
   const targetParam = await resolveTarget(alias);
 
@@ -66,7 +73,7 @@ export async function runEpisodeCheck() {
       Object.keys(pending.episodesData.unmatched || {}).length)
   ) {
     const none = await processEpisodesData(pending.episodesData, queryName);
-    epBtn.textContent = none ? '未查找到任何已填写剧集' : '剧集关联完成！';
+    setStatusBox(none ? '未查找到任何已填写剧集' : '剧集关联完成！');
     epBtn.disabled = false;
     return;
   }
@@ -77,10 +84,10 @@ export async function runEpisodeCheck() {
     const res = await fetch(url);
     const data = await res.json();
     const none = await processEpisodesData(data, queryName);
-    epBtn.textContent = none ? '未查找到任何已填写剧集' : '剧集关联完成！';
+    setStatusBox(none ? '未查找到任何已填写剧集' : '剧集关联完成！');
   } catch (e) {
     console.error(e);
-    epBtn.textContent = '获取失败，点击重试';
+    setStatusBox(ourApiErrorText(queryName));
   } finally {
     epBtn.disabled = false;
   }
@@ -152,14 +159,14 @@ export function initAddRelated() {
           }
         }
       }
-      btn.textContent = none ? '未查找到任何已填写条目' : '关联填写完成！';
+      setStatusBox(none ? '未查找到任何已填写条目' : '关联填写完成！');
       return;
     }
 
     const provider = getProvider();
     try {
       btn.disabled = true;
-      btn.textContent = '获取中……';
+      setStatusBox('获取中……');
       const alias = nameInput.value.trim();
       const targetParam = await resolveTarget(alias);
       const res = await fetch(
@@ -183,10 +190,10 @@ export function initAddRelated() {
           }
         }
       }
-      btn.textContent = none ? '未查找到任何已填写条目' : '关联填写完成！';
+      setStatusBox(none ? '未查找到任何已填写条目' : '关联填写完成！');
     } catch (e) {
       console.error(e);
-      btn.textContent = '获取失败，点击重试';
+      setStatusBox(ourApiErrorText(personName));
     } finally {
       btn.disabled = false;
     }
@@ -209,7 +216,9 @@ export function initAddRelated() {
   }
 
   group1.append(nameInput, select, btn);
-  container.append(group1, group2);
+  statusBox = document.createElement('div');
+  statusBox.className = 'bgm-mp-status-box';
+  container.append(group1, group2, statusBox);
   document.querySelector('#indexCatBox').after(container);
 
   processPendingData();

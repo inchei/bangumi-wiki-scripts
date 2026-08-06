@@ -517,6 +517,31 @@ html[data-theme='dark'] .bgm-mp-name-link {
   transform: translate(-50%, -50%);
 }
 
+.bgm-mp-status-box {
+  display: none;
+  padding: 8px 10px;
+  max-width: 320px;
+  background: #f5f7fa;
+  border: 1px solid #d9dee4;
+  border-radius: 6px;
+  color: #606266;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.bgm-mp-status-box.show {
+  display: block;
+}
+
+html[data-theme='dark'] .bgm-mp-status-box {
+  background: #252627;
+  border-color: #4a4b4c;
+  color: #b9b9b9;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
 ul.cat a.bgm-mp-has-remaining::before {
   content: '';
   display: inline-block;

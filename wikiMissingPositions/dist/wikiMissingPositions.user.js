@@ -554,6 +554,31 @@ html[data-theme='dark'] .bgm-mp-name-link {
   transform: translate(-50%, -50%);
 }
 
+.bgm-mp-status-box {
+  display: none;
+  padding: 8px 10px;
+  max-width: 320px;
+  background: #f5f7fa;
+  border: 1px solid #d9dee4;
+  border-radius: 6px;
+  color: #606266;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: break-word;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
+}
+
+.bgm-mp-status-box.show {
+  display: block;
+}
+
+html[data-theme='dark'] .bgm-mp-status-box {
+  background: #252627;
+  border-color: #4a4b4c;
+  color: #b9b9b9;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+
 ul.cat a.bgm-mp-has-remaining::before {
   content: '';
   display: inline-block;
@@ -973,14 +998,20 @@ document.head.appendChild(styleEl);
   }
 
   // src/search.js
+  var _searchError = false;
+  function lastSearchFailed() {
+    return _searchError;
+  }
   var createFetch = (method) => async (url, body) => {
     const options = method === "POST" ? { method, body: JSON.stringify(body) } : { method };
     try {
       const response = await fetch(url, options);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+      _searchError = false;
       return await response.json();
     } catch (e) {
       console.error(e);
+      _searchError = true;
       return null;
     }
   };
@@ -1002,7 +1033,13 @@ document.head.appendChild(styleEl);
 
   // src/person.js
   async function checkExistingPerson(personName) {
-    const result = { aliased: null, aliasedMulti: null, directMatches: null };
+    const result = {
+      aliased: null,
+      aliasedMulti: null,
+      directMatches: null,
+      bangumiError: false,
+      aliasesError: false
+    };
     const normalized = normalize(personName);
     try {
       let aliased = null;
@@ -1017,15 +1054,19 @@ document.head.appendChild(styleEl);
               result.aliasedMulti = data;
             }
           }
+        } else {
+          result.aliasesError = true;
         }
       } catch (e) {
         console.error("aliases API failed:", e);
+        result.aliasesError = true;
       }
       if (!aliased) {
         aliased = await window.personAliasQuery?.(personName);
       }
       if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
       const searchResults = await searchPrsnAll(personName);
+      result.bangumiError = lastSearchFailed();
       if (searchResults) {
         const matches = searchResults.filter((r) => normalized === normalize(r.name));
         if (matches.length) {
@@ -1041,7 +1082,17 @@ document.head.appendChild(styleEl);
     return result;
   }
 
+  // src/errors.js
+  var BANGUMI_ERROR_TEXT = '\u7F51\u7EDC\u51FA\u9519\u4E86\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u6216<a href="https://bgm-status.ry.mk" class="l" target="_blank">\u67E5\u770B\u73ED\u5A18\u60C5\u51B5</a>';
+  function ourApiErrorText(name) {
+    const q = encodeURIComponent(name || "");
+    return `\u7F51\u7EDC\u51FA\u9519\u4E86\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u6216<a href="https://inchei.github.io/bangumi-wiki-scripts/missing-persons/search.html?q=${q}" class="l" target="_blank">\u770B\u770B\u6709\u6CA1\u6709\u5DF2\u7ECF\u5B58\u50A8\u7684\u7ED3\u679C</a>`;
+  }
+
   // src/subject-page.js
+  function errSection(html) {
+    return `<div class="staff-error-section">${html}</div>`;
+  }
   var cacheKey = (name, t, target) => `mp:${name}:${t}:${target}`;
   var LOADING_MSGS = [
     "\u5750\u548C\u653E\u5BBD",
@@ -1163,6 +1214,7 @@ document.head.appendChild(styleEl);
         document.onmousemove = document.ontouchmove = null;
       };
     };
+    const errs = { bangumi: false, ours: false };
     const doMultiFetch = (existing2, targetParam) => {
       if (!_ready) return;
       const checked = [...popup.querySelectorAll(".bgm-mp-type-check:checked")].map(
@@ -1186,14 +1238,24 @@ document.head.appendChild(styleEl);
         }
       }
       if (uncached.length === 0) {
-        renderResults(content, cached, null, encoded, personName);
+        renderResults(content, cached, null, encoded, personName, errs);
         return;
       }
       _abortController.abort();
       _abortController = new AbortController();
       const sig = _abortController.signal;
       content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
-      fetchMultiType(personName, provider, sig, content, targetParam, uncached, cached, targetId);
+      fetchMultiType(
+        personName,
+        provider,
+        sig,
+        content,
+        targetParam,
+        uncached,
+        cached,
+        targetId,
+        errs
+      );
     };
     popup.querySelectorAll(".bgm-mp-type-check").forEach((cb) => {
       cb.addEventListener("change", () => doMultiFetch(_existing, _targetParam));
@@ -1207,9 +1269,13 @@ document.head.appendChild(styleEl);
       else if (existing2.directMatches) targetParam = `&target=${existing2.directMatches[0].id}`;
       _targetParam = targetParam;
       _ready = true;
+      errs.bangumi = existing2.bangumiError;
+      errs.ours = existing2.aliasesError;
       const hasExisting = existing2.aliased || existing2.directMatches;
       if (hasExisting) {
         let warningHtml = "";
+        if (existing2.bangumiError) warningHtml += errSection(BANGUMI_ERROR_TEXT);
+        if (existing2.aliasesError) warningHtml += errSection(ourApiErrorText(personName));
         if (existing2.aliased) {
           if (existing2.aliasedMulti && existing2.aliasedMulti.length > 1) {
             warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u5339\u914D\u5230\u591A\u4E2A\u4EBA\u7269\uFF0C\u5DF2\u53D6\u7B2C\u4E00\u4E2A\uFF1A</div>`;
@@ -1239,13 +1305,19 @@ document.head.appendChild(styleEl);
       }
     })();
   }
-  async function fetchMultiType(personName, provider, signal, content, targetParam, types, cached, targetId) {
+  async function fetchMultiType(personName, provider, signal, content, targetParam, types, cached, targetId, errs) {
     const encodedName = encodeURIComponent(personName);
     let subjectsByType = { ...cached }, episodesData = null;
     const fetches = types.map(
       (t) => fetch(`${provider}/api/persons/${encodedName}/missing-subjects?type=${t}${targetParam}`, {
         signal
-      }).then((res) => res.ok ? res.json() : null).then((data) => {
+      }).then((res) => {
+        if (!res.ok) {
+          errs.ours = true;
+          return null;
+        }
+        return res.json();
+      }).then((data) => {
         if (data && Object.keys(data).length) {
           sessionStorage.setItem(cacheKey(encodedName, t, targetId), JSON.stringify(data));
         }
@@ -1253,6 +1325,7 @@ document.head.appendChild(styleEl);
       }).catch((e) => {
         if (e.name === "AbortError") throw e;
         console.error(`missing-subjects type=${t} failed:`, e);
+        errs.ours = true;
         return { type: t, data: null };
       })
     );
@@ -1275,17 +1348,21 @@ document.head.appendChild(styleEl);
           { signal }
         );
         if (epRes.ok) episodesData = await epRes.json();
+        else errs.ours = true;
       } catch (e) {
         if (e.name === "AbortError") return;
+        errs.ours = true;
       }
     }
-    renderResults(content, subjectsByType, episodesData, encodedName, personName);
+    renderResults(content, subjectsByType, episodesData, encodedName, personName, errs);
   }
-  function renderResults(content, subjectsByType, episodesData, encodedName, personName) {
+  function renderResults(content, subjectsByType, episodesData, encodedName, personName, errs) {
     const typeNamesFull = { 1: "\u4E66\u7C4D", 2: "\u52A8\u753B", 3: "\u97F3\u4E50", 4: "\u6E38\u620F", 6: "\u4E09\u6B21\u5143" };
     const totalEntries = Object.values(subjectsByType).reduce((c, d) => c + Object.keys(d).length, 0);
     const hasData = totalEntries || episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length);
     let html = "";
+    if (errs?.bangumi) html += errSection(BANGUMI_ERROR_TEXT);
+    if (!hasData && errs?.ours) html += errSection(ourApiErrorText(personName));
     if (totalEntries) {
       html += '<div class="bgm-mp-result-list">';
       html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u6761\u76EE\u5173\u8054\uFF1A</div>';
@@ -1326,7 +1403,7 @@ document.head.appendChild(styleEl);
         html += "</div>";
       }
     }
-    if (!hasData) {
+    if (!hasData && !errs?.bangumi && !errs?.ours) {
       html = '<div class="bgm-mp-empty-hint">\u672A\u627E\u5230\u7F3A\u5931\u5173\u8054</div>';
     }
     html += `<div class="bgm-mp-popup-actions">
@@ -1546,6 +1623,12 @@ document.head.appendChild(styleEl);
   var epNameInput;
   var epBtn;
   var personId;
+  var statusBox;
+  function setStatusBox(html) {
+    if (!statusBox) return;
+    statusBox.innerHTML = html || "";
+    statusBox.classList.toggle("show", Boolean(html));
+  }
   function addSubjectLi(sid, posId, name) {
     const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${sid}"])`);
     if (existing?.querySelector('select[name$="[prsnPos]"]')?.value === posId) return existing;
@@ -1589,12 +1672,12 @@ document.head.appendChild(styleEl);
     const alias = epNameInput.value.trim();
     const queryName = alias || document.querySelector(".nameSingle").textContent.trim();
     epBtn.disabled = true;
-    epBtn.textContent = "\u83B7\u53D6\u4E2D\u2026\u2026";
+    setStatusBox("\u83B7\u53D6\u4E2D\u2026\u2026");
     const targetParam = await resolveTarget(alias);
     const pending = getPendingData();
     if (pending && pending.episodesData && (Object.keys(pending.episodesData.matched || {}).length || Object.keys(pending.episodesData.unmatched || {}).length)) {
       const none = await processEpisodesData(pending.episodesData, queryName);
-      epBtn.textContent = none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u5267\u96C6" : "\u5267\u96C6\u5173\u8054\u5B8C\u6210\uFF01";
+      setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u5267\u96C6" : "\u5267\u96C6\u5173\u8054\u5B8C\u6210\uFF01");
       epBtn.disabled = false;
       return;
     }
@@ -1604,10 +1687,10 @@ document.head.appendChild(styleEl);
       const res = await fetch(url);
       const data = await res.json();
       const none = await processEpisodesData(data, queryName);
-      epBtn.textContent = none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u5267\u96C6" : "\u5267\u96C6\u5173\u8054\u5B8C\u6210\uFF01";
+      setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u5267\u96C6" : "\u5267\u96C6\u5173\u8054\u5B8C\u6210\uFF01");
     } catch (e) {
       console.error(e);
-      epBtn.textContent = "\u83B7\u53D6\u5931\u8D25\uFF0C\u70B9\u51FB\u91CD\u8BD5";
+      setStatusBox(ourApiErrorText(queryName));
     } finally {
       epBtn.disabled = false;
     }
@@ -1668,13 +1751,13 @@ document.head.appendChild(styleEl);
             }
           }
         }
-        btn.textContent = none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u586B\u5199\u5B8C\u6210\uFF01";
+        setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u586B\u5199\u5B8C\u6210\uFF01");
         return;
       }
       const provider = getProvider();
       try {
         btn.disabled = true;
-        btn.textContent = "\u83B7\u53D6\u4E2D\u2026\u2026";
+        setStatusBox("\u83B7\u53D6\u4E2D\u2026\u2026");
         const alias = nameInput.value.trim();
         const targetParam = await resolveTarget(alias);
         const res = await fetch(
@@ -1698,10 +1781,10 @@ document.head.appendChild(styleEl);
             }
           }
         }
-        btn.textContent = none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u586B\u5199\u5B8C\u6210\uFF01";
+        setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u586B\u5199\u5B8C\u6210\uFF01");
       } catch (e) {
         console.error(e);
-        btn.textContent = "\u83B7\u53D6\u5931\u8D25\uFF0C\u70B9\u51FB\u91CD\u8BD5";
+        setStatusBox(ourApiErrorText(personName));
       } finally {
         btn.disabled = false;
       }
@@ -1721,7 +1804,9 @@ document.head.appendChild(styleEl);
       group2.append(epNameInput, epBtn);
     }
     group1.append(nameInput, select, btn);
-    container.append(group1, group2);
+    statusBox = document.createElement("div");
+    statusBox.className = "bgm-mp-status-box";
+    container.append(group1, group2, statusBox);
     document.querySelector("#indexCatBox").after(container);
     processPendingData();
   }

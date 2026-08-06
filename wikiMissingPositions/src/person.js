@@ -1,8 +1,14 @@
-import { searchPrsnAll, normalize } from './search.js';
+import { searchPrsnAll, normalize, lastSearchFailed } from './search.js';
 import { getProvider } from './api.js';
 
 export async function checkExistingPerson(personName) {
-  const result = { aliased: null, aliasedMulti: null, directMatches: null };
+  const result = {
+    aliased: null,
+    aliasedMulti: null,
+    directMatches: null,
+    bangumiError: false,
+    aliasesError: false,
+  };
   const normalized = normalize(personName);
   try {
     let aliased = null;
@@ -17,9 +23,12 @@ export async function checkExistingPerson(personName) {
             result.aliasedMulti = data;
           }
         }
+      } else {
+        result.aliasesError = true;
       }
     } catch (e) {
       console.error('aliases API failed:', e);
+      result.aliasesError = true;
     }
     if (!aliased) {
       aliased = await window.personAliasQuery?.(personName);
@@ -27,6 +36,7 @@ export async function checkExistingPerson(personName) {
     if (aliased) result.aliased = { name: aliased.name, id: aliased.id };
 
     const searchResults = await searchPrsnAll(personName);
+    result.bangumiError = lastSearchFailed();
     if (searchResults) {
       const matches = searchResults.filter((r) => normalized === normalize(r.name));
       if (matches.length) {

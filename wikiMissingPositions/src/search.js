@@ -1,11 +1,19 @@
+let _searchError = false;
+
+export function lastSearchFailed() {
+  return _searchError;
+}
+
 const createFetch = (method) => async (url, body) => {
   const options = method === 'POST' ? { method, body: JSON.stringify(body) } : { method };
   try {
     const response = await fetch(url, options);
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    _searchError = false;
     return await response.json();
   } catch (e) {
     console.error(e);
+    _searchError = true;
     return null;
   }
 };
