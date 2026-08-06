@@ -962,7 +962,6 @@ type typePageTplData struct {
 	PosTable    template.JS
 	Persons     []personTplData
 	PageKind    string
-	AllowCreate bool
 }
 
 func writeIndexHTML(outputDir string, subjCount, totalMissing, totalRelated, totalBare, totalVariant int, missingLinks, relatedLinks, bareLinks, variantLinks []typeLinkTplData) error {
@@ -1115,7 +1114,6 @@ func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRela
 		PosTable:    posTableJS(),
 		Persons:     persons,
 		PageKind:    suffix,
-		AllowCreate: suffix != "variant",
 	})
 }
 

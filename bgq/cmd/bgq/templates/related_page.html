@@ -22,7 +22,7 @@
       <a class="relate-link" href="https://bgm.tv/person/{{.FirstPersonID}}" target="_blank">查看{{if .FromAlias}}（别名）{{end}}</a>
       <a class="btn-relate" href="#relate-{{.Idx}}" data-idx="{{.Idx}}" data-name="{{.Name}}">关联</a>
     </span>
-    {{if $.AllowCreate}}<a class="btn-create" href="#create-{{.Idx}}" data-idx="{{.Idx}}" data-name="{{.Name}}" data-force="1">创建</a>{{end}}
+    <a class="btn-create" href="#create-{{.Idx}}" data-idx="{{.Idx}}" data-name="{{.Name}}" data-force="1">创建</a>
   </summary>
 </details>
 {{else}}<p>暂无</p>{{end}}
