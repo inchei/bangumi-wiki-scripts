@@ -41,13 +41,13 @@ html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row label {
   color: #9a9a9a;
 }
 
-html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input {
+html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text'] {
   border-color: #404040;
   color: #dcdcdc;
   background: #2d2e2f;
 }
 
-html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input:focus {
+html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text']:focus {
   border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 25%);
 }
@@ -89,6 +89,10 @@ html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input:focus {
 
 html[data-theme='dark'] .bgm-mp-toggle {
   background: #404040;
+}
+
+html[data-theme='dark'] .bgm-mp-toggle:checked {
+  background: var(--primary-color, #f09199);
 }
 
 html[data-theme='dark'] .bgm-mp-toggle::after {

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.1.10
+// @version      0.2.0
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -78,13 +78,13 @@ html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row label {
   color: #9a9a9a;
 }
 
-html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input {
+html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text'] {
   border-color: #404040;
   color: #dcdcdc;
   background: #2d2e2f;
 }
 
-html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input:focus {
+html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text']:focus {
   border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 25%);
 }
@@ -126,6 +126,10 @@ html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input:focus {
 
 html[data-theme='dark'] .bgm-mp-toggle {
   background: #404040;
+}
+
+html[data-theme='dark'] .bgm-mp-toggle:checked {
+  background: var(--primary-color, #f09199);
 }
 
 html[data-theme='dark'] .bgm-mp-toggle::after {
