@@ -141,6 +141,44 @@ h1 {
   margin: 0.5em 0;
 }
 
+.person-search {
+  display: flex;
+  align-items: center;
+  gap: 0.4em;
+  margin: 0 0 1em;
+}
+
+.person-search input {
+  flex: 0 1 280px;
+  padding: 0.3em 0.6em;
+  font-size: 1em;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+}
+
+.person-search .person-search-count {
+  font-size: 0.85em;
+  color: #888;
+}
+
+.person-search-results {
+  margin: 0 0 1em;
+}
+
+.search-result {
+  font-size: 0.95em;
+  margin: 0.15em 0;
+}
+
+.search-result .name-link {
+  font-size: 1em;
+}
+
+.search-result .count {
+  color: #888;
+  font-size: 0.85em;
+}
+
 .section-note {
   color: GrayText;
   font-weight: normal;
@@ -218,6 +256,26 @@ h1 {
   content: "→ ";
 }
 
+details.person.hl-target {
+  outline: 3px solid #ffd54d;
+  outline-offset: 2px;
+  background: #fff8e1;
+  border-radius: 4px;
+  transition: outline-color 0.8s ease, background 0.8s ease;
+}
+
+details.person.hl-target-done {
+  outline-color: transparent;
+  background: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  details.person.hl-target {
+    outline-color: #f9a825;
+    background: #3e2c00;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .btn-create {
     background: #1b5e20;
@@ -245,6 +303,14 @@ h1 {
     background: #333;
     color: CanvasText;
     border-color: #555;
+  }
+  .person-search input {
+    background: #333;
+    color: CanvasText;
+    border-color: #555;
+  }
+  .person-search .person-search-count {
+    color: #999;
   }
   .sr-found {
     background: #1b5e20;

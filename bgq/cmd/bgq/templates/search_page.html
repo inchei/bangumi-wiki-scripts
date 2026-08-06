@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>人物搜索</title>
+<style>{{.CSS}}</style>
+</head>
+<body>
+<div class="nav"><a href="index.html">&#x2190; 返回首页</a></div>
+<h1>人物搜索</h1>
+<p class="stats">在全部缺失/关联/变体同名的人物（共 {{.Total}} 人）中搜索，点击跳转到对应页面。</p>
+<div class="person-search">
+  <input id="person-search-input" type="search" placeholder="输入人物名搜索全部结果" autocomplete="off">
+  <button id="person-search-btn" type="button">搜索</button>
+  <span id="person-search-count" class="person-search-count"></span>
+</div>
+<div id="person-search-results" class="person-search-results"></div>
+<script>var _searchItems = {{.SearchItems}};</script>
+<script>
+(function() {
+  var input = document.getElementById('person-search-input');
+  var btn = document.getElementById('person-search-btn');
+  var results = document.getElementById('person-search-results');
+  var count = document.getElementById('person-search-count');
+  if (!input || !results) return;
+
+  var q = (new URLSearchParams(window.location.search).get('q') || '').trim();
+  if (q) input.value = q;
+
+  function rowMarkup(it) {
+    var href = it.href + '#:~:text=' + encodeURIComponent(it.displayName);
+    return '<div class="search-result"><a class="name-link" href="' + href + '" target="_blank">' + it.displayName + '</a></div>';
+  }
+
+  function render(query) {
+    var s = query.trim().toLowerCase();
+    results.innerHTML = '';
+    if (!s) {
+      count.textContent = '';
+      return;
+    }
+    var matched = [];
+    for (var i = 0; i < _searchItems.length; i++) {
+      if (_searchItems[i].displayName.toLowerCase().indexOf(s) !== -1) {
+        matched.push(_searchItems[i]);
+      }
+    }
+    count.textContent = '匹配 ' + matched.length + ' / ' + _searchItems.length + ' 人';
+    for (var j = 0; j < matched.length; j++) {
+      results.insertAdjacentHTML('beforeend', rowMarkup(matched[j]));
+    }
+  }
+
+  if (btn) btn.addEventListener('click', function() { render(input.value); });
+  input.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      render(input.value);
+    }
+  });
+
+  if (q) render(q);
+})();
+</script>
+</body>
+</html>

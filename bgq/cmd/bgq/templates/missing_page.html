@@ -16,7 +16,7 @@
 
 <h2 class="section-title">{{.PageKind}}中缺失的人物</h2>
 {{range .Persons}}<details class="person" data-idx="{{.Idx}}">
-  <summary>{{.Name}} <span class="count">({{.Count}})</span>
+  <summary><span class="name">{{.Name}}</span> <span class="count">({{.Count}})</span>
     <a class="btn-create" href="#create-{{.Idx}}" data-idx="{{.Idx}}" data-name="{{.Name}}">创建</a>
   </summary>
 </details>
@@ -25,5 +25,21 @@
 <script>{{.JS}}</script>
 <script>var _pendingData = {{.PendingData}};var _bgmMpPending = null;</script>
 <script>var _posNames = { {{.PosTable}} };var _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
+<script>
+(function() {
+  var hl = new URLSearchParams(location.search).get('hl');
+  if (!hl) return;
+  var spans = document.querySelectorAll('details.person .name');
+  for (var i = 0; i < spans.length; i++) {
+    if (spans[i].textContent === hl) {
+      var det = spans[i].closest('details.person');
+      det.classList.add('hl-target');
+      det.scrollIntoView({ block: 'center' });
+      setTimeout(function() { det.classList.add('hl-target-done'); }, 3000);
+      break;
+    }
+  }
+})();
+</script>
 </body>
 </html>

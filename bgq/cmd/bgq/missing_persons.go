@@ -694,12 +694,18 @@ func collectRelated(personSubjects map[string]*missingPerson, existing map[strin
 	return related
 }
 
+type subData struct {
+	Name      string `json:"name"`
+	Positions []int  `json:"positions"`
+	Type      int    `json:"_type"`
+}
+
+type idName struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
 func pendingJS(missing []*missingPerson) template.JS {
-	type subData struct {
-		Name      string `json:"name"`
-		Positions []int  `json:"positions"`
-		Type      int    `json:"_type"`
-	}
 	type pendPerson struct {
 		PersonName   string             `json:"personName"`
 		SubjectsData map[string]subData `json:"subjectsData"`
@@ -710,20 +716,8 @@ func pendingJS(missing []*missingPerson) template.JS {
 	for _, mp := range missing {
 		pp := pendPerson{
 			PersonName:   mp.DisplayName,
-			SubjectsData: make(map[string]subData, len(mp.Subjects)),
+			SubjectsData: subjectDataMap(mp.Subjects),
 			EpisodesData: nil,
-		}
-		for skey, si := range mp.Subjects {
-			posIDs := make([]int, 0, len(si.PosIDs))
-			for pid := range si.PosIDs {
-				posIDs = append(posIDs, pid)
-			}
-			sort.Ints(posIDs)
-			pp.SubjectsData[skey] = subData{
-				Name:      si.SubjectName,
-				Positions: posIDs,
-				Type:      si.SubjectType,
-			}
 		}
 		result = append(result, pp)
 	}
@@ -732,15 +726,6 @@ func pendingJS(missing []*missingPerson) template.JS {
 }
 
 func pendingRelatedJS(related []*missingRelatedPerson) template.JS {
-	type subData struct {
-		Name      string `json:"name"`
-		Positions []int  `json:"positions"`
-		Type      int    `json:"_type"`
-	}
-	type idName struct {
-		ID   int    `json:"id"`
-		Name string `json:"name"`
-	}
 	type relPerson struct {
 		PersonName       string             `json:"personName"`
 		SubjectsData     map[string]subData `json:"subjectsData"`
@@ -756,26 +741,31 @@ func pendingRelatedJS(related []*missingRelatedPerson) template.JS {
 		}
 		rp := relPerson{
 			PersonName:       mp.DisplayName,
-			SubjectsData:     make(map[string]subData, len(mp.Subjects)),
+			SubjectsData:     subjectDataMap(mp.Subjects),
 			EpisodesData:     nil,
 			RelatedPersonIDs: ids,
-		}
-		for skey, si := range mp.Subjects {
-			posIDs := make([]int, 0, len(si.PosIDs))
-			for pid := range si.PosIDs {
-				posIDs = append(posIDs, pid)
-			}
-			sort.Ints(posIDs)
-			rp.SubjectsData[skey] = subData{
-				Name:      si.SubjectName,
-				Positions: posIDs,
-				Type:      si.SubjectType,
-			}
 		}
 		result = append(result, rp)
 	}
 	b, _ := json.Marshal(result)
 	return template.JS(b)
+}
+
+func subjectDataMap(subjects map[string]*subjectInfo) map[string]subData {
+	m := make(map[string]subData, len(subjects))
+	for skey, si := range subjects {
+		posIDs := make([]int, 0, len(si.PosIDs))
+		for pid := range si.PosIDs {
+			posIDs = append(posIDs, pid)
+		}
+		sort.Ints(posIDs)
+		m[skey] = subData{
+			Name:      si.SubjectName,
+			Positions: posIDs,
+			Type:      si.SubjectType,
+		}
+	}
+	return m
 }
 
 func posTableJS() template.JS {
@@ -805,9 +795,13 @@ var missingPageHTML string
 //go:embed templates/related_page.html
 var relatedPageHTML string
 
+//go:embed templates/search_page.html
+var searchPageHTML string
+
 var indexTpl = template.Must(template.New("index").Parse(indexHTML))
 var missingPageTpl = template.Must(template.New("missing").Parse(missingPageHTML))
 var relatedPageTpl = template.Must(template.New("related").Parse(relatedPageHTML))
+var searchPageTpl = template.Must(template.New("search").Parse(searchPageHTML))
 
 func filterAlreadyLinked(ctx context.Context, dbPath string, related []*missingRelatedPerson, keepEmpty bool) ([]*missingRelatedPerson, error) {
 	if len(related) == 0 {
@@ -964,6 +958,48 @@ type typePageTplData struct {
 	PageKind    string
 }
 
+// searchItem is a single homepage-search row: one unique person with the link
+// to the first page they appear on. Each person is in exactly one category
+// (missing/related/variant/bare), so one href suffices. Only name + href are
+// embedded to keep search.html small.
+type searchItem struct {
+	DisplayName string `json:"displayName"`
+	Href        string `json:"href"`
+}
+
+func indexSearchJS(items []searchItem) template.JS {
+	b, _ := json.Marshal(items)
+	return template.JS(b)
+}
+
+// personFragmentHref appends a browser-native text fragment (#:~:text=<name>)
+// to a generated page href so the browser scrolls to and highlights the person
+// name after the link opens. Only the link changes — the target page needs no
+// support. Called at render time (search_page.html) so the embedded JSON stays
+// compact (href + name are not duplicated).
+func missingSearchItem(mp *missingPerson, href string) searchItem {
+	return searchItem{DisplayName: mp.DisplayName, Href: href}
+}
+
+func relatedSearchItem(rp *missingRelatedPerson, href string) searchItem {
+	return searchItem{DisplayName: rp.DisplayName, Href: href}
+}
+
+// mergeSearchItems dedupes homepage search entries by display name, keeping the
+// first page link per person.
+func mergeSearchItems(items []searchItem) []searchItem {
+	byName := make(map[string]bool)
+	out := make([]searchItem, 0, len(items))
+	for _, it := range items {
+		if byName[it.DisplayName] {
+			continue
+		}
+		byName[it.DisplayName] = true
+		out = append(out, it)
+	}
+	return out
+}
+
 func writeIndexHTML(outputDir string, subjCount, totalMissing, totalRelated, totalBare, totalVariant int, missingLinks, relatedLinks, bareLinks, variantLinks []typeLinkTplData) error {
 	f, err := os.Create(filepath.Join(outputDir, "index.html"))
 	if err != nil {
@@ -982,6 +1018,21 @@ func writeIndexHTML(outputDir string, subjCount, totalMissing, totalRelated, tot
 		"TypeLinks":     append(missingLinks, relatedLinks...),
 		"BareLinks":     bareLinks,
 		"VariantLinks":  variantLinks,
+	})
+}
+
+// writeSearchPage writes search.html — the standalone page that embeds the full
+// person index (the heavy data) so the homepage can stay light.
+func writeSearchPage(outputDir string, searchItems []searchItem) error {
+	f, err := os.Create(filepath.Join(outputDir, "search.html"))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = f.Close() }()
+	return searchPageTpl.Execute(f, map[string]interface{}{
+		"CSS":         template.CSS(pageCSS),
+		"SearchItems": indexSearchJS(searchItems),
+		"Total":       len(searchItems),
 	})
 }
 
@@ -1153,6 +1204,7 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 	}
 
 	var missingLinks, relatedLinks, bareLinks, variantLinks []typeLinkTplData
+	var searchItems []searchItem
 
 	// Missing persons pages
 	for _, t := range sortedTypesByCountLens(typeMissing) {
@@ -1183,6 +1235,9 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 			} else {
 				fname = fmt.Sprintf("type-%d-part-%d", t, partNum)
 			}
+			for _, mp := range chunk {
+				searchItems = append(searchItems, missingSearchItem(mp, fname+".html"))
+			}
 			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (缺失:%d)\n", tname, outputDir, fname, len(chunk))
 			label := "浏览"
 			if totalParts > 1 {
@@ -1194,20 +1249,20 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 	}
 
 	// Related persons pages
-	relatedLinks, err := buildRelatedTypeLinks(outputDir, typeRelated, "related", "关联缺失", "关联缺失")
+	relatedLinks, err := buildRelatedTypeLinks(outputDir, typeRelated, "related", "关联缺失", "关联缺失", &searchItems)
 	if err != nil {
 		return err
 	}
 
 	// No-relation (无关联) related persons pages
-	bareLinks, err = buildRelatedTypeLinks(outputDir, typeBare, "related-bare", "无关联", "无关联关联缺失")
+	bareLinks, err = buildRelatedTypeLinks(outputDir, typeBare, "related-bare", "无关联", "无关联关联缺失", &searchItems)
 	if err != nil {
 		return err
 	}
 
 	// Variant-spelling same-name (变体同名) pages — to-be-created persons whose
 	// variant-normalized name matches an existing person, listed at the end.
-	variantLinks, err = buildRelatedTypeLinks(outputDir, typeVariant, "variant", "变体同名", "变体同名")
+	variantLinks, err = buildRelatedTypeLinks(outputDir, typeVariant, "variant", "变体同名", "变体同名", &searchItems)
 	if err != nil {
 		return err
 	}
@@ -1216,14 +1271,17 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 	totalRelated := len(related)
 	totalBare := len(relatedBare)
 	totalVariant := len(variantDupes)
-	return writeIndexHTML(outputDir, subjCount, totalMissing, totalRelated, totalBare, totalVariant, missingLinks, relatedLinks, bareLinks, variantLinks)
+	if err := writeIndexHTML(outputDir, subjCount, totalMissing, totalRelated, totalBare, totalVariant, missingLinks, relatedLinks, bareLinks, variantLinks); err != nil {
+		return err
+	}
+	return writeSearchPage(outputDir, mergeSearchItems(searchItems))
 }
 
 // buildRelatedTypeLinks renders related-person pages (one per subject type,
 // chunked) and returns the per-type directory links. suffix is used in page
 // filenames (e.g. "related" → type-1-related.html), linkLabel is the text on
 // each type link, and logLabel is used in progress output.
-func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPerson, suffix, linkLabel, logLabel string) ([]typeLinkTplData, error) {
+func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPerson, suffix, linkLabel, logLabel string, searchItems *[]searchItem) ([]typeLinkTplData, error) {
 	var links []typeLinkTplData
 	for _, t := range sortedTypesByCountLens(typeMap) {
 		people := typeMap[t]
@@ -1252,6 +1310,9 @@ func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPe
 				fname = fmt.Sprintf("type-%d-%s", t, suffix)
 			} else {
 				fname = fmt.Sprintf("type-%d-%s-part-%d", t, suffix, partNum)
+			}
+			for _, rp := range chunk {
+				*searchItems = append(*searchItems, relatedSearchItem(rp, fname+".html"))
 			}
 			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (%s:%d)\n", tname, outputDir, fname, logLabel, len(chunk))
 			label := "浏览"
