@@ -12,9 +12,8 @@ output_dir = '_site'
 os.makedirs(output_dir, exist_ok=True)
 
 DARK_MODE = '''<style>
-:root{--b:#fff;--t:#222;--tb:#ccc;--th:#f5f5f5;--ra:#fafafa;--l:#06c;--m:#666}
-@media(prefers-color-scheme:dark){:root{--b:#121212;--t:#e0e0e0;--tb:#333;--th:#1e1e1e;--ra:#1a1a1a;--l:#7ec8e3;--m:#999}}
-body{background:var(--b);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:20px}a{color:var(--l)}table{border-collapse:collapse;width:100%}th,td{border:1px solid var(--tb);padding:8px;text-align:left;vertical-align:top}th{background:var(--th)}tr:nth-child(even){background:var(--ra)}
+:root{color-scheme:light dark}
+body{background:canvas;color:canvastext;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;margin:20px}a{color:linktext}table{border-collapse:collapse;width:100%}th,td{border:1px solid color-mix(in srgb,canvastext 25%,transparent);padding:8px;text-align:left;vertical-align:top}th{background:color-mix(in srgb,canvastext 12%,transparent)}tr:nth-child(even){background:color-mix(in srgb,canvastext 6%,transparent)}
 </style>'''
 
 
@@ -30,7 +29,8 @@ def filter_target(name):
 
 def page_wrap(title, body):
     return ['<!DOCTYPE html>',
-            '<html><head><meta charset="utf-8">',
+            '<html lang="zh"><head><meta charset="utf-8">',
+            '<meta name="viewport" content="width=device-width,initial-scale=1">',
             f'<title>{html.escape(title)}</title>',
             DARK_MODE,
             '</head><body>',

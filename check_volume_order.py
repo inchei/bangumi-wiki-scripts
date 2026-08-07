@@ -666,16 +666,15 @@ def check_single_volume_order(main_subjects, all_subjects, relations, single_vol
 
 
 DARK_MODE = '''<style>
-:root{--b:#fff;--t:#222;--tb:#ccc;--th:#f5f5f5;--ra:#fafafa;--l:#06c;--m:#666}
-:root.dark{--b:#121212;--t:#e0e0e0;--tb:#333;--th:#1e1e1e;--ra:#1a1a1a;--l:#7ec8e3;--m:#999}
-@media(prefers-color-scheme:dark){:root{--b:#121212;--t:#e0e0e0;--tb:#333;--th:#1e1e1e;--ra:#1a1a1a;--l:#7ec8e3;--m:#999}}
-body{background:var(--b);color:var(--t)}a{color:var(--l)}table{border-collapse:collapse;width:100%}th,td{border:1px solid var(--tb);padding:8px;text-align:left;vertical-align:top}th{background:var(--th)}tr:nth-child(even){background:var(--ra)}
+:root{color-scheme:light dark}
+body{background:canvas;color:canvastext}a{color:linktext}table{border-collapse:collapse;width:100%}th,td{border:1px solid color-mix(in srgb,canvastext 25%,transparent);padding:8px;text-align:left;vertical-align:top}th{background:color-mix(in srgb,canvastext 12%,transparent)}tr:nth-child(even){background:color-mix(in srgb,canvastext 6%,transparent)}
 </style>'''
 
 
 def generate_html_report(problematic_series):
     lines = ['<!DOCTYPE html>',
-             '<html><head><meta charset="utf-8">',
+             '<html lang="zh"><head><meta charset="utf-8">',
+             '<meta name="viewport" content="width=device-width,initial-scale=1">',
              '<title>单行本卷序检查结果</title>',
              DARK_MODE,
              '</head><body>',
@@ -706,7 +705,7 @@ def generate_html_report(problematic_series):
                      f'<td><a href="{html.escape(s["modify_url"])}" target="_blank">编辑关联</a></td>'
                      f'</tr>')
     lines.append('</tbody></table>')
-    lines.append(f'<p style="font-size:0.9em;color:var(--m)">生成时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>')
+    lines.append(f'<p style="font-size:0.9em;color:color-mix(in srgb,canvastext 60%,transparent)">生成时间: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}</p>')
     lines.append('</body></html>')
     return '\n'.join(lines)
 
