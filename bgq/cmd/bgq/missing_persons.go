@@ -1036,7 +1036,7 @@ func writeSearchPage(outputDir string, searchItems []searchItem) error {
 	})
 }
 
-func writeMissingPage(outputDir, tname string, tcode int, entries []*missingPerson, partNum, totalParts int) error {
+func writeMissingPage(outputDir, tname string, tcode int, entries []*missingPerson, partNum, totalParts int, genTS string) error {
 	var filename string
 	if totalParts == 1 {
 		filename = fmt.Sprintf("type-%d", tcode)
@@ -1046,10 +1046,10 @@ func writeMissingPage(outputDir, tname string, tcode int, entries []*missingPers
 
 	var prevLink, nextLink string
 	if partNum > 1 {
-		prevLink = fmt.Sprintf("type-%d-part-%d.html", tcode, partNum-1)
+		prevLink = fmt.Sprintf("type-%d-part-%d.html?v=%s", tcode, partNum-1, genTS)
 	}
 	if partNum < totalParts {
-		nextLink = fmt.Sprintf("type-%d-part-%d.html", tcode, partNum+1)
+		nextLink = fmt.Sprintf("type-%d-part-%d.html?v=%s", tcode, partNum+1, genTS)
 	}
 
 	var title string
@@ -1088,7 +1088,7 @@ func writeMissingPage(outputDir, tname string, tcode int, entries []*missingPers
 	})
 }
 
-func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRelatedPerson, partNum, totalParts int, suffix string) error {
+func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRelatedPerson, partNum, totalParts int, suffix string, genTS string) error {
 	var filename string
 	if totalParts == 1 {
 		filename = fmt.Sprintf("type-%d-%s", tcode, suffix)
@@ -1098,10 +1098,10 @@ func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRela
 
 	var prevLink, nextLink string
 	if partNum > 1 {
-		prevLink = fmt.Sprintf("type-%d-%s-part-%d.html", tcode, suffix, partNum-1)
+		prevLink = fmt.Sprintf("type-%d-%s-part-%d.html?v=%s", tcode, suffix, partNum-1, genTS)
 	}
 	if partNum < totalParts {
-		nextLink = fmt.Sprintf("type-%d-%s-part-%d.html", tcode, suffix, partNum+1)
+		nextLink = fmt.Sprintf("type-%d-%s-part-%d.html?v=%s", tcode, suffix, partNum+1, genTS)
 	}
 
 	var title string
@@ -1175,6 +1175,11 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 		return fmt.Errorf("创建输出目录失败: %w", err)
 	}
 
+	// genTS 是本次生成的唯一时间戳。所有页面间链接都带上 ?v=<genTS>，
+	// 使每次重新生成后 URL 变化，浏览器 :visited 历史不再命中旧链接，
+	// 避免网页更新后不对应的链接仍显示为已访问。
+	genTS := strconv.FormatInt(time.Now().Unix(), 10)
+
 	typeMissing := make(map[int][]*missingPerson)
 	for _, mp := range missing {
 		for t := range mp.TypeCounts {
@@ -1225,7 +1230,7 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 			}
 			chunk := people[start:end]
 
-			if err := writeMissingPage(outputDir, tname, t, chunk, partNum, totalParts); err != nil {
+			if err := writeMissingPage(outputDir, tname, t, chunk, partNum, totalParts, genTS); err != nil {
 				return err
 			}
 
@@ -1236,33 +1241,33 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 				fname = fmt.Sprintf("type-%d-part-%d", t, partNum)
 			}
 			for _, mp := range chunk {
-				searchItems = append(searchItems, missingSearchItem(mp, fname+".html"))
+				searchItems = append(searchItems, missingSearchItem(mp, fname+".html?v="+genTS))
 			}
 			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (缺失:%d)\n", tname, outputDir, fname, len(chunk))
 			label := "浏览"
 			if totalParts > 1 {
 				label = fmt.Sprintf("第%d页", partNum)
 			}
-			partLinks = append(partLinks, partLinkTplData{Href: fname + ".html", Label: label})
+			partLinks = append(partLinks, partLinkTplData{Href: fname + ".html?v=" + genTS, Label: label})
 		}
 		missingLinks = append(missingLinks, typeLinkTplData{TypeName: tname + "缺失", Count: totalType, Parts: partLinks})
 	}
 
 	// Related persons pages
-	relatedLinks, err := buildRelatedTypeLinks(outputDir, typeRelated, "related", "关联缺失", "关联缺失", &searchItems)
+	relatedLinks, err := buildRelatedTypeLinks(outputDir, typeRelated, "related", "关联缺失", "关联缺失", &searchItems, genTS)
 	if err != nil {
 		return err
 	}
 
 	// No-relation (无关联) related persons pages
-	bareLinks, err = buildRelatedTypeLinks(outputDir, typeBare, "related-bare", "无关联", "无关联关联缺失", &searchItems)
+	bareLinks, err = buildRelatedTypeLinks(outputDir, typeBare, "related-bare", "无关联", "无关联关联缺失", &searchItems, genTS)
 	if err != nil {
 		return err
 	}
 
 	// Variant-spelling same-name (变体同名) pages — to-be-created persons whose
 	// variant-normalized name matches an existing person, listed at the end.
-	variantLinks, err = buildRelatedTypeLinks(outputDir, typeVariant, "variant", "变体同名", "变体同名", &searchItems)
+	variantLinks, err = buildRelatedTypeLinks(outputDir, typeVariant, "variant", "变体同名", "变体同名", &searchItems, genTS)
 	if err != nil {
 		return err
 	}
@@ -1281,7 +1286,7 @@ func writeMultiTypePages(missing []*missingPerson, related, relatedBare, variant
 // chunked) and returns the per-type directory links. suffix is used in page
 // filenames (e.g. "related" → type-1-related.html), linkLabel is the text on
 // each type link, and logLabel is used in progress output.
-func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPerson, suffix, linkLabel, logLabel string, searchItems *[]searchItem) ([]typeLinkTplData, error) {
+func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPerson, suffix, linkLabel, logLabel string, searchItems *[]searchItem, genTS string) ([]typeLinkTplData, error) {
 	var links []typeLinkTplData
 	for _, t := range sortedTypesByCountLens(typeMap) {
 		people := typeMap[t]
@@ -1301,7 +1306,7 @@ func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPe
 			}
 			chunk := people[start:end]
 
-			if err := writeRelatedPage(outputDir, tname, t, chunk, partNum, totalParts, suffix); err != nil {
+			if err := writeRelatedPage(outputDir, tname, t, chunk, partNum, totalParts, suffix, genTS); err != nil {
 				return nil, err
 			}
 
@@ -1312,14 +1317,14 @@ func buildRelatedTypeLinks(outputDir string, typeMap map[int][]*missingRelatedPe
 				fname = fmt.Sprintf("type-%d-%s-part-%d", t, suffix, partNum)
 			}
 			for _, rp := range chunk {
-				*searchItems = append(*searchItems, relatedSearchItem(rp, fname+".html"))
+				*searchItems = append(*searchItems, relatedSearchItem(rp, fname+".html?v="+genTS))
 			}
 			fmt.Fprintf(os.Stderr, "  [%s] %s/%s.html (%s:%d)\n", tname, outputDir, fname, logLabel, len(chunk))
 			label := "浏览"
 			if totalParts > 1 {
 				label = fmt.Sprintf("第%d页", partNum)
 			}
-			partLinks = append(partLinks, partLinkTplData{Href: fname + ".html", Label: label})
+			partLinks = append(partLinks, partLinkTplData{Href: fname + ".html?v=" + genTS, Label: label})
 		}
 		links = append(links, typeLinkTplData{TypeName: tname + linkLabel, Count: totalType, Parts: partLinks})
 	}
