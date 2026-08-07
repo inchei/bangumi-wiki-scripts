@@ -9,6 +9,52 @@ function normalize(s) {
     .toLowerCase();
 }
 
+var _openccConverters = null;
+function getConverters() {
+  if (!_openccConverters && typeof OpenCC !== 'undefined') {
+    _openccConverters = {
+      jp2t: OpenCC.Converter({ from: 'jp', to: 'tw' }),
+      t2s: OpenCC.Converter({ from: 'tw', to: 'cn' }),
+      tw2s: OpenCC.Converter({ from: 'tw', to: 'cn' }),
+      hk2s: OpenCC.Converter({ from: 'hk', to: 'cn' }),
+      t2jp: OpenCC.Converter({ from: 'tw', to: 'jp' })
+    };
+  }
+  return _openccConverters;
+}
+
+var _openccWaiters = null;
+function waitOpenCC() {
+  if (typeof OpenCC !== 'undefined' && typeof openccCN !== 'undefined') {
+    return Promise.resolve();
+  }
+  if (!_openccWaiters) {
+    _openccWaiters = new Promise(function(resolve) {
+      var started = Date.now();
+      var t = setInterval(function() {
+        if (typeof OpenCC !== 'undefined' && typeof openccCN !== 'undefined') {
+          clearInterval(t);
+          resolve();
+        } else if (Date.now() - started > 8000) {
+          clearInterval(t);
+          resolve();
+        }
+      }, 100);
+    });
+  }
+  return _openccWaiters;
+}
+
+// refinedSame reports whether two names normalize to the same simplified-Chinese
+// form: exact-normalized match, or both convert identically through refinedToCN
+// (OpenCC jp→cn pipeline + variant tables, e.g. 髙橋 → 高橋).
+function refinedSame(a, b) {
+  if (normalize(a) === normalize(b)) return true;
+  var conv = getConverters();
+  if (!conv || typeof openccCN === 'undefined') return false;
+  return openccCN.refinedToCN(a, conv) === openccCN.refinedToCN(b, conv);
+}
+
 function renderSubjects(idx, container) {
   var data = _pendingData[idx];
   if (!data || !data.subjectsData) return;
@@ -60,22 +106,25 @@ document.addEventListener('click', function(e) {
   var name = btn.dataset.name;
   _bgmMpPending = JSON.stringify(_pendingData[idx]);
   showResult(btn, '\u641C\u7D22\u4E2D\u2026', 'sr-loading');
-  fetch('https://api.bgm.tv/v0/search/persons?limit=5', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ keyword: name })
+  waitOpenCC().then(function() {
+    return fetch('https://api.bgm.tv/v0/search/persons?limit=5', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ keyword: name })
+    });
   })
     .then(function(r) { return r.json(); })
     .then(function(data) {
-      var matches = (data.data || []).filter(function(p) {
-        return normalize(p.name) === normalize(name);
+      var results = (data.data || []).filter(function(p) {
+        return normalize(p.name) === normalize(name) || refinedSame(p.name, name);
       });
-      if (matches.length) {
+      if (results.length) {
         _bgmMpPending = null;
-        var links = matches.map(function(p) {
+        var links = results.map(function(p) {
           return '<a href="https://bgm.tv/person/' + p.id + '" target="_blank">' + p.name + ' (ID:' + p.id + ')</a>';
         }).join(' ');
-        showResult(btn, '\u2705 ' + links, 'sr-found');
+        showResult(btn, '\u2705 ' + links
+          + ' <a class="btn-create-still" href="https://bgm.tv/person/new?name=' + encodeURIComponent(name) + '&bgm_mp=1" target="_blank">\u4ECD\u7136\u521B\u5EFA</a>', 'sr-found');
         return;
       }
       showResult(btn, '\u2796 \u672A\u521B\u5EFA', 'sr-missing');

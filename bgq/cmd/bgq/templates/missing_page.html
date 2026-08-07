@@ -27,6 +27,21 @@
 <script>var _posNames = { {{.PosTable}} };var _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
 <script>
 (function() {
+  var srcs = [
+    'https://cdn.jsdmirror.com/npm/opencc-js@1.0.5/dist/umd/full.js',
+    'https://cdn.jsdmirror.com/npm/opencc-cn-name@0.1.1/dist/umd/opencc-cn-name.js'
+  ];
+  var remaining = srcs.length;
+  srcs.forEach(function(src) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = s.onerror = function() { if (--remaining === 0) _openccReady = true; };
+    document.head.appendChild(s);
+  });
+})();
+</script>
+<script>
+(function() {
   var hl = new URLSearchParams(location.search).get('hl');
   if (!hl) return;
   var spans = document.querySelectorAll('details.person .name');

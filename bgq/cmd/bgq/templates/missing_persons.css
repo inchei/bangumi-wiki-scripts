@@ -98,6 +98,16 @@ li .pos {
   margin-right: 0.5em;
 }
 
+.sr-found .btn-create-still {
+  display: inline-block;
+  margin-left: 0.6em;
+  padding: 0.15em 0.6em;
+  border-radius: 3px;
+  background: #fff3e0;
+  color: #b35900;
+  font-weight: bold;
+}
+
 .nav {
   margin-bottom: 1em;
 }
