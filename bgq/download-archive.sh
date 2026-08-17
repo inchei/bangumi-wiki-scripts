@@ -25,9 +25,14 @@ if [ -z "$ZIP_URL" ]; then
   exit 1
 fi
 
+# ZIP_URL="https://ghfast.top/$ZIP_URL"
+
 echo "Downloading ${ZIP_URL}..."
-# curl -L -o archive.zip "https://ghfast.top/$ZIP_URL"
-curl -L -o archive.zip "$ZIP_URL"
+if [ -t 1 ]; then
+    curl -L --fail -o archive.zip "$ZIP_URL"
+else
+    curl -sL --fail -o archive.zip "$ZIP_URL"
+fi
 
 # Verify integrity
 if [ -n "$EXPECTED_HASH" ]; then
