@@ -1,4 +1,9 @@
-import { initSubjectPage, initPersonNewPage, initPersonPage } from './subject-page.js';
+import {
+  initSubjectPage,
+  initPersonNewPage,
+  initPersonPage,
+  initPersonEditPage,
+} from './subject-page.js';
 import { getProvider, getShow, saveProvider, saveShow } from './api.js';
 import { initAddRelated } from './add-related.js';
 
@@ -11,6 +16,10 @@ const pathname = location.pathname;
   }
   if (pathname === '/person/new') {
     initPersonNewPage();
+    return;
+  }
+  if (/^\/person\/\d+\/edit$/.test(pathname)) {
+    initPersonEditPage();
     return;
   }
   if (/^\/person\/\d+$/.test(pathname)) {

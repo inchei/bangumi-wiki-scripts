@@ -37,6 +37,12 @@ window.addEventListener('message', function(e) {
   }
 });
 
+window.addEventListener('message', function(e) {
+  if (e.data && e.data.type === 'bgm_mp_alias_request' && _bgmMpAliasData) {
+    e.source.postMessage({ type: 'bgm_mp_alias_data', data: _bgmMpAliasData }, '*');
+  }
+});
+
 // 创建 button
 document.addEventListener('click', function(e) {
   var btn = e.target.closest('.btn-create');
@@ -81,6 +87,26 @@ document.addEventListener('click', function(e) {
   }
   var typeExt = { 1: 'book', 2: 'anime', 3: 'music', 4: 'game', 6: 'real' }[firstType] || 'book';
   window.open('https://bgm.tv/person/' + personId + '/add_related/' + typeExt + '?bgm_mp_relate=1', '_blank');
+});
+
+// 添加别名 button
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.btn-alias');
+  if (!btn) return;
+  var idx = parseInt(btn.dataset.idx);
+  var data = _relatedData[idx];
+  if (!data) return;
+
+  var wrap = btn.parentElement;
+  var sel = wrap.querySelector('.relate-select');
+  var personId = sel ? parseInt(sel.value) : (data.relatedPersonIds && data.relatedPersonIds.length ? data.relatedPersonIds[0].id : 0);
+  if (!personId) return;
+
+  _bgmMpAliasData = JSON.stringify({
+    personName: data.personName,
+    personId: personId
+  });
+  window.open('https://bgm.tv/person/' + personId + '/edit?bgm_mp_alias=1', '_blank');
 });
 
 // Sync link href when select changes

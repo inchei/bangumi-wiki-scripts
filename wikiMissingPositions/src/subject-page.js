@@ -497,6 +497,71 @@ export async function initPersonNewPage() {
   }
 }
 
+function addAliasLine(value, aliasName) {
+  const aliasLine = `[${aliasName}]`;
+  const lines = value.split('\n');
+  const aliasIdx = lines.findIndex((l) => /^\|别名=\{$/.test(l.trim()));
+  if (aliasIdx >= 0) {
+    if (lines.slice(aliasIdx + 1).some((l) => l.trim() === aliasLine)) return value;
+    lines.splice(aliasIdx + 1, 0, aliasLine);
+    return lines.join('\n');
+  }
+  const cnIdx = lines.findIndex((l) => /^\|简体中文名=/.test(l.trim()));
+  const insertIdx = cnIdx >= 0 ? cnIdx + 1 : 1;
+  lines.splice(insertIdx, 0, '|别名={', aliasLine, '}');
+  return lines.join('\n');
+}
+
+export async function initPersonEditPage() {
+  const params = new URLSearchParams(location.search);
+  let raw = null;
+  if (params.has('bgm_mp_alias') && window.opener) {
+    raw = await new Promise((resolve) => {
+      const timer = setTimeout(() => resolve(null), 3000);
+      const handler = (e) => {
+        if (e.data && e.data.type === 'bgm_mp_alias_data' && e.data.data) {
+          clearTimeout(timer);
+          window.removeEventListener('message', handler);
+          resolve(e.data.data);
+        }
+      };
+      window.addEventListener('message', handler);
+      window.opener.postMessage({ type: 'bgm_mp_alias_request' }, '*');
+    });
+  }
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    const variantName = data.personName;
+    if (!variantName) return;
+
+    const infoboxInput = document.querySelector('#subject_infobox');
+
+    const isNormal = typeof nowmode !== 'undefined' && nowmode === 'normal';
+    if (isNormal) {
+      if (typeof NormaltoWCODE !== 'function') return;
+      NormaltoWCODE();
+    }
+
+    if (!infoboxInput) return;
+
+    infoboxInput.value = addAliasLine(infoboxInput.value, variantName);
+
+    if (isNormal) {
+      if (typeof WCODEtoNormal !== 'function') return;
+      WCODEtoNormal();
+    }
+
+    infoboxInput.scrollIntoView({ block: 'center' });
+    infoboxInput.style.outline = '2px solid #ffb300';
+    setTimeout(() => {
+      infoboxInput.style.outline = '';
+    }, 4000);
+  } catch (_e) {
+    /* ignore */
+  }
+}
+
 export function initPersonPage() {
   const raw = localStorage.getItem('bgm-mp-pending');
   if (!raw) return;

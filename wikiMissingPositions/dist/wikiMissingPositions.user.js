@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.2.1
+// @version      0.3.0
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -1484,6 +1484,62 @@ document.head.appendChild(styleEl);
       localStorage.removeItem("bgm-mp-pending");
     }
   }
+  function addAliasLine(value, aliasName) {
+    const aliasLine = `[${aliasName}]`;
+    const lines = value.split("\n");
+    const aliasIdx = lines.findIndex((l) => /^\|别名=\{$/.test(l.trim()));
+    if (aliasIdx >= 0) {
+      if (lines.slice(aliasIdx + 1).some((l) => l.trim() === aliasLine)) return value;
+      lines.splice(aliasIdx + 1, 0, aliasLine);
+      return lines.join("\n");
+    }
+    const cnIdx = lines.findIndex((l) => /^\|简体中文名=/.test(l.trim()));
+    const insertIdx = cnIdx >= 0 ? cnIdx + 1 : 1;
+    lines.splice(insertIdx, 0, "|\u522B\u540D={", aliasLine, "}");
+    return lines.join("\n");
+  }
+  async function initPersonEditPage() {
+    const params = new URLSearchParams(location.search);
+    let raw = null;
+    if (params.has("bgm_mp_alias") && window.opener) {
+      raw = await new Promise((resolve) => {
+        const timer = setTimeout(() => resolve(null), 3e3);
+        const handler = (e) => {
+          if (e.data && e.data.type === "bgm_mp_alias_data" && e.data.data) {
+            clearTimeout(timer);
+            window.removeEventListener("message", handler);
+            resolve(e.data.data);
+          }
+        };
+        window.addEventListener("message", handler);
+        window.opener.postMessage({ type: "bgm_mp_alias_request" }, "*");
+      });
+    }
+    if (!raw) return;
+    try {
+      const data = JSON.parse(raw);
+      const variantName = data.personName;
+      if (!variantName) return;
+      const infoboxInput = document.querySelector("#subject_infobox");
+      const isNormal = typeof nowmode !== "undefined" && nowmode === "normal";
+      if (isNormal) {
+        if (typeof NormaltoWCODE !== "function") return;
+        NormaltoWCODE();
+      }
+      if (!infoboxInput) return;
+      infoboxInput.value = addAliasLine(infoboxInput.value, variantName);
+      if (isNormal) {
+        if (typeof WCODEtoNormal !== "function") return;
+        WCODEtoNormal();
+      }
+      infoboxInput.scrollIntoView({ block: "center" });
+      infoboxInput.style.outline = "2px solid #ffb300";
+      setTimeout(() => {
+        infoboxInput.style.outline = "";
+      }, 4e3);
+    } catch (_e) {
+    }
+  }
   function initPersonPage() {
     const raw = localStorage.getItem("bgm-mp-pending");
     if (!raw) return;
@@ -1955,6 +2011,10 @@ document.head.appendChild(styleEl);
     }
     if (pathname === "/person/new") {
       initPersonNewPage();
+      return;
+    }
+    if (/^\/person\/\d+\/edit$/.test(pathname)) {
+      initPersonEditPage();
       return;
     }
     if (/^\/person\/\d+$/.test(pathname)) {

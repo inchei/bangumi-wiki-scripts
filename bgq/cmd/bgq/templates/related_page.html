@@ -21,6 +21,7 @@
       {{if .MultiMatch}}<select class="relate-select">{{.SelectOptions}}</select>{{end}}
       <a class="relate-link" href="https://bgm.tv/person/{{.FirstPersonID}}" target="_blank">查看{{if .FromAlias}}（别名）{{end}}</a>
       <a class="btn-relate" href="#relate-{{.Idx}}" data-idx="{{.Idx}}" data-name="{{.Name}}">关联</a>
+      {{if eq $.PageKind "variant"}}<a class="btn-alias" href="#alias-{{.Idx}}" data-idx="{{.Idx}}">添加别名</a>{{end}}
     </span>
     <a class="btn-create" href="#create-{{.Idx}}" data-idx="{{.Idx}}" data-name="{{.Name}}" data-force="1">创建</a>
   </summary>
@@ -30,6 +31,7 @@
 <script>{{.JS}}</script>
 <script>var _relatedData = {{.PendingData}};</script>
 <script>var _bgmMpRelateData = null;</script>
+<script>var _bgmMpAliasData = null;</script>
 <script>var _bgmMpPending = null;</script>
 <script>var _posNames = { {{.PosTable}} };var _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
 </body>

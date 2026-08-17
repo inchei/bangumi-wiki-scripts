@@ -235,6 +235,28 @@ h1 {
   cursor: not-allowed;
 }
 
+.btn-alias {
+  font-size: 0.7em;
+  cursor: pointer;
+  padding: 0 0.5em;
+  border: 1px solid #2196f3;
+  border-radius: 3px;
+  background: #e3f2fd;
+  color: #0d47a1;
+  vertical-align: middle;
+  text-decoration: none;
+}
+
+.btn-alias:hover {
+  background: #bbdefb;
+}
+
+.btn-alias:visited {
+  background: #d7d7d7;
+  color: #888;
+  border-color: #bbb;
+}
+
 .relate-select {
   font-size: 0.7em;
   padding: 0 0.3em;
@@ -303,8 +325,21 @@ details.person.hl-target-done {
   .btn-relate:hover {
     background: #bf360c;
   }
+  .btn-alias {
+    background: #0d47a1;
+    color: #bbdefb;
+    border-color: #2196f3;
+  }
+  .btn-alias:hover {
+    background: #1565c0;
+  }
   .btn-create:visited,
   .btn-relate:visited {
+    background: #444;
+    color: #999;
+    border-color: #666;
+  }
+  .btn-alias:visited {
     background: #444;
     color: #999;
     border-color: #666;

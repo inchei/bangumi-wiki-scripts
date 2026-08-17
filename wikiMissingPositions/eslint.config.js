@@ -16,6 +16,9 @@ export default [
         subjectList: 'writable',
         addRelateSubject: 'readonly',
         findSubjectFunc: 'readonly',
+        nowmode: 'readonly',
+        NormaltoWCODE: 'readonly',
+        WCODEtoNormal: 'readonly',
       },
     },
     rules: {
