@@ -4,12 +4,18 @@
 #   "pyyaml",
 # ]
 # ///
-import csv, os, re, html, yaml
+import csv, datetime, os, re, html, shutil, yaml
 
 results_dir = 'results'
 filters_dir = 'filters'
 output_dir = '_site'
 os.makedirs(output_dir, exist_ok=True)
+
+DATA_FILES = [
+    ('person_alias.json.gz', '人物别名数据（wikiPersonAlias 用户脚本用）'),
+    ('missing-cn-name-person.csv', '可自动转换简体中文名的人物列表'),
+    ('missing-cn-name-character.csv', '可自动转换简体中文名的角色列表'),
+]
 
 DARK_MODE = '''<style>
 :root{color-scheme:light dark}
@@ -96,10 +102,35 @@ if os.path.exists(txt_src):
         f.write('\n'.join(h))
     pages.append(('duplicate_check_results.html', 'duplicate_check_results.txt'))
 
-idx_body = ['<h1>Bangumi 筛选结果</h1><ul>']
+data_links = []
+for name, desc in DATA_FILES:
+    src = os.path.join(results_dir, name)
+    if name == 'person_alias.json.gz':
+        src = name
+    if not os.path.exists(src):
+        continue
+    dst = os.path.join(output_dir, name)
+    shutil.copy(src, dst)
+    data_links.append((name, desc))
+if data_links:
+    with open(os.path.join(output_dir, 'data_version.txt'), 'w') as f:
+        f.write(datetime.datetime.now().strftime('%Y-%m-%d'))
+    print(f"已复制 {len(data_links)} 个数据文件到 _site/")
+
+idx_body = ['<h1>Bangumi 筛选结果</h1>',
+            '<h2>浏览结果</h2><ul>']
 for out, src in pages:
     idx_body.append(f'<li><a href="{html.escape(out)}" target="_blank">{html.escape(src)}</a></li>')
+if os.path.exists(os.path.join(output_dir, 'volume_order_report.html')):
+    idx_body.append('<li><a href="volume_order_report.html" target="_blank">volume_order_report.html</a> — 可疑单行本排序错误</li>')
+if os.path.isdir(os.path.join(output_dir, 'missing-persons')):
+    idx_body.append('<li><a href="missing-persons/" target="_blank">missing-persons</a> — 缺失或缺失关联的人物</li>')
 idx_body.append('</ul>')
+if data_links:
+    idx_body.append('<h2>下载文件</h2><ul>')
+    for name, desc in data_links:
+        idx_body.append(f'<li><a href="{html.escape(name)}" download>{html.escape(name)}</a> — {html.escape(desc)}</li>')
+    idx_body.append('</ul>')
 idx = page_wrap('筛选结果', idx_body)
 with open(os.path.join(output_dir, 'index.html'), 'w') as f:
     f.write('\n'.join(idx))

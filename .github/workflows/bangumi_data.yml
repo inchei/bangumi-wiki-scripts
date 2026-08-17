@@ -127,15 +127,15 @@ jobs:
           DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
         run: uv run check_volume_order.py --db bgq/bangumi.db --output _site/volume_order_report.html
 
-      - name: 转换为 HTML
-        run: uv run .github/scripts/results_to_html.py
-
       - name: 生成缺失人物列表
         env:
           DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
         run: |
           bgq/bin/bgq missing persons --db bgq/bangumi.db --archive-dir bangumi_archive --aliases-file person_alias.json
           cp -r docs/missing-persons _site/missing-persons
+
+      - name: 转换为 HTML
+        run: uv run .github/scripts/results_to_html.py
 
       - name: 同步目录
         if: ${{ env.BANGUMI_TOKEN != '' }}
@@ -145,40 +145,6 @@ jobs:
         run: |
           chmod +x sync_indices.sh
           ./sync_indices.sh --data-dir bangumi_archive --bgq bgq/bin/bgq
-
-      - name: 更新 data-latest Tag
-        run: |
-          git fetch --tags
-          git tag -d data-latest 2>/dev/null || true
-          git push origin :refs/tags/data-latest 2>/dev/null || true
-          git tag data-latest
-          git push origin data-latest
-
-      - name: 清理旧 Release 资产
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          # 删除旧 release（保留 tag 由上面步骤管理）
-          gh release delete data-latest --yes --cleanup-tag 2>/dev/null || true
-
-      - name: 发布数据 Release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: data-latest
-          name: Bangumi 数据更新
-          body: |
-            每周自动更新的人物别名数据。
-
-            - `person_alias.json.gz` — 人物别名数据
-            - `missing-cn-name-person.csv` — 可自动转换简体中文名的人物列表
-            - `missing-cn-name-character.csv` — 可自动转换简体中文名的角色列表
-          files: |
-            ${{ env.ALIAS_GZ }}
-            results/missing-cn-name-person.csv
-            results/missing-cn-name-character.csv
-          draft: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 配置 GitHub Pages
         uses: actions/configure-pages@v5

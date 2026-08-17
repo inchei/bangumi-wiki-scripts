@@ -219,7 +219,7 @@ Run all filters: see `README.md` for the batch command.
 
 Two separate workflows:
 
-1. **`bangumi_data.yml`** — Weekly Tuesday cron. Downloads archive, runs duplicate ISBN check, generates person alias, executes filters. Uploads results to `data-latest` Release.
+1. **`bangumi_data.yml`** — Weekly Tuesday cron. Downloads archive, runs duplicate ISBN check, generates person alias, executes filters. Publishes results (HTML + CSV + alias gz) to GitHub Pages `_site`.
 2. **`bgq_build.yml`** — Triggered on push to `bgq/**`. Cross-compiles bgq for linux/amd64, darwin/arm64, darwin/amd64, windows/amd64 + bundles DuckDB CLI. Publishes to `latest` Release.
 
 Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
@@ -256,9 +256,9 @@ Examples: `feat: add new feature`, `fix: resolve bug`, `docs: update readme`.
 
 ## Person Alias System
 
-`person_alias.py` generates `person_alias.json` (uploaded to GitHub Releases `data-latest`), which maps normalized aliases to person indices (one-to-many since the multi-result update). This data is consumed by:
+`person_alias.py` generates `person_alias.json` (served as `person_alias.json.gz` from GitHub Pages `_site`), which maps normalized aliases to person indices (one-to-many since the multi-result update). This data is consumed by:
 
-1. **`wikiPersonAlias.user.js`** — Tampermonkey userscript that loads the `.json.gz` file into IndexedDB and exposes `window.personAliasQuery(name)` (single result, with GM.notification on multi-match) and `window.personAliasQueryAll(name)` (full array).
+1. **`wikiPersonAlias.user.js`** — Tampermonkey userscript that loads `person_alias.json.gz` from GitHub Pages into IndexedDB and exposes `window.personAliasQuery(name)` (single result, with GM.notification on multi-match) and `window.personAliasQueryAll(name)` (full array).
 2. **`GET /api/aliases/{alias}`** (bgq) — Server-side endpoint that loads `person_alias.json` via `--aliases-file`. Auto-detects `../person_alias.json` and `./person_alias.json`. Hot-reloads on file change (checks mtime per request). Clients (wikiMissingPositions, wikiEpStaffRelate) query this **API first**, falling back to `window.personAlias*`.
 
 Normalization: strip spaces/hyphens, narrow kana→hiragana (U+FF66-U+FF9D), fullwidth letters→halfwidth (U+FF21-U+FF5A), fullwidth katakana→hiragana (U+30A1-U+30F6), lowercase. Identical across Python/Go/JS.

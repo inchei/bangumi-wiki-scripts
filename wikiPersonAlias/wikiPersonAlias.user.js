@@ -2,7 +2,7 @@
 // @name         班固米人物别名本地 API
 // @namespace    https://bgm.tv/
 // @homepage     https://bgm.tv/group/topic/439645
-// @version      2.0.1
+// @version      2.0.2
 // @description  从 wiki archive 自动生成，支持远程更新和本地 .json.gz 文件导入，与其他脚本联合使用
 // @author       Your Name
 // @match        http*://bgm.tv/*
@@ -15,9 +15,7 @@
 // @grant        GM_getValue
 // @grant        GM.notification
 // @grant        unsafeWindow
-// @connect      github.com
-// @connect      api.github.com
-// @connect      objects.githubusercontent.com
+// @connect      inchei.github.io
 // @require      https://cdn.jsdelivr.net/npm/pako@2.1.0/dist/pako.min.js
 // @license      MIT
 // @gf           https://greasyfork.org/zh-CN/scripts/552759
@@ -30,10 +28,11 @@
 
   // 配置
   const CONFIG = {
-    githubRepo: 'inchei/bangumi-wiki-scripts',
+    dataBaseUrl: 'https://inchei.github.io/bangumi-wiki-scripts/',
     dbName: 'bangumiPersonDB',
     dbVersion: 3,
     compressedFile: 'person_alias.json.gz',
+    versionFile: 'data_version.txt',
   };
 
   let menuCommandId;
@@ -213,22 +212,17 @@
     showGMNotification({ text: '更新人物别名数据中……' });
 
     try {
-      const release = await getLatestRelease();
-      if (!release) throw new Error('无法获取最新发布信息');
-
-      const asset = release.assets.find((a) => a.name === CONFIG.compressedFile);
-      if (!asset) throw new Error(`未找到文件: ${CONFIG.compressedFile}`);
-
-      const data = await downloadAndDecompress(asset.browser_download_url);
+      const data = await downloadAndDecompress(CONFIG.dataBaseUrl + CONFIG.compressedFile);
       await importToIndexedDB(data);
 
       const prevVersion = GM_getValue('lastPersonAliasVersion', '从未更新');
-      GM_setValue('lastPersonAliasVersion', release.tag_name);
+      const newVersion = await fetchDataVersion();
+      GM_setValue('lastPersonAliasVersion', newVersion);
 
       registerMainMenu();
       showGMNotification({
         title: '远程更新成功',
-        text: `旧版本: ${prevVersion}\n新版本: ${release.tag_name}\n共导入 ${data[1] ? Object.keys(data[1]).length : 0} 条别名记录`,
+        text: `旧版本: ${prevVersion}\n新版本: ${newVersion}\n共导入 ${data[1] ? Object.keys(data[1]).length : 0} 条别名记录`,
       });
     } catch (err) {
       registerMainMenu();
@@ -240,27 +234,21 @@
     }
   }
 
-  // 获取GitHub最新发布（原有功能，逻辑不变）
-  function getLatestRelease() {
-    return new Promise((resolve, reject) => {
+  // 获取数据版本日期（GitHub Pages 上的 data_version.txt）
+  function fetchDataVersion() {
+    return new Promise((resolve) => {
       GM_xmlhttpRequest({
         method: 'GET',
-        url: `https://api.github.com/repos/${CONFIG.githubRepo}/releases/latest`,
-        headers: { Accept: 'application/vnd.github.v3+json' },
+        url: CONFIG.dataBaseUrl + CONFIG.versionFile,
         onload: (res) => {
           if (res.status === 200) {
-            try {
-              resolve(JSON.parse(res.responseText));
-            } catch (e) {
-              reject(new Error(`解析发布信息失败: ${e.message}`));
-            }
+            const v = String(res.responseText).trim();
+            resolve(v || '未知');
           } else {
-            reject(new Error(`获取发布信息失败 (HTTP ${res.status}): ${res.responseText.substring(0, 100)}`));
+            resolve('未知');
           }
         },
-        onerror: (err) => {
-          reject(new Error(`请求发布信息出错: ${err}`));
-        },
+        onerror: () => resolve('未知'),
       });
     });
   }

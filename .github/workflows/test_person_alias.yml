@@ -1,18 +1,16 @@
-name: release person alias
+name: validate person alias
 
 on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-        with:
-          persist-credentials: true
 
       - name: 设置 uv
         uses: astral-sh/setup-uv@v5
@@ -26,31 +24,8 @@ jobs:
       - name: gzip 压缩
         run: gzip -9 -c person_alias.json > person_alias.json.gz
 
-      - name: 更新 data-latest Tag
-        run: |
-          git fetch --tags
-          git tag -d data-latest 2>/dev/null || true
-          git push origin :refs/tags/data-latest 2>/dev/null || true
-          git tag data-latest
-          git push origin data-latest
-
-      - name: 清理旧 Release 资产
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release delete data-latest --yes --cleanup-tag 2>/dev/null || true
-
-      - name: 发布数据 Release
-        uses: softprops/action-gh-release@v2
+      - name: 上传压缩产物
+        uses: actions/upload-artifact@v5
         with:
-          tag_name: data-latest
-          name: Bangumi 数据更新
-          body: |
-            每周自动更新的人物别名数据。
-
-            - `person_alias.json.gz` — 人物别名数据
-          files: |
-            person_alias.json.gz
-          draft: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          name: person_alias
+          path: person_alias.json.gz

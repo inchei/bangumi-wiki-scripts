@@ -63,12 +63,7 @@
 
 ## 每周更新产物
 
-根据 Archive 更新时间，每周三凌晨（UTC+8）通过 Github Action 自动运行。
-
-- [可疑条目筛选结果](https://inchei.github.io/bangumi-wiki-scripts/)
-- [缺失或缺失关联的人物](https://inchei.github.io/bangumi-wiki-scripts/missing-persons)
-- [可疑单行本排序错误](https://inchei.github.io/bangumi-wiki-scripts/volume_order_report.html)
-- `data-latest` Release 包含人物别名数据
+根据 Archive 更新时间，每周三凌晨（UTC+8）通过 Github Action 自动运行，发布到 [GitHub Pages](https://inchei.github.io/bangumi-wiki-scripts/)（含筛选结果、缺失人物、卷序报告、人物别名 / 简中名数据文件下载）。
 
 ## 备忘
 
