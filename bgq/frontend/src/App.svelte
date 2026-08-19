@@ -5,7 +5,6 @@
     faBook,
     faUser,
     faMasksTheater,
-    faCircleHalfStroke,
     faSun,
     faMoon,
     faFilm,
@@ -22,7 +21,6 @@
   import YamlEditor from "./components/YamlEditor.svelte";
   import QuerySettings from "./components/QuerySettings.svelte";
 
-  const themeOrder = ["light", "dark", "system"];
   let themeMode = $state("system");
 
   // Sprite logo: horizontal strip, only X changes
@@ -49,10 +47,34 @@
     }
   }
 
+  function systemTheme() {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light";
+  }
+
+  function resolvedTheme() {
+    return themeMode === "system" ? systemTheme() : themeMode;
+  }
+
   function cycleTheme() {
-    const idx = themeOrder.indexOf(themeMode);
-    themeMode = themeOrder[(idx + 1) % themeOrder.length];
-    localStorage.setItem("theme", themeMode);
+    if (themeMode === "system") {
+      // Following the system theme: toggle to the opposite of what's visible
+      // and store the literal value.
+      themeMode = systemTheme() === "dark" ? "light" : "dark";
+      localStorage.setItem("theme", themeMode);
+    } else {
+      // Explicit override: toggle to the opposite. If that happens to match
+      // the system default, go back to system and remove the stored value.
+      const next = themeMode === "dark" ? "light" : "dark";
+      if (next === systemTheme()) {
+        themeMode = "system";
+        localStorage.removeItem("theme");
+      } else {
+        themeMode = next;
+        localStorage.setItem("theme", themeMode);
+      }
+    }
     applyTheme(themeMode);
   }
 
@@ -101,14 +123,12 @@
   <button
     class="btn btn-default"
     onclick={cycleTheme}
-    title="主题: {themeMode}"
+    title="主题: {resolvedTheme() === 'dark' ? '深色' : '浅色'}"
   >
-    {#if themeMode === "light"}
+    {#if resolvedTheme() === "light"}
       <FontAwesomeIcon icon={faSun} />
-    {:else if themeMode === "dark"}
-      <FontAwesomeIcon icon={faMoon} />
     {:else}
-      <FontAwesomeIcon icon={faCircleHalfStroke} />
+      <FontAwesomeIcon icon={faMoon} />
     {/if}
   </button>
 </div>

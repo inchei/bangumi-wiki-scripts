@@ -7,6 +7,7 @@ import {
     updateTagsDiffDisplay,
     generateCommitMessage,
     refreshDiffDisplays,
+    getResolvedTheme,
 } from './diff';
 import {
     handleSetupViewButtons,
@@ -16,7 +17,6 @@ import {
 
 import { spriteDataUrl } from './sprite';
 
-const themeOrder: ThemeMode[] = ['light', 'dark', 'system'];
 const spriteCols = 7;
 const spriteW = 40;
 let logoCol = Math.floor(Math.random() * spriteCols);
@@ -68,10 +68,32 @@ function applyTheme(mode: ThemeMode): void {
     }
 }
 
+function systemTheme(): 'light' | 'dark' {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function oppositeTheme(mode: 'light' | 'dark'): 'light' | 'dark' {
+    return mode === 'dark' ? 'light' : 'dark';
+}
+
 function cycleTheme(): void {
-    const idx = themeOrder.indexOf(state.theme);
-    state.theme = themeOrder[(idx + 1) % themeOrder.length];
-    localStorage.setItem('bgmTheme', state.theme);
+    if (state.theme === 'system') {
+        // Following the system theme: toggle to the opposite of what's visible
+        // and store the literal value.
+        state.theme = oppositeTheme(systemTheme());
+        localStorage.setItem('bgmTheme', state.theme);
+    } else {
+        // Explicit override: toggle to the opposite. If that happens to match
+        // the system default, go back to system and remove the stored value.
+        const next = oppositeTheme(state.theme);
+        if (next === systemTheme()) {
+            state.theme = 'system';
+            localStorage.removeItem('bgmTheme');
+        } else {
+            state.theme = next;
+            localStorage.setItem('bgmTheme', state.theme);
+        }
+    }
     applyTheme(state.theme);
     updateThemeButton();
     if (state.currentView === 'processing') {
@@ -82,13 +104,11 @@ function cycleTheme(): void {
 function updateThemeButton(): void {
     const btn = document.getElementById('bgm-tool-theme');
     if (!btn) return;
-    const icons: Record<string, string> = {
-        light: '<i class="fas fa-sun"></i>',
-        dark: '<i class="fas fa-moon"></i>',
-        system: '<i class="fas fa-adjust"></i>',
-    };
-    btn.innerHTML = icons[state.theme] || icons.system;
-    btn.title = '主题: ' + state.theme;
+    const resolved = getResolvedTheme();
+    btn.innerHTML = resolved === 'dark'
+        ? '<i class="fas fa-moon"></i>'
+        : '<i class="fas fa-sun"></i>';
+    btn.title = '主题: ' + (resolved === 'dark' ? '深色' : '浅色');
 }
 
 function createFloatButton(): HTMLElement {
