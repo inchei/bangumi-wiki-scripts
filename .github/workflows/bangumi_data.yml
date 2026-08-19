@@ -70,7 +70,7 @@ jobs:
       - name: 查找可转换简体中文名的人物/角色
         run: |
           mkdir -p results
-          uv run find_missing_cn_name.py bangumi_archive results
+          uv run find_missing_cn_name.py bangumi_archive results --whitelist person_cn_name_whitelist.txt
 
       - name: 查找同名人物
         if: ${{ env.BANGUMI_TOKEN != '' }}
