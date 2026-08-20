@@ -11,12 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 拉取代码
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           persist-credentials: true
 
       - name: 设置 Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: bgq/go.mod
           cache-dependency-path: bgq/go.sum

@@ -10,10 +10,12 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: 设置 uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10
+        with:
+          cache-dependency-glob: '**/*.py'
 
       - name: 下载 Bangumi 归档
         run: bash bgq/download-archive.sh bangumi_archive
@@ -25,7 +27,7 @@ jobs:
         run: gzip -9 -c person_alias.json > person_alias.json.gz
 
       - name: 上传压缩产物
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: person_alias
           path: person_alias.json.gz
