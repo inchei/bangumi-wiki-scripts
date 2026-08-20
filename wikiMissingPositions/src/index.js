@@ -43,6 +43,7 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
           <div class="bgm-mp-row">
             <label for="bgm-mp-provider">API 地址</label>
             <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, '&quot;')}">
+            <button type="button" class="bgm-mp-btn" id="bgm-mp-save" disabled>保存</button>
           </div>
           <div class="bgm-mp-row">
             <label for="bgm-mp-show">条目页显示未关联人物</label>
@@ -51,8 +52,43 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
         </div>`;
     },
     onInit: function (tabSelector, $tabContent) {
-      $tabContent.off('change', '#bgm-mp-provider').on('change', '#bgm-mp-provider', function () {
-        saveProvider($(this).val());
+      const $provider = $tabContent.find('#bgm-mp-provider');
+      const $save = $tabContent.find('#bgm-mp-save');
+      let savedValue = $provider.val();
+      let saveTimer = null;
+
+      function setSaveState(dirty, saving) {
+        if (saving) {
+          $save.text('保存中').prop('disabled', true);
+        } else {
+          $save.text('保存').prop('disabled', !dirty);
+        }
+      }
+
+      function doSave() {
+        const val = $provider.val();
+        setSaveState(false, true);
+        saveProvider(val).then(
+          function () {
+            savedValue = val;
+            setSaveState($provider.val() !== savedValue, false);
+          },
+          function () {
+            setSaveState(true, false);
+          },
+        );
+      }
+
+      $tabContent
+        .off('input change', '#bgm-mp-provider')
+        .on('input change', '#bgm-mp-provider', function () {
+          setSaveState(true, false);
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(doSave, 400);
+        });
+      $tabContent.off('click', '#bgm-mp-save').on('click', '#bgm-mp-save', function () {
+        clearTimeout(saveTimer);
+        doSave();
       });
       $tabContent.off('change', '#bgm-mp-show').on('change', '#bgm-mp-show', function () {
         saveShow(this.checked ? 'on' : 'off');

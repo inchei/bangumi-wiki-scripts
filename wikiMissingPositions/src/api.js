@@ -21,16 +21,28 @@ export function getShow() {
 
 function save(key, val) {
   if (hasChiiApp()) {
-    chiiApp.cloud_settings.update({ [key]: val });
-    return;
+    try {
+      const ret = chiiApp.cloud_settings.update({ [key]: val });
+      if (ret && typeof ret.then === 'function') {
+        return ret;
+      }
+      return Promise.resolve();
+    } catch (e) {
+      return Promise.reject(e);
+    }
   }
-  localStorage.setItem(key, val);
+  try {
+    localStorage.setItem(key, val);
+  } catch (e) {
+    return Promise.reject(e);
+  }
+  return Promise.resolve();
 }
 
 export function saveProvider(val) {
-  save(PROVIDER_KEY, val);
+  return save(PROVIDER_KEY, val);
 }
 
 export function saveShow(val) {
-  save(SHOW_KEY, val);
+  return save(SHOW_KEY, val);
 }

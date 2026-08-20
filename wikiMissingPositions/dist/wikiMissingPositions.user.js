@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.3.0
+// @version      0.3.1
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -438,6 +438,7 @@ html[data-theme='dark'] .bgm-mp-notify .staff-tip-title.unmatched {
   text-decoration: none;
   transition: all 0.2s ease;
   height: 30px;
+  white-space: nowrap;
 }
 
 html[data-theme='dark'] .bgm-mp-btn {
@@ -928,16 +929,28 @@ document.head.appendChild(styleEl);
   }
   function save(key, val) {
     if (hasChiiApp()) {
-      chiiApp.cloud_settings.update({ [key]: val });
-      return;
+      try {
+        const ret = chiiApp.cloud_settings.update({ [key]: val });
+        if (ret && typeof ret.then === "function") {
+          return ret;
+        }
+        return Promise.resolve();
+      } catch (e) {
+        return Promise.reject(e);
+      }
     }
-    localStorage.setItem(key, val);
+    try {
+      localStorage.setItem(key, val);
+    } catch (e) {
+      return Promise.reject(e);
+    }
+    return Promise.resolve();
   }
   function saveProvider(val) {
-    save(PROVIDER_KEY, val);
+    return save(PROVIDER_KEY, val);
   }
   function saveShow(val) {
-    save(SHOW_KEY, val);
+    return save(SHOW_KEY, val);
   }
 
   // src/appear-eps.js
@@ -2038,6 +2051,7 @@ document.head.appendChild(styleEl);
           <div class="bgm-mp-row">
             <label for="bgm-mp-provider">API \u5730\u5740</label>
             <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, "&quot;")}">
+            <button type="button" class="bgm-mp-btn" id="bgm-mp-save" disabled>\u4FDD\u5B58</button>
           </div>
           <div class="bgm-mp-row">
             <label for="bgm-mp-show">\u6761\u76EE\u9875\u663E\u793A\u672A\u5173\u8054\u4EBA\u7269</label>
@@ -2047,8 +2061,38 @@ document.head.appendChild(styleEl);
         );
       },
       onInit: function(tabSelector, $tabContent) {
-        $tabContent.off("change", "#bgm-mp-provider").on("change", "#bgm-mp-provider", function() {
-          saveProvider($(this).val());
+        const $provider = $tabContent.find("#bgm-mp-provider");
+        const $save = $tabContent.find("#bgm-mp-save");
+        let savedValue = $provider.val();
+        let saveTimer = null;
+        function setSaveState(dirty, saving) {
+          if (saving) {
+            $save.text("\u4FDD\u5B58\u4E2D").prop("disabled", true);
+          } else {
+            $save.text("\u4FDD\u5B58").prop("disabled", !dirty);
+          }
+        }
+        function doSave() {
+          const val = $provider.val();
+          setSaveState(false, true);
+          saveProvider(val).then(
+            function() {
+              savedValue = val;
+              setSaveState($provider.val() !== savedValue, false);
+            },
+            function() {
+              setSaveState(true, false);
+            }
+          );
+        }
+        $tabContent.off("input change", "#bgm-mp-provider").on("input change", "#bgm-mp-provider", function() {
+          setSaveState(true, false);
+          clearTimeout(saveTimer);
+          saveTimer = setTimeout(doSave, 400);
+        });
+        $tabContent.off("click", "#bgm-mp-save").on("click", "#bgm-mp-save", function() {
+          clearTimeout(saveTimer);
+          doSave();
         });
         $tabContent.off("change", "#bgm-mp-show").on("change", "#bgm-mp-show", function() {
           saveShow(this.checked ? "on" : "off");

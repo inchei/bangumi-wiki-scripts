@@ -401,6 +401,7 @@ html[data-theme='dark'] .bgm-mp-notify .staff-tip-title.unmatched {
   text-decoration: none;
   transition: all 0.2s ease;
   height: 30px;
+  white-space: nowrap;
 }
 
 html[data-theme='dark'] .bgm-mp-btn {
