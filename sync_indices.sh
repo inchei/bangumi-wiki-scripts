@@ -35,22 +35,28 @@ for yaml_file in index_filters/*.yaml; do
     continue
   fi
 
-  ignore_order=$(grep -m1 '^ignore_order:' "$yaml_file" | sed 's/ignore_order:\s*//' | tr -d ' ')
-  ignore_order_arg=""
-  if [ "$ignore_order" = "true" ]; then
-    ignore_order_arg="--ignore-order"
-  fi
-
   echo ""
   echo "========================================"
   echo "  同步目录: $name (index=$index_id)"
   echo "========================================"
 
-  if "$BGQ" query \
-      --config "$yaml_file" \
-      --data-dir "$DATA_DIR" \
-      --format csv \
-    | uv run sync_index.py --index "$index_id" $ignore_order_arg; then
+  # YAML 有 sort 时给 CSV 追加 order 列（行序号），否则不输出 order 列
+  has_sort=""
+  if grep -q '^sort:' "$yaml_file"; then
+    has_sort="sort"
+  fi
+
+  # 输出 CSV（有 sort 时追加 order 列），交给 sync_index.py 同步
+  emit_csv() {
+    if [ "$1" = "sort" ]; then
+      "$BGQ" query --config "$2" --data-dir "$DATA_DIR" --format csv \
+        | awk 'NR==1{print $0",order"} NR>1{print $0","(NR-1)}'
+    else
+      "$BGQ" query --config "$2" --data-dir "$DATA_DIR" --format csv
+    fi
+  }
+
+  if emit_csv "$has_sort" "$yaml_file" | uv run sync_index.py --index "$index_id"; then
     echo "✅ $name 同步完成"
     success=$((success + 1))
   else

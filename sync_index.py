@@ -1,21 +1,19 @@
 #!/usr/bin/env python3
 # /// script
 # requires-python = ">=3.9"
-# dependencies = [
-#   "pyyaml",
-# ]
+# dependencies = []
 # ///
 """将 CSV 同步到 Bangumi 目录（使用 next.bgm.tv 私有 API）。
 
 用法:
     bgq query --config x.yaml --format csv | python sync_index.py --index 12345
-    python sync_index.py --index 12345 --csv results.csv --config x.yaml
+    python sync_index.py --index 12345 --csv results.csv
 
 列规则:
     - id 列自动识别：person_id → person, character_id → character, id → subject
     - 若存在 index_desc 列，用其值作为条目描述
-    - 否则，非 ID 列以 "列名：值" 拼接为描述
-    - 行序即目录排序（除非 --config 指定的 YAML 没有 sort 字段，或指定 --ignore-order）
+    - 否则，非 ID 列以 "列名：值" 拼接为描述（排除 order 列）
+    - 存在 order 列 → 目录条目按 order 值排序；无 order 列 → 不修改目录顺序
 
 环境变量:
     BANGUMI_TOKEN  Bangumi API access token (必需)
@@ -31,8 +29,6 @@ import sys
 import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
-
-import yaml
 
 REQUEST_DELAY = 21.0  # 默认请求间隔（秒），对应 ~3/min（留少量余量）
 
@@ -132,7 +128,6 @@ def sync(
     columns: list[str],
     rows: list[dict],
     dry_run: bool,
-    ignore_order: bool = False,
     delay: float = REQUEST_DELAY,
 ):
     has_index_desc = "index_desc" in columns
@@ -168,13 +163,28 @@ def sync(
 
     result_set = set(result_ids)
     to_add = [s for s in result_ids if s not in existing]
-    to_update = [
-        s for s in result_ids if s in existing and (
-            existing[s]["order"] != result_map[s]["order"]
-            or existing[s]["comment"] != result_map[s]["desc"]
-        )
-    ]
-    if ignore_order:
+
+    # find_dup_person 组级跳过：同一 order 值的多人组（≥2 人），若全部已在目录
+    # 且各自 order 互相一致，则保留原顺序，不因组序号移位而整体重排。
+    skip_order_sids = set()
+    if has_order_col:
+        order_groups: dict[int, list[int]] = {}
+        for sid in result_ids:
+            order_groups.setdefault(result_map[sid]["order"], []).append(sid)
+        for sids in order_groups.values():
+            if len(sids) < 2:
+                continue
+            if all(s in existing for s in sids) and len({existing[s]["order"] for s in sids}) == 1:
+                skip_order_sids.update(sids)
+
+    if has_order_col:
+        to_update = [
+            s for s in result_ids if s in existing and (
+                (s not in skip_order_sids and existing[s]["order"] != result_map[s]["order"])
+                or existing[s]["comment"] != result_map[s]["desc"]
+            )
+        ]
+    else:
         to_update = [
             s for s in result_ids if s in existing
             and existing[s]["comment"] != result_map[s]["desc"]
@@ -198,7 +208,7 @@ def sync(
         wait()
         info = result_map[sid]
         body = {"cat": cat, "sid": sid, "order": info["order"], "comment": info["desc"]}
-        if ignore_order:
+        if not has_order_col:
             body["order"] = 0
         print(f"  [{ok+fail+1}/{total_ops}] 添加 {sid} ...", flush=True, end=" ")
         status, resp_body = api_call(
@@ -220,7 +230,7 @@ def sync(
         info = result_map[sid]
         record_id = existing[sid]["id"]
         body = {"order": info["order"], "comment": info["desc"]}
-        if ignore_order:
+        if not has_order_col or sid in skip_order_sids:
             body["order"] = existing[sid]["order"]
         print(f"  [{ok+fail+1}/{total_ops}] 更新 {sid} ...", flush=True, end=" ")
         status, resp_body = api_call(
@@ -261,22 +271,9 @@ def main():
     parser = argparse.ArgumentParser(description="将 CSV 同步到 Bangumi 目录")
     parser.add_argument("--index", type=int, required=True, help="Bangumi 目录 ID")
     parser.add_argument("--csv", help="CSV 文件路径（不指定则从 stdin 读取）")
-    parser.add_argument("--config", help="YAML 配置文件路径（用于检测 sort 字段决定是否忽略顺序）")
     parser.add_argument("--dry-run", action="store_true", help="仅预览，不执行")
-    parser.add_argument("--ignore-order", action="store_true", help="强制忽略 CSV 顺序，不修改目录条目顺序")
     parser.add_argument("--delay", type=float, default=REQUEST_DELAY, help=f"请求间隔秒数（默认 {REQUEST_DELAY}s，限流 3/min 时建议 ≥20s）")
     args = parser.parse_args()
-
-    ignore_order = args.ignore_order
-    if not ignore_order and args.config:
-        if not os.path.exists(args.config):
-            print(f"错误: 配置文件不存在: {args.config}", file=sys.stderr)
-            sys.exit(1)
-        with open(args.config) as f:
-            cfg = yaml.safe_load(f)
-        if cfg and "sort" not in cfg:
-            print("[自动] YAML 无 sort 字段，忽略顺序")
-            ignore_order = True
 
     token = os.environ.get("BANGUMI_TOKEN", "")
     if not token and not args.dry_run:
@@ -307,7 +304,7 @@ def main():
     print(f"列: {columns}")
     print(f"行数: {len(rows)}")
 
-    sync(args.index, cat, id_col, token, columns, rows, args.dry_run, ignore_order, args.delay)
+    sync(args.index, cat, id_col, token, columns, rows, args.dry_run, args.delay)
 
 
 if __name__ == "__main__":

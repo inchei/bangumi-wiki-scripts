@@ -98,7 +98,12 @@ python sync_index.py --index 12345 --csv results/some-filter.csv --dry-run
 
 **描述规则**：
 - 存在 `index_desc` 列 → 用其值作为条目描述
-- 否则 → 非 ID 列以 `列名：值` 拼接（排除 `id` 和 `*_id` 列）
-- 行序即目录排序
+- 否则 → 非 ID 列以 `列名：值` 拼接（排除 `id`、`*_id` 和 `order` 列）
+
+**目录排序**：
+- CSV 含 `order` 列 → 目录条目按 `order` 值排序
+- CSV 无 `order` 列 → 不修改目录顺序（新增条目 order=0，已有条目保留原顺序）
+- index_filters 的 YAML 配置了 `sort` 时，`sync_indices.sh` 会给 CSV 末尾追加 `order` 列（行序号 1,2,3…）；无 `sort` 则不输出 `order` 列
+- 同名人物同步（`find_dup_person_name.py` 的 CSV 自带 `order` 列）：同一 order 值的同名组若全部已在目录且顺序一致，则整组保留原顺序，不会因组序号移位而整体重排
 
 **目录过滤器**：`index_filters/` 目录下的 YAML 需包含 `target_index` 和 `target` 字段。可 fork 本仓库，设置 `BANGUMI_TOKEN` secret，设置 `test_sync_indices.yml` 的 cron，并删除其他 `.yml` 文件，开启并使用 GitHub Actions 同步自己的目录。
