@@ -23,5 +23,10 @@ if [ -n "${DB_PATH}" ]; then
   DB_ARG="--db ${DB_PATH}"
 fi
 
+ORIGINS_ARG=""
+if [ -n "${ALLOWED_ORIGINS}" ]; then
+  ORIGINS_ARG="--allowed-origins ${ALLOWED_ORIGINS}"
+fi
+
 echo "=== Starting bgq server ==="
-exec bgq serve --data-dir "${DATA_DIR}" --listen ":${PORT}" --aliases-file "${ALIAS_FILE}" ${DB_ARG}
+exec bgq serve --data-dir "${DATA_DIR}" --listen ":${PORT}" --aliases-file "${ALIAS_FILE}" ${DB_ARG} ${ORIGINS_ARG}

@@ -187,8 +187,8 @@ func (s *server) handleMissingEpisodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !allowedReferrer(r) {
-		writeJSON(w, http.StatusForbidden, apiError{Error: "仅允许来自 bgm.tv 的请求"})
+	if !s.allowedReferrer(r) {
+		writeJSON(w, http.StatusForbidden, apiError{Error: "请求来源不在允许列表中"})
 		return
 	}
 

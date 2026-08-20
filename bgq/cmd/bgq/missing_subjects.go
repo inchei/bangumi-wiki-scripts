@@ -29,8 +29,8 @@ func (s *server) handleCheckMissingStaff(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	if !allowedReferrer(r) {
-		writeJSON(w, http.StatusForbidden, apiError{Error: "仅允许来自 bgm.tv 的请求"})
+	if !s.allowedReferrer(r) {
+		writeJSON(w, http.StatusForbidden, apiError{Error: "请求来源不在允许列表中"})
 		return
 	}
 
@@ -231,19 +231,20 @@ func indentSeriesFilter(hasSeries bool) string {
 	return "    " + s
 }
 
-var allowedHosts = []string{"bgm.tv", "bangumi.tv", "chii.in", "bgmmi.anibt.net", "bangumi.lol"}
-
 // isAllowedOrigin reports whether an Origin/Referer header value is from one of
-// the known Bangumi hosts (or a subdomain thereof). Host parsing prevents the
+// the allowed hosts (or a subdomain thereof). Host parsing prevents the
 // previous HasSuffix matching from accepting lookalike domains such as
 // "evilbgm.tv".
-func isAllowedOrigin(origin string) bool {
+func (s *server) isAllowedOrigin(origin string) bool {
 	u, err := url.Parse(origin)
 	if err != nil {
 		return false
 	}
 	host := strings.ToLower(u.Hostname())
-	for _, h := range allowedHosts {
+	if len(s.allowedHosts) == 0 {
+		return false
+	}
+	for _, h := range s.allowedHosts {
 		if host == h || strings.HasSuffix(host, "."+h) {
 			return true
 		}
@@ -251,7 +252,7 @@ func isAllowedOrigin(origin string) bool {
 	return false
 }
 
-func allowedReferrer(r *http.Request) bool {
+func (s *server) allowedReferrer(r *http.Request) bool {
 	src := r.Header.Get("Origin")
 	if src == "" {
 		src = r.Header.Get("Referer")
@@ -259,7 +260,7 @@ func allowedReferrer(r *http.Request) bool {
 	if src == "" {
 		return true // direct access (new tab, curl without referrer)
 	}
-	return isAllowedOrigin(src)
+	return s.isAllowedOrigin(src)
 }
 
 func sortedKeys(m map[int]string) []int {

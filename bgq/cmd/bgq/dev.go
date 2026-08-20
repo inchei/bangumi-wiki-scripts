@@ -5,10 +5,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
 )
 
-func startDevMode(bgqDir, dataDir, listen, dbPath, aliasesFile string) {
+func startDevMode(bgqDir, dataDir, listen, dbPath, aliasesFile string, allowedHosts []string) {
 	// Mark that we're running under air, so the child binary won't re-exec
 	_ = os.Setenv("BGQ_AIR", "1")
 
@@ -47,13 +48,18 @@ func startDevMode(bgqDir, dataDir, listen, dbPath, aliasesFile string) {
 		aliasesFlag = fmt.Sprintf(`, "--aliases-file", "%s"`, absAliases)
 	}
 
+	originsFlag := ""
+	if len(allowedHosts) > 0 {
+		originsFlag = fmt.Sprintf(`, "--allowed-origins", "%s"`, strings.Join(allowedHosts, ","))
+	}
+
 	cfg := fmt.Sprintf(`root = "%s"
 tmp_dir = "%s"
 
 [build]
   bin = "%s"
   cmd = "go build -o %s ./cmd/bgq"
-  entrypoint = ["%s", "serve", "--data-dir", "%s", "--listen", "%s"%s%s]
+  entrypoint = ["%s", "serve", "--data-dir", "%s", "--listen", "%s"%s%s%s]
   delay = 1000
   exclude_dir = ["tmp", "deploy", "bin"]
   exclude_regex = ["_test.go$", "\\.db$"]
@@ -74,7 +80,7 @@ tmp_dir = "%s"
 
 [misc]
   clean_on_exit = true
-`, absDir, filepath.Join(absDir, "tmp"), binPath, binPath, binPath, absDataDir, listen, dbFlag, aliasesFlag)
+`, absDir, filepath.Join(absDir, "tmp"), binPath, binPath, binPath, absDataDir, listen, dbFlag, aliasesFlag, originsFlag)
 
 	if err := os.WriteFile(cfgPath, []byte(cfg), 0644); err != nil {
 		fmt.Fprintf(os.Stderr, "write air config: %v\n", err)

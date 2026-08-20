@@ -118,6 +118,15 @@ docker-compose up -d --build
 
 默认访问 `http://localhost:7860`。首次运行自动下载数据到卷中，后续数据更新可参考[数据更新](#数据更新)。
 
+`.env` 支持以下变量：
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `DATA_DIR` | `/data/bangumi_archive` | 数据目录 |
+| `PORT` | `7860` | 监听端口 |
+| `DB_PATH` | 空 | DuckDB 数据库路径（为空则直接用 JSONLines 查询） |
+| `ALLOWED_ORIGINS` | 空（使用内置默认列表） | 允许的跨域来源域名，逗号分隔 |
+
 ## 使用
 
 ### 命令行查询
@@ -143,6 +152,15 @@ YAML 格式说明见 [YAML 筛选条件参考](docs/yaml-guide.md)。
 ```
 
 提供可视化筛选器、实时查询、CSV 导出、YAML 编辑器。
+
+| 参数 | 缩写 | 说明 |
+|------|------|------|
+| `--data-dir` | `-d` | 数据目录（默认 `bangumi_archive`） |
+| `--listen` | `-l` | 监听地址（默认 `:8080`） |
+| `--db` | | DuckDB 数据库路径（未指定时自动检测） |
+| `--aliases-file` | | 人物别名 JSON 路径（未指定时自动检测） |
+| `--allowed-origins` | | 允许的跨域来源域名，逗号分隔（默认 `bgm.tv,bangumi.tv,chii.in` 及部分镜像站，可传空字符串禁用所有来源） |
+| `--dev` | | 开发模式（Air 热重载） |
 
 ### 交互模式
 
@@ -240,7 +258,7 @@ curl "http://localhost:8080/api/persons/川原砾/missing-subjects?type=1"
 | `type` | 条目类型（必填） |
 | `position` | 仅检查指定职位 ID（可选） |
 
-Referrer 限制：仅允许来自 `bgm.tv`、`bangumi.tv`、`chii.in` 及部分镜像站的请求，直接访问（新标签页、curl 无 referrer）不受限。
+Referrer 限制：仅允许来自允许列表内域名（默认 `bgm.tv`、`bangumi.tv`、`chii.in` 及部分镜像站）的请求，可通过 `--allowed-origins` 参数或 Docker 环境变量 `ALLOWED_ORIGINS` 自定义（逗号分隔）；直接访问（新标签页、curl 无 referrer）不受限。
 
 ### 检查缺失剧集标注
 

@@ -61,7 +61,7 @@ func printUsage() {
 	fmt.Println(`用法:
   bgq query --config <yaml文件> [--data-dir <数据目录>] [--output <输出文件>]
   bgq query --interactive [--data-dir <数据目录>]
-  bgq serve [--data-dir <数据目录>] [--listen <地址:端口>] [--dev]
+  bgq serve [--data-dir <数据目录>] [--listen <地址:端口>] [--allowed-origins <域名列表>] [--dev]
   bgq ingest --data-dir <数据目录> --db <数据库路径>
   bgq missing subjects <人名> --type <条目类型> --db <数据库>
   bgq missing episodes <人名> [--db <数据库>]
@@ -81,6 +81,7 @@ func printUsage() {
  示例:
   bgq query --config query.yaml
   bgq serve --listen :8080
+  bgq serve --allowed-origins "bgm.tv,bangumi.tv"
   bgq serve --dev
   bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
   bgq missing persons --db ./bangumi.db --archive-dir ./bangumi_archive --multi
@@ -251,6 +252,7 @@ func cmdServe(args []string) {
 	dbPath := ""
 	aliasesFile := ""
 	dev := false
+	allowedHosts := defaultAllowedHosts
 
 	for i := 0; i < len(args); i++ {
 		switch args[i] {
@@ -274,6 +276,17 @@ func cmdServe(args []string) {
 				aliasesFile = args[i+1]
 				i++
 			}
+		case "--allowed-origins":
+			if i+1 < len(args) {
+				var hosts []string
+				for _, h := range strings.Split(args[i+1], ",") {
+					if h = strings.TrimSpace(h); h != "" {
+						hosts = append(hosts, h)
+					}
+				}
+				allowedHosts = hosts
+				i++
+			}
 		case "--dev":
 			dev = true
 		}
@@ -286,7 +299,7 @@ func cmdServe(args []string) {
 			fmt.Fprintf(os.Stderr, "cwd: %v\n", err)
 			os.Exit(1)
 		}
-		startDevMode(bgqDir, dataDir, listen, dbPath, aliasesFile)
+		startDevMode(bgqDir, dataDir, listen, dbPath, aliasesFile, allowedHosts)
 		return
 	}
 
@@ -309,7 +322,7 @@ func cmdServe(args []string) {
 		}
 	}
 
-	startServer(dataDir, listen, dbPath, aliasesFile)
+	startServer(dataDir, listen, dbPath, aliasesFile, allowedHosts)
 }
 
 func cmdIngest(args []string) {

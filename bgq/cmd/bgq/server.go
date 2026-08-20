@@ -18,10 +18,11 @@ import (
 )
 
 type server struct {
-	dataDir     string
-	dbPath      string
-	aliases     *aliasData
-	aliasesFile string
+	dataDir      string
+	dbPath       string
+	aliases      *aliasData
+	aliasesFile  string
+	allowedHosts []string
 }
 
 type apiQueryRequest struct {
@@ -40,7 +41,9 @@ type apiError struct {
 	Message string `json:"message,omitempty"`
 }
 
-func startServer(dataDir, listenAddr, dbPath, aliasesFile string) {
+var defaultAllowedHosts = []string{"bgm.tv", "bangumi.tv", "chii.in", "chii.ink", "bgmmi.anibt.net", "bangumi.lol"}
+
+func startServer(dataDir, listenAddr, dbPath, aliasesFile string, allowedHosts []string) {
 	// Resolve dataDir to absolute path
 	absDataDir := dataDir
 	if !strings.HasPrefix(dataDir, "/") {
@@ -53,9 +56,10 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string) {
 	}
 
 	s := &server{
-		dataDir:     dataDir,
-		dbPath:      dbPath,
-		aliasesFile: aliasesFile,
+		dataDir:      dataDir,
+		dbPath:       dbPath,
+		aliasesFile:  aliasesFile,
+		allowedHosts: allowedHosts,
 	}
 
 	if aliasesFile != "" {
@@ -80,7 +84,7 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string) {
 	mux.HandleFunc("/", s.handleStatic)
 
 	// CORS middleware wrapper
-	handler := corsMiddleware(mux)
+	handler := s.corsMiddleware(mux)
 
 	duckdbPath := query.GetDuckDBPath()
 	duckdbOK := fileExists(duckdbPath)
@@ -126,10 +130,10 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string) {
 	}
 }
 
-func corsMiddleware(next http.Handler) http.Handler {
+func (s *server) corsMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if origin := r.Header.Get("Origin"); origin != "" {
-			if isAllowedOrigin(origin) {
+			if s.isAllowedOrigin(origin) {
 				w.Header().Set("Access-Control-Allow-Origin", origin)
 				w.Header().Add("Vary", "Origin")
 				w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
