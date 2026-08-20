@@ -5,6 +5,7 @@ import {
   initPersonEditPage,
 } from './subject-page.js';
 import { getProvider, getShow, saveProvider, saveShow } from './api.js';
+import { DEFAULT_PROVIDER } from './config.js';
 import { initAddRelated } from './add-related.js';
 
 const pathname = location.pathname;
@@ -44,6 +45,12 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
             <label for="bgm-mp-provider">API 地址</label>
             <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, '&quot;')}">
             <button type="button" class="bgm-mp-btn" id="bgm-mp-save" disabled>保存</button>
+          </div>
+<div class="bgm-mp-hint">
+            可用公共部署地址：
+            <a class="l" href="${DEFAULT_PROVIDER}" target="_blank">${DEFAULT_PROVIDER}</a>（默认） ·
+            <a class="l" href="https://bgq.bgmstat.us" target="_blank">https://bgq.bgmstat.us</a> by
+            <a class="l" href="https://bgm.tv/user/wataame" target="_blank">wataame</a>
           </div>
           <div class="bgm-mp-row">
             <label for="bgm-mp-show">条目页显示未关联人物</label>

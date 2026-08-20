@@ -37,6 +37,16 @@
   box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
 }
 
+.bgm-mp-settings .bgm-mp-hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #909399;
+}
+
+html[data-theme='dark'] .bgm-mp-settings .bgm-mp-hint {
+  color: #9a9a9a;
+}
+
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row label {
   color: #9a9a9a;
 }

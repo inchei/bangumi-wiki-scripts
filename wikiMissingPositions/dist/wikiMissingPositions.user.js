@@ -74,6 +74,16 @@ styleEl.textContent = `.bgm-mp-settings {
   box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
 }
 
+.bgm-mp-settings .bgm-mp-hint {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #909399;
+}
+
+html[data-theme='dark'] .bgm-mp-settings .bgm-mp-hint {
+  color: #9a9a9a;
+}
+
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row label {
   color: #9a9a9a;
 }
@@ -2052,6 +2062,12 @@ document.head.appendChild(styleEl);
             <label for="bgm-mp-provider">API \u5730\u5740</label>
             <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, "&quot;")}">
             <button type="button" class="bgm-mp-btn" id="bgm-mp-save" disabled>\u4FDD\u5B58</button>
+          </div>
+<div class="bgm-mp-hint">
+            \u53EF\u7528\u516C\u5171\u90E8\u7F72\u5730\u5740\uFF1A
+            <a class="l" href="${DEFAULT_PROVIDER}" target="_blank">${DEFAULT_PROVIDER}</a>\uFF08\u9ED8\u8BA4\uFF09 \xB7
+            <a class="l" href="https://bgq.bgmstat.us" target="_blank">https://bgq.bgmstat.us</a> by
+            <a class="l" href="https://bgm.tv/user/wataame" target="_blank">wataame</a>
           </div>
           <div class="bgm-mp-row">
             <label for="bgm-mp-show">\u6761\u76EE\u9875\u663E\u793A\u672A\u5173\u8054\u4EBA\u7269</label>
