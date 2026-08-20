@@ -167,7 +167,7 @@ export function initAddRelated() {
           if (added) none = false;
         }
       }
-      setStatusBox(none ? '未查找到任何已填写条目' : '关联填写完成！');
+      setStatusBox(none ? '未查找到任何已填写条目' : '关联完成！');
       return;
     }
 
@@ -189,7 +189,7 @@ export function initAddRelated() {
           if (added) none = false;
         }
       }
-      setStatusBox(none ? '未查找到任何已填写条目' : '关联填写完成！');
+      setStatusBox(none ? '未查找到任何已填写条目' : '关联完成！');
     } catch (e) {
       console.error(e);
       setStatusBox(ourApiErrorText(personName));
@@ -264,6 +264,7 @@ export function processPendingData() {
 
     const typeMap = { book: 1, anime: 2, music: 3, game: 4, real: 6 };
     const pageType = typeMap[location.pathname.split('/').pop()] || 0;
+    if (pageType === 0) return;
 
     const matching = {};
     const remaining = {};
@@ -278,6 +279,7 @@ export function processPendingData() {
     }
 
     let consumed = true;
+    let hasExisting = false;
     for (const [key, entry] of Object.entries(matching)) {
       for (const posId of entry.positions || []) {
         const li = addSubjectLi(Number(key.split(':').pop()), posId, entry.name);
@@ -285,6 +287,7 @@ export function processPendingData() {
           consumed = false;
         }
         if (li && li.classList.contains('old')) {
+          hasExisting = true;
           li.style.background =
             document.documentElement.getAttribute('data-theme') === 'dark'
               ? 'rgba(255, 248, 165, 0.08)'
@@ -301,6 +304,7 @@ export function processPendingData() {
           if (epInput) {
             epInput.value = genAppearEps(labels);
             if (li.classList.contains('old')) {
+              hasExisting = true;
               li.style.background =
                 document.documentElement.getAttribute('data-theme') === 'dark'
                   ? 'rgba(255, 248, 165, 0.08)'
@@ -334,6 +338,8 @@ export function processPendingData() {
     }
 
     markRemainingTypes(remaining);
+
+    setStatusBox(hasExisting ? '关联完成！部分关联已存在' : '关联完成！');
 
     if (hasRemaining && consumed) {
       const typeExts = { 1: 'book', 2: 'anime', 3: 'music', 4: 'game', 6: 'real' };

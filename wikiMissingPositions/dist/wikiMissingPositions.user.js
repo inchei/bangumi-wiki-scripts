@@ -1830,7 +1830,7 @@ document.head.appendChild(styleEl);
             if (added) none = false;
           }
         }
-        setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u586B\u5199\u5B8C\u6210\uFF01");
+        setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u5B8C\u6210\uFF01");
         return;
       }
       const provider = getProvider();
@@ -1851,7 +1851,7 @@ document.head.appendChild(styleEl);
             if (added) none = false;
           }
         }
-        setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u586B\u5199\u5B8C\u6210\uFF01");
+        setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u5B8C\u6210\uFF01");
       } catch (e) {
         console.error(e);
         setStatusBox(ourApiErrorText(personName));
@@ -1915,6 +1915,7 @@ document.head.appendChild(styleEl);
       if (data.personId != null && String(data.personId) !== personId) return;
       const typeMap = { book: 1, anime: 2, music: 3, game: 4, real: 6 };
       const pageType = typeMap[location.pathname.split("/").pop()] || 0;
+      if (pageType === 0) return;
       const matching = {};
       const remaining = {};
       let hasRemaining = false;
@@ -1927,6 +1928,7 @@ document.head.appendChild(styleEl);
         }
       }
       let consumed = true;
+      let hasExisting = false;
       for (const [key, entry] of Object.entries(matching)) {
         for (const posId of entry.positions || []) {
           const li = addSubjectLi(Number(key.split(":").pop()), posId, entry.name);
@@ -1934,6 +1936,7 @@ document.head.appendChild(styleEl);
             consumed = false;
           }
           if (li && li.classList.contains("old")) {
+            hasExisting = true;
             li.style.background = document.documentElement.getAttribute("data-theme") === "dark" ? "rgba(255, 248, 165, 0.08)" : "rgba(255, 248, 165, 0.2)";
           }
         }
@@ -1946,6 +1949,7 @@ document.head.appendChild(styleEl);
             if (epInput) {
               epInput.value = genAppearEps(labels);
               if (li.classList.contains("old")) {
+                hasExisting = true;
                 li.style.background = document.documentElement.getAttribute("data-theme") === "dark" ? "rgba(255, 248, 165, 0.08)" : "rgba(255, 248, 165, 0.2)";
               }
             }
@@ -1973,6 +1977,7 @@ document.head.appendChild(styleEl);
         localStorage.removeItem("bgm-mp-pending");
       }
       markRemainingTypes(remaining);
+      setStatusBox(hasExisting ? "\u5173\u8054\u5B8C\u6210\uFF01\u90E8\u5206\u5173\u8054\u5DF2\u5B58\u5728" : "\u5173\u8054\u5B8C\u6210\uFF01");
       if (hasRemaining && consumed) {
         const typeExts = { 1: "book", 2: "anime", 3: "music", 4: "game", 6: "real" };
         const nextType = [
