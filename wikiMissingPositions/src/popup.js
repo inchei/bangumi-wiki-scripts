@@ -1,5 +1,58 @@
 import { genAppearEps } from './appear-eps.js';
-import { POSITION_IDS } from './position-ids.js';
+
+function makeDraggable(popup, handle, excludeSelector) {
+  let offX = 0,
+    offY = 0;
+  function cx(e) {
+    return e.touches ? e.touches[0].clientX : e.clientX;
+  }
+  function cy(e) {
+    return e.touches ? e.touches[0].clientY : e.clientY;
+  }
+  handle.onmousedown = handle.ontouchstart = (e) => {
+    if (excludeSelector && e.target.closest(excludeSelector)) return;
+    const rect = popup.getBoundingClientRect();
+    popup.style.transform = 'none';
+    popup.style.left = rect.left + 'px';
+    popup.style.top = rect.top + 'px';
+    popup.style.right = 'auto';
+    popup.style.bottom = 'auto';
+    offX = cx(e) - rect.left;
+    offY = cy(e) - rect.top;
+    document.onmousemove = document.ontouchmove = (ev) => {
+      popup.style.left = cx(ev) - offX + 'px';
+      popup.style.top = cy(ev) - offY + 'px';
+    };
+    document.onmouseup = document.ontouchend = () => {
+      document.onmousemove = document.ontouchmove = null;
+    };
+  };
+}
+
+export function createNotifyPopup({ handleHTML, className = '', onClose, dragExclude = '' }) {
+  const popup = document.createElement('div');
+  popup.className = 'bgm-mp-notify' + (className ? ` ${className}` : '');
+
+  const handle = document.createElement('div');
+  handle.className = 'staff-tip-handle';
+  handle.innerHTML = handleHTML;
+
+  const content = document.createElement('div');
+  content.className = 'staff-tip-content';
+
+  popup.append(handle, content);
+  document.body.appendChild(popup);
+
+  popup.querySelector('.bgm-mp-notify-close').onclick = () => {
+    onClose?.();
+    popup.remove();
+  };
+
+  const exclude = ['.bgm-mp-notify-close', dragExclude].filter(Boolean).join(', ');
+  makeDraggable(popup, handle, exclude);
+
+  return { popup, handle, content };
+}
 
 export function showPendingEps(allUnmatched, personName, type) {
   const existing = document.querySelector('.bgm-mp-notify');
@@ -18,16 +71,9 @@ export function showPendingEps(allUnmatched, personName, type) {
 
   if (!sections.length) return;
 
-  const notify = document.createElement('div');
-  notify.className = 'bgm-mp-notify';
-
-  const handle = document.createElement('div');
-  handle.className = 'staff-tip-handle';
-  handle.innerHTML =
-    '<strong>疑似匹配</strong><button class="bgm-mp-notify-close">&times;</button>';
-
-  const content = document.createElement('div');
-  content.className = 'staff-tip-content';
+  const { popup, content } = createNotifyPopup({
+    handleHTML: '<strong>疑似匹配</strong><button class="bgm-mp-notify-close">&times;</button>',
+  });
 
   let html = '<div class="bgm-mp-pending-header">以下剧集简介包含此名称但未定位到职位：</div>';
   for (const sec of sections) {
@@ -40,12 +86,9 @@ export function showPendingEps(allUnmatched, personName, type) {
   }
   content.innerHTML = html;
 
-  notify.append(handle, content);
-  notify.style.opacity = '0';
-  document.body.appendChild(notify);
-
-  const boxW = notify.offsetWidth;
-  const boxH = notify.offsetHeight;
+  popup.style.opacity = '0';
+  const boxW = popup.offsetWidth;
+  const boxH = popup.offsetHeight;
   const winW = window.innerWidth;
   const winH = window.innerHeight;
 
@@ -56,11 +99,11 @@ export function showPendingEps(allUnmatched, personName, type) {
   bottom = Math.min(bottom, winH - boxH);
   bottom = Math.max(bottom, 0);
 
-  notify.style.bottom = `${bottom}px`;
-  notify.style.right = `${right}px`;
-  notify.style.opacity = '';
+  popup.style.bottom = `${bottom}px`;
+  popup.style.right = `${right}px`;
+  popup.style.opacity = '';
 
-  notify.querySelectorAll('.bgm-mp-btn').forEach((btn) => {
+  popup.querySelectorAll('.bgm-mp-btn').forEach((btn) => {
     btn.onclick = () => {
       const sec = sections.find((s) => String(s.sid) === btn.dataset.sid);
       if (!sec) return;
@@ -79,7 +122,7 @@ export function showPendingEps(allUnmatched, personName, type) {
     };
   });
 
-  notify.querySelectorAll('.bgm-mp-copy-btn').forEach((btn) => {
+  popup.querySelectorAll('.bgm-mp-copy-btn').forEach((btn) => {
     btn.onclick = () => {
       const sec = sections.find((s) => String(s.sid) === btn.dataset.sid);
       if (!sec) return;
@@ -92,7 +135,7 @@ export function showPendingEps(allUnmatched, personName, type) {
     };
   });
 
-  notify.querySelectorAll('.bgm-mp-locate-btn').forEach((btn) => {
+  popup.querySelectorAll('.bgm-mp-locate-btn').forEach((btn) => {
     btn.onclick = () => {
       document.querySelector('[data-group-mode="subject"]').click();
       const l = document.querySelector(`[href="/subject/${btn.dataset.sid}"]`);
@@ -100,28 +143,4 @@ export function showPendingEps(allUnmatched, personName, type) {
       window.location.href += `#:~:text=${l.textContent}`;
     };
   });
-
-  let offX = 0,
-    offY = 0;
-  function cx(e) {
-    return e.touches ? e.touches[0].clientX : e.clientX;
-  }
-  function cy(e) {
-    return e.touches ? e.touches[0].clientY : e.clientY;
-  }
-  handle.onmousedown = handle.ontouchstart = (e) => {
-    if (e.target.closest('.bgm-mp-notify-close')) return;
-    offX = cx(e) - notify.getBoundingClientRect().left;
-    offY = cy(e) - notify.getBoundingClientRect().top;
-    document.onmousemove = document.ontouchmove = (ev) => {
-      notify.style.left = cx(ev) - offX + 'px';
-      notify.style.top = cy(ev) - offY + 'px';
-      notify.style.right = 'auto';
-    };
-    document.onmouseup = document.ontouchend = () => {
-      document.onmousemove = document.ontouchmove = null;
-    };
-  };
-
-  notify.querySelector('.bgm-mp-notify-close').onclick = () => notify.remove();
 }

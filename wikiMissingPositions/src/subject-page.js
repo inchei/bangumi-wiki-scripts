@@ -3,6 +3,7 @@ import { getProvider, getShow } from './api.js';
 import { genAppearEps } from './appear-eps.js';
 import { checkExistingPerson } from './person.js';
 import { BANGUMI_ERROR_TEXT, ourApiErrorText } from './errors.js';
+import { createNotifyPopup } from './popup.js';
 
 function errSection(html) {
   return `<div class="staff-error-section">${html}</div>`;
@@ -114,11 +115,6 @@ export function openSubjectPopup(personName, typeCode) {
 
   const provider = getProvider();
 
-  const popup = document.createElement('div');
-  popup.className = 'bgm-mp-notify bgm-mp-subject-popup';
-
-  const handle = document.createElement('div');
-  handle.className = 'staff-tip-handle';
   const typeNames = { 1: '书', 2: '动', 3: '乐', 4: '游', 6: '实' };
   const typeChecks = [1, 2, 3, 4, 6]
     .map(
@@ -126,45 +122,14 @@ export function openSubjectPopup(personName, typeCode) {
         `<label class="bgm-mp-popup-type"><input type="checkbox" class="bgm-mp-type-check" value="${t}"${t === typeCode ? ' checked' : ''}>${typeNames[t]}</label>`,
     )
     .join('');
-  handle.innerHTML = `<strong>${personName}</strong><span class="bgm-mp-popup-types">${typeChecks}</span><button class="bgm-mp-notify-close">&times;</button>`;
 
-  const content = document.createElement('div');
-  content.className = 'staff-tip-content';
-
-  popup.append(handle, content);
-  document.body.appendChild(popup);
+  const { popup, content } = createNotifyPopup({
+    className: 'bgm-mp-subject-popup',
+    handleHTML: `<strong>${personName}</strong><span class="bgm-mp-popup-types">${typeChecks}</span><button class="bgm-mp-notify-close">&times;</button>`,
+    onClose: () => _abortController.abort(),
+    dragExclude: '.bgm-mp-popup-type, .bgm-mp-popup-types',
+  });
   content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
-
-  popup.querySelector('.bgm-mp-notify-close').onclick = () => {
-    _abortController.abort();
-    popup.remove();
-  };
-
-  // Drag
-  let offX = 0,
-    offY = 0;
-  function cx(e) {
-    return e.touches ? e.touches[0].clientX : e.clientX;
-  }
-  function cy(e) {
-    return e.touches ? e.touches[0].clientY : e.clientY;
-  }
-  handle.onmousedown = handle.ontouchstart = (e) => {
-    if (e.target.closest('.bgm-mp-notify-close, .bgm-mp-popup-type, .bgm-mp-popup-types')) return;
-    const rect = popup.getBoundingClientRect();
-    popup.style.transform = 'none';
-    popup.style.left = rect.left + 'px';
-    popup.style.top = rect.top + 'px';
-    offX = cx(e) - rect.left;
-    offY = cy(e) - rect.top;
-    document.onmousemove = document.ontouchmove = (ev) => {
-      popup.style.left = cx(ev) - offX + 'px';
-      popup.style.top = cy(ev) - offY + 'px';
-    };
-    document.onmouseup = document.ontouchend = () => {
-      document.onmousemove = document.ontouchmove = null;
-    };
-  };
 
   const errs = { bangumi: false, ours: false };
 

@@ -1116,6 +1116,129 @@ document.head.appendChild(styleEl);
     return `\u7F51\u7EDC\u51FA\u9519\u4E86\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u6216<a href="https://inchei.github.io/bangumi-wiki-scripts/missing-persons/search.html?q=${q}" class="l" target="_blank">\u770B\u770B\u6709\u6CA1\u6709\u5DF2\u7ECF\u5B58\u50A8\u7684\u7ED3\u679C</a>`;
   }
 
+  // src/popup.js
+  function makeDraggable(popup, handle, excludeSelector) {
+    let offX = 0, offY = 0;
+    function cx(e) {
+      return e.touches ? e.touches[0].clientX : e.clientX;
+    }
+    function cy(e) {
+      return e.touches ? e.touches[0].clientY : e.clientY;
+    }
+    handle.onmousedown = handle.ontouchstart = (e) => {
+      if (excludeSelector && e.target.closest(excludeSelector)) return;
+      const rect = popup.getBoundingClientRect();
+      popup.style.transform = "none";
+      popup.style.left = rect.left + "px";
+      popup.style.top = rect.top + "px";
+      popup.style.right = "auto";
+      popup.style.bottom = "auto";
+      offX = cx(e) - rect.left;
+      offY = cy(e) - rect.top;
+      document.onmousemove = document.ontouchmove = (ev) => {
+        popup.style.left = cx(ev) - offX + "px";
+        popup.style.top = cy(ev) - offY + "px";
+      };
+      document.onmouseup = document.ontouchend = () => {
+        document.onmousemove = document.ontouchmove = null;
+      };
+    };
+  }
+  function createNotifyPopup({ handleHTML, className = "", onClose, dragExclude = "" }) {
+    const popup = document.createElement("div");
+    popup.className = "bgm-mp-notify" + (className ? ` ${className}` : "");
+    const handle = document.createElement("div");
+    handle.className = "staff-tip-handle";
+    handle.innerHTML = handleHTML;
+    const content = document.createElement("div");
+    content.className = "staff-tip-content";
+    popup.append(handle, content);
+    document.body.appendChild(popup);
+    popup.querySelector(".bgm-mp-notify-close").onclick = () => {
+      onClose?.();
+      popup.remove();
+    };
+    const exclude = [".bgm-mp-notify-close", dragExclude].filter(Boolean).join(", ");
+    makeDraggable(popup, handle, exclude);
+    return { popup, handle, content };
+  }
+  function showPendingEps(allUnmatched, personName, type2) {
+    const existing = document.querySelector(".bgm-mp-notify");
+    if (existing) existing.remove();
+    const sections = allUnmatched.map(({ sid, entry }) => {
+      const eps = entry.episodes || [];
+      const epLinks = eps.map(
+        (ep) => `<a class="l" href="https://bgm.tv/ep/${ep.episode_id}#:~:text=${encodeURIComponent(personName)}" target="_blank">${ep.label}</a>`
+      ).join(", ");
+      return { sid, entry, eps, epLinks };
+    });
+    if (!sections.length) return;
+    const { popup, content } = createNotifyPopup({
+      handleHTML: '<strong>\u7591\u4F3C\u5339\u914D</strong><button class="bgm-mp-notify-close">&times;</button>'
+    });
+    let html = '<div class="bgm-mp-pending-header">\u4EE5\u4E0B\u5267\u96C6\u7B80\u4ECB\u5305\u542B\u6B64\u540D\u79F0\u4F46\u672A\u5B9A\u4F4D\u5230\u804C\u4F4D\uFF1A</div>';
+    for (const sec of sections) {
+      html += `<div class="bgm-mp-pending-item">
+        <strong><a href="/subject/${sec.sid}">${sec.entry.name || "#" + sec.sid}</a></strong> ${sec.epLinks}
+        <button class="bgm-mp-btn bgm-mp-relate-btn" data-sid="${sec.sid}" href="javascript:">\u5173\u8054</button>
+        <button class="bgm-mp-btn bgm-mp-copy-btn" data-sid="${sec.sid}" href="javascript:">\u590D\u5236</button>
+        <button class="bgm-mp-btn bgm-mp-locate-btn" data-sid="${sec.sid}" href="javascript:">\u5B9A\u4F4D</button>
+      </div>`;
+    }
+    content.innerHTML = html;
+    popup.style.opacity = "0";
+    const boxW = popup.offsetWidth;
+    const boxH = popup.offsetHeight;
+    const winW = window.innerWidth;
+    const winH = window.innerHeight;
+    let right = 50, bottom = 50;
+    right = Math.min(right, winW - boxW);
+    right = Math.max(right, 0);
+    bottom = Math.min(bottom, winH - boxH);
+    bottom = Math.max(bottom, 0);
+    popup.style.bottom = `${bottom}px`;
+    popup.style.right = `${right}px`;
+    popup.style.opacity = "";
+    popup.querySelectorAll(".bgm-mp-btn").forEach((btn) => {
+      btn.onclick = () => {
+        const sec = sections.find((s) => String(s.sid) === btn.dataset.sid);
+        if (!sec) return;
+        const epLabels = sec.eps.map((ep) => ep.label);
+        if (!epLabels.length) return;
+        subjectList = [
+          {
+            id: Number(sec.sid),
+            type_id: type2,
+            name: sec.entry.name,
+            name_cn: "",
+            url_mod: "subject"
+          }
+        ];
+        addRelateSubject(0, "submitForm");
+      };
+    });
+    popup.querySelectorAll(".bgm-mp-copy-btn").forEach((btn) => {
+      btn.onclick = () => {
+        const sec = sections.find((s) => String(s.sid) === btn.dataset.sid);
+        if (!sec) return;
+        const epLabels = sec.eps.map((ep) => ep.label);
+        if (!epLabels.length) return;
+        navigator.clipboard.writeText(genAppearEps(epLabels));
+        const orig = btn.textContent;
+        btn.textContent = "\u590D\u5236\u6210\u529F";
+        setTimeout(() => btn.textContent = orig, 2e3);
+      };
+    });
+    popup.querySelectorAll(".bgm-mp-locate-btn").forEach((btn) => {
+      btn.onclick = () => {
+        document.querySelector('[data-group-mode="subject"]').click();
+        const l = document.querySelector(`[href="/subject/${btn.dataset.sid}"]`);
+        if (!l) return;
+        window.location.href += `#:~:text=${l.textContent}`;
+      };
+    });
+  }
+
   // src/subject-page.js
   function errSection(html) {
     return `<div class="staff-error-section">${html}</div>`;
@@ -1200,47 +1323,17 @@ document.head.appendChild(styleEl);
     const existing = document.querySelector(".bgm-mp-subject-popup");
     if (existing) existing.remove();
     const provider = getProvider();
-    const popup = document.createElement("div");
-    popup.className = "bgm-mp-notify bgm-mp-subject-popup";
-    const handle = document.createElement("div");
-    handle.className = "staff-tip-handle";
     const typeNames = { 1: "\u4E66", 2: "\u52A8", 3: "\u4E50", 4: "\u6E38", 6: "\u5B9E" };
     const typeChecks = [1, 2, 3, 4, 6].map(
       (t) => `<label class="bgm-mp-popup-type"><input type="checkbox" class="bgm-mp-type-check" value="${t}"${t === typeCode ? " checked" : ""}>${typeNames[t]}</label>`
     ).join("");
-    handle.innerHTML = `<strong>${personName}</strong><span class="bgm-mp-popup-types">${typeChecks}</span><button class="bgm-mp-notify-close">&times;</button>`;
-    const content = document.createElement("div");
-    content.className = "staff-tip-content";
-    popup.append(handle, content);
-    document.body.appendChild(popup);
+    const { popup, content } = createNotifyPopup({
+      className: "bgm-mp-subject-popup",
+      handleHTML: `<strong>${personName}</strong><span class="bgm-mp-popup-types">${typeChecks}</span><button class="bgm-mp-notify-close">&times;</button>`,
+      onClose: () => _abortController.abort(),
+      dragExclude: ".bgm-mp-popup-type, .bgm-mp-popup-types"
+    });
     content.innerHTML = `<div class="bgm-mp-loading-wrap"><div class="bgm-mp-spinner"></div><div class="bgm-mp-loading-text">${randomMsg()}</div></div>`;
-    popup.querySelector(".bgm-mp-notify-close").onclick = () => {
-      _abortController.abort();
-      popup.remove();
-    };
-    let offX = 0, offY = 0;
-    function cx(e) {
-      return e.touches ? e.touches[0].clientX : e.clientX;
-    }
-    function cy(e) {
-      return e.touches ? e.touches[0].clientY : e.clientY;
-    }
-    handle.onmousedown = handle.ontouchstart = (e) => {
-      if (e.target.closest(".bgm-mp-notify-close, .bgm-mp-popup-type, .bgm-mp-popup-types")) return;
-      const rect = popup.getBoundingClientRect();
-      popup.style.transform = "none";
-      popup.style.left = rect.left + "px";
-      popup.style.top = rect.top + "px";
-      offX = cx(e) - rect.left;
-      offY = cy(e) - rect.top;
-      document.onmousemove = document.ontouchmove = (ev) => {
-        popup.style.left = cx(ev) - offX + "px";
-        popup.style.top = cy(ev) - offY + "px";
-      };
-      document.onmouseup = document.ontouchend = () => {
-        document.onmousemove = document.ontouchmove = null;
-      };
-    };
     const errs = { bangumi: false, ours: false };
     const doMultiFetch = (existing2, targetParam) => {
       if (!_ready) return;
@@ -1595,111 +1688,6 @@ document.head.appendChild(styleEl);
     } catch (e) {
       console.error("initPersonPage failed:", e);
     }
-  }
-
-  // src/popup.js
-  function showPendingEps(allUnmatched, personName, type2) {
-    const existing = document.querySelector(".bgm-mp-notify");
-    if (existing) existing.remove();
-    const sections = allUnmatched.map(({ sid, entry }) => {
-      const eps = entry.episodes || [];
-      const epLinks = eps.map(
-        (ep) => `<a class="l" href="https://bgm.tv/ep/${ep.episode_id}#:~:text=${encodeURIComponent(personName)}" target="_blank">${ep.label}</a>`
-      ).join(", ");
-      return { sid, entry, eps, epLinks };
-    });
-    if (!sections.length) return;
-    const notify = document.createElement("div");
-    notify.className = "bgm-mp-notify";
-    const handle = document.createElement("div");
-    handle.className = "staff-tip-handle";
-    handle.innerHTML = '<strong>\u7591\u4F3C\u5339\u914D</strong><button class="bgm-mp-notify-close">&times;</button>';
-    const content = document.createElement("div");
-    content.className = "staff-tip-content";
-    let html = '<div class="bgm-mp-pending-header">\u4EE5\u4E0B\u5267\u96C6\u7B80\u4ECB\u5305\u542B\u6B64\u540D\u79F0\u4F46\u672A\u5B9A\u4F4D\u5230\u804C\u4F4D\uFF1A</div>';
-    for (const sec of sections) {
-      html += `<div class="bgm-mp-pending-item">
-        <strong><a href="/subject/${sec.sid}">${sec.entry.name || "#" + sec.sid}</a></strong> ${sec.epLinks}
-        <button class="bgm-mp-btn bgm-mp-relate-btn" data-sid="${sec.sid}" href="javascript:">\u5173\u8054</button>
-        <button class="bgm-mp-btn bgm-mp-copy-btn" data-sid="${sec.sid}" href="javascript:">\u590D\u5236</button>
-        <button class="bgm-mp-btn bgm-mp-locate-btn" data-sid="${sec.sid}" href="javascript:">\u5B9A\u4F4D</button>
-      </div>`;
-    }
-    content.innerHTML = html;
-    notify.append(handle, content);
-    notify.style.opacity = "0";
-    document.body.appendChild(notify);
-    const boxW = notify.offsetWidth;
-    const boxH = notify.offsetHeight;
-    const winW = window.innerWidth;
-    const winH = window.innerHeight;
-    let right = 50, bottom = 50;
-    right = Math.min(right, winW - boxW);
-    right = Math.max(right, 0);
-    bottom = Math.min(bottom, winH - boxH);
-    bottom = Math.max(bottom, 0);
-    notify.style.bottom = `${bottom}px`;
-    notify.style.right = `${right}px`;
-    notify.style.opacity = "";
-    notify.querySelectorAll(".bgm-mp-btn").forEach((btn) => {
-      btn.onclick = () => {
-        const sec = sections.find((s) => String(s.sid) === btn.dataset.sid);
-        if (!sec) return;
-        const epLabels = sec.eps.map((ep) => ep.label);
-        if (!epLabels.length) return;
-        subjectList = [
-          {
-            id: Number(sec.sid),
-            type_id: type2,
-            name: sec.entry.name,
-            name_cn: "",
-            url_mod: "subject"
-          }
-        ];
-        addRelateSubject(0, "submitForm");
-      };
-    });
-    notify.querySelectorAll(".bgm-mp-copy-btn").forEach((btn) => {
-      btn.onclick = () => {
-        const sec = sections.find((s) => String(s.sid) === btn.dataset.sid);
-        if (!sec) return;
-        const epLabels = sec.eps.map((ep) => ep.label);
-        if (!epLabels.length) return;
-        navigator.clipboard.writeText(genAppearEps(epLabels));
-        const orig = btn.textContent;
-        btn.textContent = "\u590D\u5236\u6210\u529F";
-        setTimeout(() => btn.textContent = orig, 2e3);
-      };
-    });
-    notify.querySelectorAll(".bgm-mp-locate-btn").forEach((btn) => {
-      btn.onclick = () => {
-        document.querySelector('[data-group-mode="subject"]').click();
-        const l = document.querySelector(`[href="/subject/${btn.dataset.sid}"]`);
-        if (!l) return;
-        window.location.href += `#:~:text=${l.textContent}`;
-      };
-    });
-    let offX = 0, offY = 0;
-    function cx(e) {
-      return e.touches ? e.touches[0].clientX : e.clientX;
-    }
-    function cy(e) {
-      return e.touches ? e.touches[0].clientY : e.clientY;
-    }
-    handle.onmousedown = handle.ontouchstart = (e) => {
-      if (e.target.closest(".bgm-mp-notify-close")) return;
-      offX = cx(e) - notify.getBoundingClientRect().left;
-      offY = cy(e) - notify.getBoundingClientRect().top;
-      document.onmousemove = document.ontouchmove = (ev) => {
-        notify.style.left = cx(ev) - offX + "px";
-        notify.style.top = cy(ev) - offY + "px";
-        notify.style.right = "auto";
-      };
-      document.onmouseup = document.ontouchend = () => {
-        document.onmousemove = document.ontouchmove = null;
-      };
-    };
-    notify.querySelector(".bgm-mp-notify-close").onclick = () => notify.remove();
   }
 
   // src/add-related.js
