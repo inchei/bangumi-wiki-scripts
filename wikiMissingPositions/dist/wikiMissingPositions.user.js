@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.3.1
+// @version      0.3.2
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -1715,13 +1715,27 @@ document.head.appendChild(styleEl);
     statusBox.innerHTML = html || "";
     statusBox.classList.toggle("show", Boolean(html));
   }
-  function addSubjectLi(sid, posId, name) {
-    const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${sid}"])`);
-    if (existing?.querySelector('select[name$="[prsnPos]"]')?.value === posId) return existing;
+  function findSubjectLi(sid, posId) {
+    return [...document.querySelectorAll(`#crtRelateSubjects li:has([href="/subject/${sid}"])`)].find(
+      (li) => String(li.querySelector('select[name$="[prsnPos]"]')?.value) === String(posId)
+    );
+  }
+  function findNewSubjectLi(sid) {
+    return [...document.querySelectorAll(`#crtRelateSubjects li:has([href="/subject/${sid}"])`)].find(
+      (li) => !li.classList.contains("old")
+    );
+  }
+  function addOrFindSubjectLi(sid, posId, name) {
+    const existing = findSubjectLi(sid, posId);
+    if (existing) return { li: existing, added: false };
     subjectList = [{ id: Number(sid), type_id: type, name, name_cn: "", url_mod: "subject" }];
     addRelateSubject(0, "submitForm");
-    document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = posId;
-    return document.querySelector(`#crtRelateSubjects li:has([href="/subject/${sid}"])`);
+    const added = findNewSubjectLi(sid);
+    added.querySelector('select[name$="[prsnPos]"]').value = posId;
+    return { li: added, added: true };
+  }
+  function addSubjectLi(sid, posId, name) {
+    return addOrFindSubjectLi(sid, posId, name).li;
   }
   async function processEpisodesData(data, queryName) {
     let none = true;
@@ -1824,17 +1838,8 @@ document.head.appendChild(styleEl);
           const sid = key.split(":").pop();
           for (const pos of entry.positions || []) {
             if (position && String(pos) !== position) continue;
-            const existing = document.querySelector(
-              `#crtRelateSubjects li:has([href="/subject/${sid}"])`
-            );
-            if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
-              none = false;
-              subjectList = [
-                { id: Number(sid), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }
-              ];
-              addRelateSubject(0, "submitForm");
-              document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
-            }
+            const { added } = addOrFindSubjectLi(sid, pos, entry.name);
+            if (added) none = false;
           }
         }
         setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u586B\u5199\u5B8C\u6210\uFF01");
@@ -1854,17 +1859,8 @@ document.head.appendChild(styleEl);
         let none = true;
         for (const [id, entry] of resEntries) {
           for (const pos of entry.positions) {
-            const existing = document.querySelector(
-              `#crtRelateSubjects li:has([href="/subject/${id}"])`
-            );
-            if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
-              none = false;
-              subjectList = [
-                { id: Number(id), type_id: type, name: entry.name, name_cn: "", url_mod: "subject" }
-              ];
-              addRelateSubject(0, "submitForm");
-              document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
-            }
+            const { added } = addOrFindSubjectLi(id, pos, entry.name);
+            if (added) none = false;
           }
         }
         setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u586B\u5199\u5B8C\u6210\uFF01");

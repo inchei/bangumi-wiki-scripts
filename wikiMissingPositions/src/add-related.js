@@ -12,13 +12,30 @@ function setStatusBox(html) {
   statusBox.classList.toggle('show', Boolean(html));
 }
 
-export function addSubjectLi(sid, posId, name) {
-  const existing = document.querySelector(`#crtRelateSubjects li:has([href="/subject/${sid}"])`);
-  if (existing?.querySelector('select[name$="[prsnPos]"]')?.value === posId) return existing;
+function findSubjectLi(sid, posId) {
+  return [...document.querySelectorAll(`#crtRelateSubjects li:has([href="/subject/${sid}"])`)].find(
+    (li) => String(li.querySelector('select[name$="[prsnPos]"]')?.value) === String(posId),
+  );
+}
+
+function findNewSubjectLi(sid) {
+  return [...document.querySelectorAll(`#crtRelateSubjects li:has([href="/subject/${sid}"])`)].find(
+    (li) => !li.classList.contains('old'),
+  );
+}
+
+function addOrFindSubjectLi(sid, posId, name) {
+  const existing = findSubjectLi(sid, posId);
+  if (existing) return { li: existing, added: false };
   subjectList = [{ id: Number(sid), type_id: type, name, name_cn: '', url_mod: 'subject' }];
   addRelateSubject(0, 'submitForm');
-  document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = posId;
-  return document.querySelector(`#crtRelateSubjects li:has([href="/subject/${sid}"])`);
+  const added = findNewSubjectLi(sid);
+  added.querySelector('select[name$="[prsnPos]"]').value = posId;
+  return { li: added, added: true };
+}
+
+export function addSubjectLi(sid, posId, name) {
+  return addOrFindSubjectLi(sid, posId, name).li;
 }
 
 async function processEpisodesData(data, queryName) {
@@ -146,17 +163,8 @@ export function initAddRelated() {
         const sid = key.split(':').pop();
         for (const pos of entry.positions || []) {
           if (position && String(pos) !== position) continue;
-          const existing = document.querySelector(
-            `#crtRelateSubjects li:has([href="/subject/${sid}"])`,
-          );
-          if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
-            none = false;
-            subjectList = [
-              { id: Number(sid), type_id: type, name: entry.name, name_cn: '', url_mod: 'subject' },
-            ];
-            addRelateSubject(0, 'submitForm');
-            document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
-          }
+          const { added } = addOrFindSubjectLi(sid, pos, entry.name);
+          if (added) none = false;
         }
       }
       setStatusBox(none ? '未查找到任何已填写条目' : '关联填写完成！');
@@ -177,17 +185,8 @@ export function initAddRelated() {
       let none = true;
       for (const [id, entry] of resEntries) {
         for (const pos of entry.positions) {
-          const existing = document.querySelector(
-            `#crtRelateSubjects li:has([href="/subject/${id}"])`,
-          );
-          if (existing?.querySelector('select[name$="[prsnPos]"]')?.value !== pos) {
-            none = false;
-            subjectList = [
-              { id: Number(id), type_id: type, name: entry.name, name_cn: '', url_mod: 'subject' },
-            ];
-            addRelateSubject(0, 'submitForm');
-            document.querySelector('#crtRelateSubjects select[name$="[prsnPos]"]').value = pos;
-          }
+          const { added } = addOrFindSubjectLi(id, pos, entry.name);
+          if (added) none = false;
         }
       }
       setStatusBox(none ? '未查找到任何已填写条目' : '关联填写完成！');
