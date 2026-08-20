@@ -22,6 +22,9 @@ env:
 jobs:
   check_and_filter:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - name: 拉取代码
         uses: actions/checkout@v5
@@ -155,4 +158,5 @@ jobs:
           path: '_site'
 
       - name: 部署到 GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
