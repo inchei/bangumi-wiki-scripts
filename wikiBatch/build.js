@@ -35,6 +35,7 @@ async function build() {
         external: ['@git-diff-view/shiki'],
         logLevel: 'error',
         minify: true,
+        charset: 'utf8',
         banner: {
             js: HEADER + '\n',
         },

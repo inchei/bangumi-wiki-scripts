@@ -610,309 +610,309 @@ document.head.appendChild(styleEl);
   // src/position-ids.js
   var POSITION_IDS = {
     2: {
-      1: "\u539F\u4F5C",
-      2: "\u5BFC\u6F14",
-      3: "\u811A\u672C",
-      4: "\u5206\u955C",
-      5: "\u6F14\u51FA",
-      6: "\u97F3\u4E50",
-      7: "\u4EBA\u7269\u539F\u6848",
-      8: "\u4EBA\u7269\u8BBE\u5B9A",
-      9: "\u6784\u56FE",
-      10: "\u7CFB\u5217\u6784\u6210",
-      11: "\u7F8E\u672F\u76D1\u7763",
-      13: "\u8272\u5F69\u8BBE\u8BA1",
-      14: "\u603B\u4F5C\u753B\u76D1\u7763",
-      15: "\u4F5C\u753B\u76D1\u7763",
-      16: "\u673A\u68B0\u8BBE\u5B9A",
-      17: "\u6444\u5F71\u76D1\u7763",
-      18: "\u76D1\u4FEE",
-      19: "\u9053\u5177\u8BBE\u8BA1",
-      20: "\u539F\u753B",
-      21: "\u7B2C\u4E8C\u539F\u753B",
-      22: "\u52A8\u753B\u68C0\u67E5",
-      24: "\u5236\u4F5C\u52A9\u7406",
-      25: "\u80CC\u666F\u7F8E\u672F",
-      26: "\u8272\u5F69\u6307\u5B9A",
-      27: "\u6570\u7801\u7ED8\u56FE",
-      28: "\u526A\u8F91",
-      29: "\u539F\u6848",
-      30: "\u4E3B\u9898\u6B4C\u7F16\u66F2",
-      31: "\u4E3B\u9898\u6B4C\u4F5C\u66F2",
-      32: "\u4E3B\u9898\u6B4C\u4F5C\u8BCD",
-      33: "\u4E3B\u9898\u6B4C\u6F14\u51FA",
-      34: "\u63D2\u5165\u6B4C\u6F14\u51FA",
-      35: "\u4F01\u753B",
-      36: "\u4F01\u5212\u5236\u4F5C\u4EBA",
-      37: "\u5236\u4F5C\u7BA1\u7406",
-      38: "\u5BA3\u4F20",
-      39: "\u5F55\u97F3",
-      40: "\u5F55\u97F3\u52A9\u7406",
-      41: "\u7CFB\u5217\u76D1\u7763",
-      42: "\u88FD\u4F5C",
-      43: "\u8BBE\u5B9A",
-      44: "\u97F3\u54CD\u76D1\u7763",
-      45: "\u97F3\u54CD",
-      46: "\u97F3\u6548",
-      47: "\u7279\u6548",
-      48: "\u914D\u97F3\u76D1\u7763",
-      49: "\u8054\u5408\u5BFC\u6F14",
-      50: "\u80CC\u666F\u8BBE\u5B9A",
-      51: "\u8865\u95F4\u52A8\u753B",
-      52: "\u6267\u884C\u5236\u7247\u4EBA",
-      53: "\u52A9\u7406\u5236\u7247\u4EBA",
-      54: "\u5236\u7247\u4EBA",
-      55: "\u97F3\u4E50\u52A9\u7406",
-      56: "\u5236\u4F5C\u8FDB\u884C",
-      57: "\u6F14\u5458\u76D1\u7763",
-      58: "\u603B\u5236\u7247\u4EBA",
-      59: "\u8054\u5408\u5236\u7247\u4EBA",
-      60: "\u53F0\u8BCD\u7F16\u8F91",
-      61: "\u540E\u671F\u5236\u7247\u534F\u8C03",
-      62: "\u5236\u4F5C\u52A9\u7406",
-      63: "\u5236\u4F5C",
-      64: "\u5236\u4F5C\u534F\u8C03",
-      65: "\u97F3\u4E50\u5236\u4F5C",
-      66: "\u7279\u522B\u9E23\u8C22",
-      67: "\u52A8\u753B\u5236\u4F5C",
-      69: "CG \u5BFC\u6F14",
-      70: "\u673A\u68B0\u4F5C\u753B\u76D1\u7763",
-      71: "\u7F8E\u672F\u8BBE\u8BA1",
-      72: "\u526F\u5BFC\u6F14",
-      73: "OP\u30FBED \u5206\u955C",
-      74: "\u603B\u5BFC\u6F14",
+      1: "原作",
+      2: "导演",
+      3: "脚本",
+      4: "分镜",
+      5: "演出",
+      6: "音乐",
+      7: "人物原案",
+      8: "人物设定",
+      9: "构图",
+      10: "系列构成",
+      11: "美术监督",
+      13: "色彩设计",
+      14: "总作画监督",
+      15: "作画监督",
+      16: "机械设定",
+      17: "摄影监督",
+      18: "监修",
+      19: "道具设计",
+      20: "原画",
+      21: "第二原画",
+      22: "动画检查",
+      24: "制作助理",
+      25: "背景美术",
+      26: "色彩指定",
+      27: "数码绘图",
+      28: "剪辑",
+      29: "原案",
+      30: "主题歌编曲",
+      31: "主题歌作曲",
+      32: "主题歌作词",
+      33: "主题歌演出",
+      34: "插入歌演出",
+      35: "企画",
+      36: "企划制作人",
+      37: "制作管理",
+      38: "宣传",
+      39: "录音",
+      40: "录音助理",
+      41: "系列监督",
+      42: "製作",
+      43: "设定",
+      44: "音响监督",
+      45: "音响",
+      46: "音效",
+      47: "特效",
+      48: "配音监督",
+      49: "联合导演",
+      50: "背景设定",
+      51: "补间动画",
+      52: "执行制片人",
+      53: "助理制片人",
+      54: "制片人",
+      55: "音乐助理",
+      56: "制作进行",
+      57: "演员监督",
+      58: "总制片人",
+      59: "联合制片人",
+      60: "台词编辑",
+      61: "后期制片协调",
+      62: "制作助理",
+      63: "制作",
+      64: "制作协调",
+      65: "音乐制作",
+      66: "特别鸣谢",
+      67: "动画制作",
+      69: "CG 导演",
+      70: "机械作画监督",
+      71: "美术设计",
+      72: "副导演",
+      73: "OP・ED 分镜",
+      74: "总导演",
       75: "3DCG",
-      76: "\u5236\u4F5C\u534F\u529B",
-      77: "\u52A8\u4F5C\u4F5C\u753B\u76D1\u7763",
-      80: "\u76D1\u5236",
-      81: "\u534F\u529B",
-      82: "\u6444\u5F71",
-      83: "\u5236\u4F5C\u8FDB\u884C\u534F\u529B",
-      84: "\u8BBE\u5B9A\u5236\u4F5C",
-      85: "\u97F3\u4E50\u5236\u4F5C\u4EBA",
-      86: "3DCG \u5BFC\u6F14",
-      87: "\u52A8\u753B\u5236\u7247\u4EBA",
-      88: "\u7279\u6548\u4F5C\u753B\u76D1\u7763",
-      89: "\u4E3B\u6F14\u51FA",
-      90: "\u4F5C\u753B\u76D1\u7763\u52A9\u7406",
-      91: "\u6F14\u51FA\u52A9\u7406",
-      92: "\u4E3B\u52A8\u753B\u5E08",
-      93: "\u4E0A\u8272",
-      94: "\u4E0A\u8272\u68C0\u67E5",
-      95: "\u8272\u5F69\u68C0\u67E5",
-      96: "\u7F8E\u672F\u677F",
-      97: "\u7F8E\u672F",
-      98: "\u5370\u8C61\u677F",
-      99: "2D \u8BBE\u8BA1",
-      100: "3D \u8BBE\u8BA1",
-      101: "\u6280\u672F\u5BFC\u6F14",
-      102: "\u7279\u6280\u5BFC\u6F14",
-      103: "\u8272\u5F69\u811A\u672C",
-      104: "\u5206\u955C\u534F\u529B",
-      105: "\u5206\u955C\u6284\u5199",
-      106: "\u526F\u4EBA\u7269\u8BBE\u5B9A",
-      107: "\u5BA2\u5EA7\u4EBA\u7269\u8BBE\u5B9A",
-      108: "\u6784\u56FE\u76D1\u4FEE",
-      109: "\u6784\u56FE\u4F5C\u753B\u76D1\u7763",
-      110: "\u603B\u4F5C\u753B\u76D1\u7763\u52A9\u7406",
-      111: "\u9053\u5177\u4F5C\u753B\u76D1\u7763",
-      112: "\u6982\u5FF5\u8BBE\u8BA1",
-      113: "\u670D\u88C5\u8BBE\u8BA1",
-      114: "\u6807\u9898\u8BBE\u8BA1",
-      115: "\u8BBE\u5B9A\u534F\u529B",
-      116: "\u97F3\u4E50\u76D1\u7763",
-      117: "\u9009\u66F2",
-      118: "\u63D2\u5165\u6B4C\u4F5C\u8BCD",
-      119: "\u63D2\u5165\u6B4C\u4F5C\u66F2",
-      120: "\u63D2\u5165\u6B4C\u7F16\u66F2",
-      121: "\u521B\u610F\u5236\u7247\u4EBA",
-      122: "\u526F\u5236\u7247\u4EBA",
-      123: "\u5236\u4F5C\u7EDF\u62EC",
-      124: "\u73B0\u573A\u5236\u7247\u4EBA",
-      125: "\u6587\u827A\u5236\u4F5C",
-      127: "\u4F01\u753B\u534F\u529B",
-      128: "OP\u30FBED \u6F14\u51FA",
-      129: "Bank \u5206\u955C\u6F14\u51FA",
-      130: "Live \u5206\u955C\u6F14\u51FA",
-      131: "\u5267\u4E2D\u5267\u5206\u955C\u6F14\u51FA",
-      132: "\u5267\u4E2D\u5267\u4EBA\u8BBE",
-      133: "\u89C6\u89C9\u5BFC\u6F14",
-      134: "\u521B\u610F\u603B\u76D1",
-      135: "\u7279\u6444\u6548\u679C",
-      136: "\u89C6\u89C9\u6548\u679C",
-      137: "\u52A8\u4F5C\u5BFC\u6F14",
-      138: "\u8F6C\u573A\u7ED8",
-      139: "\u63D2\u753B",
-      140: "\u89D2\u8272\u4F5C\u753B\u76D1\u7763",
-      141: "\u4F5C\u753B\u76D1\u4FEE",
-      142: "\u673A\u8BBE\u539F\u6848",
-      143: "\u6982\u5FF5\u827A\u672F",
-      144: "\u89C6\u89C9\u6982\u5FF5",
-      145: "\u753B\u9762\u8BBE\u8BA1",
-      146: "\u602A\u7269\u8BBE\u8BA1",
-      147: "\u6545\u4E8B\u6982\u5FF5",
-      148: "\u5267\u672C\u534F\u8C03",
-      149: "\u811A\u672C\u534F\u529B",
-      150: "\u526F\u7CFB\u5217\u6784\u6210",
-      151: "\u6784\u6210\u534F\u529B",
-      152: "\u5F55\u97F3\u5DE5\u4F5C\u5BA4",
-      153: "\u6574\u97F3",
-      154: "\u97F3\u54CD\u5236\u4F5C\u62C5\u5F53",
-      155: "\u5728\u7EBF\u526A\u8F91",
-      156: "\u79BB\u7EBF\u526A\u8F91",
-      157: "3D \u52A8\u753B\u5E08",
-      158: "CG \u5236\u4F5C\u4EBA",
-      159: "\u5BA3\u4F20\u5236\u7247\u4EBA",
-      160: "\u7F8E\u672F\u5236\u4F5C\u4EBA",
-      161: "\u97F3\u54CD\u5236\u4F5C\u4EBA",
-      162: "CG \u5236\u4F5C\u8FDB\u884C",
-      163: "\u7F8E\u672F\u5236\u4F5C\u8FDB\u884C",
-      164: "\u7F8E\u672F\u76D1\u7763\u52A9\u7406",
-      165: "\u8272\u5F69\u8BBE\u8BA1\u52A9\u7406",
-      166: "\u6444\u5F71\u76D1\u7763\u52A9\u7406",
-      167: "\u5236\u4F5C\u7BA1\u7406\u52A9\u7406",
-      168: "\u8BBE\u5B9A\u5236\u4F5C\u52A9\u7406",
-      169: "\u526A\u8F91\u52A9\u7406",
-      170: "\u5BA3\u4F20\u534F\u529B",
-      171: "\u5EFA\u6A21/\u6A21\u578B",
-      172: "\u89C6\u89C9\u5F00\u53D1/\u5916\u89C2\u5F00\u53D1",
-      173: "\u52A8\u753B\u5BFC\u6F14",
-      174: "\u53D1\u884C",
-      175: "\u539F\u4F5C\u534F\u529B",
-      176: "\u88FD\u4F5C\u534F\u529B",
-      177: "\u88FD\u4F5C\u7EDF\u62EC",
-      178: "\u5236\u4F5C\u4E8B\u52A1",
-      179: "OP\u30FBED \u52A8\u753B\u5236\u4F5C",
-      180: "3DCG \u5BFC\u6F14\u52A9\u7406",
-      181: "CG \u5BFC\u6F14\u52A9\u7406",
-      182: "\u5236\u4F5C\u5236\u7247\u4EBA"
+      76: "制作协力",
+      77: "动作作画监督",
+      80: "监制",
+      81: "协力",
+      82: "摄影",
+      83: "制作进行协力",
+      84: "设定制作",
+      85: "音乐制作人",
+      86: "3DCG 导演",
+      87: "动画制片人",
+      88: "特效作画监督",
+      89: "主演出",
+      90: "作画监督助理",
+      91: "演出助理",
+      92: "主动画师",
+      93: "上色",
+      94: "上色检查",
+      95: "色彩检查",
+      96: "美术板",
+      97: "美术",
+      98: "印象板",
+      99: "2D 设计",
+      100: "3D 设计",
+      101: "技术导演",
+      102: "特技导演",
+      103: "色彩脚本",
+      104: "分镜协力",
+      105: "分镜抄写",
+      106: "副人物设定",
+      107: "客座人物设定",
+      108: "构图监修",
+      109: "构图作画监督",
+      110: "总作画监督助理",
+      111: "道具作画监督",
+      112: "概念设计",
+      113: "服装设计",
+      114: "标题设计",
+      115: "设定协力",
+      116: "音乐监督",
+      117: "选曲",
+      118: "插入歌作词",
+      119: "插入歌作曲",
+      120: "插入歌编曲",
+      121: "创意制片人",
+      122: "副制片人",
+      123: "制作统括",
+      124: "现场制片人",
+      125: "文艺制作",
+      127: "企画协力",
+      128: "OP・ED 演出",
+      129: "Bank 分镜演出",
+      130: "Live 分镜演出",
+      131: "剧中剧分镜演出",
+      132: "剧中剧人设",
+      133: "视觉导演",
+      134: "创意总监",
+      135: "特摄效果",
+      136: "视觉效果",
+      137: "动作导演",
+      138: "转场绘",
+      139: "插画",
+      140: "角色作画监督",
+      141: "作画监修",
+      142: "机设原案",
+      143: "概念艺术",
+      144: "视觉概念",
+      145: "画面设计",
+      146: "怪物设计",
+      147: "故事概念",
+      148: "剧本协调",
+      149: "脚本协力",
+      150: "副系列构成",
+      151: "构成协力",
+      152: "录音工作室",
+      153: "整音",
+      154: "音响制作担当",
+      155: "在线剪辑",
+      156: "离线剪辑",
+      157: "3D 动画师",
+      158: "CG 制作人",
+      159: "宣传制片人",
+      160: "美术制作人",
+      161: "音响制作人",
+      162: "CG 制作进行",
+      163: "美术制作进行",
+      164: "美术监督助理",
+      165: "色彩设计助理",
+      166: "摄影监督助理",
+      167: "制作管理助理",
+      168: "设定制作助理",
+      169: "剪辑助理",
+      170: "宣传协力",
+      171: "建模/模型",
+      172: "视觉开发/外观开发",
+      173: "动画导演",
+      174: "发行",
+      175: "原作协力",
+      176: "製作协力",
+      177: "製作统括",
+      178: "制作事务",
+      179: "OP・ED 动画制作",
+      180: "3DCG 导演助理",
+      181: "CG 导演助理",
+      182: "制作制片人"
     },
     1: {
-      2001: "\u4F5C\u8005",
-      2002: "\u4F5C\u753B",
-      2003: "\u63D2\u56FE",
-      2004: "\u51FA\u7248\u793E",
-      2005: "\u8FDE\u8F7D\u6742\u5FD7",
-      2006: "\u8BD1\u8005",
-      2007: "\u539F\u4F5C",
-      2008: "\u5BA2\u4E32",
-      2009: "\u4EBA\u7269\u539F\u6848",
-      2010: "\u811A\u672C",
-      2011: "\u4E66\u7CFB",
-      2012: "\u51FA\u54C1\u65B9",
-      2013: "\u56FE\u4E66\u54C1\u724C",
-      2014: "\u7F16\u8457",
-      2015: "\u6784\u6210",
-      2016: "\u76D1\u4FEE",
-      2017: "\u89E3\u8BF4"
+      2001: "作者",
+      2002: "作画",
+      2003: "插图",
+      2004: "出版社",
+      2005: "连载杂志",
+      2006: "译者",
+      2007: "原作",
+      2008: "客串",
+      2009: "人物原案",
+      2010: "脚本",
+      2011: "书系",
+      2012: "出品方",
+      2013: "图书品牌",
+      2014: "编著",
+      2015: "构成",
+      2016: "监修",
+      2017: "解说"
     },
     4: {
-      1001: "\u5F00\u53D1",
-      1002: "\u53D1\u884C",
-      1003: "\u6E38\u620F\u8BBE\u8BA1\u5E08",
-      1004: "\u5267\u672C",
-      1005: "\u7F8E\u5DE5",
-      1006: "\u97F3\u4E50",
-      1007: "\u5173\u5361\u8BBE\u8BA1",
-      1008: "\u4EBA\u7269\u8BBE\u5B9A",
-      1009: "\u4E3B\u9898\u6B4C\u4F5C\u66F2",
-      1010: "\u4E3B\u9898\u6B4C\u4F5C\u8BCD",
-      1011: "\u4E3B\u9898\u6B4C\u6F14\u51FA",
-      1012: "\u63D2\u5165\u6B4C\u6F14\u51FA",
-      1013: "\u539F\u753B",
-      1014: "\u52A8\u753B\u5236\u4F5C",
-      1015: "\u539F\u4F5C",
-      1016: "\u5BFC\u6F14",
-      1017: "\u52A8\u753B\u76D1\u7763",
-      1018: "\u5236\u4F5C\u603B\u6307\u6325",
+      1001: "开发",
+      1002: "发行",
+      1003: "游戏设计师",
+      1004: "剧本",
+      1005: "美工",
+      1006: "音乐",
+      1007: "关卡设计",
+      1008: "人物设定",
+      1009: "主题歌作曲",
+      1010: "主题歌作词",
+      1011: "主题歌演出",
+      1012: "插入歌演出",
+      1013: "原画",
+      1014: "动画制作",
+      1015: "原作",
+      1016: "导演",
+      1017: "动画监督",
+      1018: "制作总指挥",
       1019: "QC",
-      1020: "\u52A8\u753B\u5267\u672C",
-      1021: "\u7A0B\u5E8F",
-      1022: "\u534F\u529B",
-      1023: "CG \u76D1\u4FEE",
-      1024: "SD\u539F\u753B",
-      1025: "\u80CC\u666F",
-      1026: "\u76D1\u4FEE",
-      1027: "\u7CFB\u5217\u6784\u6210",
-      1028: "\u4F01\u753B",
-      1029: "\u673A\u68B0\u8BBE\u5B9A",
-      1030: "\u97F3\u54CD\u76D1\u7763",
-      1031: "\u4F5C\u753B\u76D1\u7763",
-      1032: "\u5236\u4F5C\u4EBA",
-      1033: "\u6D77\u62A5",
+      1020: "动画剧本",
+      1021: "程序",
+      1022: "协力",
+      1023: "CG 监修",
+      1024: "SD原画",
+      1025: "背景",
+      1026: "监修",
+      1027: "系列构成",
+      1028: "企画",
+      1029: "机械设定",
+      1030: "音响监督",
+      1031: "作画监督",
+      1032: "制作人",
+      1033: "海报",
       1034: "UI",
-      1035: "\u914D\u97F3\u5BFC\u6F14"
+      1035: "配音导演"
     },
     3: {
-      3001: "\u827A\u672F\u5BB6",
-      3002: "\u5236\u4F5C\u4EBA",
-      3003: "\u4F5C\u66F2",
-      3004: "\u5382\u724C",
-      3005: "\u539F\u4F5C",
-      3006: "\u4F5C\u8BCD",
-      3007: "\u5F55\u97F3",
-      3008: "\u7F16\u66F2",
-      3009: "\u63D2\u56FE",
-      3010: "\u811A\u672C",
-      3011: "\u51FA\u7248\u65B9",
-      3012: "\u6BCD\u5E26\u5236\u4F5C",
-      3013: "\u6DF7\u97F3",
-      3014: "\u4E50\u5668",
-      3015: "\u58F0\u4E50",
-      3016: "\u5FF5\u767D/\u65C1\u767D",
-      3017: "\u4EBA\u58F0\u7F16\u8F91",
-      3018: "\u4EBA\u58F0\u6307\u5BFC",
-      3019: "\u5BA2\u4E32",
-      3020: "\u97F3\u54CD\u76D1\u7763",
-      3021: "\u5408\u5531",
-      3022: "\u548C\u58F0",
-      3023: "\u8BBE\u8BA1"
+      3001: "艺术家",
+      3002: "制作人",
+      3003: "作曲",
+      3004: "厂牌",
+      3005: "原作",
+      3006: "作词",
+      3007: "录音",
+      3008: "编曲",
+      3009: "插图",
+      3010: "脚本",
+      3011: "出版方",
+      3012: "母带制作",
+      3013: "混音",
+      3014: "乐器",
+      3015: "声乐",
+      3016: "念白/旁白",
+      3017: "人声编辑",
+      3018: "人声指导",
+      3019: "客串",
+      3020: "音响监督",
+      3021: "合唱",
+      3022: "和声",
+      3023: "设计"
     },
     6: {
-      4001: "\u539F\u4F5C",
-      4002: "\u5BFC\u6F14",
-      4003: "\u7F16\u5267",
-      4004: "\u97F3\u4E50",
-      4005: "\u6267\u884C\u5236\u7247\u4EBA",
-      4006: "\u5171\u540C\u6267\u884C\u5236\u4F5C",
-      4007: "\u5236\u7247\u4EBA/\u5236\u4F5C\u4EBA",
-      4008: "\u76D1\u5236",
-      4009: "\u526F\u5236\u4F5C\u4EBA/\u5236\u4F5C\u987E\u95EE",
-      4010: "\u6545\u4E8B",
-      4011: "\u7F16\u5BA1",
-      4012: "\u526A\u8F91",
-      4013: "\u521B\u610F\u603B\u76D1",
-      4014: "\u6444\u5F71",
-      4015: "\u4E3B\u9898\u6B4C\u6F14\u51FA",
-      4016: "\u4E3B\u6F14",
-      4017: "\u914D\u89D2",
-      4018: "\u5236\u4F5C",
-      4019: "\u51FA\u54C1",
-      4020: "\u914D\u97F3\u5BFC\u6F14",
-      4021: "\u5F55\u97F3",
-      4022: "\u6D77\u62A5",
-      4023: "\u4F01\u5212/\u7B56\u5212",
-      4024: "\u526F\u5BFC\u6F14",
-      4025: "\u7F8E\u672F",
-      4026: "\u8054\u5408\u5236\u7247\u4EBA/\u526F\u5236\u7247\u4EBA",
-      4027: "\u52A8\u4F5C\u5BFC\u6F14/\u6B66\u672F\u6307\u5BFC",
-      4028: "\u7279\u6280\u6307\u5BFC",
-      4029: "\u7279\u6444\u5BFC\u6F14",
-      4030: "\u5B9E\u62CD\u7279\u6548",
-      4031: "\u89C6\u89C9\u7279\u6548",
+      4001: "原作",
+      4002: "导演",
+      4003: "编剧",
+      4004: "音乐",
+      4005: "执行制片人",
+      4006: "共同执行制作",
+      4007: "制片人/制作人",
+      4008: "监制",
+      4009: "副制作人/制作顾问",
+      4010: "故事",
+      4011: "编审",
+      4012: "剪辑",
+      4013: "创意总监",
+      4014: "摄影",
+      4015: "主题歌演出",
+      4016: "主演",
+      4017: "配角",
+      4018: "制作",
+      4019: "出品",
+      4020: "配音导演",
+      4021: "录音",
+      4022: "海报",
+      4023: "企划/策划",
+      4024: "副导演",
+      4025: "美术",
+      4026: "联合制片人/副制片人",
+      4027: "动作导演/武术指导",
+      4028: "特技指导",
+      4029: "特摄导演",
+      4030: "实拍特效",
+      4031: "视觉特效",
       4032: "3DCG",
-      4033: "\u8BBE\u5B9A",
-      4034: "\u4EBA\u7269\u8BBE\u8BA1/\u76AE\u5957\u8BBE\u8BA1",
-      4035: "\u9020\u578B\u8BBE\u8BA1",
-      4036: "\u751F\u7269\u8BBE\u8BA1",
-      4037: "\u602A\u517D\u8BBE\u8BA1",
-      4038: "\u627F\u5236\u65B9/\u6444\u5236",
-      4039: "\u5BA3\u4F20",
-      4040: "\u534F\u529B",
-      4041: "\u7279\u522B\u9E23\u8C22",
-      4042: "\u97F3\u54CD\u76D1\u7763",
-      4043: "\u540E\u671F",
-      4044: "\u53D1\u884C"
+      4033: "设定",
+      4034: "人物设计/皮套设计",
+      4035: "造型设计",
+      4036: "生物设计",
+      4037: "怪兽设计",
+      4038: "承制方/摄制",
+      4039: "宣传",
+      4040: "协力",
+      4041: "特别鸣谢",
+      4042: "音响监督",
+      4043: "后期",
+      4044: "发行"
     }
   };
 
@@ -1098,7 +1098,7 @@ document.head.appendChild(styleEl);
         const matches = searchResults.filter((r) => normalized === normalize(r.name));
         if (matches.length) {
           result.directMatches = matches.map((r) => {
-            const cn = (r.infobox || []).find((f) => f.key === "\u7B80\u4F53\u4E2D\u6587\u540D");
+            const cn = (r.infobox || []).find((f) => f.key === "简体中文名");
             return { name: r.name, id: r.id, display: cn?.value || r.name };
           });
         }
@@ -1110,10 +1110,10 @@ document.head.appendChild(styleEl);
   }
 
   // src/errors.js
-  var BANGUMI_ERROR_TEXT = '\u7F51\u7EDC\u51FA\u9519\u4E86\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u6216<a href="https://bgm-status.ry.mk" class="l" target="_blank">\u67E5\u770B\u73ED\u5A18\u60C5\u51B5</a>';
+  var BANGUMI_ERROR_TEXT = '网络出错了，请检查网络或<a href="https://bgm-status.ry.mk" class="l" target="_blank">查看班娘情况</a>';
   function ourApiErrorText(name) {
     const q = encodeURIComponent(name || "");
-    return `\u7F51\u7EDC\u51FA\u9519\u4E86\uFF0C\u8BF7\u68C0\u67E5\u7F51\u7EDC\u6216<a href="https://inchei.github.io/bangumi-wiki-scripts/missing-persons/search.html?q=${q}" class="l" target="_blank">\u770B\u770B\u6709\u6CA1\u6709\u5DF2\u7ECF\u5B58\u50A8\u7684\u7ED3\u679C</a>`;
+    return `网络出错了，请检查网络或<a href="https://inchei.github.io/bangumi-wiki-scripts/missing-persons/search.html?q=${q}" class="l" target="_blank">看看有没有已经存储的结果</a>`;
   }
 
   // src/popup.js
@@ -1174,15 +1174,15 @@ document.head.appendChild(styleEl);
     });
     if (!sections.length) return;
     const { popup, content } = createNotifyPopup({
-      handleHTML: '<strong>\u7591\u4F3C\u5339\u914D</strong><button class="bgm-mp-notify-close">&times;</button>'
+      handleHTML: '<strong>疑似匹配</strong><button class="bgm-mp-notify-close">&times;</button>'
     });
-    let html = '<div class="bgm-mp-pending-header">\u4EE5\u4E0B\u5267\u96C6\u7B80\u4ECB\u5305\u542B\u6B64\u540D\u79F0\u4F46\u672A\u5B9A\u4F4D\u5230\u804C\u4F4D\uFF1A</div>';
+    let html = '<div class="bgm-mp-pending-header">以下剧集简介包含此名称但未定位到职位：</div>';
     for (const sec of sections) {
       html += `<div class="bgm-mp-pending-item">
         <strong><a href="/subject/${sec.sid}">${sec.entry.name || "#" + sec.sid}</a></strong> ${sec.epLinks}
-        <button class="bgm-mp-btn bgm-mp-relate-btn" data-sid="${sec.sid}" href="javascript:">\u5173\u8054</button>
-        <button class="bgm-mp-btn bgm-mp-copy-btn" data-sid="${sec.sid}" href="javascript:">\u590D\u5236</button>
-        <button class="bgm-mp-btn bgm-mp-locate-btn" data-sid="${sec.sid}" href="javascript:">\u5B9A\u4F4D</button>
+        <button class="bgm-mp-btn bgm-mp-relate-btn" data-sid="${sec.sid}" href="javascript:">关联</button>
+        <button class="bgm-mp-btn bgm-mp-copy-btn" data-sid="${sec.sid}" href="javascript:">复制</button>
+        <button class="bgm-mp-btn bgm-mp-locate-btn" data-sid="${sec.sid}" href="javascript:">定位</button>
       </div>`;
     }
     content.innerHTML = html;
@@ -1225,7 +1225,7 @@ document.head.appendChild(styleEl);
         if (!epLabels.length) return;
         navigator.clipboard.writeText(genAppearEps(epLabels));
         const orig = btn.textContent;
-        btn.textContent = "\u590D\u5236\u6210\u529F";
+        btn.textContent = "复制成功";
         setTimeout(() => btn.textContent = orig, 2e3);
       };
     });
@@ -1245,16 +1245,16 @@ document.head.appendChild(styleEl);
   }
   var cacheKey = (name, t, target) => `mp:${name}:${t}:${target}`;
   var LOADING_MSGS = [
-    "\u5750\u548C\u653E\u5BBD",
-    "\u6B63\u5728\u51C6\u5907\u6570\u636E<br>\u8BF7\u52FF\u2122\u5173\u95ED\u8BA1\u7B97\u673A",
-    "\u597D\u4E1C\u897F\u5C31\u8981\u6765\u4E86\uFF01",
-    () => `\u4F60\u5DF2\u5B8C\u6210${10 * (2 + Math.floor(Math.random() * 7))}%`,
-    "\u6B63\u5728\u5904\u7406\u4E00\u4E9B\u4E8B\u60C5",
-    "\u4F60\u6B63\u5728\u6210\u529F\uFF01",
-    "\u4E0D\u5DE7\u7684\u662F\uFF0C\u5B83\u82B1\u8D39\u7684\u65F6\u95F4\u6BD4\u901A\u5E38\u8981\u957F",
-    "\u518D\u7B49\u4E00\u4E0B\u4E0B\u5C31\u597D\u4E86",
-    "\u8FD9\u901A\u5E38\u4E0D\u4F1A\u592A\u4E45",
-    "\u6211\u4EEC\u6B63\u5728\u5E2E\u4F60\u641E\u5B9A\u4E00\u5207"
+    "坐和放宽",
+    "正在准备数据<br>请勿™关闭计算机",
+    "好东西就要来了！",
+    () => `你已完成${10 * (2 + Math.floor(Math.random() * 7))}%`,
+    "正在处理一些事情",
+    "你正在成功！",
+    "不巧的是，它花费的时间比通常要长",
+    "再等一下下就好了",
+    "这通常不会太久",
+    "我们正在帮你搞定一切"
   ];
   function randomMsg() {
     const m = LOADING_MSGS[Math.floor(Math.random() * LOADING_MSGS.length)];
@@ -1323,7 +1323,7 @@ document.head.appendChild(styleEl);
     const existing = document.querySelector(".bgm-mp-subject-popup");
     if (existing) existing.remove();
     const provider = getProvider();
-    const typeNames = { 1: "\u4E66", 2: "\u52A8", 3: "\u4E50", 4: "\u6E38", 6: "\u5B9E" };
+    const typeNames = { 1: "书", 2: "动", 3: "乐", 4: "游", 6: "实" };
     const typeChecks = [1, 2, 3, 4, 6].map(
       (t) => `<label class="bgm-mp-popup-type"><input type="checkbox" class="bgm-mp-type-check" value="${t}"${t === typeCode ? " checked" : ""}>${typeNames[t]}</label>`
     ).join("");
@@ -1398,23 +1398,23 @@ document.head.appendChild(styleEl);
         if (existing2.aliasesError) warningHtml += errSection(ourApiErrorText(personName));
         if (existing2.aliased) {
           if (existing2.aliasedMulti && existing2.aliasedMulti.length > 1) {
-            warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u5339\u914D\u5230\u591A\u4E2A\u4EBA\u7269\uFF0C\u5DF2\u53D6\u7B2C\u4E00\u4E2A\uFF1A</div>`;
+            warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">别名为「${personName}」匹配到多个人物，已取第一个：</div>`;
             for (const p of existing2.aliasedMulti) {
               warningHtml += `<a class="l" href="/person/${p.id}" target="_blank">${p.name}</a> `;
             }
             warningHtml += "</div>";
           } else {
-            warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">\u522B\u540D\u4E3A\u300C${personName}\u300D\u7684\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div><a class="l" href="/person/${existing2.aliased.id}" target="_blank">${existing2.aliased.name}</a></div>`;
+            warningHtml += `<div class="staff-warning-section"><div class="staff-warning-title">别名为「${personName}」的人物已存在：</div><a class="l" href="/person/${existing2.aliased.id}" target="_blank">${existing2.aliased.name}</a></div>`;
           }
         }
         if (existing2.directMatches) {
-          warningHtml += '<div class="staff-warning-section"><div class="staff-warning-title">\u540C\u540D\u4EBA\u7269\u5DF2\u5B58\u5728\uFF1A</div>';
+          warningHtml += '<div class="staff-warning-section"><div class="staff-warning-title">同名人物已存在：</div>';
           for (const p of existing2.directMatches) {
             warningHtml += `<a class="l" href="/person/${p.id}" target="_blank">${p.display || p.name}</a> `;
           }
           warningHtml += "</div>";
         }
-        warningHtml += '<div class="staff-confirm-section" id="bgm-mp-confirm-btn">\u4ECD\u7136\u52A0\u8F7D</div>';
+        warningHtml += '<div class="staff-confirm-section" id="bgm-mp-confirm-btn">仍然加载</div>';
         content.innerHTML = warningHtml;
         document.querySelector("#bgm-mp-confirm-btn").onclick = () => {
           document.querySelector("#bgm-mp-confirm-btn").remove();
@@ -1477,7 +1477,7 @@ document.head.appendChild(styleEl);
     renderResults(content, subjectsByType, episodesData, encodedName, personName, errs);
   }
   function renderResults(content, subjectsByType, episodesData, encodedName, personName, errs) {
-    const typeNamesFull = { 1: "\u4E66\u7C4D", 2: "\u52A8\u753B", 3: "\u97F3\u4E50", 4: "\u6E38\u620F", 6: "\u4E09\u6B21\u5143" };
+    const typeNamesFull = { 1: "书籍", 2: "动画", 3: "音乐", 4: "游戏", 6: "三次元" };
     const totalEntries = Object.values(subjectsByType).reduce((c, d) => c + Object.keys(d).length, 0);
     const hasData = totalEntries || episodesData && (Object.keys(episodesData.matched || {}).length || Object.keys(episodesData.unmatched || {}).length);
     let html = "";
@@ -1485,13 +1485,13 @@ document.head.appendChild(styleEl);
     if (!hasData && errs?.ours) html += errSection(ourApiErrorText(personName));
     if (totalEntries) {
       html += '<div class="bgm-mp-result-list">';
-      html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u6761\u76EE\u5173\u8054\uFF1A</div>';
+      html += '<div class="bgm-mp-section-title">缺失条目关联：</div>';
       for (const t of [2, 1, 3, 4, 6]) {
         const data = subjectsByType[t];
         if (!data) continue;
         html += `<div class="bgm-mp-type-section"><div class="bgm-mp-type-title">${typeNamesFull[t]}</div>`;
         for (const [sid, entry] of Object.entries(data)) {
-          const posNames = (entry.positions || []).map((pid) => POSITION_IDS[t]?.[pid] || pid).join("\u3001");
+          const posNames = (entry.positions || []).map((pid) => POSITION_IDS[t]?.[pid] || pid).join("、");
           html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${posNames}</div>`;
         }
         html += "</div>";
@@ -1503,18 +1503,18 @@ document.head.appendChild(styleEl);
       const unmatched = Object.entries(episodesData.unmatched || {});
       if (matched.length) {
         html += '<div class="bgm-mp-result-list">';
-        html += '<div class="bgm-mp-section-title">\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
+        html += '<div class="bgm-mp-section-title">缺失剧集关联：</div>';
         for (const [sid, entry] of matched) {
           const parts = Object.entries(entry.episodes || {}).map(
-            ([pid, labels]) => `${POSITION_IDS[2]?.[pid] || pid}\uFF1A${genAppearEps(labels)}`
+            ([pid, labels]) => `${POSITION_IDS[2]?.[pid] || pid}：${genAppearEps(labels)}`
           );
-          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> ${parts.join("\uFF0C")}</div>`;
+          html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> ${parts.join("，")}</div>`;
         }
         html += "</div>";
       }
       if (unmatched.length) {
         html += '<div class="bgm-mp-result-list">';
-        html += '<div class="bgm-mp-section-title">\u7591\u4F3C\u7F3A\u5931\u5267\u96C6\u5173\u8054\uFF1A</div>';
+        html += '<div class="bgm-mp-section-title">疑似缺失剧集关联：</div>';
         for (const [sid, entry] of unmatched) {
           html += `<div><strong><a class="l" href="/subject/${sid}" target="_blank">${entry.name || "#" + sid}</a></strong> - ${(entry.episodes || []).map(
             (ep) => `<a class="l" href="/ep/${ep.episode_id}#:~:text=${encodedName}" target="_blank">${ep.label}</a>`
@@ -1524,10 +1524,10 @@ document.head.appendChild(styleEl);
       }
     }
     if (!hasData && !errs?.bangumi && !errs?.ours) {
-      html = '<div class="bgm-mp-empty-hint">\u672A\u627E\u5230\u7F3A\u5931\u5173\u8054</div>';
+      html = '<div class="bgm-mp-empty-hint">未找到缺失关联</div>';
     }
     html += `<div class="bgm-mp-popup-actions">
-      <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? "" : ' disabled style="opacity:0.5"'}>\u521B\u5EFA\u4EBA\u7269</button>
+      <button class="bgm-mp-btn" id="bgm-mp-create-btn"${hasData ? "" : ' disabled style="opacity:0.5"'}>创建人物</button>
     </div>`;
     content.innerHTML = html;
     document.querySelector("#bgm-mp-create-btn").onclick = () => {
@@ -1611,7 +1611,7 @@ document.head.appendChild(styleEl);
     }
     const cnIdx = lines.findIndex((l) => /^\|简体中文名=/.test(l.trim()));
     const insertIdx = cnIdx >= 0 ? cnIdx + 1 : 1;
-    lines.splice(insertIdx, 0, "|\u522B\u540D={", aliasLine, "}");
+    lines.splice(insertIdx, 0, "|别名={", aliasLine, "}");
     return lines.join("\n");
   }
   async function initPersonEditPage() {
@@ -1760,12 +1760,12 @@ document.head.appendChild(styleEl);
     const alias = epNameInput.value.trim();
     const queryName = alias || document.querySelector(".nameSingle").textContent.trim();
     epBtn.disabled = true;
-    setStatusBox("\u83B7\u53D6\u4E2D\u2026\u2026");
+    setStatusBox("获取中……");
     const targetParam = await resolveTarget(alias);
     const pending = getPendingData();
     if (pending && pending.episodesData && (Object.keys(pending.episodesData.matched || {}).length || Object.keys(pending.episodesData.unmatched || {}).length)) {
       const none = await processEpisodesData(pending.episodesData, queryName);
-      setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u5267\u96C6" : "\u5267\u96C6\u5173\u8054\u5B8C\u6210\uFF01");
+      setStatusBox(none ? "未查找到任何已填写剧集" : "剧集关联完成！");
       epBtn.disabled = false;
       return;
     }
@@ -1775,7 +1775,7 @@ document.head.appendChild(styleEl);
       const res = await fetch(url);
       const data = await res.json();
       const none = await processEpisodesData(data, queryName);
-      setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u5267\u96C6" : "\u5267\u96C6\u5173\u8054\u5B8C\u6210\uFF01");
+      setStatusBox(none ? "未查找到任何已填写剧集" : "剧集关联完成！");
     } catch (e) {
       console.error(e);
       setStatusBox(ourApiErrorText(queryName));
@@ -1796,7 +1796,7 @@ document.head.appendChild(styleEl);
     }[document.querySelector(".cat .selected").href.split("/").pop()];
     select = document.createElement("select");
     select.className = "bgm-mp-select";
-    let posOpts = '<option value="">\u6240\u6709\u804C\u4F4D</option>';
+    let posOpts = '<option value="">所有职位</option>';
     Object.keys(POSITION_IDS[type] || {}).map(Number).sort(function(a, b) {
       return a - b;
     }).forEach(function(id) {
@@ -1810,9 +1810,9 @@ document.head.appendChild(styleEl);
     nameInput = document.createElement("input");
     nameInput.type = "text";
     nameInput.className = "bgm-mp-input";
-    nameInput.placeholder = "\u522B\u540D\uFF08\u53EF\u9009\uFF09";
+    nameInput.placeholder = "别名（可选）";
     const btn = document.createElement("button");
-    btn.textContent = "\u5173\u8054\u5DF2\u586B\u5199\u6761\u76EE";
+    btn.textContent = "关联已填写条目";
     btn.id = "missingPositions";
     btn.className = "bgm-mp-btn";
     btn.addEventListener("click", async () => {
@@ -1830,13 +1830,13 @@ document.head.appendChild(styleEl);
             if (added) none = false;
           }
         }
-        setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u5B8C\u6210\uFF01");
+        setStatusBox(none ? "未查找到任何已填写条目" : "关联完成！");
         return;
       }
       const provider = getProvider();
       try {
         btn.disabled = true;
-        setStatusBox("\u83B7\u53D6\u4E2D\u2026\u2026");
+        setStatusBox("获取中……");
         const alias = nameInput.value.trim();
         const targetParam = await resolveTarget(alias);
         const res = await fetch(
@@ -1851,7 +1851,7 @@ document.head.appendChild(styleEl);
             if (added) none = false;
           }
         }
-        setStatusBox(none ? "\u672A\u67E5\u627E\u5230\u4EFB\u4F55\u5DF2\u586B\u5199\u6761\u76EE" : "\u5173\u8054\u5B8C\u6210\uFF01");
+        setStatusBox(none ? "未查找到任何已填写条目" : "关联完成！");
       } catch (e) {
         console.error(e);
         setStatusBox(ourApiErrorText(personName));
@@ -1865,9 +1865,9 @@ document.head.appendChild(styleEl);
       epNameInput = document.createElement("input");
       epNameInput.type = "text";
       epNameInput.className = "bgm-mp-input";
-      epNameInput.placeholder = "\u522B\u540D\uFF08\u53EF\u9009\uFF09";
+      epNameInput.placeholder = "别名（可选）";
       epBtn = document.createElement("button");
-      epBtn.textContent = "\u5173\u8054\u5DF2\u586B\u5199\u5267\u96C6";
+      epBtn.textContent = "关联已填写剧集";
       epBtn.id = "missingEpisodes";
       epBtn.className = "bgm-mp-btn";
       epBtn.addEventListener("click", runEpisodeCheck);
@@ -1977,7 +1977,7 @@ document.head.appendChild(styleEl);
         localStorage.removeItem("bgm-mp-pending");
       }
       markRemainingTypes(remaining);
-      setStatusBox(hasExisting ? "\u5173\u8054\u5B8C\u6210\uFF01\u90E8\u5206\u5173\u8054\u5DF2\u5B58\u5728" : "\u5173\u8054\u5B8C\u6210\uFF01");
+      setStatusBox(hasExisting ? "关联完成！部分关联已存在" : "关联完成！");
       if (hasRemaining && consumed) {
         const typeExts = { 1: "book", 2: "anime", 3: "music", 4: "game", 6: "real" };
         const nextType = [
@@ -2038,7 +2038,7 @@ document.head.appendChild(styleEl);
   if (typeof chiiLib !== "undefined" && chiiLib.ukagaka && chiiLib.ukagaka.addPanelTab) {
     chiiLib.ukagaka.addPanelTab({
       tab: "wiki_missing_positions",
-      label: "\u7F3A\u5931\u804C\u4F4D",
+      label: "缺失职位",
       type: "custom",
       customContent: function() {
         const provider = getProvider();
@@ -2048,18 +2048,18 @@ document.head.appendChild(styleEl);
           `
         <div class="bgm-mp-settings">
           <div class="bgm-mp-row">
-            <label for="bgm-mp-provider">API \u5730\u5740</label>
+            <label for="bgm-mp-provider">API 地址</label>
             <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, "&quot;")}">
-            <button type="button" class="bgm-mp-btn" id="bgm-mp-save" disabled>\u4FDD\u5B58</button>
+            <button type="button" class="bgm-mp-btn" id="bgm-mp-save" disabled>保存</button>
           </div>
 <div class="bgm-mp-hint">
-            \u53EF\u7528\u516C\u5171\u90E8\u7F72\u5730\u5740\uFF1A
-            <a class="l" href="${DEFAULT_PROVIDER}" target="_blank">${DEFAULT_PROVIDER}</a>\uFF08\u9ED8\u8BA4\uFF09 \xB7
+            可用公共部署地址：
+            <a class="l" href="${DEFAULT_PROVIDER}" target="_blank">${DEFAULT_PROVIDER}</a>（默认） ·
             <a class="l" href="https://bgq.bgmstat.us" target="_blank">https://bgq.bgmstat.us</a> by
             <a class="l" href="https://bgm.tv/user/wataame" target="_blank">wataame</a>
           </div>
           <div class="bgm-mp-row">
-            <label for="bgm-mp-show">\u6761\u76EE\u9875\u663E\u793A\u672A\u5173\u8054\u4EBA\u7269</label>
+            <label for="bgm-mp-show">条目页显示未关联人物</label>
             <input type="checkbox" class="bgm-mp-toggle" id="bgm-mp-show"${show === "on" ? " checked" : ""}>
           </div>
         </div>`
@@ -2072,9 +2072,9 @@ document.head.appendChild(styleEl);
         let saveTimer = null;
         function setSaveState(dirty, saving) {
           if (saving) {
-            $save.text("\u4FDD\u5B58\u4E2D").prop("disabled", true);
+            $save.text("保存中").prop("disabled", true);
           } else {
-            $save.text("\u4FDD\u5B58").prop("disabled", !dirty);
+            $save.text("保存").prop("disabled", !dirty);
           }
         }
         function doSave() {

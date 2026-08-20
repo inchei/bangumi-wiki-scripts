@@ -11,6 +11,7 @@ const result = await esbuild.build({
   write: false,
   platform: 'browser',
   target: 'es2022',
+  charset: 'utf8',
 });
 
 const js = result.outputFiles[0].text;
