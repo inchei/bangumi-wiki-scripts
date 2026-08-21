@@ -1,0 +1,12 @@
+packages:
+  - 'bgq/frontend'
+  - 'wikiBatch'
+  - 'wikiMissingPositions'
+  - 'wikiPersonAlias'
+
+allowBuilds:
+  esbuild: true
+
+minimumReleaseAgeExclude:
+  - '@rolldown/binding-darwin-x64@1.2.5'
+  - '@rolldown/binding-linux-arm64-gnu@1.2.5'

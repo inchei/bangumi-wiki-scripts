@@ -48,10 +48,17 @@ golangci-lint run ./...                    # Lint
 
 ### Frontend (Svelte)
 
+> The 4 pnpm projects (`bgq/frontend`, `wikiBatch`, `wikiPersonAlias`, `wikiMissingPositions`) share a **single root pnpm workspace** (`pnpm-workspace.yaml` at repo root, one `pnpm-lock.yaml`). Install from the repo root:
+> ```bash
+> pnpm install                               # one command installs all 4 projects
+> pnpm -r update                             # update all projects' deps
+> pnpm audit                                 # audit all 4 projects at once
+> ```
+> Commands run inside any package dir still work (pnpm walks up to the workspace root).
+
 ```bash
 cd bgq/frontend
 
-pnpm install                               # Install deps
 pnpm dev                                   # Dev server (hot reload)
 pnpm build                                 # Build (output embedded in Go binary)
 

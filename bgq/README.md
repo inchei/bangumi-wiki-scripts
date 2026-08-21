@@ -101,12 +101,14 @@ bgq 运行时依赖 [DuckDB CLI](https://duckdb.org/) 执行 SQL，须自行安�
 cd bgq
 
 # 编译前端（产物嵌入 Go 二进制）
-cd frontend && pnpm install && pnpm build && cd ..
+cd frontend && pnpm build && cd ..
 cp -r frontend/dist internal/server/dist
 
 # 编译 Go 二进制
 go build -o bin/bgq ./cmd/bgq/
 ```
+
+> 依赖在仓库根目录统一安装（单一 pnpm workspace + 单一 `pnpm-lock.yaml`）：`pnpm install`（一次装全部 4 个项目）。在 `bgq/frontend` 内运行 `pnpm build` 即可。
 
 ## Docker 部署
 

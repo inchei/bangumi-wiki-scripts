@@ -1,9 +1,11 @@
 # 阶段 1：构建前端
 FROM node:24-alpine AS frontend
-WORKDIR /app/frontend
-COPY bgq/frontend/package.json bgq/frontend/pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
-COPY bgq/frontend/ .
+WORKDIR /app
+COPY pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY bgq/frontend/package.json bgq/frontend/package.json
+RUN corepack enable && pnpm install --frozen-lockfile --filter frontend
+COPY bgq/frontend/ bgq/frontend/
+WORKDIR /app/bgq/frontend
 RUN pnpm build
 
 # 阶段 2：编译 Go
@@ -12,7 +14,7 @@ WORKDIR /app
 COPY bgq/go.mod bgq/go.sum ./
 RUN go mod download
 COPY bgq/ .
-COPY --from=frontend /app/frontend/dist/ internal/server/dist/
+COPY --from=frontend /app/bgq/frontend/dist/ internal/server/dist/
 RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/bgq ./cmd/bgq/
 
 # 阶段 3：运行（需要 glibc 运行 DuckDB CLI）

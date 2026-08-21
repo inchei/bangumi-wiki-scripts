@@ -57,10 +57,18 @@ go generate ./internal/model/
 
 ## 前端（Svelte）
 
+> monorepo pnpm 项目共享根目录的单一 pnpm workspace。依赖可从仓库根目录一次性安装：
+> ```bash
+> cd ..
+> pnpm install      # 一次安装全部 4 个项目
+> pnpm -r update    # 一键更新所有项目依赖
+> pnpm audit        # 一次审计全部项目
+> ```
+> 在任意项目目录内运行 pnpm 命令仍有效。
+
 ```bash
 cd frontend
 
-pnpm install
 pnpm dev                # 开发热重载
 pnpm build              # 构建（嵌入 Go 二进制）
 

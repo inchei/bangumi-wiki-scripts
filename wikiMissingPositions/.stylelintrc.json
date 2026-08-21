@@ -8,6 +8,7 @@
     "no-descending-specificity": null,
     "property-no-vendor-prefix": null,
     "alpha-value-notation": null,
+    "color-function-alias-notation": null,
     "color-function-notation": null,
     "declaration-empty-line-before": null,
     "comment-empty-line-before": null
