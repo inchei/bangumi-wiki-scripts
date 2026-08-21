@@ -125,7 +125,6 @@
     overflow-y: auto;
     background: var(--dropdown-bg);
     backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
     border: 1px solid var(--border);
     border-radius: 12px;
     box-shadow: var(--dropdown-shadow);
