@@ -1701,6 +1701,34 @@ document.head.appendChild(styleEl);
   var epBtn;
   var personId;
   var statusBox;
+  var _retryCancel = false;
+  document.addEventListener(
+    "click",
+    (e) => {
+      if (e.target.closest(
+        'button, .bgm-mp-btn, input[type="submit"], input[type="button"], input.inputBtn'
+      )) {
+        _retryCancel = true;
+      }
+    },
+    { capture: true }
+  );
+  function retry(op, interval = 200) {
+    return new Promise((resolve, reject) => {
+      const attempt = () => {
+        if (_retryCancel) {
+          reject(new Error("操作已取消"));
+          return;
+        }
+        try {
+          resolve(op());
+        } catch (e) {
+          setTimeout(attempt, interval);
+        }
+      };
+      attempt();
+    });
+  }
   function setStatusBox(html) {
     if (!statusBox) return;
     statusBox.innerHTML = html || "";
@@ -1888,7 +1916,7 @@ document.head.appendChild(styleEl);
   function getPendingData() {
     return _pendingData;
   }
-  function processPendingData() {
+  async function processPendingData() {
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.has("bgm_mp_relate") && window.opener && !_relateBackdoor) {
       const handler = (e) => {
@@ -1932,32 +1960,43 @@ document.head.appendChild(styleEl);
       }
       let consumed = true;
       let hasExisting = false;
-      for (const [key, entry] of Object.entries(matching)) {
-        for (const posId of entry.positions || []) {
-          const li = addSubjectLi(Number(key.split(":").pop()), posId, entry.name);
-          if (li && !li.classList.contains("old")) {
-            consumed = false;
-          }
-          if (li && li.classList.contains("old")) {
-            hasExisting = true;
-            li.style.background = document.documentElement.getAttribute("data-theme") === "dark" ? "rgba(255, 248, 165, 0.08)" : "rgba(255, 248, 165, 0.2)";
+      _retryCancel = false;
+      try {
+        for (const [key, entry] of Object.entries(matching)) {
+          for (const posId of entry.positions || []) {
+            const li = await retry(
+              () => addSubjectLi(Number(key.split(":").pop()), posId, entry.name)
+            );
+            if (li && !li.classList.contains("old")) {
+              consumed = false;
+            }
+            if (li && li.classList.contains("old")) {
+              hasExisting = true;
+              li.style.background = document.documentElement.getAttribute("data-theme") === "dark" ? "rgba(255, 248, 165, 0.08)" : "rgba(255, 248, 165, 0.2)";
+            }
           }
         }
-      }
-      if (pageType === 2 && data.episodesData?.matched) {
-        for (const [sid, entry] of Object.entries(data.episodesData.matched)) {
-          for (const [posId, labels] of Object.entries(entry.episodes || {})) {
-            const li = addSubjectLi(Number(sid), Number(posId), entry.name);
-            const epInput = li.querySelector('[name$="[appear_eps]"]');
-            if (epInput) {
-              epInput.value = genAppearEps(labels);
-              if (li.classList.contains("old")) {
-                hasExisting = true;
-                li.style.background = document.documentElement.getAttribute("data-theme") === "dark" ? "rgba(255, 248, 165, 0.08)" : "rgba(255, 248, 165, 0.2)";
+        if (pageType === 2 && data.episodesData?.matched) {
+          for (const [sid, entry] of Object.entries(data.episodesData.matched)) {
+            for (const [posId, labels] of Object.entries(entry.episodes || {})) {
+              const li = await retry(() => addSubjectLi(Number(sid), Number(posId), entry.name));
+              const epInput = li.querySelector('[name$="[appear_eps]"]');
+              if (epInput) {
+                epInput.value = genAppearEps(labels);
+                if (li.classList.contains("old")) {
+                  hasExisting = true;
+                  li.style.background = document.documentElement.getAttribute("data-theme") === "dark" ? "rgba(255, 248, 165, 0.08)" : "rgba(255, 248, 165, 0.2)";
+                }
               }
             }
           }
         }
+      } catch (e) {
+        if (e.message === "操作已取消") {
+          setStatusBox("");
+          return;
+        }
+        throw e;
       }
       if (pageType === 2 && Object.keys(data.episodesData?.unmatched || {}).length) {
         const allUnmatched = Object.entries(data.episodesData.unmatched).map(([sid, entry]) => ({
