@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.3.2
+// @version      0.3.3
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -315,6 +315,7 @@ html[data-theme='dark'] .bgm-mp-notify {
   font-weight: 500;
   cursor: move;
   user-select: none;
+  touch-action: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1127,6 +1128,7 @@ document.head.appendChild(styleEl);
     }
     handle.onmousedown = handle.ontouchstart = (e) => {
       if (excludeSelector && e.target.closest(excludeSelector)) return;
+      if (e.cancelable) e.preventDefault();
       const rect = popup.getBoundingClientRect();
       popup.style.transform = "none";
       popup.style.left = rect.left + "px";
@@ -1136,6 +1138,7 @@ document.head.appendChild(styleEl);
       offX = cx(e) - rect.left;
       offY = cy(e) - rect.top;
       document.onmousemove = document.ontouchmove = (ev) => {
+        if (ev.cancelable) ev.preventDefault();
         popup.style.left = cx(ev) - offX + "px";
         popup.style.top = cy(ev) - offY + "px";
       };

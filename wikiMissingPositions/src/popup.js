@@ -11,6 +11,7 @@ function makeDraggable(popup, handle, excludeSelector) {
   }
   handle.onmousedown = handle.ontouchstart = (e) => {
     if (excludeSelector && e.target.closest(excludeSelector)) return;
+    if (e.cancelable) e.preventDefault();
     const rect = popup.getBoundingClientRect();
     popup.style.transform = 'none';
     popup.style.left = rect.left + 'px';
@@ -20,6 +21,7 @@ function makeDraggable(popup, handle, excludeSelector) {
     offX = cx(e) - rect.left;
     offY = cy(e) - rect.top;
     document.onmousemove = document.ontouchmove = (ev) => {
+      if (ev.cancelable) ev.preventDefault();
       popup.style.left = cx(ev) - offX + 'px';
       popup.style.top = cy(ev) - offY + 'px';
     };

@@ -278,6 +278,7 @@ html[data-theme='dark'] .bgm-mp-notify {
   font-weight: 500;
   cursor: move;
   user-select: none;
+  touch-action: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
