@@ -32,12 +32,6 @@ window.addEventListener('message', function(e) {
 });
 
 window.addEventListener('message', function(e) {
-  if (e.data && e.data.type === 'bgm_mp_relate_request' && _bgmMpRelateData) {
-    e.source.postMessage({ type: 'bgm_mp_relate_data', data: _bgmMpRelateData }, '*');
-  }
-});
-
-window.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'bgm_mp_alias_request' && _bgmMpAliasData) {
     e.source.postMessage({ type: 'bgm_mp_alias_data', data: _bgmMpAliasData }, '*');
   }
@@ -70,23 +64,7 @@ document.addEventListener('click', function(e) {
   var wrap = btn.parentElement;
   var sel = wrap.querySelector('.relate-select');
   var personId = sel ? parseInt(sel.value) : (data.relatedPersonIds && data.relatedPersonIds.length ? data.relatedPersonIds[0].id : 0);
-  if (!personId) return;
-
-  var pendingCopy = {
-    personName: data.personName,
-    subjectsData: data.subjectsData,
-    episodesData: data.episodesData
-  };
-  _bgmMpRelateData = JSON.stringify(pendingCopy);
-
-  var firstType = null;
-  var keys = Object.keys(data.subjectsData);
-  for (var i = 0; i < keys.length; i++) {
-    var t = data.subjectsData[keys[i]]._type;
-    if (t) { firstType = t; break; }
-  }
-  var typeExt = { 1: 'book', 2: 'anime', 3: 'music', 4: 'game', 6: 'real' }[firstType] || 'book';
-  window.open('https://bgm.tv/person/' + personId + '/add_related/' + typeExt + '?bgm_mp_relate=1', '_blank');
+  openRelate(personId, data);
 });
 
 // 添加别名 button

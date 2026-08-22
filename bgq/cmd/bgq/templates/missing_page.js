@@ -121,7 +121,8 @@ document.addEventListener('click', function(e) {
       if (results.length) {
         _bgmMpPending = null;
         var links = results.map(function(p) {
-          return '<a href="https://bgm.tv/person/' + p.id + '" target="_blank">' + p.name + ' (ID:' + p.id + ')</a>';
+          return '<a href="https://bgm.tv/person/' + p.id + '" target="_blank">' + p.name + ' (ID:' + p.id + ')</a>'
+            + '<a class="btn-relate" href="#relate-' + p.id + '" data-idx="' + idx + '" data-id="' + p.id + '">\u5173\u8054</a>';
         }).join(' ');
         showResult(btn, '\u2705 ' + links
           + ' <a class="btn-create-still" href="https://bgm.tv/person/new?name=' + encodeURIComponent(name) + '&bgm_mp=1" target="_blank">\u4ECD\u7136\u521B\u5EFA</a>', 'sr-found');
@@ -133,4 +134,13 @@ document.addEventListener('click', function(e) {
     .catch(function() {
       showResult(btn, '\u641C\u7D22\u5931\u8D25', 'sr-loading');
     });
+});
+
+// 关联 button (search results)
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('.btn-relate');
+  if (!btn) return;
+  var idx = parseInt(btn.dataset.idx);
+  var personId = parseInt(btn.dataset.id);
+  openRelate(personId, _pendingData[idx]);
 });

@@ -786,6 +786,9 @@ var missingPageJS string
 //go:embed templates/related_page.js
 var relatedPageJS string
 
+//go:embed templates/relate_common.js
+var relateCommonJS string
+
 //go:embed templates/index.html
 var indexHTML string
 
@@ -1076,7 +1079,7 @@ func writeMissingPage(outputDir, tname string, tcode int, entries []*missingPers
 	defer func() { _ = f.Close() }()
 	return missingPageTpl.Execute(f, typePageTplData{
 		CSS:         template.CSS(pageCSS),
-		JS:          template.JS(missingPageJS),
+		JS:          template.JS(relateCommonJS + missingPageJS),
 		Title:       title,
 		PrevLink:    prevLink,
 		NextLink:    nextLink,
@@ -1156,7 +1159,7 @@ func writeRelatedPage(outputDir, tname string, tcode int, entries []*missingRela
 	defer func() { _ = f.Close() }()
 	return relatedPageTpl.Execute(f, typePageTplData{
 		CSS:         template.CSS(pageCSS),
-		JS:          template.JS(relatedPageJS),
+		JS:          template.JS(relateCommonJS + relatedPageJS),
 		Title:       title,
 		PrevLink:    prevLink,
 		NextLink:    nextLink,
