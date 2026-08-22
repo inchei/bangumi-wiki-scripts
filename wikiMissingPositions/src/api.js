@@ -43,6 +43,24 @@ export function saveProvider(val) {
   return save(PROVIDER_KEY, val);
 }
 
+export function normalizeProvider(raw) {
+  let s = String(raw ?? '').trim();
+  if (!s) return null;
+  if (/^\/\//.test(s)) {
+    s = 'https:' + s;
+  } else if (!/^[a-z][a-z\d+\-.]*:\/\//i.test(s)) {
+    s = 'https://' + s;
+  }
+  let url;
+  try {
+    url = new URL(s);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:') return null;
+  return url.origin + url.pathname.replace(/\/+$/, '');
+}
+
 export function saveShow(val) {
   return save(SHOW_KEY, val);
 }

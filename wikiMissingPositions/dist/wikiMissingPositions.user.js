@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         预创建人物 / 人物页一键补完已填写未关联条目
 // @namespace    bangumi.wiki.missing.positions
-// @version      0.3.3
+// @version      0.3.4
 // @description  像 AniDB 一样，无需等待维基人即可查看人物关联 / 维基人可一键补完已填写未关联条目或剧集
 // @author       you
 // @icon         https://bgm.tv/img/favicon.ico
@@ -40,6 +40,7 @@ styleEl.textContent = `.bgm-mp-settings {
   display: flex;
   flex-flow: column;
   gap: 10px;
+  color: #666;
 }
 
 .bgm-mp-settings .bgm-mp-row {
@@ -49,7 +50,7 @@ styleEl.textContent = `.bgm-mp-settings {
 }
 
 .bgm-mp-settings .bgm-mp-row label {
-  color: #909399;
+  color: #666;
   white-space: nowrap;
   flex-shrink: 0;
   margin-right: 8px;
@@ -77,15 +78,41 @@ styleEl.textContent = `.bgm-mp-settings {
 .bgm-mp-settings .bgm-mp-hint {
   font-size: 12px;
   line-height: 1.6;
-  color: #909399;
+  color: #666;
+}
+
+.bgm-mp-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.bgm-mp-provider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bgm-mp-provider-name {
+  font-weight: 600;
+}
+
+.bgm-mp-provider-row .bgm-mp-fill {
+  margin-left: auto;
 }
 
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-hint {
-  color: #9a9a9a;
+  color: #d8d8d8;
 }
 
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row label {
-  color: #9a9a9a;
+  color: #d8d8d8;
+}
+
+html[data-theme='dark'] .bgm-mp-settings {
+  color: #d8d8d8;
 }
 
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text'] {
@@ -97,6 +124,18 @@ html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text'] {
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text']:focus {
   border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 25%);
+}
+
+.bgm-mp-settings .bgm-mp-row input[type='text'].bgm-mp-invalid,
+.bgm-mp-settings .bgm-mp-row input[type='text'].bgm-mp-invalid:focus {
+  border-color: #f56c6c;
+  box-shadow: 0 0 0 2px rgb(245 108 108 / 15%);
+}
+
+html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text'].bgm-mp-invalid,
+html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text'].bgm-mp-invalid:focus {
+  border-color: #f56c6c;
+  box-shadow: 0 0 0 2px rgb(245 108 108 / 25%);
 }
 
 .bgm-mp-toggle {
@@ -921,6 +960,10 @@ document.head.appendChild(styleEl);
   var PROVIDER_KEY = "wikiMissingPositionsProvider";
   var SHOW_KEY = "wikiMissingPositionsShow";
   var DEFAULT_PROVIDER = "https://bgq.iccci.cc.cd";
+  var PUBLIC_PROVIDERS = [
+    { name: "默认", url: DEFAULT_PROVIDER },
+    { name: "@wataame", url: "https://bgq.bgmstat.us", home: "https://bgm.tv/user/wataame" }
+  ];
 
   // src/api.js
   function hasChiiApp() {
@@ -959,6 +1002,23 @@ document.head.appendChild(styleEl);
   }
   function saveProvider(val) {
     return save(PROVIDER_KEY, val);
+  }
+  function normalizeProvider(raw) {
+    let s = String(raw ?? "").trim();
+    if (!s) return null;
+    if (/^\/\//.test(s)) {
+      s = "https:" + s;
+    } else if (!/^[a-z][a-z\d+\-.]*:\/\//i.test(s)) {
+      s = "https://" + s;
+    }
+    let url;
+    try {
+      url = new URL(s);
+    } catch {
+      return null;
+    }
+    if (url.protocol !== "https:") return null;
+    return url.origin + url.pathname.replace(/\/+$/, "");
   }
   function saveShow(val) {
     return save(SHOW_KEY, val);
@@ -2091,15 +2151,11 @@ document.head.appendChild(styleEl);
         <div class="bgm-mp-settings">
           <div class="bgm-mp-row">
             <label for="bgm-mp-provider">API 地址</label>
-            <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, "&quot;")}">
+            <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, "&quot;")}" placeholder="${DEFAULT_PROVIDER}">
             <button type="button" class="bgm-mp-btn" id="bgm-mp-save" disabled>保存</button>
           </div>
-<div class="bgm-mp-hint">
-            可用公共部署地址：
-            <a class="l" href="${DEFAULT_PROVIDER}" target="_blank">${DEFAULT_PROVIDER}</a>（默认） ·
-            <a class="l" href="https://bgq.bgmstat.us" target="_blank">https://bgq.bgmstat.us</a> by
-            <a class="l" href="https://bgm.tv/user/wataame" target="_blank">wataame</a>
-          </div>
+          <div class="bgm-mp-hint">可用公共部署地址：</div>
+          <div class="bgm-mp-providers" id="bgm-mp-providers"></div>
           <div class="bgm-mp-row">
             <label for="bgm-mp-show">条目页显示未关联人物</label>
             <input type="checkbox" class="bgm-mp-toggle" id="bgm-mp-show"${show === "on" ? " checked" : ""}>
@@ -2111,21 +2167,32 @@ document.head.appendChild(styleEl);
         const $provider = $tabContent.find("#bgm-mp-provider");
         const $save = $tabContent.find("#bgm-mp-save");
         let savedValue = $provider.val();
+        let invalid = false;
         let saveTimer = null;
         function setSaveState(dirty, saving) {
           if (saving) {
             $save.text("保存中").prop("disabled", true);
           } else {
-            $save.text("保存").prop("disabled", !dirty);
+            $save.text("保存").prop("disabled", !dirty || invalid);
           }
         }
+        function validate() {
+          invalid = normalizeProvider($provider.val()) === null;
+          $provider.toggleClass("bgm-mp-invalid", invalid);
+          setSaveState($provider.val() !== savedValue, false);
+        }
         function doSave() {
-          const val = $provider.val();
+          const normalized = normalizeProvider($provider.val());
+          if (normalized === null) {
+            validate();
+            return;
+          }
           setSaveState(false, true);
-          saveProvider(val).then(
+          saveProvider(normalized).then(
             function() {
-              savedValue = val;
-              setSaveState($provider.val() !== savedValue, false);
+              savedValue = normalized;
+              $provider.val(normalized);
+              setSaveState(false, false);
             },
             function() {
               setSaveState(true, false);
@@ -2133,8 +2200,8 @@ document.head.appendChild(styleEl);
           );
         }
         $tabContent.off("input change", "#bgm-mp-provider").on("input change", "#bgm-mp-provider", function() {
-          setSaveState(true, false);
           clearTimeout(saveTimer);
+          validate();
           saveTimer = setTimeout(doSave, 400);
         });
         $tabContent.off("click", "#bgm-mp-save").on("click", "#bgm-mp-save", function() {
@@ -2144,6 +2211,28 @@ document.head.appendChild(styleEl);
         $tabContent.off("change", "#bgm-mp-show").on("change", "#bgm-mp-show", function() {
           saveShow(this.checked ? "on" : "off");
         });
+        function escapeHtml(s) {
+          return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        }
+        function renderProviders() {
+          const rows = PUBLIC_PROVIDERS.map(function(item) {
+            const name = item.home ? `<a class="l" href="${escapeHtml(item.home)}" target="_blank">${escapeHtml(item.name)}</a>` : `${escapeHtml(item.name)}`;
+            return `<div class="bgm-mp-provider-row">
+            <a class="l" href="${escapeHtml(item.url)}" target="_blank">${escapeHtml(item.url)}</a> - ${name}
+            <a class="l bgm-mp-fill" href="#" data-url="${escapeHtml(item.url)}">填入</a>
+          </div>`;
+          }).join("");
+          $tabContent.find("#bgm-mp-providers").html(rows);
+        }
+        $tabContent.off("click", "#bgm-mp-providers .bgm-mp-fill").on("click", "#bgm-mp-providers .bgm-mp-fill", function(e) {
+          e.preventDefault();
+          $provider.val(this.dataset.url);
+          validate();
+          clearTimeout(saveTimer);
+          doSave();
+        });
+        validate();
+        renderProviders();
       }
     });
   }

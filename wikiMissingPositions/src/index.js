@@ -4,8 +4,8 @@ import {
   initPersonPage,
   initPersonEditPage,
 } from './subject-page.js';
-import { getProvider, getShow, saveProvider, saveShow } from './api.js';
-import { DEFAULT_PROVIDER } from './config.js';
+import { getProvider, getShow, saveProvider, saveShow, normalizeProvider } from './api.js';
+import { DEFAULT_PROVIDER, PUBLIC_PROVIDERS } from './config.js';
 import { initAddRelated } from './add-related.js';
 
 const pathname = location.pathname;
@@ -43,15 +43,11 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
         <div class="bgm-mp-settings">
           <div class="bgm-mp-row">
             <label for="bgm-mp-provider">API 地址</label>
-            <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, '&quot;')}">
+            <input type="text" id="bgm-mp-provider" value="${provider.replace(/"/g, '&quot;')}" placeholder="${DEFAULT_PROVIDER}">
             <button type="button" class="bgm-mp-btn" id="bgm-mp-save" disabled>保存</button>
           </div>
-<div class="bgm-mp-hint">
-            可用公共部署地址：
-            <a class="l" href="${DEFAULT_PROVIDER}" target="_blank">${DEFAULT_PROVIDER}</a>（默认） ·
-            <a class="l" href="https://bgq.bgmstat.us" target="_blank">https://bgq.bgmstat.us</a> by
-            <a class="l" href="https://bgm.tv/user/wataame" target="_blank">wataame</a>
-          </div>
+          <div class="bgm-mp-hint">可用公共部署地址：</div>
+          <div class="bgm-mp-providers" id="bgm-mp-providers"></div>
           <div class="bgm-mp-row">
             <label for="bgm-mp-show">条目页显示未关联人物</label>
             <input type="checkbox" class="bgm-mp-toggle" id="bgm-mp-show"${show === 'on' ? ' checked' : ''}>
@@ -62,23 +58,35 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
       const $provider = $tabContent.find('#bgm-mp-provider');
       const $save = $tabContent.find('#bgm-mp-save');
       let savedValue = $provider.val();
+      let invalid = false;
       let saveTimer = null;
 
       function setSaveState(dirty, saving) {
         if (saving) {
           $save.text('保存中').prop('disabled', true);
         } else {
-          $save.text('保存').prop('disabled', !dirty);
+          $save.text('保存').prop('disabled', !dirty || invalid);
         }
       }
 
+      function validate() {
+        invalid = normalizeProvider($provider.val()) === null;
+        $provider.toggleClass('bgm-mp-invalid', invalid);
+        setSaveState($provider.val() !== savedValue, false);
+      }
+
       function doSave() {
-        const val = $provider.val();
+        const normalized = normalizeProvider($provider.val());
+        if (normalized === null) {
+          validate();
+          return;
+        }
         setSaveState(false, true);
-        saveProvider(val).then(
+        saveProvider(normalized).then(
           function () {
-            savedValue = val;
-            setSaveState($provider.val() !== savedValue, false);
+            savedValue = normalized;
+            $provider.val(normalized);
+            setSaveState(false, false);
           },
           function () {
             setSaveState(true, false);
@@ -89,8 +97,8 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
       $tabContent
         .off('input change', '#bgm-mp-provider')
         .on('input change', '#bgm-mp-provider', function () {
-          setSaveState(true, false);
           clearTimeout(saveTimer);
+          validate();
           saveTimer = setTimeout(doSave, 400);
         });
       $tabContent.off('click', '#bgm-mp-save').on('click', '#bgm-mp-save', function () {
@@ -100,6 +108,40 @@ if (typeof chiiLib !== 'undefined' && chiiLib.ukagaka && chiiLib.ukagaka.addPane
       $tabContent.off('change', '#bgm-mp-show').on('change', '#bgm-mp-show', function () {
         saveShow(this.checked ? 'on' : 'off');
       });
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function renderProviders() {
+        const rows = PUBLIC_PROVIDERS.map(function (item) {
+          const name = item.home
+            ? `<a class="l" href="${escapeHtml(item.home)}" target="_blank">${escapeHtml(item.name)}</a>`
+            : `${escapeHtml(item.name)}`;
+          return `<div class="bgm-mp-provider-row">
+            <a class="l" href="${escapeHtml(item.url)}" target="_blank">${escapeHtml(item.url)}</a> - ${name}
+            <a class="l bgm-mp-fill" href="#" data-url="${escapeHtml(item.url)}">填入</a>
+          </div>`;
+        }).join('');
+        $tabContent.find('#bgm-mp-providers').html(rows);
+      }
+
+      $tabContent
+        .off('click', '#bgm-mp-providers .bgm-mp-fill')
+        .on('click', '#bgm-mp-providers .bgm-mp-fill', function (e) {
+          e.preventDefault();
+          $provider.val(this.dataset.url);
+          validate();
+          clearTimeout(saveTimer);
+          doSave();
+        });
+
+      validate();
+      renderProviders();
     },
   });
 }

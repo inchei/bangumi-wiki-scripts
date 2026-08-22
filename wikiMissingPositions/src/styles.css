@@ -3,6 +3,7 @@
   display: flex;
   flex-flow: column;
   gap: 10px;
+  color: #666;
 }
 
 .bgm-mp-settings .bgm-mp-row {
@@ -12,7 +13,7 @@
 }
 
 .bgm-mp-settings .bgm-mp-row label {
-  color: #909399;
+  color: #666;
   white-space: nowrap;
   flex-shrink: 0;
   margin-right: 8px;
@@ -40,15 +41,41 @@
 .bgm-mp-settings .bgm-mp-hint {
   font-size: 12px;
   line-height: 1.6;
-  color: #909399;
+  color: #666;
+}
+
+.bgm-mp-providers {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.bgm-mp-provider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.bgm-mp-provider-name {
+  font-weight: 600;
+}
+
+.bgm-mp-provider-row .bgm-mp-fill {
+  margin-left: auto;
 }
 
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-hint {
-  color: #9a9a9a;
+  color: #d8d8d8;
 }
 
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row label {
-  color: #9a9a9a;
+  color: #d8d8d8;
+}
+
+html[data-theme='dark'] .bgm-mp-settings {
+  color: #d8d8d8;
 }
 
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text'] {
@@ -60,6 +87,18 @@ html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text'] {
 html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text']:focus {
   border-color: var(--primary-color, #f09199);
   box-shadow: 0 0 0 2px rgb(240 145 153 / 25%);
+}
+
+.bgm-mp-settings .bgm-mp-row input[type='text'].bgm-mp-invalid,
+.bgm-mp-settings .bgm-mp-row input[type='text'].bgm-mp-invalid:focus {
+  border-color: #f56c6c;
+  box-shadow: 0 0 0 2px rgb(245 108 108 / 15%);
+}
+
+html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text'].bgm-mp-invalid,
+html[data-theme='dark'] .bgm-mp-settings .bgm-mp-row input[type='text'].bgm-mp-invalid:focus {
+  border-color: #f56c6c;
+  box-shadow: 0 0 0 2px rgb(245 108 108 / 25%);
 }
 
 .bgm-mp-toggle {
