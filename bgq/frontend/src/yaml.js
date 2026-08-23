@@ -133,19 +133,39 @@ export function parseYAML(raw) {
 /** Normalize YAML filters to API format (wrap in logic if needed) */
 function normalizeFilters(filters) {
   if (!Array.isArray(filters)) return [];
-  return filters.map((f) => normalizeFilter(f));
+  return filters
+    .map((f) => normalizeFilter(f))
+    .filter((f) => f && Object.keys(f).length > 0);
 }
 
 function normalizeFilter(f) {
-  // Already in API format with logic wrapper
+  if (!f || typeof f !== "object") return f;
+
+  // Logic group — full form (logic: {op, items}) and shorthands
+  // (logic: {or: [...]}, logic: {and: [...]}, plus bare or:/and: filter keys),
+  // mirroring the Go UnmarshalYAML.
   if (f.logic) {
+    const lg = f.logic;
+    let op = lg.op;
+    let items = lg.items;
+    if (items === undefined && (lg.or !== undefined || lg.and !== undefined)) {
+      op = op || (lg.or !== undefined ? "or" : "and");
+      items = lg.or !== undefined ? lg.or : lg.and;
+    }
     return {
       logic: {
-        op: f.logic.op || "and",
-        items: normalizeFilters(f.logic.items || []),
+        op: op === "or" ? "or" : "and",
+        items: normalizeFilters(items || []),
       },
     };
   }
+  if (f.or !== undefined) {
+    return { logic: { op: "or", items: normalizeFilters(f.or) } };
+  }
+  if (f.and !== undefined) {
+    return { logic: { op: "and", items: normalizeFilters(f.and) } };
+  }
+
   // Direct filter types
   const out = {};
   for (const key of [
@@ -170,7 +190,49 @@ function normalizeFilter(f) {
   return out;
 }
 
+/**
+ * Normalize a nested conditions array into the UI structure: a single logic
+ * group wrapping the items (rendered from conditions[0].logic). A pre-wrapped
+ * logic group is kept as-is (with its items normalized); flat arrays are
+ * wrapped in an "and" group, preserving the backend's implicit AND over
+ * conditions. Missing conditions get an empty group so the nested editor is
+ * still available.
+ */
+function normalizeNestedConditions(conditions) {
+  if (!Array.isArray(conditions) || conditions.length === 0) {
+    return [{ logic: { op: "and", items: [] } }];
+  }
+  const items = normalizeFilters(conditions);
+  if (items.length === 1 && items[0].logic) return items;
+  return [{ logic: { op: "and", items } }];
+}
+
 function normalizeFilterValue(val, key) {
+  // Scalar shorthands, mirroring the Go UnmarshalYAML
+  if (typeof val !== "object" || val === null) {
+    switch (key) {
+      case "type":
+        return { value: val };
+      case "field":
+        return { field: String(val), operator: "contains", value: "" };
+      case "tag":
+      case "meta_tag":
+        return { operator: "contains", value: String(val), negate: false };
+      case "global":
+        return { operator: "contains", value: String(val) };
+      case "relation":
+      case "person_relation":
+      case "character_relation":
+        return { type: String(val), mode: "any" };
+      case "staff":
+        return { position: String(val), mode: "any" };
+      default:
+        return val;
+    }
+  }
+
+  const out = { ...val };
+
   if (
     key === "relation" ||
     key === "person_relation" ||
@@ -178,51 +240,43 @@ function normalizeFilterValue(val, key) {
     key === "staff" ||
     key === "character"
   ) {
-    const out = { ...val };
-    if (out.conditions) {
-      out.conditions = normalizeFilters(out.conditions);
-    }
+    if (out.mode === undefined) out.mode = "any";
+    out.conditions = normalizeNestedConditions(out.conditions);
     return out;
   }
   if (key === "person_character" || key === "character_person") {
-    const out = { ...val };
-    if (out.conditions) {
-      out.conditions = normalizeFilters(out.conditions);
-    }
-    if (out.subject_conditions) {
-      out.subject_conditions = normalizeFilters(out.subject_conditions);
-    }
+    if (out.mode === undefined) out.mode = "any";
+    out.conditions = normalizeNestedConditions(out.conditions);
+    out.subject_conditions = normalizeNestedConditions(out.subject_conditions);
     return out;
   }
   if (key === "episode") {
-    const out = { ...val };
-    if (out.logic) {
-      out.logic = {
-        op: out.logic.op || "and",
-        items: normalizeFilters(out.logic.items || []),
-      };
-    }
+    if (out.mode === undefined) out.mode = "any";
+    // Legacy flat conditions are FieldFilter objects ({field, operator, value});
+    // wrap each into a {field: ...} item without re-normalizing — the generic
+    // path would mistake the field-name string for a shorthand and drop
+    // operator/value.
     if (out.conditions && !out.logic) {
-      out.logic = { op: "and", items: normalizeFilters(out.conditions) };
+      out.logic = {
+        op: "and",
+        items: out.conditions.map((c) => ({ field: c })),
+      };
       delete out.conditions;
+    }
+    if (out.logic) {
+      out.logic = normalizeFilter({ logic: out.logic }).logic;
     }
     return out;
   }
-  // Shorthand: type: 2 → type: { value: 2 }
-  if (key === "type" && typeof val !== "object") {
-    return { value: val };
+  // field/global/tag/meta_tag full forms: operator is required by the backend
+  if (
+    (key === "field" ||
+      key === "global" ||
+      key === "tag" ||
+      key === "meta_tag") &&
+    out.operator === undefined
+  ) {
+    out.operator = "contains";
   }
-  // Shorthand: field: "name" → field: { field: "name", operator: "contains", value: "" }
-  if (key === "field" && typeof val === "string") {
-    return { field: val, operator: "contains", value: "" };
-  }
-  // Shorthand: tag: "轻小说" → tag: { value: "轻小说", negate: false }
-  if ((key === "tag" || key === "meta_tag") && typeof val === "string") {
-    return { value: val, negate: false };
-  }
-  // Shorthand: global: "text" → global: { operator: "contains", value: "text" }
-  if (key === "global" && typeof val === "string") {
-    return { operator: "contains", value: val };
-  }
-  return { ...val };
+  return out;
 }

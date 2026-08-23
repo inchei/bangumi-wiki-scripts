@@ -701,6 +701,7 @@ export function applyFiltersFromAPI(apiFilters) {
     newRoot = assignLogicIds(apiFilters[0].logic);
   } else {
     newRoot = { op: "and", items: apiFilters, _id: ++_logicIdCounter };
+    for (const item of newRoot.items) assignFilterIds(item);
   }
   getTargetStore().set(newRoot);
 }
@@ -708,9 +709,37 @@ export function applyFiltersFromAPI(apiFilters) {
 function assignLogicIds(lg) {
   if (!lg._id) lg._id = ++_logicIdCounter;
   for (const item of lg.items) {
-    if (item.logic) assignLogicIds(item.logic);
+    assignFilterIds(item);
   }
   return lg;
+}
+
+// assignFilterIds assigns _id to every nested logic group reachable from a
+// filter item: plain logic groups, relation/staff/character conditions, and
+// person_character/character_person (subject_)conditions / episode logic.
+// Nested groups without _id are not addressable by tree mutations (toggle op,
+// add/remove condition) keyed by group id.
+function assignFilterIds(item) {
+  if (!item || typeof item !== "object") return;
+  if (item.logic) {
+    assignLogicIds(item.logic);
+    return;
+  }
+  for (const key of [
+    "relation",
+    "person_relation",
+    "character_relation",
+    "staff",
+    "character",
+    "person_character",
+    "character_person",
+  ]) {
+    const v = item[key];
+    if (!v) continue;
+    for (const c of v.conditions || []) assignFilterIds(c);
+    for (const c of v.subject_conditions || []) assignFilterIds(c);
+  }
+  if (item.episode?.logic) assignLogicIds(item.episode.logic);
 }
 
 // ---- Field config constants ----
