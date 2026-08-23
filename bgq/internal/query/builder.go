@@ -2,6 +2,7 @@ package query
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -1552,13 +1553,29 @@ func (b *SQLBuilder) buildCondition(expr, op, value string) (string, error) {
 	case "empty":
 		return fmt.Sprintf("COALESCE(CAST(%s AS VARCHAR), '') = ''", expr), nil
 	case "gt":
-		return fmt.Sprintf("CAST(%s AS DOUBLE) > %s", expr, b.safeNum(value)), nil
+		num, err := safeNum(value)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("CAST(%s AS DOUBLE) > %s", expr, num), nil
 	case "gte":
-		return fmt.Sprintf("CAST(%s AS DOUBLE) >= %s", expr, b.safeNum(value)), nil
+		num, err := safeNum(value)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("CAST(%s AS DOUBLE) >= %s", expr, num), nil
 	case "lt":
-		return fmt.Sprintf("CAST(%s AS DOUBLE) < %s", expr, b.safeNum(value)), nil
+		num, err := safeNum(value)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("CAST(%s AS DOUBLE) < %s", expr, num), nil
 	case "lte":
-		return fmt.Sprintf("CAST(%s AS DOUBLE) <= %s", expr, b.safeNum(value)), nil
+		num, err := safeNum(value)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("CAST(%s AS DOUBLE) <= %s", expr, num), nil
 	case "before":
 		return fmt.Sprintf("%s < CAST('%s' AS DATE)", normalizeDate(expr), escapeSQLString(value)), nil
 	case "after":
@@ -2200,11 +2217,21 @@ func escapeRegex(s string) string {
 	return s
 }
 
-func (b *SQLBuilder) safeNum(v string) string {
-	// Ensure the value is a valid number expression
+// numericLiteralRe matches plain decimal/float literals (optional sign, decimal
+// point, and exponent). Deliberately rejects hex floats, Inf, and NaN so that
+// values interpolated into SQL are always safe numeric literals.
+var numericLiteralRe = regexp.MustCompile(`^[+-]?(\d+(\.\d+)?|\.\d+)([eE][+-]?\d+)?$`)
+
+// safeNum validates a value as a plain numeric literal for safe SQL
+// interpolation, preventing injection via numeric comparison operators.
+// Empty input maps to "0"; anything non-numeric is rejected with an error.
+func safeNum(v string) (string, error) {
 	v = strings.TrimSpace(v)
 	if v == "" {
-		return "0"
+		return "0", nil
 	}
-	return v
+	if !numericLiteralRe.MatchString(v) {
+		return "", fmt.Errorf("无效的数字: %q", v)
+	}
+	return v, nil
 }
