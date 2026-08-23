@@ -92,6 +92,38 @@ func TestGlobalRegexQuoteEscaping(t *testing.T) {
 	}
 }
 
+// TestRegexCastsNonVarchar verifies that regex comparisons cast the field
+// expression to VARCHAR, since DuckDB's regexp_matches has no overload for
+// numeric columns (e.g. s.score is DOUBLE).
+func TestRegexCastsNonVarchar(t *testing.T) {
+	b := NewSQLBuilder(&config.Config{Target: "subject", Limit: 10}, "/tmp/data")
+
+	sql, err := b.buildCondition("s.score", "regex", "^9")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sql, "CAST(s.score AS VARCHAR)") {
+		t.Errorf("regex on numeric field missing VARCHAR cast: %s", sql)
+	}
+
+	sql, err = b.buildCondition("s.score", "not_regex", "^9")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sql, "CAST(s.score AS VARCHAR)") {
+		t.Errorf("not_regex on numeric field missing VARCHAR cast: %s", sql)
+	}
+
+	// Field-to-field regex compare casts both sides.
+	sql, err = b.buildFieldCompare("score", "name", "", "regex", "s", "rs")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sql, "CAST(s.score AS VARCHAR)") || !strings.Contains(sql, "CAST(rs.name AS VARCHAR)") {
+		t.Errorf("field-compare regex missing VARCHAR casts: %s", sql)
+	}
+}
+
 // TestBuildSubjectCountValRejectsInjection verifies the person_character /
 // character_person subject-count threshold is validated before interpolation.
 func TestBuildSubjectCountValRejectsInjection(t *testing.T) {

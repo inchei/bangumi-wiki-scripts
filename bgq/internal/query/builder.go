@@ -496,7 +496,7 @@ func (b *SQLBuilder) buildFieldCompare(lhsField, rhsField, rhsModifier, op, lhsA
 	case "not_contains":
 		return fmt.Sprintf("CAST(%s AS VARCHAR) NOT LIKE '%%' || CAST(%s AS VARCHAR) || '%%' AND TRIM(CAST(%s AS VARCHAR)) <> ''", lhs, rhs, lhs), nil
 	case "regex":
-		return fmt.Sprintf("regexp_matches(%s, %s)", lhs, rhs), nil
+		return fmt.Sprintf("regexp_matches(CAST(%s AS VARCHAR), CAST(%s AS VARCHAR))", lhs, rhs), nil
 	default:
 		return "", fmt.Errorf("field compare: unsupported operator %q", op)
 	}
@@ -1546,10 +1546,11 @@ func (b *SQLBuilder) buildCondition(expr, op, value string) (string, error) {
 	case "not_contains":
 		return fmt.Sprintf("CAST(%s AS VARCHAR) NOT LIKE '%%%s%%' AND TRIM(CAST(%s AS VARCHAR)) <> ''", expr, escapeLike(value), expr), nil
 	case "regex":
-		// regexp_matches auto-casts first arg to VARCHAR
-		return fmt.Sprintf("regexp_matches(%s, '%s')", expr, sqlEscapeRegexString(value)), nil
+		// CAST is required: regexp_matches has no overload for non-VARCHAR
+		// first arguments (e.g. DOUBLE columns like s.score).
+		return fmt.Sprintf("regexp_matches(CAST(%s AS VARCHAR), '%s')", expr, sqlEscapeRegexString(value)), nil
 	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(%s, '%s') AND TRIM(CAST(%s AS VARCHAR)) <> ''", expr, sqlEscapeRegexString(value), expr), nil
+		return fmt.Sprintf("NOT regexp_matches(CAST(%s AS VARCHAR), '%s') AND TRIM(CAST(%s AS VARCHAR)) <> ''", expr, sqlEscapeRegexString(value), expr), nil
 	case "empty":
 		return fmt.Sprintf("COALESCE(CAST(%s AS VARCHAR), '') = ''", expr), nil
 	case "gt":
