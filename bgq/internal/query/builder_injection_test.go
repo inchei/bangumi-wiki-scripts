@@ -124,6 +124,49 @@ func TestRegexCastsNonVarchar(t *testing.T) {
 	}
 }
 
+// TestAssocIDOutputColumn verifies that "entity.id" output columns reference
+// the entity's actual primary key column (persons/characters/episodes rename
+// id to person_id/character_id/episode_id in both the CTEs and the ingested DB).
+func TestAssocIDOutputColumn(t *testing.T) {
+	cfg := &config.Config{
+		Target:  "subject",
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"原作.id", "主角.id", "episode.id"}},
+		Filters: []config.Filter{{Type: &config.TypeFilter{Value: 1}}},
+	}
+	b := NewSQLBuilder(cfg, "/tmp/data")
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"p.person_id", "c.character_id", "e.episode_id"} {
+		if !strings.Contains(sql, want) {
+			t.Errorf("generated SQL missing %s:\n%s", want, sql)
+		}
+	}
+	for _, bad := range []string{"SELECT p.id FROM", "SELECT c.id FROM", "SELECT e.id FROM"} {
+		if strings.Contains(sql, bad) {
+			t.Errorf("generated SQL still references nonexistent %s:\n%s", bad, sql)
+		}
+	}
+
+	// Aggregation mode (field+) orders by the entity PK, not the main id column.
+	cfgAll := &config.Config{
+		Target:  "subject",
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"原作.name+"}},
+		Filters: []config.Filter{{Type: &config.TypeFilter{Value: 1}}},
+	}
+	ba := NewSQLBuilder(cfgAll, "/tmp/data")
+	sqlAll, err := ba.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(sqlAll, "ORDER BY p.person_id") {
+		t.Errorf("aggregation ORDER BY uses wrong column:\n%s", sqlAll)
+	}
+}
+
 // TestBuildSubjectCountValRejectsInjection verifies the person_character /
 // character_person subject-count threshold is validated before interpolation.
 func TestBuildSubjectCountValRejectsInjection(t *testing.T) {

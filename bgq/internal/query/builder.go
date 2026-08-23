@@ -1716,7 +1716,7 @@ func (b *SQLBuilder) buildRelationOutput(relType, field string) (string, error) 
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "subject_relations", ja: "r", mainFK: "subject_id",
 		entityJoin: relatedJoin, typeCond: typeCond, extraWhere: relatedWhere,
-		entityAlias: "rs", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
+		entityAlias: "rs", entityPK: "id", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
 		directFields: subjectDirectFields,
 	})
 }
@@ -1744,7 +1744,7 @@ func (b *SQLBuilder) buildStaffOutput(position, field string) (string, error) {
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "subject_persons", ja: "sp", mainFK: "subject_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: personWhere,
-		entityAlias: "p", field: field, label: fmt.Sprintf("\"%s.%s\"", position, field),
+		entityAlias: "p", entityPK: "person_id", field: field, label: fmt.Sprintf("\"%s.%s\"", position, field),
 		directFields: personDirectFields,
 	})
 }
@@ -1768,7 +1768,7 @@ func (b *SQLBuilder) buildCharacterOutput(charType, field string, typeID int) (s
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "subject_characters", ja: "sc", mainFK: "subject_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: charWhere,
-		entityAlias: "c", field: field, label: fmt.Sprintf("\"%s.%s\"", charType, field),
+		entityAlias: "c", entityPK: "character_id", field: field, label: fmt.Sprintf("\"%s.%s\"", charType, field),
 		directFields: characterDirectFields,
 	})
 }
@@ -1790,7 +1790,7 @@ func (b *SQLBuilder) buildEpisodeOutput(field string) (string, error) {
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "episodes", ja: "e", mainFK: "subject_id",
 		entityJoin: "", typeCond: "TRUE", extraWhere: epWhere,
-		entityAlias: "e", field: field, label: fmt.Sprintf("\"episode.%s\"", field),
+		entityAlias: "e", entityPK: "episode_id", field: field, label: fmt.Sprintf("\"episode.%s\"", field),
 		directFields: episodeDirectFields,
 	})
 }
@@ -1821,7 +1821,7 @@ func (b *SQLBuilder) buildPersonRelationOutput(relType, field string) (string, e
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "person_relations", ja: "pr", mainFK: "person_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: relatedWhere,
-		entityAlias: "rp", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
+		entityAlias: "rp", entityPK: "person_id", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
 		directFields: personDirectFields,
 	})
 }
@@ -1852,7 +1852,7 @@ func (b *SQLBuilder) buildCharacterRelationOutput(relType, field string) (string
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "character_relations", ja: "cr", mainFK: "person_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: relatedWhere,
-		entityAlias: "rc", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
+		entityAlias: "rc", entityPK: "character_id", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
 		directFields: characterDirectFields,
 	})
 }
@@ -1866,6 +1866,7 @@ type assocSubConfig struct {
 	typeCond     string          // type/position filter condition
 	extraWhere   string          // additional conditions from filter
 	entityAlias  string          // entity alias for field resolution
+	entityPK     string          // entity primary key column ("id" for subjects; persons/characters/episodes rename it to person_id/character_id/episode_id)
 	field        string          // field name (supports "count", "field+")
 	label        string          // column label (already quoted)
 	directFields map[string]bool // direct fields for this entity type
@@ -1885,6 +1886,11 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 	}
 	mainRef := fmt.Sprintf("%s.%s", b.mainAlias, b.tc.idColumn)
 
+	entityPK := cfg.entityPK
+	if entityPK == "" {
+		entityPK = "id"
+	}
+
 	// Count mode
 	if field == "count" {
 		return fmt.Sprintf(
@@ -1897,7 +1903,7 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 	ea := cfg.entityAlias
 	var fieldExpr string
 	if field == "id" || field == "ID" {
-		fieldExpr = ea + ".id"
+		fieldExpr = ea + "." + entityPK
 	} else if cfg.directFields[field] {
 		fieldExpr = ea + "." + quoteIdent(field)
 	} else {
@@ -1907,7 +1913,7 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 	if allMode {
 		return fmt.Sprintf(
 			"(SELECT string_agg(CAST(%s AS VARCHAR), ', ' ORDER BY %s.%s) FROM %s %s %s WHERE %s.%s = %s AND %s) AS %s",
-			fieldExpr, ea, b.tc.idColumn, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
+			fieldExpr, ea, entityPK, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
 		), nil
 	}
 	return fmt.Sprintf(
