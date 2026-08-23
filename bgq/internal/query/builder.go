@@ -542,7 +542,7 @@ func (b *SQLBuilder) fieldFilter(f *config.FieldFilter, tableAlias string) (stri
 	if b.target == "person" && fieldName == "career" {
 		switch f.Operator {
 		case "regex":
-			return fmt.Sprintf("regexp_matches(%s.career::VARCHAR, '%s')", tableAlias, escapeRegex(valueStr)), nil
+			return fmt.Sprintf("regexp_matches(%s.career::VARCHAR, '%s')", tableAlias, sqlEscapeRegexString(valueStr)), nil
 		case "not_contains":
 			return fmt.Sprintf("NOT LIST_CONTAINS(COALESCE(%s.career, []), '%s')", tableAlias, escapeSQLString(valueStr)), nil
 		case "empty":
@@ -593,9 +593,9 @@ func (b *SQLBuilder) globalFilter(f *config.GlobalFilter) (string, error) {
 
 	switch f.Operator {
 	case "regex":
-		return fmt.Sprintf("regexp_matches(%s, '%s')", infobox, escapeRegex(valueStr)), nil
+		return fmt.Sprintf("regexp_matches(%s, '%s')", infobox, sqlEscapeRegexString(valueStr)), nil
 	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(%s, '%s')", infobox, escapeRegex(valueStr)), nil
+		return fmt.Sprintf("NOT regexp_matches(%s, '%s')", infobox, sqlEscapeRegexString(valueStr)), nil
 	case "contains":
 		return fmt.Sprintf("%s LIKE '%%%s%%'", infobox, escapeLike(valueStr)), nil
 	case "eq":
@@ -885,9 +885,9 @@ func (b *SQLBuilder) globalFilterForAlias(f *config.GlobalFilter, alias string) 
 	valueStr := fmt.Sprintf("%v", f.Value)
 	switch f.Operator {
 	case "regex":
-		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", alias, escapeRegex(valueStr)), nil
+		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", alias, sqlEscapeRegexString(valueStr)), nil
 	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(%s.infobox, '%s')", alias, escapeRegex(valueStr)), nil
+		return fmt.Sprintf("NOT regexp_matches(%s.infobox, '%s')", alias, sqlEscapeRegexString(valueStr)), nil
 	case "contains":
 		return fmt.Sprintf("%s.infobox LIKE '%%%s%%'", alias, escapeLike(valueStr)), nil
 	default:
@@ -1355,7 +1355,7 @@ func (b *SQLBuilder) fieldFilterForNested(f *config.FieldFilter, nestedAlias str
 	// Special case: career field (person only) — LIST_CONTAINS
 	if f.Field == "career" {
 		if f.Operator == "regex" {
-			return fmt.Sprintf("regexp_matches(%s.career::VARCHAR, '%s')", nestedAlias, escapeRegex(valueStr)), nil
+			return fmt.Sprintf("regexp_matches(%s.career::VARCHAR, '%s')", nestedAlias, sqlEscapeRegexString(valueStr)), nil
 		}
 		return fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.career, []), '%s')", nestedAlias, escapeSQLString(valueStr)), nil
 	}
@@ -1382,9 +1382,9 @@ func (b *SQLBuilder) globalFilterForNested(f *config.GlobalFilter, nestedAlias s
 	valueStr := fmt.Sprintf("%v", f.Value)
 	switch f.Operator {
 	case "regex":
-		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", nestedAlias, escapeRegex(valueStr)), nil
+		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", nestedAlias, sqlEscapeRegexString(valueStr)), nil
 	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(%s.infobox, '%s')", nestedAlias, escapeRegex(valueStr)), nil
+		return fmt.Sprintf("NOT regexp_matches(%s.infobox, '%s')", nestedAlias, sqlEscapeRegexString(valueStr)), nil
 	case "contains":
 		return fmt.Sprintf("%s.infobox LIKE '%%%s%%'", nestedAlias, escapeLike(valueStr)), nil
 	default:
@@ -2205,15 +2205,6 @@ func escapeLike(s string) string {
 	s = strings.ReplaceAll(s, "'", "''")
 	s = strings.ReplaceAll(s, "%", "\\%")
 	s = strings.ReplaceAll(s, "_", "\\_")
-	return s
-}
-
-func escapeRegex(s string) string {
-	// Escape special regex characters for DuckDB/RE2
-	special := []string{`\`, `.`, `*`, `+`, `?`, `(`, `)`, `[`, `]`, `{`, `}`, `^`, `$`, `|`}
-	for _, ch := range special {
-		s = strings.ReplaceAll(s, ch, `\`+ch)
-	}
 	return s
 }
 
