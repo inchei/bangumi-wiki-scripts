@@ -124,6 +124,47 @@ func TestRegexCastsNonVarchar(t *testing.T) {
 	}
 }
 
+// TestOutputColumnsTriggerCTELoading verifies that association output columns
+// (e.g. "原作.name", "单行本.id", "episode.name") load the junction CTEs even
+// when no filter of that kind is present, instead of failing with a missing
+// table error in JSON mode.
+func TestOutputColumnsTriggerCTELoading(t *testing.T) {
+	cfg := &config.Config{
+		Target:  "subject",
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "原作.name", "单行本.name", "主角.name", "episode.name"}},
+		Filters: []config.Filter{{Type: &config.TypeFilter{Value: 1}}},
+	}
+	b := NewSQLBuilder(cfg, "/tmp/data")
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{"subject_relations AS (", "subject_persons AS (", "persons AS (", "subject_characters AS (", "characters AS (", "episodes AS ("} {
+		if !strings.Contains(sql, want) {
+			t.Errorf("generated SQL missing CTE %s:\n%s", want, sql)
+		}
+	}
+
+	// Output columns must not drag in CTEs they don't need.
+	cfgMin := &config.Config{
+		Target:  "subject",
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"id", "name"}},
+		Filters: []config.Filter{{Type: &config.TypeFilter{Value: 1}}},
+	}
+	bMin := NewSQLBuilder(cfgMin, "/tmp/data")
+	sqlMin, err := bMin.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, unwanted := range []string{"subject_relations AS (", "subject_persons AS (", "subject_characters AS (", "episodes AS ("} {
+		if strings.Contains(sqlMin, unwanted) {
+			t.Errorf("generated SQL unexpectedly includes %s:\n%s", unwanted, sqlMin)
+		}
+	}
+}
+
 // TestAssocIDOutputColumn verifies that "entity.id" output columns reference
 // the entity's actual primary key column (persons/characters/episodes rename
 // id to person_id/character_id/episode_id in both the CTEs and the ingested DB).

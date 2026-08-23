@@ -120,11 +120,59 @@ func (b *SQLBuilder) Build() (string, error) {
 	return sql.String(), nil
 }
 
+// outputCTENeeds records which junction CTEs are required purely by
+// association output columns (e.g. "原作.name", "episode.id"), independent of
+// the filters. Prefix resolution mirrors the switch in buildSelect.
+type outputCTENeeds struct {
+	relations          bool // subject_relations
+	persons            bool // subject_persons + persons
+	characters         bool // subject_characters + characters
+	personRelations    bool // person_relations
+	characterRelations bool // character_relations
+	episodes           bool
+}
+
+// cteNeedsFromOutputColumns scans cfg.Output.Columns for "prefix.field"
+// association columns and reports which junction CTEs they need.
+func (b *SQLBuilder) cteNeedsFromOutputColumns() outputCTENeeds {
+	var n outputCTENeeds
+	if b.cfg.Output == nil {
+		return n
+	}
+	for _, col := range b.cfg.Output.Columns {
+		prefix, _, ok := strings.Cut(col, ".")
+		if !ok {
+			continue
+		}
+		switch {
+		case prefix == "episode":
+			n.episodes = true
+		case len(b.getRelationIDsForName(prefix)) > 0:
+			n.relations = true
+		case b.target == "subject" && len(b.getPositionIDsForName(prefix)) > 0:
+			n.persons = true
+		case b.target == "subject":
+			if _, ok := b.getCharacterAssociationTypeID(prefix); ok {
+				n.characters = true
+			}
+		case b.target == "person" && len(b.getPersonRelationIDsForName(prefix)) > 0:
+			n.personRelations = true
+		case b.target == "character" && len(b.getCharacterRelationIDsForName(prefix)) > 0:
+			n.characterRelations = true
+		}
+	}
+	return n
+}
+
 func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	// If using a persistent database, no CTEs needed — tables already exist
 	if b.useDB {
 		return nil, nil
 	}
+
+	// Association output columns reference junction tables even when no filter
+	// of that kind is present, so include them in CTE loading decisions.
+	needs := b.cteNeedsFromOutputColumns()
 
 	var ctes []string
 
@@ -158,7 +206,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	}
 
 	// Relations CTE
-	if b.cfg.NeedsRelations() {
+	if b.cfg.NeedsRelations() || needs.relations {
 		relFile := b.dataDir + "/subject-relations.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`subject_relations AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
@@ -167,7 +215,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	}
 
 	// Persons CTE
-	if b.cfg.NeedsPersons() {
+	if b.cfg.NeedsPersons() || needs.persons {
 		persFile := b.dataDir + "/subject-persons.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`subject_persons AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
@@ -184,7 +232,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	}
 
 	// Person Relations CTE (person-to-person, filtered by person_type='prsn')
-	if b.cfg.NeedsPersonRelations() {
+	if b.cfg.NeedsPersonRelations() || needs.personRelations {
 		persRelFile := b.dataDir + "/person-relations.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`person_relations AS (SELECT * FROM read_json_auto('%s', format='newline_delimited') WHERE person_type = 'prsn')`,
@@ -202,7 +250,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	}
 
 	// Character Relations CTE (character-to-character, filtered by person_type='crt')
-	if b.cfg.NeedsCharacterRelations() {
+	if b.cfg.NeedsCharacterRelations() || needs.characterRelations {
 		charRelFile := b.dataDir + "/person-relations.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`character_relations AS (SELECT * FROM read_json_auto('%s', format='newline_delimited') WHERE person_type = 'crt')`,
@@ -220,7 +268,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	}
 
 	// Subject Characters CTE
-	if b.cfg.NeedsCharacters() {
+	if b.cfg.NeedsCharacters() || needs.characters {
 		subCharFile := b.dataDir + "/subject-characters.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`subject_characters AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
@@ -272,7 +320,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		))
 		episodesLoaded = true
 	}
-	if !episodesLoaded && b.cfg.NeedsEpisodes() {
+	if !episodesLoaded && (b.cfg.NeedsEpisodes() || needs.episodes) {
 		epFile := b.dataDir + "/episode.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('%s', format='newline_delimited'))`,
