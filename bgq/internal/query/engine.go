@@ -164,14 +164,6 @@ func parseDuckDBCSV(data []byte) (*QueryResult, error) {
 	}, nil
 }
 
-// min returns the smaller of two ints.
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
 // WriteCSVTo writes CSV output to w (without BOM).
 func (r *QueryResult) WriteCSVTo(w io.Writer) error {
 	cw := csv.NewWriter(w)
