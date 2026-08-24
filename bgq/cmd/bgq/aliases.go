@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/text/unicode/norm"
 )
 
 type personAliasEntry struct {
@@ -84,21 +86,25 @@ func loadAliasesFile(path string) (*aliasData, error) {
 	return &aliasData{persons: persons, aliases: aliases, modTime: fi.ModTime()}, nil
 }
 
+// normalizeAlias normalizes a person alias for lookup.
+// Source must be UTF-8; requires a font covering CJK Unified and Compatibility
+// Ideographs for review (e.g. 﨑 U+FA11). NFKC handles halfwidth katakana
+// (U+FF66-FF9D) -> fullwidth katakana and fullwidth alphanumerics
+// (U+FF21-FF5A) -> ASCII; the remaining katakana->hiragana step uses a
+// literal range and is kept in sync with person_alias.py and the JS
+// implementations.
 func normalizeAlias(name string) string {
+	nfkc := norm.NFKC.String(name)
 	var buf strings.Builder
-	for _, r := range name {
-		switch {
-		case r == ' ' || r == '\t' || r == '\n' || r == '\r' || r == '-':
+	buf.Grow(len(nfkc))
+	for _, r := range nfkc {
+		if r == ' ' || r == '\t' || r == '\n' || r == '\r' || r == '-' || r == '\u3000' {
 			continue
-		case r >= 0xFF66 && r <= 0xFF9D:
-			buf.WriteRune(r - 0xFBE0)
-		case r >= 0xFF21 && r <= 0xFF5A:
-			buf.WriteRune(r - 0xFEE0)
-		case r >= 0x30A1 && r <= 0x30F6:
-			buf.WriteRune(r - 0x60)
-		default:
-			buf.WriteRune(r)
 		}
+		if r >= 0x30A1 && r <= 0x30F6 {
+			r -= 0x60
+		}
+		buf.WriteRune(r)
 	}
 	return strings.ToLower(buf.String())
 }

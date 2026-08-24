@@ -30,15 +30,16 @@ const postSearch = async (cat, keyword, filter, limit = 1) => {
 export const searchPrsn = (keyword) => postSearch('persons', keyword);
 export const searchPrsnAll = (keyword) => postSearch('persons', keyword, undefined, 5);
 
+// Source must be UTF-8; NFKC handles halfwidth katakana (U+FF66-FF9D)
+// -> fullwidth katakana and fullwidth alphanumerics (U+FF21-FF5A) -> ASCII.
+// Requires font covering CJK Unified/Compatibility Ideographs (e.g. 﨑 U+FA11).
 export function normalize(name) {
   return name
+    .normalize('NFKC')
     .replace(/\s/g, '')
     .replaceAll('-', '')
     .replace(/[\u30A1-\u30F6]/g, function (match) {
       return String.fromCharCode(match.charCodeAt(0) - 0x60);
-    })
-    .replace(/[\uFF21-\uFF5A]/g, function (match) {
-      return String.fromCharCode(match.charCodeAt(0) - 0xfee0);
     })
     .toLowerCase();
 }

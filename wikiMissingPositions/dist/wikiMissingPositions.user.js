@@ -1112,10 +1112,8 @@ document.head.appendChild(styleEl);
   };
   var searchPrsnAll = (keyword) => postSearch("persons", keyword, void 0, 5);
   function normalize(name) {
-    return name.replace(/\s/g, "").replaceAll("-", "").replace(/[\u30A1-\u30F6]/g, function(match) {
+    return name.normalize("NFKC").replace(/\s/g, "").replaceAll("-", "").replace(/[\u30A1-\u30F6]/g, function(match) {
       return String.fromCharCode(match.charCodeAt(0) - 96);
-    }).replace(/[\uFF21-\uFF5A]/g, function(match) {
-      return String.fromCharCode(match.charCodeAt(0) - 65248);
     }).toLowerCase();
   }
 

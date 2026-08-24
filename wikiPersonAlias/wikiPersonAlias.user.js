@@ -39,11 +39,13 @@
   let dbInitialized = false;
   let fileInput = null; // 全局存储文件选择器，避免重复创建
 
+  // Source must be UTF-8; NFKC handles halfwidth katakana (U+FF66-FF9D)
+  // -> fullwidth katakana and fullwidth alphanumerics (U+FF21-FF5A) -> ASCII.
+  // Requires font covering CJK Unified/Compatibility Ideographs (e.g. 﨑 U+FA11).
   const normalize = (name) =>
     name
+      .normalize('NFKC') // halfwidth katakana/fullwidth alphanumerics -> compatibility decomposition
       .replace(/[\s-]/g, '') // 去空格/连字符
-      .replace(/[\uFF66-\uFF9D]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfbe0)) // 窄假名→平假名
-      .replace(/[\uFF21-\uFF5A]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0)) // 全角字母→半角
       .replace(/[\u30A1-\u30F6]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0x60)) // 全角片假名→平假名
       .toLowerCase(); // 字母统一小写
 

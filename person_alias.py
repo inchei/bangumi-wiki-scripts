@@ -6,6 +6,7 @@
 # ///
 import json
 import re
+import unicodedata
 from bgm_tv_wiki import parse
 
 # 匹配括号及内容的正则表达式（支持中英文括号）
@@ -132,21 +133,18 @@ def parse_bangumi_person_jsonlines(file_path):
                                                 qn.append(bc)
 
                 # 过滤空值和与原名相同的别名
-                # 合并：窄假名→平假名、全角字母→半角、全角片假名→平假名
-                trans = str.maketrans({
-                    # 1. 窄假名（ｶﾈｼ等，Unicode：0xFF66-0xFF9D）→ 平假名
-                    **{chr(c): chr(c - 0xFBE0) for c in range(0xFF66, 0xFF9E)},
-                    # 2. 全角字母（０xFF21-0xFF5A）→ 半角
-                    **{chr(c): chr(c - 0xFEE0) for c in range(0xFF21, 0xFF5B)},
-                    # 3. 全角片假名（0x30A1-0x30F6）→ 平假名
-                    **{chr(c): chr(c - 0x60) for c in range(0x30A1, 0x30F7)}
-                })
+                # NFKC handles halfwidth katakana (U+FF66-FF9D) -> fullwidth
+                # katakana and fullwidth alphanumerics (U+FF21-FF5A) -> ASCII.
+                # Source must be UTF-8; requires font covering CJK Unified and
+                # Compatibility Ideographs (e.g. 﨑 U+FA11).
+                kata_to_hira = str.maketrans({chr(c): chr(c - 0x60) for c in range(0x30A1, 0x30F7)})
 
-                # 最终归一化列表推导
-                normalized_en = re.sub(r'[\s-]', '', en).translate(trans).lower()
-                qn = [re.sub(r'[\s-]', '', n).translate(trans).lower() for n in qn
-                      if n and n != en
-                      and re.sub(r'[\s-]', '', n).translate(trans).lower() != normalized_en]
+                def _norm(s: str) -> str:
+                    s = unicodedata.normalize('NFKC', s)
+                    return re.sub(r'[\s-]', '', s).translate(kata_to_hira).lower()
+
+                normalized_en = _norm(en)
+                qn = [_norm(n) for n in qn if n and n != en and _norm(n) != normalized_en]
 
                 # 将别名映射到人物索引（支持一对多）
                 for alias in qn:
