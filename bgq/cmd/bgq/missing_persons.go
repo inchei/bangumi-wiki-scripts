@@ -267,38 +267,42 @@ func normalizePersonName(name string) string {
 // personNameVariantMap maps Japanese variant characters to the common form used
 // in person names (mirrors NORMALIZE_MAP in find_dup_person_name.py), so that
 // variant-spelling duplicates (e.g. 髙橋/高橋, 廣瀬/広瀬) can be recognized.
+// Source file must be UTF-8; this table uses literal characters for
+// reviewability. Editors need a font covering CJK Unified and Compatibility
+// Ideographs (e.g. 﨑 U+FA11), otherwise glyphs may render as tofu.
+// If rendering fails, install Noto Sans CJK or check via \uXXXX.
 var personNameVariantMap = map[rune]rune{
-	'\u9ad9': '\u9ad8', // 髙 → 高
-	'\u51a8': '\u5bcc', // 冨 → 富
-	'\ufa11': '\u5d0e', // 﨑 → 崎
-	'\u5d5c': '\u5d0e', // 嵜 → 崎
-	'\u90de': '\u90ce', // 郞 → 郎
-	'\u6801': '\u67f3', // 栁 → 柳
-	'\u4ff1': '\u5036', // 俱 → 倶
-	'\u59ec': '\u59eb', // 姬 → 姫
-	'\u5154': '\u514e', // 兔 → 兎
-	'\u820d': '\u820e', // 舍 → 舎
-	'\u885e': '\u885b', // 衞 → 衛
-	'\u615c': '\u614e', // 愼 → 慎
-	'\u9089': '\u8fba', // 邉 → 辺
-	'\u908a': '\u8fba', // 邊 → 辺
-	'\u6ff5': '\u6d5c', // 濵 → 浜
-	'\u6ff1': '\u6d5c', // 濱 → 浜
-	'\u5d8b': '\u5cf6', // 嶋 → 島
-	'\u6fa4': '\u6ca2', // 澤 → 沢
-	'\u5ee3': '\u5e83', // 廣 → 広
-	'\u703e': '\u702c', // 瀨 → 瀬
-	'\u9f4a': '\u6589', // 齊 → 斉
-	'\u9f52': '\u6592', // 齋 → 斎
-	'\u6afb': '\u685c', // 櫻 → 桜
-	'\u95dc': '\u95a2', // 關 → 関
-	'\u9ed1': '\u9ed2', // 黑 → 黒
-	'\u5fb7': '\u5fb3', // 德 → 徳
-	'\u9f8d': '\u7adc', // 龍 → 竜
-	'\u8207': '\u4e0e', // 與 → 与
-	'\u9435': '\u9244', // 鐵 → 鉄
-	'\u5dbd': '\u5cb3', // 嶽 → 岳
-	'\u7adc': '\u4e26', // 竝 → 並
+	'髙': '高',
+	'冨': '富',
+	'﨑': '崎',
+	'嵜': '崎',
+	'郞': '郎',
+	'栁': '柳',
+	'俱': '倶',
+	'姬': '姫',
+	'兔': '兎',
+	'舍': '舎',
+	'衞': '衛',
+	'愼': '慎',
+	'邉': '辺',
+	'邊': '辺',
+	'濵': '浜',
+	'濱': '浜',
+	'嶋': '島',
+	'澤': '沢',
+	'廣': '広',
+	'瀨': '瀬',
+	'齊': '斉',
+	'齋': '斎',
+	'櫻': '桜',
+	'關': '関',
+	'黑': '黒',
+	'德': '徳',
+	'龍': '竜',
+	'與': '与',
+	'鐵': '鉄',
+	'嶽': '岳',
+	'竝': '並',
 }
 
 // normalizePersonNameVariant maps variant characters in an alias-normalized

@@ -5,6 +5,7 @@
 - Go（版本见 `go.mod`）
 - Node.js + pnpm（前端开发）
 - DuckDB CLI（运行时需要；快照测试不需要，`-execute` 模式需要）
+- 源码文件均为 UTF-8；编辑器需设为 UTF-8 无 BOM 保存，字体建议覆盖 CJK 统一表意文字及兼容表意文字（如 `bgq/cmd/bgq/missing_persons.go:270` 的 `personNameVariantMap` 含 﨑 U+FA11 等），否则异体字可能显示为方块。若显示异常可安装 Noto Sans CJK / 思源字体，或以 `\uXXXX` 形式对照检查。
 
 ## 后端（Go）
 
