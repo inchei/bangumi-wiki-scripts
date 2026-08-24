@@ -163,7 +163,7 @@ bgq/
 
 | 端点 | 方法 | 说明 |
 |------|------|------|
-| `/api/query` | POST | 执行查询（支持 yaml / filters / conditions 三种输入） |
+| `/api/query` | POST | 执行查询（支持 filters / conditions 两种输入） |
 | `/api/health` | GET | 健康检查 |
 | `/api/persons/{name}/missing-subjects` | GET | 查询某人在指定条目类型中缺失的 staff 关联 |
 | `/api/persons/{name}/missing-episodes` | GET | 查询某人在剧集描述中出现但缺少 staff 关联的剧集 |

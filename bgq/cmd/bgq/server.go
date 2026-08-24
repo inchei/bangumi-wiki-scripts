@@ -33,7 +33,6 @@ type apiQueryRequest struct {
 	Sort       []config.SortRule `json:"sort,omitempty"`
 	Limit      int               `json:"limit,omitempty"`
 	Format     string            `json:"format,omitempty"`
-	YAML       string            `json:"yaml,omitempty"`
 }
 
 type apiError struct {
@@ -165,19 +164,7 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 
 	var cfg *config.Config
 
-	if req.YAML != "" {
-		// Parse from YAML string
-		var err error
-		cfg, err = config.Load(req.YAML)
-		if err != nil {
-			// Try parsing as inline YAML
-			cfg = &config.Config{DataDir: s.dataDir}
-			if err := json.Unmarshal([]byte(req.YAML), cfg); err != nil {
-				writeJSON(w, http.StatusBadRequest, apiError{Error: "YAML解析错误: " + err.Error()})
-				return
-			}
-		}
-	} else if len(req.Filters) > 0 {
+	if len(req.Filters) > 0 {
 		cfg = &config.Config{
 			Target:  req.Target,
 			DataDir: s.dataDir,
@@ -206,7 +193,7 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 			cfg.Filters = append(cfg.Filters, filter)
 		}
 	} else {
-		writeJSON(w, http.StatusBadRequest, apiError{Error: "请提供 conditions、filters 或 yaml"})
+		writeJSON(w, http.StatusBadRequest, apiError{Error: "请提供 conditions 或 filters"})
 		return
 	}
 

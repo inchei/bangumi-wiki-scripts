@@ -195,7 +195,7 @@ Sub-filter modes: `any` (exists), `all` (universal), `none` (negation), `count` 
 ### Web Server API
 
 `bgq serve` exposes:
-- `POST /api/query` — accepts `filters` (JSON), `yaml` (string), or `conditions` (legacy string array)
+- `POST /api/query` — accepts `filters` (JSON) or `conditions` (legacy string array)
 - `GET /api/health` — health check
 - `GET /api/debug` — DuckDB/data diagnostics
 - `GET /api/persons/{name}/missing-subjects?type=<type>&position=<pos>` — find subjects missing a person's staff entry for given positions
