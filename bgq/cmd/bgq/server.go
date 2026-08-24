@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -347,18 +348,15 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 // writeCSVToWriter writes query results as CSV to an io.Writer.
 func writeCSVToWriter(r *query.QueryResult, w http.ResponseWriter) error {
 	_, _ = w.Write([]byte{0xEF, 0xBB, 0xBF})
-	header := strings.Join(r.Columns, ",") + "\n"
-	_, _ = w.Write([]byte(header))
-	for _, row := range r.Rows {
-		escaped := make([]string, len(row))
-		for i, val := range row {
-			if strings.ContainsAny(val, ",\"\n") {
-				escaped[i] = `"` + strings.ReplaceAll(val, `"`, `""`) + `"`
-			} else {
-				escaped[i] = val
-			}
-		}
-		_, _ = w.Write([]byte(strings.Join(escaped, ",") + "\n"))
+	cw := csv.NewWriter(w)
+	if err := cw.Write(r.Columns); err != nil {
+		return fmt.Errorf("写入CSV表头失败: %w", err)
 	}
-	return nil
+	for _, row := range r.Rows {
+		if err := cw.Write(row); err != nil {
+			return fmt.Errorf("写入CSV行失败: %w", err)
+		}
+	}
+	cw.Flush()
+	return cw.Error()
 }
