@@ -26,13 +26,12 @@ type server struct {
 }
 
 type apiQueryRequest struct {
-	Target     string            `json:"target,omitempty"`
-	Conditions []string          `json:"conditions,omitempty"`
-	Filters    []config.Filter   `json:"filters,omitempty"`
-	Columns    []string          `json:"columns,omitempty"`
-	Sort       []config.SortRule `json:"sort,omitempty"`
-	Limit      int               `json:"limit,omitempty"`
-	Format     string            `json:"format,omitempty"`
+	Target  string            `json:"target,omitempty"`
+	Filters []config.Filter   `json:"filters,omitempty"`
+	Columns []string          `json:"columns,omitempty"`
+	Sort    []config.SortRule `json:"sort,omitempty"`
+	Limit   int               `json:"limit,omitempty"`
+	Format  string            `json:"format,omitempty"`
 }
 
 type apiError struct {
@@ -173,27 +172,8 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 			Sort:    req.Sort,
 			Limit:   req.Limit,
 		}
-	} else if len(req.Conditions) > 0 {
-		cfg = &config.Config{
-			Target:  req.Target,
-			DataDir: s.dataDir,
-			Output:  &config.Output{Format: "json"},
-			Sort:    req.Sort,
-			Limit:   req.Limit,
-		}
-		for _, cond := range req.Conditions {
-			filter, err := parseInteractiveCondition(cond)
-			if err != nil {
-				writeJSON(w, http.StatusBadRequest, apiError{
-					Error:   "条件解析错误",
-					Message: fmt.Sprintf("'%s': %v", cond, err),
-				})
-				return
-			}
-			cfg.Filters = append(cfg.Filters, filter)
-		}
 	} else {
-		writeJSON(w, http.StatusBadRequest, apiError{Error: "请提供 conditions 或 filters"})
+		writeJSON(w, http.StatusBadRequest, apiError{Error: "请提供 filters"})
 		return
 	}
 

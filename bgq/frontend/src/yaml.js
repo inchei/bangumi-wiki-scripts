@@ -141,29 +141,14 @@ function normalizeFilters(filters) {
 function normalizeFilter(f) {
   if (!f || typeof f !== "object") return f;
 
-  // Logic group — full form (logic: {op, items}) and shorthands
-  // (logic: {or: [...]}, logic: {and: [...]}, plus bare or:/and: filter keys),
-  // mirroring the Go UnmarshalYAML.
   if (f.logic) {
     const lg = f.logic;
-    let op = lg.op;
-    let items = lg.items;
-    if (items === undefined && (lg.or !== undefined || lg.and !== undefined)) {
-      op = op || (lg.or !== undefined ? "or" : "and");
-      items = lg.or !== undefined ? lg.or : lg.and;
-    }
     return {
       logic: {
-        op: op === "or" ? "or" : "and",
-        items: normalizeFilters(items || []),
+        op: lg.op === "or" ? "or" : "and",
+        items: normalizeFilters(lg.items || []),
       },
     };
-  }
-  if (f.or !== undefined) {
-    return { logic: { op: "or", items: normalizeFilters(f.or) } };
-  }
-  if (f.and !== undefined) {
-    return { logic: { op: "and", items: normalizeFilters(f.and) } };
   }
 
   // Direct filter types
@@ -252,17 +237,6 @@ function normalizeFilterValue(val, key) {
   }
   if (key === "episode") {
     if (out.mode === undefined) out.mode = "any";
-    // Legacy flat conditions are FieldFilter objects ({field, operator, value});
-    // wrap each into a {field: ...} item without re-normalizing — the generic
-    // path would mistake the field-name string for a shorthand and drop
-    // operator/value.
-    if (out.conditions && !out.logic) {
-      out.logic = {
-        op: "and",
-        items: out.conditions.map((c) => ({ field: c })),
-      };
-      delete out.conditions;
-    }
     if (out.logic) {
       out.logic = normalizeFilter({ logic: out.logic }).logic;
     }

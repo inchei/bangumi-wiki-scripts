@@ -94,12 +94,8 @@ target: person          # subject | person | character | episode
     type: "单行本"          # 关系中文名
     mode: any               # any=任意关联满足 | all=全部关联满足 | none=无此关联
     conditions:             # 对关联条目的筛选条件（可选）
-      - field: 发售日
-        operator: after
-        value: "2020-01-01"
-      - field: score
-        operator: gt
-        value: 7
+      - field: { field: 发售日, operator: after, value: "2020-01-01" }
+      - field: { field: score, operator: gt, value: 7 }
 ```
 
 **各类型常用关系名**：
@@ -115,9 +111,7 @@ target: person          # subject | person | character | episode
     position: "原作"        # 职位中文名
     mode: any               # any | all | none
     conditions:             # 对人物的筛选条件
-      - field: name         # name | person_id | appear_eps
-        operator: contains
-        value: "川原砾"
+      - field: { field: name, operator: contains, value: "川原砾" }   # name | person_id | appear_eps
 ```
 
 **各类型常用职位名**：
@@ -130,30 +124,27 @@ target: person          # subject | person | character | episode
 
 ```yaml
 - episode:
-    mode: any               # any | all
-    conditions:
-      - field: name         # name | name_cn | airdate | duration | sort | description
-        operator: regex
-        value: "第\\d+話"
+    mode: any               # any | all | count
+    logic:                  # 剧集条件树，操作符同字段筛选
+      op: and
+      items:
+        - field: { field: name, operator: regex, value: "第\\d+話" }   # name | name_cn | airdate | duration | sort | description
 ```
 
 ## 数量筛选
 
-按条目关联数量或剧集数量筛选：
+`relation`、`staff`、`character`、`episode` 等关联类筛选都支持 `mode: count`，搭配 `count_op` / `count_val` 按关联数量过滤：
 
 ```yaml
-# 单行本数量 ≥ 5
-- count:
-    what: "单行本"
-    operator: gte
-    value: 5
-
-# 剧集数量 > 12
-- count:
-    what: "ep"
-    operator: gt
-    value: 12
+# 单行本数量 ≥ 5（count_op: gt | gte | lt | lte | eq）
+- relation:
+    type: "单行本"
+    mode: count
+    count_op: gte
+    count_val: 5
 ```
+
+`mode: count` 同样可结合 `logic` 先筛选符合条件的关联条目再计数，例如统计含 OP/ED 的剧集数。
 
 ## 逻辑组合
 

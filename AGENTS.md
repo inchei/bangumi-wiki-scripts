@@ -91,8 +91,7 @@ Path resolution: `DUCKDB_PATH` env → `bin/duckdb` (relative to executable) →
 bgq/
 ├── cmd/
 │   ├── bgq/
-│   │   ├── main.go                   # CLI entry + subcommands (query, serve, ingest, interactive, missing, version)
-│   │   ├── interactive.go            # Interactive REPL mode
+│   │   ├── main.go                   # CLI entry + subcommands (query, serve, ingest, missing, version)
 │   │   ├── missing.go                # `missing` CLI subcommand dispatcher
 │   │   ├── missing_subjects.go       # Missing subjects (staff) check logic + HTTP handler
 │   │   ├── missing_subjects_test.go  # Tests for buildCheckSQL SQL generation
@@ -153,7 +152,7 @@ bgq/
 
 ### Data Flow
 
-1. YAML config or interactive conditions → `config.Config` struct
+1. YAML config → `config.Config` struct
 2. `query.SQLBuilder` translates config into DuckDB SQL
 3. `query.Engine` invokes DuckDB CLI subprocess (`-csv` mode)
 4. CSV output parsed → `QueryResult` → terminal table / CSV / JSON / API response
@@ -195,7 +194,7 @@ Sub-filter modes: `any` (exists), `all` (universal), `none` (negation), `count` 
 ### Web Server API
 
 `bgq serve` exposes:
-- `POST /api/query` — accepts `filters` (JSON) or `conditions` (legacy string array)
+- `POST /api/query` — accepts `filters` (JSON)
 - `GET /api/health` — health check
 - `GET /api/debug` — DuckDB/data diagnostics
 - `GET /api/persons/{name}/missing-subjects?type=<type>&position=<pos>` — find subjects missing a person's staff entry for given positions
@@ -252,7 +251,6 @@ Examples: `feat: add new feature`, `fix: resolve bug`, `docs: update readme`.
 - `bgq/cmd/bgq/missing_episodes.go` — Missing episodes check: `handleMissingEpisodes` + position matching + episode label helpers
 - `bgq/cmd/bgq/missing_episodes_test.go` — Tests for `expandAppearEps`, `epLabel`, `resolveOverlaps`, `buildEpPositionTable`
 - `bgq/cmd/bgq/aliases.go` — Person alias lookup handler: `handleAliases`, `normalizeAlias`, `loadAliasesFile`
-- `bgq/cmd/bgq/interactive.go` — Interactive REPL (shared parser with web API)
 - `bgq/cmd/bgq/server.go` — HTTP server + API handlers (including aliases loading from `--aliases-file`)
 - `bgq/internal/server/webui.go` — Embedded static files via `//go:embed dist/*`
 - `bgq/frontend/src/schema-data.js` — Auto-generated schema constants (platforms, relations, positions, meta tags)

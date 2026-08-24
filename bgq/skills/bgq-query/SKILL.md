@@ -10,7 +10,7 @@ tags: [bangumi, anime, manga, query, duckdb, data-analysis]
 # bgq-query — Bangumi Query Skill
 
 Use `bgq` to query Bangumi Archive data (subjects, persons, characters, episodes) via DuckDB.
-Supports CLI YAML config, interactive mode, and HTTP API.
+Supports CLI YAML config and HTTP API.
 
 ## Prerequisites
 
@@ -77,7 +77,6 @@ filters:
 ```bash
 ./bin/bgq query --config query.yaml                      # basic
 ./bin/bgq query --config query.yaml --format csv -o out.csv --verbose  # with SQL output
-./bin/bgq interactive                                     # interactive mode
 ```
 
 ## API Usage (when server is running)
@@ -85,7 +84,7 @@ filters:
 ```bash
 curl -X POST http://localhost:8080/api/query \
   -H "Content-Type: application/json" \
-  -d '{"target":"subject","filters":[{"type":"动画"},{"field":{"field":"score","operator":"gte","value":"8.0"}}],"columns":["id","name","score"],"limit":100}'
+  -d '{"target":"subject","filters":[{"type":{"value":"动画"}},{"field":{"field":"score","operator":"gte","value":"8.0"}}],"columns":["id","name","score"],"limit":100}'
 ```
 
 ## Natural Language → Query Workflow

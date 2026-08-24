@@ -1,6 +1,6 @@
 # Bangumi Query
 
-基于 DuckDB 的 [Bangumi Archive](https://github.com/bangumi/Archive) 条目筛选工具，支持 YAML 配置文件、命令行交互、Web 界面三种使用方式。
+基于 DuckDB 的 [Bangumi Archive](https://github.com/bangumi/Archive) 条目筛选工具，支持 YAML 配置文件和 Web 界面两种使用方式。
 
 ## 演示
 
@@ -163,14 +163,6 @@ YAML 格式说明见 [YAML 筛选条件参考](docs/yaml-guide.md)。
 | `--aliases-file` | | 人物别名 JSON 路径（未指定时自动检测） |
 | `--allowed-origins` | | 允许的跨域来源域名，逗号分隔（默认 `bgm.tv,bangumi.tv,chii.in` 及部分镜像站，可传空字符串禁用所有来源） |
 | `--dev` | | 开发模式（Air 热重载） |
-
-### 交互模式
-
-```bash
-./bin/bgq interactive
-```
-
-使用说明见 [交互模式说明](docs/interactive-guide.md)。
 
 ### 使用数据库加速查询
 

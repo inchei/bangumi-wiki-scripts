@@ -159,7 +159,7 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 					return err
 				}
 			}
-		case "meta_tag", "公共标签":
+		case "meta_tag":
 			if val.Kind == yaml.ScalarNode {
 				// Shorthand: meta_tag: <tag_name>
 				f.MetaTag = &TagFilter{Operator: "contains", Value: val.Value}
@@ -227,49 +227,11 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 			}
 		case "logic":
 			f.Logic = &LogicFilter{}
-			if val.Kind == yaml.MappingNode {
-				// Check for shorthand: logic: {or: [...]} or logic: {and: [...]}
-				shorthand := false
-				for j := 0; j < len(val.Content); j += 2 {
-					subKey := val.Content[j].Value
-					if subKey == "and" || subKey == "or" {
-						f.Logic.Op = subKey
-						if err := val.Content[j+1].Decode(&f.Logic.Items); err != nil {
-							return err
-						}
-						shorthand = true
-						break
-					}
-				}
-				if !shorthand {
-					if err := val.Decode(f.Logic); err != nil {
-						return err
-					}
-				}
-			}
-		case "and":
-			f.Logic = &LogicFilter{Op: "and"}
-			if err := val.Decode(&f.Logic.Items); err != nil {
-				return err
-			}
-		case "or":
-			f.Logic = &LogicFilter{Op: "or"}
-			if err := val.Decode(&f.Logic.Items); err != nil {
+			if err := val.Decode(f.Logic); err != nil {
 				return err
 			}
 		default:
-			// Unknown key — treat as field filter shorthand
-			f.Field = &FieldFilter{
-				Field:    key,
-				Operator: "contains",
-			}
-			if val.Kind == yaml.ScalarNode {
-				f.Field.Value = val.Value
-			} else {
-				// Read operator and value from sub-mapping
-				f.Field.Operator = "contains"
-				f.Field.Value = val.Value
-			}
+			return fmt.Errorf("未知的筛选类型: %s", key)
 		}
 	}
 	return nil
@@ -404,11 +366,10 @@ type CharacterPersonFilter struct {
 
 // EpisodeFilter filters by episode.
 type EpisodeFilter struct {
-	Mode       string        `yaml:"mode" json:"mode"`                               // any, all, count
-	CountOp    string        `yaml:"count_op,omitempty" json:"count_op,omitempty"`   // count mode operator
-	CountVal   interface{}   `yaml:"count_val,omitempty" json:"count_val,omitempty"` // count mode threshold
-	Conditions []FieldFilter `yaml:"conditions" json:"conditions"`                   // legacy: flat field conditions
-	Logic      *LogicFilter  `yaml:"logic,omitempty" json:"logic,omitempty"`         // logic tree (new)
+	Mode     string       `yaml:"mode" json:"mode"`                             // any, all, count
+	CountOp  string       `yaml:"count_op,omitempty" json:"count_op,omitempty"` // count mode operator
+	CountVal interface{}  `yaml:"count_val,omitempty" json:"count_val,omitempty"`
+	Logic    *LogicFilter `yaml:"logic,omitempty" json:"logic,omitempty"` // episode condition tree
 }
 
 // Output configures the query output.

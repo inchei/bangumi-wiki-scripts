@@ -43,8 +43,6 @@ func main() {
 		cmdServe(os.Args[2:])
 	case "ingest":
 		cmdIngest(os.Args[2:])
-	case "interactive":
-		cmdInteractive(os.Args[2:])
 	case "missing":
 		cmdMissing(os.Args[2:])
 	case "help", "--help", "-h":
@@ -60,7 +58,6 @@ func printUsage() {
 	fmt.Print(banner)
 	fmt.Println(`用法:
   bgq query --config <yaml文件> [--data-dir <数据目录>] [--output <输出文件>]
-  bgq query --interactive [--data-dir <数据目录>]
   bgq serve [--data-dir <数据目录>] [--listen <地址:端口>] [--allowed-origins <域名列表>] [--dev]
   bgq ingest --data-dir <数据目录> --db <数据库路径>
   bgq missing subjects <人名> --type <条目类型> --db <数据库>
@@ -74,7 +71,6 @@ func printUsage() {
   serve       启动Web界面
   ingest      将数据导入DuckDB数据库（加速后续查询）
   missing     检查缺失的条目 staff 关联、剧集标注 或 缺失人物
-  interactive 交互式模式（兼容旧版Python脚本）
   version     显示版本信息
   help        显示此帮助信息
 
@@ -84,8 +80,7 @@ func printUsage() {
   bgq serve --allowed-origins "bgm.tv,bangumi.tv"
   bgq serve --dev
   bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
-  bgq missing persons --db ./bangumi.db --archive-dir ./bangumi_archive --multi
-  bgq query --interactive`)
+  bgq missing persons --db ./bangumi.db --archive-dir ./bangumi_archive --multi`)
 }
 
 func findDuckDB() string {
@@ -192,7 +187,6 @@ func cmdQuery(args []string) {
 
 	if configFile == "" {
 		fmt.Fprintln(os.Stderr, "错误: 需要指定 --config <yaml文件>")
-		fmt.Fprintln(os.Stderr, "或使用 --interactive 进入交互模式")
 		os.Exit(1)
 	}
 
@@ -225,25 +219,6 @@ func cmdQuery(args []string) {
 
 	// Execute query
 	runQuery(cfg, dataDir, outputFile, verbose)
-}
-
-func cmdInteractive(args []string) {
-	dataDir := "bangumi_archive"
-	for i := 0; i < len(args); i++ {
-		if args[i] == "--data-dir" || args[i] == "-d" {
-			if i+1 < len(args) {
-				dataDir = args[i+1]
-				i++
-			}
-		}
-	}
-
-	fmt.Print(banner)
-	fmt.Println("交互式筛选模式")
-	fmt.Println("输入筛选条件（格式参考 bgq-interactive --help），输入空行执行查询，输入 :q 退出")
-	fmt.Println()
-
-	interactiveMode(dataDir)
 }
 
 func cmdServe(args []string) {

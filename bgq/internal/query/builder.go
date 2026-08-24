@@ -1473,91 +1473,29 @@ func (b *SQLBuilder) characterFilterForAlias(f config.Filter, idx int) (string, 
 
 // episodeFilter handles episode-based filtering.
 func (b *SQLBuilder) episodeFilter(f *config.EpisodeFilter) (string, error) {
-	// New: logic tree mode
-	if f.Logic != nil {
-		episodeWhere, err := b.buildClausesWithOp(f.Logic.Items, clauseContext{alias: "e", isEpisodeCtx: true}, f.Logic.Op)
-		if err != nil {
-			return "", fmt.Errorf("episode logic: %w", err)
-		}
-		if f.Mode == "all" {
-			return fmt.Sprintf(
-				`EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id) AND
-				 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND %s) =
-				 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id)`,
-				episodeWhere), nil
-		}
-		if f.Mode == "count" {
-			countExpr := fmt.Sprintf(
-				"(SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND %s)",
-				episodeWhere)
-			return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
-		}
-		return fmt.Sprintf(
-			"EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND %s)",
-			episodeWhere), nil
-	}
-
-	// Legacy: flat field conditions
-	var subClauses []string
-
-	var normalConds []string
-	for _, cond := range f.Conditions {
-		if cond.Field == "count" {
-			continue
-		}
-		condSQL, err := b.episodeFieldFilter(&cond)
-		if err != nil {
-			return "", fmt.Errorf("episode condition: %w", err)
-		}
-		normalConds = append(normalConds, condSQL)
-	}
-
-	if len(normalConds) > 0 {
-		subClauses = append(subClauses, strings.Join(normalConds, " AND "))
-	}
-
-	// Count condition
-	for _, cond := range f.Conditions {
-		if cond.Field == "count" {
-			countSQL, err := b.buildCondition(
-				"(SELECT COUNT(*) FROM episodes e2 WHERE e2.subject_id = s.id)",
-				cond.Operator,
-				fmt.Sprintf("%v", cond.Value),
-			)
-			if err != nil {
-				return "", err
-			}
-			subClauses = append(subClauses, countSQL)
-		}
-	}
-
-	subWhere := strings.Join(subClauses, " AND ")
-	if subWhere == "" {
+	if f.Logic == nil {
 		return "TRUE", nil
 	}
-
+	episodeWhere, err := b.buildClausesWithOp(f.Logic.Items, clauseContext{alias: "e", isEpisodeCtx: true}, f.Logic.Op)
+	if err != nil {
+		return "", fmt.Errorf("episode logic: %w", err)
+	}
 	if f.Mode == "all" {
 		return fmt.Sprintf(
 			`EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id) AND
 			 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND %s) =
 			 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id)`,
-			strings.Join(normalConds, " AND ")), nil
+			episodeWhere), nil
 	}
-
 	if f.Mode == "count" {
-		countWhere := subWhere
-		if countWhere == "" {
-			countWhere = "TRUE"
-		}
 		countExpr := fmt.Sprintf(
 			"(SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND %s)",
-			countWhere)
+			episodeWhere)
 		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
 	}
-
 	return fmt.Sprintf(
 		"EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id AND %s)",
-		subWhere), nil
+		episodeWhere), nil
 }
 
 // episodeFieldFilter builds a field filter on episode data.

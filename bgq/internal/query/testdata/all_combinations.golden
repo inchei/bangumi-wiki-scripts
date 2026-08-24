@@ -305,8 +305,8 @@ episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('$DATA_
 SELECT s.id as id, s.name
 FROM subjects s
 WHERE EXISTS (SELECT 1 FROM episodes e WHERE e.subject_id = s.id) AND
-				 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND CAST(e.name AS VARCHAR) LIKE '%test%') =
-				 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id)
+			 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id AND CAST(e.name AS VARCHAR) LIKE '%test%') =
+			 (SELECT COUNT(*) FROM episodes e WHERE e.subject_id = s.id)
 LIMIT 10
 episode_count_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('$DATA_DIR/episode.jsonlines', format='newline_delimited'))
