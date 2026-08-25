@@ -252,6 +252,18 @@ func (s *server) isAllowedOrigin(origin string) bool {
 	return false
 }
 
+// sameOrigin reports whether the given Origin value is the same origin as the
+// request itself. Browsers send an Origin header on same-origin fetch POSTs,
+// so this must be allowed regardless of the cross-origin allow-list, otherwise
+// the SPA's own API calls are rejected.
+func (s *server) sameOrigin(r *http.Request, origin string) bool {
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	return strings.EqualFold(u.Host, r.Host)
+}
+
 func (s *server) allowedReferrer(r *http.Request) bool {
 	src := r.Header.Get("Origin")
 	if src == "" {
@@ -260,7 +272,7 @@ func (s *server) allowedReferrer(r *http.Request) bool {
 	if src == "" {
 		return true // direct access (new tab, curl without referrer)
 	}
-	return s.isAllowedOrigin(src)
+	return s.sameOrigin(r, src) || s.isAllowedOrigin(src)
 }
 
 func sortedKeys(m map[int]string) []int {
