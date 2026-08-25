@@ -2155,13 +2155,10 @@ func (b *SQLBuilder) isDirectField(field string) bool {
 // Helper functions
 
 func quoteIdent(s string) string {
-	// Simple identifier quoting — only needed for reserved words
-	// DuckDB uses double quotes
-	switch strings.ToLower(s) {
-	case "type", "date", "rank", "sort", "order", "limit", "select", "from", "where":
-		return `"` + s + `"`
-	}
-	return s
+	// Always quote identifiers and escape embedded double quotes.
+	// DuckDB uses double quotes for identifiers; quoting prevents
+	// injection via user-controlled column/sort names (e.g. `a"b`).
+	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 }
 
 // toSQLOp converts a config operator (gt, gte, lt, lte, eq) to a SQL operator.

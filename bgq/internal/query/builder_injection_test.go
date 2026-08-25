@@ -119,7 +119,7 @@ func TestRegexCastsNonVarchar(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(sql, "CAST(s.score AS VARCHAR)") || !strings.Contains(sql, "CAST(rs.name AS VARCHAR)") {
+	if !strings.Contains(sql, `CAST(s."score" AS VARCHAR)`) || !strings.Contains(sql, `CAST(rs."name" AS VARCHAR)`) {
 		t.Errorf("field-compare regex missing VARCHAR casts: %s", sql)
 	}
 }
