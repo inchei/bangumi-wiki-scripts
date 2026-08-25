@@ -24,7 +24,7 @@ type aliasData struct {
 	modTime time.Time
 }
 
-var aliasesReloadMu sync.Mutex
+var aliasesReloadMu sync.RWMutex
 
 func loadAliasesFile(path string) (*aliasData, error) {
 	f, err := os.Open(path)
@@ -110,20 +110,28 @@ func normalizeAlias(name string) string {
 }
 
 func (s *server) reloadAliasesIfStale() {
-	if s.aliasesFile == "" || s.aliases == nil {
+	if s.aliasesFile == "" {
+		return
+	}
+	aliasesReloadMu.RLock()
+	cur := s.aliases
+	aliasesReloadMu.RUnlock()
+	if cur == nil {
 		return
 	}
 	fi, err := os.Stat(s.aliasesFile)
 	if err != nil {
 		return
 	}
-	if !fi.ModTime().After(s.aliases.modTime) {
+	if !fi.ModTime().After(cur.modTime) {
 		return
 	}
 	aliasesReloadMu.Lock()
 	defer aliasesReloadMu.Unlock()
-	// double-check after acquiring lock
-	if fi, err := os.Stat(s.aliasesFile); err != nil || !fi.ModTime().After(s.aliases.modTime) {
+	if s.aliases == nil {
+		return
+	}
+	if fi2, err := os.Stat(s.aliasesFile); err != nil || !fi2.ModTime().After(s.aliases.modTime) {
 		return
 	}
 	ad, err := loadAliasesFile(s.aliasesFile)
@@ -141,9 +149,9 @@ func (s *server) handleAliases(w http.ResponseWriter, r *http.Request) {
 	}
 
 	s.reloadAliasesIfStale()
-	aliasesReloadMu.Lock()
+	aliasesReloadMu.RLock()
 	ad := s.aliases
-	aliasesReloadMu.Unlock()
+	aliasesReloadMu.RUnlock()
 
 	if ad == nil {
 		writeJSON(w, http.StatusServiceUnavailable, apiError{Error: "别名数据未加载，请使用 --aliases-file 参数指定 person_alias.json 文件"})
