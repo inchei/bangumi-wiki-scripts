@@ -1,21 +1,26 @@
 <script>
-  import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
-  import { faCheck } from "@fortawesome/free-solid-svg-icons";
+  import { MorphIcon } from "morphicons/svelte";
+  import { Check } from "lucide";
 
   // A toolbar button that runs an async `action` and shows transient feedback
-  // on the button itself (text + icon swap + optional error styling), reverting
-  // to the default label after 2s — unifying the copy/share button behavior.
+  // on the button itself. On success the icon morphs from `icon` to
+  // `successIcon` (via morphicons) and the label shows `successText`; on error
+  // the label shows the message with error styling. Reverts after 2s.
   //
   // `action` must return a Promise resolving to:
-  //   "" (or falsy)          → success → shows `successText`
+  //   "" (or falsy)          → success → shows `successText` + successIcon morph
   //   non-empty string       → error   → shows that message with error styling
+  //
+  // `icon` and `successIcon` are Lucide icon *data* (IconNode), not components.
 
   let {
     icon,
     text,
     action,
     successText = "复制成功",
-    successIcon = faCheck,
+    successIcon = Check,
+    spring = "snappy",
+    size = 16,
     title = "",
     variant = "default",
     disabled = false,
@@ -57,9 +62,7 @@
   {disabled}
   {title}
 >
-  {#key active && !isError ? successIcon : icon}
-    <FontAwesomeIcon icon={active && !isError ? successIcon : icon} />
-  {/key}
+  <MorphIcon icon={active && !isError ? successIcon : icon} {spring} {size} />
   {label}
 </button>
 

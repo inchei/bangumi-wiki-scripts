@@ -1,15 +1,15 @@
 <script>
-  import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
+  import { MorphIcon } from "morphicons/svelte";
   import {
-    faDownload,
-    faCopy,
-    faInbox,
-    faClipboardList,
-    faArrowDownWideShort,
-    faArrowDownShortWide,
-    faSort,
-    faShareNodes,
-  } from "@fortawesome/free-solid-svg-icons";
+    Copy,
+    Share2,
+    ArrowUpDown,
+    ArrowDownWideNarrow,
+    ArrowDownNarrowWide,
+    Download,
+    Inbox,
+    ClipboardList,
+  } from "lucide";
   import {
     lastResult,
     sortState,
@@ -130,6 +130,17 @@
     lastResult.set({ ...res, rows });
   }
 
+  function sortIcon(colIdx) {
+    if ($sortState.col === colIdx && $sortState.asc) return ArrowDownWideNarrow;
+    if ($sortState.col === colIdx && !$sortState.asc)
+      return ArrowDownNarrowWide;
+    return ArrowUpDown;
+  }
+
+  function isSortPlaceholder(colIdx) {
+    return $sortState.col !== colIdx;
+  }
+
   function csvEscape(s) {
     if (s === null || s === undefined) return "";
     const str = String(s);
@@ -223,7 +234,7 @@
       <div class="error-header">
         <div class="error-title">查询失败</div>
         <ActionButton
-          icon={faCopy}
+          icon={Copy}
           text="复制"
           variant="outline"
           action={copyErrorAction}
@@ -246,12 +257,12 @@
       >
       <span class="results-actions">
         <button class="btn btn-outline btn-sm" onclick={handleExportCSV}
-          ><FontAwesomeIcon icon={faDownload} /> 下载 CSV</button
+          ><MorphIcon icon={Download} size={14} /> 下载 CSV</button
         >
-        <ActionButton icon={faCopy} text="复制表格" action={copyTableAction} />
-        <ActionButton icon={faCopy} text="复制bgm_id" action={copyIdsAction} />
+        <ActionButton icon={Copy} text="复制表格" action={copyTableAction} />
+        <ActionButton icon={Copy} text="复制bgm_id" action={copyIdsAction} />
         <ActionButton
-          icon={faShareNodes}
+          icon={Share2}
           text="分享"
           successText="已复制链接"
           title="分享当前查询链接"
@@ -261,7 +272,7 @@
     </div>
     {#if res.rows.length === 0}
       <div class="results-empty">
-        <div class="icon"><FontAwesomeIcon icon={faInbox} /></div>
+        <div class="icon"><MorphIcon icon={Inbox} size={48} /></div>
         <div>没有找到符合条件的条目</div>
       </div>
     {:else}
@@ -288,13 +299,11 @@
                     tabindex="0"
                     role="button"
                     >{col.length > 20 ? col.substring(0, 18) + "…" : col}
-                    {#if $sortState.col === i && $sortState.asc}
-                      <FontAwesomeIcon icon={faArrowDownShortWide} />
-                    {:else if $sortState.col === i && !$sortState.asc}
-                      <FontAwesomeIcon icon={faArrowDownWideShort} />
-                    {:else}
-                      <FontAwesomeIcon icon={faSort} class="sort-placeholder" />
-                    {/if}
+                    <MorphIcon
+                      icon={sortIcon(i)}
+                      class={isSortPlaceholder(i) ? "sort-placeholder" : ""}
+                      size={14}
+                    />
                   </span>
                 </th>
               {/each}
@@ -329,7 +338,7 @@
     {/if}
   {:else}
     <div class="results-empty">
-      <div class="icon"><FontAwesomeIcon icon={faClipboardList} /></div>
+      <div class="icon"><MorphIcon icon={ClipboardList} size={48} /></div>
       <div>点击 <b>"执行查询"</b> 开始筛选</div>
       <div style="font-size:12px;margin-top:8px">
         或访问 <a href="/api/debug" target="_blank">/api/debug</a> 检查状态
@@ -455,6 +464,7 @@
     font-size: 10px;
     margin-left: 4px;
     opacity: 0.7;
+    vertical-align: middle;
   }
 
   .results-table th :global(.sort-placeholder) {

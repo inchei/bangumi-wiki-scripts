@@ -10,8 +10,8 @@
   } from "../stores.js";
   import { filtersToYAML, parseYAML } from "../yaml.js";
   import { get } from "svelte/store";
-  import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
-  import { faChevronDown } from "@fortawesome/free-solid-svg-icons";
+  import { MorphIcon } from "morphicons/svelte";
+  import { ChevronDown } from "lucide";
 
   let expanded = $state(false);
   let yamlText = $state("");
@@ -73,7 +73,7 @@
   >
     <span class="dot-indicator"></span>YAML 配置
     <span class="yaml-chevron" class:open={expanded}>
-      <FontAwesomeIcon icon={faChevronDown} />
+      <MorphIcon icon={ChevronDown} size={12} />
     </span>
   </div>
   {#if expanded}

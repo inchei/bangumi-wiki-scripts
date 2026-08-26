@@ -271,6 +271,9 @@ a:hover {
 
 /* ===== Radio Pill ===== */
 .radio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   cursor: pointer;
   font-size: 12px;
   padding: 3px 10px;
@@ -280,7 +283,6 @@ a:hover {
   color: var(--text);
   transition: var(--transition);
   user-select: none;
-  display: inline-block;
   font-family: inherit;
   white-space: nowrap;
 }

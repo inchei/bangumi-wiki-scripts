@@ -1,15 +1,7 @@
 <script>
   import { onMount } from "svelte";
-  import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
-  import {
-    faBook,
-    faUser,
-    faMasksTheater,
-    faSun,
-    faMoon,
-    faFilm,
-  } from "@fortawesome/free-solid-svg-icons";
-  import { faGithub } from "@fortawesome/free-brands-svg-icons";
+  import { MorphIcon } from "morphicons/svelte";
+  import { Sun, Moon, Book, User, Drama, Film } from "lucide";
   import {
     queryTarget,
     clearFilters,
@@ -132,18 +124,27 @@
     rel="noopener"
     title="GitHub"
   >
-    <FontAwesomeIcon icon={faGithub} />
+    <svg
+      viewBox="0 0 24 24"
+      width="16"
+      height="16"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      style="transform: translateY(1px)"
+      ><path
+        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+      /></svg
+    >
   </a>
   <button
     class="btn btn-default"
     onclick={cycleTheme}
     title="主题: {resolvedTheme() === 'dark' ? '深色' : '浅色'}"
   >
-    {#if resolvedTheme() === "light"}
-      <FontAwesomeIcon icon={faSun} />
-    {:else}
-      <FontAwesomeIcon icon={faMoon} />
-    {/if}
+    <MorphIcon icon={resolvedTheme() === "light" ? Sun : Moon} size={16} />
   </button>
 </div>
 
@@ -164,25 +165,25 @@
           class="radio-pill"
           class:active={$queryTarget === "subject"}
           onclick={() => setTarget("subject")}
-          ><FontAwesomeIcon icon={faBook} /> 条目</button
+          ><MorphIcon icon={Book} size={14} /> 条目</button
         >
         <button
           class="radio-pill"
           class:active={$queryTarget === "person"}
           onclick={() => setTarget("person")}
-          ><FontAwesomeIcon icon={faUser} /> 人物</button
+          ><MorphIcon icon={User} size={14} /> 人物</button
         >
         <button
           class="radio-pill"
           class:active={$queryTarget === "character"}
           onclick={() => setTarget("character")}
-          ><FontAwesomeIcon icon={faMasksTheater} /> 角色</button
+          ><MorphIcon icon={Drama} size={14} /> 角色</button
         >
         <button
           class="radio-pill"
           class:active={$queryTarget === "episode"}
           onclick={() => setTarget("episode")}
-          ><FontAwesomeIcon icon={faFilm} /> 剧集</button
+          ><MorphIcon icon={Film} size={14} /> 剧集</button
         >
       </div>
       <FilterTree />

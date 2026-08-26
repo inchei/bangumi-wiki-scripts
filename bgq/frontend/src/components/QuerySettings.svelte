@@ -20,12 +20,8 @@
   import { runQuery } from "../api.js";
   import { get } from "svelte/store";
   import AwesompleteInput from "./AwesompleteInput.svelte";
-  import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
-  import {
-    faArrowDownWideShort,
-    faArrowDownShortWide,
-    faMagnifyingGlass,
-  } from "@fortawesome/free-solid-svg-icons";
+  import { MorphIcon } from "morphicons/svelte";
+  import { ArrowDownWideNarrow, ArrowDownNarrowWide, Search } from "lucide";
 
   let loading = $state(false);
 
@@ -141,11 +137,12 @@
           class="btn btn-sm btn-default"
           onclick={() => toggleSortDirection(i)}
         >
-          {#if rule.direction === "asc"}
-            <FontAwesomeIcon icon={faArrowDownShortWide} />
-          {:else}
-            <FontAwesomeIcon icon={faArrowDownWideShort} />
-          {/if}
+          <MorphIcon
+            icon={rule.direction === "asc"
+              ? ArrowDownWideNarrow
+              : ArrowDownNarrowWide}
+            size={14}
+          />
           {rule.direction === "asc" ? "升序" : "降序"}
         </button>
         <button
@@ -181,7 +178,7 @@
     {#if loading}
       查询中...
     {:else}
-      <FontAwesomeIcon icon={faMagnifyingGlass} /> 执行查询
+      <MorphIcon icon={Search} size={16} /> 执行查询
     {/if}
   </button>
 </div>
