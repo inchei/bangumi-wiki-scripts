@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"regexp"
@@ -26,77 +27,93 @@ func findDefaultDB(candidates []string) string {
 
 func cmdMissing(args []string) {
 	if len(args) < 1 {
-		fmt.Fprintln(os.Stderr, "用法: bgq missing subjects <人名> --type <条目类型> [--db <数据库>]")
-		fmt.Fprintln(os.Stderr, "       bgq missing episodes <人名> [--db <数据库>]")
-		fmt.Fprintln(os.Stderr, "       bgq missing persons [--db <数据库>] [--archive-dir <归档目录>] [--aliases-file <别名文件>]")
+		printMissingUsage()
 		os.Exit(1)
 	}
 
 	subcommand := args[0]
-	if subcommand == "persons" {
+	switch subcommand {
+	case "subjects":
+		cmdMissingSubjects(args[1:])
+	case "episodes":
+		cmdMissingEpisodes(args[1:])
+	case "persons":
 		cmdMissingPersons(args[1:])
-		return
-	}
-	if len(args) < 2 {
-		fmt.Fprintln(os.Stderr, "用法: bgq missing subjects <人名> --type <条目类型> [--db <数据库>]")
-		fmt.Fprintln(os.Stderr, "       bgq missing episodes <人名> [--db <数据库>]")
-		fmt.Fprintln(os.Stderr, "       bgq missing persons [--db <数据库>] [--archive-dir <归档目录>] [--aliases-file <别名文件>]")
+	default:
+		fmt.Fprintf(os.Stderr, "未知子命令: %s\n", subcommand)
+		printMissingUsage()
 		os.Exit(1)
 	}
-	name := args[1]
+}
+
+func printMissingUsage() {
+	fmt.Fprintln(os.Stderr, "用法: bgq missing subjects <人名> --type <条目类型> [--db <数据库>]")
+	fmt.Fprintln(os.Stderr, "       bgq missing episodes <人名> [--db <数据库>]")
+	fmt.Fprintln(os.Stderr, "       bgq missing persons [--db <数据库>] [--archive-dir <归档目录>] [--aliases-file <别名文件>]")
+}
+
+func cmdMissingSubjects(args []string) {
+	fs := flag.NewFlagSet("missing subjects", flag.ExitOnError)
 	var dbPath string
+	var ignoredDataDir string
+	var typeCode int
+	fs.StringVar(&dbPath, "db", "", "数据库路径")
+	fs.StringVar(&ignoredDataDir, "data-dir", "", "数据目录（兼容参数，missing 只使用已导入的数据库）")
+	fs.StringVar(&ignoredDataDir, "d", "", "数据目录（兼容参数）")
+	fs.IntVar(&typeCode, "type", 0, "条目类型: 1(书籍) 2(动画) 3(音乐) 4(游戏) 6(三次元)")
+	_ = fs.Parse(args)
 
-	for i := 2; i < len(args); i++ {
-		switch args[i] {
-		case "--db":
-			if i+1 < len(args) {
-				dbPath = args[i+1]
-				i++
-			}
-		case "--data-dir", "-d":
-			if i+1 < len(args) {
-				i++ // ignored, missing only works with ingested db
-			}
-		}
+	posArgs := fs.Args()
+	if len(posArgs) < 1 {
+		printMissingUsage()
+		os.Exit(1)
 	}
+	name := posArgs[0]
 
+	if typeCode == 0 {
+		fmt.Fprintln(os.Stderr, "需要 --type 参数: 1(书籍) 2(动画) 3(音乐) 4(游戏) 6(三次元)")
+		os.Exit(1)
+	}
 	if dbPath == "" {
 		dbPath = findDefaultDB([]string{"bangumi.db"})
+	}
+	if dbPath == "" {
+		fmt.Fprintln(os.Stderr, "错误: 未找到 bangumi.db，请先运行 bgq ingest 或在当前目录放置 bangumi.db，或指定 --db 参数")
+		os.Exit(1)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), missingQueryTimeout)
 	defer cancel()
+	runMissingSubjects(ctx, name, typeCode, dbPath)
+}
 
-	switch subcommand {
-	case "subjects":
-		typeCode := 0
-		for i := 2; i < len(args); i++ {
-			if args[i] == "--type" && i+1 < len(args) {
-				typeCode, _ = strconv.Atoi(args[i+1])
-				break
-			}
-		}
-		if typeCode == 0 {
-			fmt.Fprintln(os.Stderr, "需要 --type 参数: 1(书籍) 2(动画) 3(音乐) 4(游戏) 6(三次元)")
-			os.Exit(1)
-		}
-		if dbPath == "" {
-			fmt.Fprintln(os.Stderr, "错误: 未找到 bangumi.db，请先运行 bgq ingest 或在当前目录放置 bangumi.db，或指定 --db 参数")
-			os.Exit(1)
-		}
-		runMissingSubjects(ctx, name, typeCode, dbPath)
+func cmdMissingEpisodes(args []string) {
+	fs := flag.NewFlagSet("missing episodes", flag.ExitOnError)
+	var dbPath string
+	var ignoredDataDir string
+	fs.StringVar(&dbPath, "db", "", "数据库路径")
+	fs.StringVar(&ignoredDataDir, "data-dir", "", "数据目录（兼容参数，missing 只使用已导入的数据库）")
+	fs.StringVar(&ignoredDataDir, "d", "", "数据目录（兼容参数）")
+	_ = fs.Parse(args)
 
-	case "episodes":
-		if dbPath == "" {
-			fmt.Fprintln(os.Stderr, "错误: 未找到 bangumi.db，请先运行 bgq ingest 或在当前目录放置 bangumi.db，或指定 --db 参数")
-			os.Exit(1)
-		}
-		runMissingEpisodes(ctx, name, dbPath)
-
-	default:
-		fmt.Fprintf(os.Stderr, "未知子命令: %s\n", subcommand)
+	posArgs := fs.Args()
+	if len(posArgs) < 1 {
+		printMissingUsage()
 		os.Exit(1)
 	}
+	name := posArgs[0]
+
+	if dbPath == "" {
+		dbPath = findDefaultDB([]string{"bangumi.db"})
+	}
+	if dbPath == "" {
+		fmt.Fprintln(os.Stderr, "错误: 未找到 bangumi.db，请先运行 bgq ingest 或在当前目录放置 bangumi.db，或指定 --db 参数")
+		os.Exit(1)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), missingQueryTimeout)
+	defer cancel()
+	runMissingEpisodes(ctx, name, dbPath)
 }
 
 func runMissingSubjects(ctx context.Context, name string, typeCode int, dbPath string) {
@@ -296,32 +313,13 @@ WHERE LOWER(REPLACE(REPLACE(TRIM(p.name), '　', ''), ' ', '')) = LOWER(REPLACE(
 }
 
 func cmdMissingPersons(args []string) {
+	fs := flag.NewFlagSet("missing persons", flag.ExitOnError)
 	var dbPath, archiveDir, aliasFile, outputDir string
-
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--db":
-			if i+1 < len(args) {
-				dbPath = args[i+1]
-				i++
-			}
-		case "--archive-dir":
-			if i+1 < len(args) {
-				archiveDir = args[i+1]
-				i++
-			}
-		case "--aliases-file":
-			if i+1 < len(args) {
-				aliasFile = args[i+1]
-				i++
-			}
-		case "--output-dir":
-			if i+1 < len(args) {
-				outputDir = args[i+1]
-				i++
-			}
-		}
-	}
+	fs.StringVar(&dbPath, "db", "", "数据库路径")
+	fs.StringVar(&archiveDir, "archive-dir", "", "归档目录")
+	fs.StringVar(&aliasFile, "aliases-file", "", "别名文件（person_alias.json）")
+	fs.StringVar(&outputDir, "output-dir", "", "输出目录")
+	_ = fs.Parse(args)
 
 	if dbPath == "" {
 		dbPath = findDefaultDB([]string{"bangumi.db", "bgq/bangumi.db", "../bangumi.db"})

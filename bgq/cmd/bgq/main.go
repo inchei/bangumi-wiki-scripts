@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
@@ -63,7 +64,6 @@ func printUsage() {
   bgq missing subjects <人名> --type <条目类型> --db <数据库>
   bgq missing episodes <人名> [--db <数据库>]
   bgq missing persons [--db <数据库>] [--archive-dir <归档目录>]
-  bgq version
   bgq help
 
  子命令:
@@ -71,7 +71,6 @@ func printUsage() {
   serve       启动Web界面
   ingest      将数据导入DuckDB数据库（加速后续查询）
   missing     检查缺失的条目 staff 关联、剧集标注 或 缺失人物
-  version     显示版本信息
   help        显示此帮助信息
 
  示例:
@@ -155,35 +154,20 @@ func findDuckDB() string {
 }
 
 func cmdQuery(args []string) {
+	fs := flag.NewFlagSet("query", flag.ExitOnError)
 	var configFile, dataDir, outputFile, formatOverride string
 	verbose := false
-
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--config", "-c":
-			if i+1 < len(args) {
-				configFile = args[i+1]
-				i++
-			}
-		case "--data-dir", "-d":
-			if i+1 < len(args) {
-				dataDir = args[i+1]
-				i++
-			}
-		case "--output", "-o":
-			if i+1 < len(args) {
-				outputFile = args[i+1]
-				i++
-			}
-		case "--format", "-f":
-			if i+1 < len(args) {
-				formatOverride = args[i+1]
-				i++
-			}
-		case "--verbose", "-v":
-			verbose = true
-		}
-	}
+	fs.StringVar(&configFile, "config", "", "配置文件路径（YAML）")
+	fs.StringVar(&configFile, "c", "", "配置文件路径（YAML）")
+	fs.StringVar(&dataDir, "data-dir", "bangumi_archive", "数据目录")
+	fs.StringVar(&dataDir, "d", "bangumi_archive", "数据目录")
+	fs.StringVar(&outputFile, "output", "", "输出文件")
+	fs.StringVar(&outputFile, "o", "", "输出文件")
+	fs.StringVar(&formatOverride, "format", "", "输出格式（csv/json/table）")
+	fs.StringVar(&formatOverride, "f", "", "输出格式（csv/json/table）")
+	fs.BoolVar(&verbose, "verbose", false, "显示生成的 SQL")
+	fs.BoolVar(&verbose, "v", false, "显示生成的 SQL")
+	_ = fs.Parse(args)
 
 	if configFile == "" {
 		fmt.Fprintln(os.Stderr, "错误: 需要指定 --config <yaml文件>")
@@ -222,48 +206,26 @@ func cmdQuery(args []string) {
 }
 
 func cmdServe(args []string) {
-	dataDir := "bangumi_archive"
-	listen := ":8080"
-	dbPath := ""
-	aliasesFile := ""
+	fs := flag.NewFlagSet("serve", flag.ExitOnError)
+	var dataDir, listen, dbPath, aliasesFile, allowedOrigins string
 	dev := false
-	allowedHosts := defaultAllowedHosts
+	fs.StringVar(&dataDir, "data-dir", "bangumi_archive", "数据目录")
+	fs.StringVar(&dataDir, "d", "bangumi_archive", "数据目录")
+	fs.StringVar(&listen, "listen", ":8080", "监听地址")
+	fs.StringVar(&listen, "l", ":8080", "监听地址")
+	fs.StringVar(&dbPath, "db", "", "数据库路径")
+	fs.StringVar(&aliasesFile, "aliases-file", "", "别名文件（person_alias.json）")
+	fs.StringVar(&allowedOrigins, "allowed-origins", "", "允许的来源域名列表（逗号分隔）")
+	fs.BoolVar(&dev, "dev", false, "开发模式（Air 热重载）")
+	_ = fs.Parse(args)
 
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--data-dir", "-d":
-			if i+1 < len(args) {
-				dataDir = args[i+1]
-				i++
+	allowedHosts := defaultAllowedHosts
+	if allowedOrigins != "" {
+		allowedHosts = nil
+		for _, h := range strings.Split(allowedOrigins, ",") {
+			if h = strings.TrimSpace(h); h != "" {
+				allowedHosts = append(allowedHosts, h)
 			}
-		case "--listen", "-l":
-			if i+1 < len(args) {
-				listen = args[i+1]
-				i++
-			}
-		case "--db":
-			if i+1 < len(args) {
-				dbPath = args[i+1]
-				i++
-			}
-		case "--aliases-file":
-			if i+1 < len(args) {
-				aliasesFile = args[i+1]
-				i++
-			}
-		case "--allowed-origins":
-			if i+1 < len(args) {
-				var hosts []string
-				for _, h := range strings.Split(args[i+1], ",") {
-					if h = strings.TrimSpace(h); h != "" {
-						hosts = append(hosts, h)
-					}
-				}
-				allowedHosts = hosts
-				i++
-			}
-		case "--dev":
-			dev = true
 		}
 	}
 
@@ -301,29 +263,12 @@ func cmdServe(args []string) {
 }
 
 func cmdIngest(args []string) {
+	fs := flag.NewFlagSet("ingest", flag.ExitOnError)
 	var dataDir, dbPath string
-
-	for i := 0; i < len(args); i++ {
-		switch args[i] {
-		case "--data-dir", "-d":
-			if i+1 < len(args) {
-				dataDir = args[i+1]
-				i++
-			}
-		case "--db":
-			if i+1 < len(args) {
-				dbPath = args[i+1]
-				i++
-			}
-		}
-	}
-
-	if dataDir == "" {
-		dataDir = "bangumi_archive"
-	}
-	if dbPath == "" {
-		dbPath = "bangumi.db"
-	}
+	fs.StringVar(&dataDir, "data-dir", "bangumi_archive", "数据目录")
+	fs.StringVar(&dataDir, "d", "bangumi_archive", "数据目录")
+	fs.StringVar(&dbPath, "db", "bangumi.db", "数据库路径")
+	_ = fs.Parse(args)
 
 	fmt.Printf("正在导入数据...\n")
 	fmt.Printf("数据目录: %s\n", dataDir)
