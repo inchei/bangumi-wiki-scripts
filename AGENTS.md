@@ -232,8 +232,8 @@ Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
 
 ## Commit Conventions
 
-Use conventional commits without scope parentheses.
-Examples: `feat: add new feature`, `fix: resolve bug`, `docs: update readme`.
+Use conventional commits with scope parentheses.
+Examples: `feat(bgq): add new feature`, `fix(bgq): resolve bug`, `docs: update readme`.
 
 ## Key Files
 
