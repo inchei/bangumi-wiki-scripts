@@ -12,7 +12,7 @@
 ```bash
 cd bgq
 
-# 构建
+# 构建（需先构建前端并嵌入 dist，见下方“生成代码”）
 go build -o bin/bgq ./cmd/bgq/
 
 # 测试（快照对比，不需要 DuckDB，~1s）
@@ -48,13 +48,23 @@ golangci-lint run ./...
 - **Missing subjects 测试**（`TestBuildCheckSQL*`）：验证 `buildCheckSQL` 生成的 SQL 结构是否包含预期的 CTE、类型过滤、UNION ALL 等。
 - **Missing episodes 测试**（`TestExpand*`, `TestEpLabel*`, `TestResolveOverlaps*`, `TestBuildEpPositionTable*`）：验证剧集描述匹配相关的辅助函数。
 
-### 模型数据更新
+### 生成代码（go generate）
 
-从 [bangumi/common](https://github.com/bangumi/common) 和本地 archive 重新生成 `internal/model/` 下的常量：
+`go generate` 负责两类自动生成，全部在 `bgq/` 目录下执行：
 
 ```bash
+# 全部生成（模型数据 + 前端构建并嵌入 dist）
+go generate ./...
+
+# 只重新生成 internal/model/ 下的常量
 go generate ./internal/model/
+
+# 只重新构建前端并嵌入 internal/server/dist
+go generate ./internal/server/
 ```
+
+- **模型数据**（`internal/model/`、`frontend/src/schema-data.js`）：从 [bangumi/common](https://github.com/bangumi/common) 和本地 archive 重新生成。
+- **前端嵌入**（`internal/server/webui.go`）：自动执行 `pnpm build` 并把 `frontend/dist` 复制到 `internal/server/dist`，供 `//go:embed dist/*` 使用。改动前端后 `go generate ./internal/server/` 即可让 `go build` 嵌入最新产物。
 
 ## 前端（Svelte）
 
@@ -81,7 +91,7 @@ pnpm format             # Prettier 格式化
 pnpm format:check       # 检查格式
 ```
 
-构建产物（`frontend/dist/`）通过 `cp -r frontend/dist internal/server/dist` 复制后，由 `//go:embed dist/*` 嵌入 Go 二进制，`go build` 时自动包含。
+构建产物（`frontend/dist/`）由 `go generate ./internal/server/` 自动复制到 `internal/server/dist/` 后，由 `//go:embed dist/*` 嵌入 Go 二进制，`go build` 时自动包含。手动也可自行执行 `cp -r frontend/dist internal/server/dist`。
 
 ## Pre-commit Hook
 
@@ -137,7 +147,7 @@ bgq/
 │   │   │   ├── all_combinations.golden # SQL 快照
 │   │   │   └── archive/               # 测试用数据子集（各 200 行）
 │   └── server/           # 内嵌 Web UI（SPA）
-│       ├── webui.go          # //go:embed dist/*
+│       ├── webui.go          # //go:embed dist/* + go:generate 前端构建
 │       └── dist/             # 前端构建产物（从 frontend/dist 复制）
 ├── frontend/
 │   ├── src/

@@ -26,7 +26,7 @@ bgq CSV output feeds directly into wikiBatch for batch editing.
 ```bash
 cd bgq
 
-# Build (requires frontend dist: cd frontend && pnpm build, then cp -r frontend/dist internal/server/dist)
+# Build (run `go generate ./...` first to build frontend + embed dist, or `go generate ./internal/server/` after frontend changes)
 go build -o bin/bgq ./cmd/bgq/
 go test ./internal/query/ -v -execute      # Run tests (snapshot + DuckDB execution)
 go test ./internal/query/ -update -execute # Regenerate golden file + verify with DuckDB
@@ -60,7 +60,7 @@ golangci-lint run ./...                    # Lint
 cd bgq/frontend
 
 pnpm dev                                   # Dev server (hot reload)
-pnpm build                                 # Build (output embedded in Go binary)
+pnpm build                                 # Build (output embedded in Go binary; copied to internal/server/dist via go generate ./internal/server/)
 
 pnpm lint                                  # ESLint (JS/Svelte)
 pnpm lint:css                              # Stylelint (CSS/Svelte styles)
@@ -120,7 +120,7 @@ bgq/
 │   │   ├── builder_target.go  # Target-specific SQL (subject/person/character/episode)
 │   │   └── engine.go         # DuckDB subprocess wrapper
 │   └── server/           # Embedded SPA
-│       ├── webui.go          # //go:embed dist/* (static files)
+│       ├── webui.go          # //go:embed dist/* + go:generate 前端构建 (static files)
 │       └── dist/             # Frontend build output (copied from frontend/dist)
 ├── frontend/             # Svelte SPA source
 │   ├── src/
@@ -172,7 +172,7 @@ Four query targets supported via `config.Config.Target`:
 - **Infobox fields are wiki-text.** `|key: value` template string, extracted via `regexp_extract()`.
 - **Chinese field names as primary keys.** Relations and positions referenced by Chinese names (e.g., `单行本`, `原作`), resolved to numeric IDs via maps in `internal/model/`.
 - **Schema data auto-generated to frontend.** `go generate` in `internal/model/` produces `schema-data.js` (platforms, relations, positions, meta tags) from bangumi/common YAML + archive data. Frontend imports these constants directly — no runtime API calls for schema.
-- **Frontend embedded in Go binary.** `pnpm build` outputs to `frontend/dist/`, which is copied to `internal/server/dist/` and embedded via `//go:embed dist/*`.
+- **Frontend embedded in Go binary.** `go generate ./internal/server/` runs `pnpm build` and copies `frontend/dist/` to `internal/server/dist/`, embedded via `//go:embed dist/*`.
 
 ### Filter Types (exactly-one union pattern)
 
@@ -252,7 +252,7 @@ Examples: `feat: add new feature`, `fix: resolve bug`, `docs: update readme`.
 - `bgq/cmd/bgq/missing_episodes_test.go` — Tests for `expandAppearEps`, `epLabel`, `resolveOverlaps`, `buildEpPositionTable`
 - `bgq/cmd/bgq/aliases.go` — Person alias lookup handler: `handleAliases`, `normalizeAlias`, `loadAliasesFile`
 - `bgq/cmd/bgq/server.go` — HTTP server + API handlers (including aliases loading from `--aliases-file`)
-- `bgq/internal/server/webui.go` — Embedded static files via `//go:embed dist/*`
+- `bgq/internal/server/webui.go` — Embedded static files via `//go:embed dist/*` + `go:generate` frontend build
 - `bgq/frontend/src/schema-data.js` — Auto-generated schema constants (platforms, relations, positions, meta tags)
 - `bgq/frontend/src/stores.js` — Frontend global state (filters, conditions, logic tree)
 - `wikiMissingPositions/` — Pre-create person / one-click completion userscript
