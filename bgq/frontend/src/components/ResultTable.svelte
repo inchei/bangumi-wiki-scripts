@@ -393,6 +393,7 @@
   }
 
   .results-count {
+    min-width: 0;
     font-size: 14px;
     color: var(--text-secondary);
   }
@@ -409,7 +410,9 @@
   }
 
   .results-actions {
+    min-width: 0;
     display: flex;
+    flex-wrap: wrap;
     gap: 6px;
   }
 
