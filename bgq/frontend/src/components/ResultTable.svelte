@@ -2,7 +2,6 @@
   import { FontAwesomeIcon } from "@fortawesome/svelte-fontawesome";
   import {
     faDownload,
-    faCheck,
     faCopy,
     faInbox,
     faClipboardList,
@@ -17,6 +16,7 @@
     queryLoading,
   } from "../stores.js";
   import { get } from "svelte/store";
+  import ActionButton from "./ActionButton.svelte";
 
   function escapeHtml(s) {
     if (s === null || s === undefined) return "";
@@ -151,10 +151,6 @@
     a.click();
   }
 
-  let copiedTable = $state(false);
-  let copiedIds = $state(false);
-  let copiedError = $state(false);
-
   function tsvEscape(s) {
     if (s === null || s === undefined) return "";
     const str = String(s);
@@ -163,51 +159,39 @@
     return str;
   }
 
-  function handleCopyTable() {
+  function copyTableAction() {
     const res = $lastResult;
-    if (!res?.rows) return;
+    if (!res?.rows) return Promise.resolve("复制失败");
     const cols = res.columns;
     let text = cols.map(tsvEscape).join("\t") + "\n";
     for (const row of res.rows) text += row.map(tsvEscape).join("\t") + "\n";
-    navigator.clipboard
+    return navigator.clipboard
       .writeText(text)
-      .then(() => {
-        copiedTable = true;
-        setTimeout(() => (copiedTable = false), 2000);
-      })
-      .catch(() => alert("复制失败"));
+      .then(() => "")
+      .catch(() => "复制失败");
   }
 
-  function handleCopyIds() {
+  function copyIdsAction() {
     const res = $lastResult;
     const rows = res.rows;
-    if (!rows) return;
+    if (!rows) return Promise.resolve("复制失败");
     const cols = res.columns;
     const idCol = cols.findIndex((col) => isIDColumn(col));
-    if (idCol < 0) {
-      alert("未找到id列");
-      return;
-    }
+    if (idCol < 0) return Promise.resolve("未找到id列");
     const text = `bgm_id=${rows.map((row) => row[idCol]).join(",")}`;
-    navigator.clipboard
+    return navigator.clipboard
       .writeText(text)
-      .then(() => {
-        copiedIds = true;
-        setTimeout(() => (copiedIds = false), 2000);
-      })
-      .catch(() => alert("复制失败"));
+      .then(() => "")
+      .catch(() => "复制失败");
   }
 
-  function handleCopyError() {
+  function copyErrorAction() {
     const text = $lastResult?.error;
-    if (!text) return;
-    navigator.clipboard
+    if (!text) return Promise.resolve("复制失败");
+    return navigator.clipboard
       .writeText(text)
-      .then(() => {
-        copiedError = true;
-        setTimeout(() => (copiedError = false), 2000);
-      })
-      .catch(() => alert("复制失败"));
+      .then(() => "")
+      .catch(() => "复制失败");
   }
 </script>
 
@@ -216,12 +200,12 @@
     <div class="error-card">
       <div class="error-header">
         <div class="error-title">查询失败</div>
-        <button class="btn btn-outline btn-sm" onclick={handleCopyError}
-          >{#if copiedError}<FontAwesomeIcon
-              icon={faCheck}
-            />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
-          {copiedError ? "复制成功" : "复制"}</button
-        >
+        <ActionButton
+          icon={faCopy}
+          text="复制"
+          variant="outline"
+          action={copyErrorAction}
+        />
       </div>
       <pre>{$lastResult.error}</pre>
     </div>
@@ -242,18 +226,8 @@
         <button class="btn btn-outline btn-sm" onclick={handleExportCSV}
           ><FontAwesomeIcon icon={faDownload} /> 下载 CSV</button
         >
-        <button class="btn btn-default btn-sm" onclick={handleCopyTable}
-          >{#if copiedTable}<FontAwesomeIcon
-              icon={faCheck}
-            />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
-          {copiedTable ? "复制成功" : "复制表格"}</button
-        >
-        <button class="btn btn-default btn-sm" onclick={handleCopyIds}
-          >{#if copiedIds}<FontAwesomeIcon
-              icon={faCheck}
-            />{:else}<FontAwesomeIcon icon={faCopy} />{/if}
-          {copiedIds ? "复制成功" : "复制bgm_id"}</button
-        >
+        <ActionButton icon={faCopy} text="复制表格" action={copyTableAction} />
+        <ActionButton icon={faCopy} text="复制bgm_id" action={copyIdsAction} />
       </span>
     </div>
     {#if res.rows.length === 0}
