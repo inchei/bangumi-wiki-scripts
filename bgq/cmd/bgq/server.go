@@ -240,11 +240,16 @@ func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *server) handleDebug(w http.ResponseWriter, r *http.Request) {
+	var aliasesMtime time.Time
+	if s.aliases != nil {
+		aliasesMtime = s.aliases.modTime
+	}
 	resp := map[string]interface{}{
-		"duckdb_mtime": formatMtime(modTime(query.GetDuckDBPath())),
-		"binary_mtime": formatMtime(modTime(exePath())),
-		"db_mtime":     formatMtime(modTime(s.dbPath)),
-		"data_mtime":   formatMtime(dataVersionTime(s.dataDir)),
+		"duckdb_mtime":  formatMtime(modTime(query.GetDuckDBPath())),
+		"binary_mtime":  formatMtime(modTime(exePath())),
+		"db_mtime":      formatMtime(modTime(s.dbPath)),
+		"data_mtime":    formatMtime(dataVersionTime(s.dataDir)),
+		"aliases_mtime": formatMtime(aliasesMtime),
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
