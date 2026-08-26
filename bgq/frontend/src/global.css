@@ -338,3 +338,16 @@ a:hover {
   display: block;
   width: 100%;
 }
+
+/* ===== Scrollbars (thin, theme-consistent) ===== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* Keep the page scrollbar at its default width */
+html,
+body {
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
