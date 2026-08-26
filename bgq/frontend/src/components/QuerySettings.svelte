@@ -16,7 +16,7 @@
     CTX_CHARACTER,
     EPISODE_FIELDS,
   } from "../stores.js";
-  import { positionsByType } from "../schema-data.js";
+  import { positionsByType, PERSON_CHAR_TYPES } from "../schema-data.js";
   import { runQuery } from "../api.js";
   import { get } from "svelte/store";
   import AwesompleteInput from "./AwesompleteInput.svelte";
@@ -29,8 +29,12 @@
 
   const TARGET_COLUMNS = {
     subject: [...ctxFields(CTX_SUBJECT), ...STAFF_POSITIONS],
-    person: ctxFields(CTX_PERSON),
-    character: ctxFields(CTX_CHARACTER),
+    person: [
+      ...ctxFields(CTX_PERSON),
+      ...STAFF_POSITIONS,
+      ...PERSON_CHAR_TYPES,
+    ],
+    character: [...ctxFields(CTX_CHARACTER), ...PERSON_CHAR_TYPES],
     episode: EPISODE_FIELDS,
   };
 

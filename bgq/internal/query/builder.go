@@ -20,6 +20,8 @@ const (
 	filterTypeEpisode
 	filterTypePersonRelation
 	filterTypeCharacterRelation
+	filterTypePersonCharacter
+	filterTypeCharacterPerson
 )
 
 // SQLBuilder generates DuckDB SQL from a Config.
@@ -1331,6 +1333,17 @@ func (b *SQLBuilder) getPersonCharacterTypeID(name string) (int, bool) {
 	return 0, false
 }
 
+// isPersonCharacterTypeName reports whether name is a person_character type
+// (CV, 演员, 日配, ...).
+func (b *SQLBuilder) isPersonCharacterTypeName(name string) bool {
+	for _, cnName := range model.PersonCharacterTypes {
+		if cnName == name {
+			return true
+		}
+	}
+	return false
+}
+
 // buildPersonWhereForAlias generates WHERE clauses for person-level nested conditions.
 func (b *SQLBuilder) buildPersonWhereForAlias(filters []config.Filter, junctionAlias string) (string, error) {
 	return b.buildClauses(filters, clauseContext{alias: "p", isPersonCtx: true, junctionAlias: junctionAlias})
@@ -1628,27 +1641,66 @@ func (b *SQLBuilder) buildSelect() []string {
 
 	var result []string
 	for _, col := range cols {
-		// Check for association output column syntax: "类型.字段名" or "类型.字段名+"
-		if parts := strings.SplitN(col, ".", 2); len(parts) == 2 {
+		// Association output column syntax: "类型.字段名", "类型.字段名+",
+		// or "类型.s.字段名" (subject-level field for person_character /
+		// character_person types, e.g. CV.s.name).
+		parts := strings.SplitN(col, ".", 3)
+		if len(parts) >= 2 {
 			prefix, field := parts[0], parts[1]
+			isSubjectLevel := false
+			if len(parts) == 3 {
+				if parts[1] != "s" {
+					continue
+				}
+				isSubjectLevel = true
+				field = parts[2]
+			}
 			var subquery string
 			var err error
 
 			switch {
 			case prefix == "episode":
-				subquery, err = b.buildEpisodeOutput(field)
+				if !isSubjectLevel {
+					subquery, err = b.buildEpisodeOutput(field)
+				}
 			case len(b.getRelationIDsForName(prefix)) > 0:
-				subquery, err = b.buildRelationOutput(prefix, field)
+				if !isSubjectLevel {
+					subquery, err = b.buildRelationOutput(prefix, field)
+				}
 			case b.target == "subject" && len(b.getPositionIDsForName(prefix)) > 0:
-				subquery, err = b.buildStaffOutput(prefix, field)
+				if !isSubjectLevel {
+					subquery, err = b.buildStaffOutput(prefix, field)
+				}
 			case b.target == "subject":
-				if id, ok := b.getCharacterAssociationTypeID(prefix); ok {
-					subquery, err = b.buildCharacterOutput(prefix, field, id)
+				if !isSubjectLevel {
+					if id, ok := b.getCharacterAssociationTypeID(prefix); ok {
+						subquery, err = b.buildCharacterOutput(prefix, field, id)
+					}
 				}
 			case b.target == "person" && len(b.getPersonRelationIDsForName(prefix)) > 0:
-				subquery, err = b.buildPersonRelationOutput(prefix, field)
+				if !isSubjectLevel {
+					subquery, err = b.buildPersonRelationOutput(prefix, field)
+				}
+			case b.target == "person" && len(b.getPositionIDsForName(prefix)) > 0:
+				if !isSubjectLevel {
+					subquery, err = b.buildStaffOutputForPerson(prefix, field)
+				}
 			case b.target == "character" && len(b.getCharacterRelationIDsForName(prefix)) > 0:
-				subquery, err = b.buildCharacterRelationOutput(prefix, field)
+				if !isSubjectLevel {
+					subquery, err = b.buildCharacterRelationOutput(prefix, field)
+				}
+			case b.target == "person" && b.isPersonCharacterTypeName(prefix):
+				if isSubjectLevel {
+					subquery, err = b.buildPersonCharacterSubjectOutput(prefix, field)
+				} else {
+					subquery, err = b.buildPersonCharacterOutput(prefix, field)
+				}
+			case b.target == "character" && b.isPersonCharacterTypeName(prefix):
+				if isSubjectLevel {
+					subquery, err = b.buildCharacterPersonSubjectOutput(prefix, field)
+				} else {
+					subquery, err = b.buildCharacterPersonOutput(prefix, field)
+				}
 			}
 
 			if err == nil && subquery != "" {
@@ -1733,6 +1785,187 @@ func (b *SQLBuilder) buildStaffOutput(position, field string) (string, error) {
 		entityAlias: "p", entityPK: "person_id", field: field, label: fmt.Sprintf("\"%s.%s\"", position, field),
 		directFields: personDirectFields,
 	})
+}
+
+// buildStaffOutputForPerson generates a subquery for a person's staff position
+// (target: person), outputting a field of the related subject — e.g.
+// 系列构成.name returns the first subject where the person holds that position,
+// matching the same staff filter conditions. Mirrors staffFilter's target=person
+// direction (conditions apply to the related subject alias "rs").
+func (b *SQLBuilder) buildStaffOutputForPerson(position, field string) (string, error) {
+	posIDs := b.getPositionIDsForName(position)
+	if len(posIDs) == 0 {
+		return "", fmt.Errorf("未找到职位类型: %s", position)
+	}
+	sf := b.findFilter(filterTypeStaff, position)
+	var subjectWhere string
+	entityJoin := "LEFT JOIN subjects rs ON sp.subject_id = rs.id"
+	if sf != nil {
+		s := sf.(*config.StaffFilter)
+		if len(s.Conditions) > 0 {
+			var err error
+			subjectWhere, err = b.buildWhereForAlias(s.Conditions, "rs")
+			if err != nil {
+				return "", fmt.Errorf("staff output: %w", err)
+			}
+		}
+	}
+	typeCond := fmt.Sprintf("sp.position IN (%s)", intListToSQL(posIDs))
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "subject_persons", ja: "sp", mainFK: "person_id",
+		entityJoin: entityJoin, typeCond: typeCond, extraWhere: subjectWhere,
+		entityAlias: "rs", entityPK: "id", field: field, label: fmt.Sprintf("\"%s.%s\"", position, field),
+		directFields: subjectDirectFields,
+	})
+}
+
+// buildPersonCharacterOutput generates a subquery for a person's character
+// association (target: person) — e.g. CV.name returns the first character the
+// person voices, matching the person_character filter conditions.
+func (b *SQLBuilder) buildPersonCharacterOutput(typeName, field string) (string, error) {
+	typeID, ok := b.getPersonCharacterTypeID(typeName)
+	if !ok {
+		return "", fmt.Errorf("未找到出演类型: %s", typeName)
+	}
+	pf := b.findFilter(filterTypePersonCharacter, typeName)
+	var charWhere string
+	entityJoin := "LEFT JOIN characters c ON pc.character_id = c.character_id"
+	if pf != nil {
+		f := pf.(*config.PersonCharacterFilter)
+		if len(f.Conditions) > 0 {
+			var err error
+			charWhere, err = b.buildPersonCharCharacterWhere(f.Conditions)
+			if err != nil {
+				return "", fmt.Errorf("person_character output: %w", err)
+			}
+		}
+	}
+	typeCond := fmt.Sprintf("pc.type = %d", typeID)
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "person_characters", ja: "pc", mainFK: "person_id",
+		entityJoin: entityJoin, typeCond: typeCond, extraWhere: charWhere,
+		entityAlias: "c", entityPK: "character_id", field: field, label: fmt.Sprintf("\"%s.%s\"", typeName, field),
+		directFields: characterDirectFields, distinct: true,
+	})
+}
+
+// buildCharacterPersonOutput generates a subquery for a character's person
+// association (target: character) — e.g. CV.name returns the first person who
+// voices the character, matching the character_person filter conditions.
+func (b *SQLBuilder) buildCharacterPersonOutput(typeName, field string) (string, error) {
+	typeID, ok := b.getPersonCharacterTypeID(typeName)
+	if !ok {
+		return "", fmt.Errorf("未找到出演类型: %s", typeName)
+	}
+	cf := b.findFilter(filterTypeCharacterPerson, typeName)
+	var personWhere string
+	entityJoin := "LEFT JOIN persons p ON pc.person_id = p.person_id"
+	if cf != nil {
+		f := cf.(*config.CharacterPersonFilter)
+		if len(f.Conditions) > 0 {
+			var err error
+			personWhere, err = b.buildClauses(f.Conditions, clauseContext{alias: "p", isPersonCtx: true})
+			if err != nil {
+				return "", fmt.Errorf("character_person output: %w", err)
+			}
+		}
+	}
+	typeCond := fmt.Sprintf("pc.type = %d", typeID)
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "person_characters", ja: "pc", mainFK: "character_id",
+		entityJoin: entityJoin, typeCond: typeCond, extraWhere: personWhere,
+		entityAlias: "p", entityPK: "person_id", field: field, label: fmt.Sprintf("\"%s.%s\"", typeName, field),
+		directFields: personDirectFields, distinct: true,
+	})
+}
+
+// buildPersonCharacterSubjectOutput generates a subquery for the subject where
+// a person voices a character (target: person) — e.g. CV.s.name returns the
+// first subject the person voices in as typeName, matching the person_character
+// filter's character conditions AND subject conditions.
+func (b *SQLBuilder) buildPersonCharacterSubjectOutput(typeName, field string) (string, error) {
+	typeID, ok := b.getPersonCharacterTypeID(typeName)
+	if !ok {
+		return "", fmt.Errorf("未找到出演类型: %s", typeName)
+	}
+	pf := b.findFilter(filterTypePersonCharacter, typeName)
+	var charWhere, subjectWhere string
+	entityJoin := "LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN characters c ON pc.character_id = c.character_id"
+	if pf != nil {
+		f := pf.(*config.PersonCharacterFilter)
+		if len(f.Conditions) > 0 {
+			var err error
+			charWhere, err = b.buildPersonCharCharacterWhere(f.Conditions)
+			if err != nil {
+				return "", fmt.Errorf("person_character subject output: %w", err)
+			}
+		}
+		if len(f.SubjectConditions) > 0 {
+			var err error
+			subjectWhere, err = b.buildWhereForAlias(f.SubjectConditions, "rs")
+			if err != nil {
+				return "", fmt.Errorf("person_character subject output: %w", err)
+			}
+		}
+	}
+	typeCond := fmt.Sprintf("pc.type = %d", typeID)
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "person_characters", ja: "pc", mainFK: "person_id",
+		entityJoin: entityJoin, typeCond: typeCond, extraWhere: combineWhere(charWhere, subjectWhere),
+		entityAlias: "rs", entityPK: "id", field: field, label: fmt.Sprintf("\"%s.s.%s\"", typeName, field),
+		directFields: subjectDirectFields, distinct: true,
+	})
+}
+
+// buildCharacterPersonSubjectOutput generates a subquery for the subject where
+// a character is voiced (target: character) — e.g. CV.s.name returns the first
+// subject the character appears in as typeName, matching the character_person
+// filter's person conditions AND subject conditions.
+func (b *SQLBuilder) buildCharacterPersonSubjectOutput(typeName, field string) (string, error) {
+	typeID, ok := b.getPersonCharacterTypeID(typeName)
+	if !ok {
+		return "", fmt.Errorf("未找到出演类型: %s", typeName)
+	}
+	cf := b.findFilter(filterTypeCharacterPerson, typeName)
+	var personWhere, subjectWhere string
+	entityJoin := "LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN persons p ON pc.person_id = p.person_id"
+	if cf != nil {
+		f := cf.(*config.CharacterPersonFilter)
+		if len(f.Conditions) > 0 {
+			var err error
+			personWhere, err = b.buildClauses(f.Conditions, clauseContext{alias: "p", isPersonCtx: true})
+			if err != nil {
+				return "", fmt.Errorf("character_person subject output: %w", err)
+			}
+		}
+		if len(f.SubjectConditions) > 0 {
+			var err error
+			subjectWhere, err = b.buildWhereForAlias(f.SubjectConditions, "rs")
+			if err != nil {
+				return "", fmt.Errorf("character_person subject output: %w", err)
+			}
+		}
+	}
+	typeCond := fmt.Sprintf("pc.type = %d", typeID)
+	return b.buildAssocSubquery(assocSubConfig{
+		junction: "person_characters", ja: "pc", mainFK: "character_id",
+		entityJoin: entityJoin, typeCond: typeCond, extraWhere: combineWhere(personWhere, subjectWhere),
+		entityAlias: "rs", entityPK: "id", field: field, label: fmt.Sprintf("\"%s.s.%s\"", typeName, field),
+		directFields: subjectDirectFields, distinct: true,
+	})
+}
+
+// combineWhere joins two optional WHERE fragments with AND, ignoring empty/TRUE.
+func combineWhere(a, b string) string {
+	a = strings.TrimSpace(a)
+	b = strings.TrimSpace(b)
+	if a == "" || a == "TRUE" {
+		return b
+	}
+	if b == "" || b == "TRUE" {
+		return a
+	}
+	return a + " AND " + b
 }
 
 // buildCharacterOutput generates a subquery for character fields (主角.name).
@@ -1856,6 +2089,7 @@ type assocSubConfig struct {
 	field        string          // field name (supports "count", "field+")
 	label        string          // column label (already quoted)
 	directFields map[string]bool // direct fields for this entity type
+	distinct     bool            // deduplicate the "+" aggregation by entity
 }
 
 // buildAssocSubquery generates a correlated subquery for association field output.
@@ -1897,6 +2131,13 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 	}
 
 	if allMode {
+		if cfg.distinct {
+			// Deduplicate by entity then aggregate, ordering by the entity PK.
+			return fmt.Sprintf(
+				`(SELECT string_agg(CAST("agg"."_v" AS VARCHAR), ', ' ORDER BY "agg"."%[1]s") FROM (SELECT DISTINCT %[2]s.%[1]s AS "%[1]s", %[3]s AS "_v" FROM %[4]s %[5]s %[6]s WHERE %[5]s.%[7]s = %[8]s AND %[9]s) "agg") AS %[10]s`,
+				entityPK, ea, fieldExpr, cfg.junction, cfg.ja, cfg.entityJoin, cfg.mainFK, mainRef, pred, cfg.label,
+			), nil
+		}
 		return fmt.Sprintf(
 			"(SELECT string_agg(CAST(%s AS VARCHAR), ', ' ORDER BY %s.%s) FROM %s %s %s WHERE %s.%s = %s AND %s) AS %s",
 			fieldExpr, ea, entityPK, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
@@ -1946,6 +2187,14 @@ func findFilterInNode(f config.Filter, ft filterType, typeName string) interface
 	case filterTypeCharacterRelation:
 		if f.CharacterRelation != nil && f.CharacterRelation.Type == typeName {
 			return f.CharacterRelation
+		}
+	case filterTypePersonCharacter:
+		if f.PersonCharacter != nil && (f.PersonCharacter.Type == typeName || f.PersonCharacter.Type == "") {
+			return f.PersonCharacter
+		}
+	case filterTypeCharacterPerson:
+		if f.CharacterPerson != nil && (f.CharacterPerson.Type == typeName || f.CharacterPerson.Type == "") {
+			return f.CharacterPerson
 		}
 	}
 	// Recurse into logic and other containers
