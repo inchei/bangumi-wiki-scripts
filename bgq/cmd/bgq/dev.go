@@ -58,16 +58,25 @@ tmp_dir = "%s"
 
 [build]
   bin = "%s"
-  cmd = "go build -o %s ./cmd/bgq"
+  cmd = "test -f internal/server/dist/index.html || go generate ./internal/server/; go build -o %s ./cmd/bgq"
   entrypoint = ["%s", "serve", "--data-dir", "%s", "--listen", "%s"%s%s%s]
   delay = 1000
-  exclude_dir = ["tmp", "deploy", "bin"]
+  exclude_dir = ["tmp", "deploy", "bin", "node_modules", "frontend/dist"]
   exclude_regex = ["_test.go$", "\\.db$"]
   exclude_unchanged = false
   include_ext = ["go", "tpl", "tmpl", "html"]
   kill_delay = "0s"
   send_interrupt = false
   stop_on_error = false
+
+# Frontend changes rebuild the SPA and write the embedded dist; the resulting
+# dist/*.html then triggers the main build above to re-embed and restart.
+[[build.rules]]
+  name = "frontend"
+  include_dir = ["frontend"]
+  include_ext = ["svelte", "js", "css"]
+  exclude_regex = ["node_modules"]
+  cmd = "go generate ./internal/server/"
 
 [log]
   time = false
@@ -88,6 +97,7 @@ tmp_dir = "%s"
 	}
 
 	fmt.Printf("dev mode: air config → %s\n", cfgPath)
+	fmt.Printf("hint: for Svelte HMR, run 'pnpm --dir frontend dev' in another terminal (Vite on :5173 proxies /api to %s)\n", listen)
 
 	goPath, err := exec.LookPath("go")
 	if err != nil {
