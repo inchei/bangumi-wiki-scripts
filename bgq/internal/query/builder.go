@@ -1644,69 +1644,9 @@ func (b *SQLBuilder) buildSelect() []string {
 		// Association output column syntax: "类型.字段名", "类型.字段名+",
 		// or "类型.s.字段名" (subject-level field for person_character /
 		// character_person types, e.g. CV.s.name).
-		parts := strings.SplitN(col, ".", 3)
-		if len(parts) >= 2 {
-			prefix, field := parts[0], parts[1]
-			isSubjectLevel := false
-			if len(parts) == 3 {
-				if parts[1] != "s" {
-					continue
-				}
-				isSubjectLevel = true
-				field = parts[2]
-			}
-			var subquery string
-			var err error
-
-			switch {
-			case prefix == "episode":
-				if !isSubjectLevel {
-					subquery, err = b.buildEpisodeOutput(field)
-				}
-			case len(b.getRelationIDsForName(prefix)) > 0:
-				if !isSubjectLevel {
-					subquery, err = b.buildRelationOutput(prefix, field)
-				}
-			case b.target == "subject" && len(b.getPositionIDsForName(prefix)) > 0:
-				if !isSubjectLevel {
-					subquery, err = b.buildStaffOutput(prefix, field)
-				}
-			case b.target == "subject":
-				if !isSubjectLevel {
-					if id, ok := b.getCharacterAssociationTypeID(prefix); ok {
-						subquery, err = b.buildCharacterOutput(prefix, field, id)
-					}
-				}
-			case b.target == "person" && len(b.getPersonRelationIDsForName(prefix)) > 0:
-				if !isSubjectLevel {
-					subquery, err = b.buildPersonRelationOutput(prefix, field)
-				}
-			case b.target == "person" && len(b.getPositionIDsForName(prefix)) > 0:
-				if !isSubjectLevel {
-					subquery, err = b.buildStaffOutputForPerson(prefix, field)
-				}
-			case b.target == "character" && len(b.getCharacterRelationIDsForName(prefix)) > 0:
-				if !isSubjectLevel {
-					subquery, err = b.buildCharacterRelationOutput(prefix, field)
-				}
-			case b.target == "person" && b.isPersonCharacterTypeName(prefix):
-				if isSubjectLevel {
-					subquery, err = b.buildPersonCharacterSubjectOutput(prefix, field)
-				} else {
-					subquery, err = b.buildPersonCharacterOutput(prefix, field)
-				}
-			case b.target == "character" && b.isPersonCharacterTypeName(prefix):
-				if isSubjectLevel {
-					subquery, err = b.buildCharacterPersonSubjectOutput(prefix, field)
-				} else {
-					subquery, err = b.buildCharacterPersonOutput(prefix, field)
-				}
-			}
-
-			if err == nil && subquery != "" {
-				result = append(result, subquery)
-				continue
-			}
+		if subquery, ok, err := b.assocOutputColumn(col); ok && err == nil {
+			result = append(result, subquery)
+			continue
 		}
 
 		realCol := b.actualColumn(col)
@@ -1727,6 +1667,99 @@ func (b *SQLBuilder) buildSelect() []string {
 		}
 	}
 	return result
+}
+
+// assocOutputColumn resolves an association output column ("类型.字段[+]" or
+// "类型.s.字段[+]") into its correlated subquery (WITH the "AS label").
+// Returns ("", false, nil) when col is not an association column.
+func (b *SQLBuilder) assocOutputColumn(col string) (string, bool, error) {
+	parts := strings.SplitN(col, ".", 3)
+	if len(parts) < 2 {
+		return "", false, nil
+	}
+	prefix, field := parts[0], parts[1]
+	isSubjectLevel := false
+	if len(parts) == 3 {
+		if parts[1] != "s" {
+			return "", false, nil
+		}
+		isSubjectLevel = true
+		field = parts[2]
+	}
+
+	var subquery string
+	var err error
+	switch {
+	case prefix == "episode":
+		if !isSubjectLevel {
+			subquery, err = b.buildEpisodeOutput(field)
+		}
+	case len(b.getRelationIDsForName(prefix)) > 0:
+		if !isSubjectLevel {
+			subquery, err = b.buildRelationOutput(prefix, field)
+		}
+	case b.target == "subject" && len(b.getPositionIDsForName(prefix)) > 0:
+		if !isSubjectLevel {
+			subquery, err = b.buildStaffOutput(prefix, field)
+		}
+	case b.target == "subject":
+		if !isSubjectLevel {
+			if id, ok := b.getCharacterAssociationTypeID(prefix); ok {
+				subquery, err = b.buildCharacterOutput(prefix, field, id)
+			}
+		}
+	case b.target == "person" && len(b.getPersonRelationIDsForName(prefix)) > 0:
+		if !isSubjectLevel {
+			subquery, err = b.buildPersonRelationOutput(prefix, field)
+		}
+	case b.target == "person" && len(b.getPositionIDsForName(prefix)) > 0:
+		if !isSubjectLevel {
+			subquery, err = b.buildStaffOutputForPerson(prefix, field)
+		}
+	case b.target == "character" && len(b.getCharacterRelationIDsForName(prefix)) > 0:
+		if !isSubjectLevel {
+			subquery, err = b.buildCharacterRelationOutput(prefix, field)
+		}
+	case b.target == "person" && b.isPersonCharacterTypeName(prefix):
+		if isSubjectLevel {
+			subquery, err = b.buildPersonCharacterSubjectOutput(prefix, field)
+		} else {
+			subquery, err = b.buildPersonCharacterOutput(prefix, field)
+		}
+	case b.target == "character" && b.isPersonCharacterTypeName(prefix):
+		if isSubjectLevel {
+			subquery, err = b.buildCharacterPersonSubjectOutput(prefix, field)
+		} else {
+			subquery, err = b.buildCharacterPersonOutput(prefix, field)
+		}
+	}
+	if err != nil {
+		return "", false, err
+	}
+	if subquery == "" {
+		return "", false, nil
+	}
+	return subquery, true, nil
+}
+
+// assocOrderExpr returns the association subquery expression (WITHOUT its
+// trailing "AS label") for use in ORDER BY, or ("", false, nil) if col is not
+// an association column.
+func (b *SQLBuilder) assocOrderExpr(col string) (string, bool, error) {
+	sql, ok, err := b.assocOutputColumn(col)
+	if !ok || err != nil {
+		return "", ok, err
+	}
+	return stripAssocLabel(sql), true, nil
+}
+
+// stripAssocLabel removes the trailing ` AS "<label>"` from an association
+// subquery. The label is always the last ` AS "..."` because we generate it.
+func stripAssocLabel(sql string) string {
+	if i := strings.LastIndex(sql, ` AS "`); i >= 0 {
+		return sql[:i]
+	}
+	return sql
 }
 
 // buildRelationOutput generates a subquery for related subject fields (单行本.发售日).
@@ -2095,6 +2128,13 @@ type assocSubConfig struct {
 // buildAssocSubquery generates a correlated subquery for association field output.
 func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 	field := cfg.field
+	// "~min"/"~max" suffix selects min/max aggregation (used for sorting "+"
+	// aggregation columns, e.g. 导演.生日+ → 导演.生日~max).
+	aggMinMax := ""
+	if strings.HasSuffix(field, "~min") || strings.HasSuffix(field, "~max") {
+		aggMinMax = field[len(field)-3:]
+		field = strings.TrimSuffix(field, "~"+aggMinMax)
+	}
 	allMode := strings.HasSuffix(field, "+")
 	if allMode {
 		field = strings.TrimSuffix(field, "+")
@@ -2112,7 +2152,7 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 	}
 
 	// Count mode
-	if field == "count" {
+	if field == "count" && aggMinMax == "" {
 		return fmt.Sprintf(
 			"(SELECT COUNT(*) FROM %s %s %s WHERE %s.%s = %s AND %s) AS %s",
 			cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
@@ -2128,6 +2168,21 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 		fieldExpr = ea + "." + quoteIdent(field)
 	} else {
 		fieldExpr = b.infoboxExtractExpr(field, ea)
+	}
+
+	// Min/max aggregation (ORDER BY for "+" columns): normalize dates/numbers
+	// first so min/max are chronological / numeric.
+	if aggMinMax != "" {
+		fe := fieldExpr
+		if dateFields[field] {
+			fe = normalizeDate(fe)
+		} else if numericFields[field] {
+			fe = extractNum(fe)
+		}
+		return fmt.Sprintf(
+			"(SELECT %s(%s) FROM %s %s %s WHERE %s.%s = %s AND %s) AS %s",
+			aggMinMax, fe, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
+		), nil
 	}
 
 	if allMode {
@@ -2282,6 +2337,37 @@ func (b *SQLBuilder) buildOrderBy() string {
 		dir := "ASC"
 		if s.Direction == "desc" {
 			dir = "DESC"
+		}
+
+		// Association output column sort (e.g. 导演.生日, 主角.count, CV.s.发售日)
+		sortField := s.Field
+		// "+" aggregation columns: sort by min (asc) / max (desc) of the values.
+		isAgg := strings.HasSuffix(sortField, "+")
+		if isAgg {
+			agg := "min"
+			if dir == "DESC" {
+				agg = "max"
+			}
+			sortField = strings.TrimSuffix(sortField, "+") + "~" + agg
+		}
+		if expr, ok, err := b.assocOrderExpr(sortField); ok && err == nil {
+			if !isAgg {
+				fieldPart := s.Field
+				if i := strings.LastIndex(fieldPart, "."); i >= 0 {
+					fieldPart = fieldPart[i+1:]
+				}
+				if dateFields[fieldPart] {
+					expr = normalizeDate(expr)
+				} else if numericFields[fieldPart] {
+					expr = extractNum(expr)
+				}
+			}
+			parts = append(parts, fmt.Sprintf("%s %s", expr, dir))
+			continue
+		}
+		if isAgg {
+			// Association "+" column not resolved — skip.
+			continue
 		}
 
 		fieldName := b.actualColumn(s.Field)

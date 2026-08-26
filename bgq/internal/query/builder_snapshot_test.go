@@ -390,6 +390,42 @@ func generateAllSQL() map[string]string {
 		}
 	}
 
+	// Sort by association output column (e.g. 导演.生日 desc)
+	assocSortTests := []struct {
+		name   string
+		target string
+		cols   []string
+		filter config.Filter
+		sort   []config.SortRule
+	}{
+		{"sort_assoc_staff_date", "subject",
+			[]string{"id", "name", "导演.生日"},
+			config.Filter{Staff: &config.StaffFilter{Position: "导演", Mode: "any"}},
+			[]config.SortRule{{Field: "导演.生日", Direction: "desc"}}},
+		{"sort_assoc_staff_count", "subject",
+			[]string{"id", "name", "原作.count"},
+			config.Filter{Staff: &config.StaffFilter{Position: "原作", Mode: "any"}},
+			[]config.SortRule{{Field: "原作.count", Direction: "desc"}}},
+		{"sort_assoc_agg_minmax", "subject",
+			[]string{"id", "name", "导演.生日+"},
+			config.Filter{Staff: &config.StaffFilter{Position: "导演", Mode: "any"}},
+			[]config.SortRule{{Field: "导演.生日+", Direction: "desc"}}},
+	}
+	for _, st := range assocSortTests {
+		cfg := &config.Config{
+			DataDir: testDataDir(), Limit: 10, Target: st.target,
+			Output:  &config.Output{Format: "table", Columns: st.cols},
+			Filters: []config.Filter{st.filter},
+			Sort:    st.sort,
+		}
+		sql, err := NewSQLBuilder(cfg, cfg.DataDir).Build()
+		if err != nil {
+			results[st.name] = "ERROR: " + err.Error()
+		} else {
+			results[st.name] = sql
+		}
+	}
+
 	return results
 }
 
