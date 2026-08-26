@@ -5,6 +5,14 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+
+  /* Unified color transition so dark/light switching fades every element at
+     the same speed (closely matching morphicons' snappy feel). */
+  transition:
+    color 0.2s ease,
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 :root {
@@ -40,6 +48,14 @@
   --dropdown-shadow: 0 4px 24px rgb(80 80 80 / 12%);
   --font: system-ui, -apple-system, sans-serif;
   --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+}
+
+/* Initial mount guard: prevent the global color transition from flashing the
+   page into the saved/system theme on load. Removed after first paint. */
+html.no-transitions *,
+html.no-transitions *::before,
+html.no-transitions *::after {
+  transition: none !important;
 }
 
 [data-theme="dark"] {

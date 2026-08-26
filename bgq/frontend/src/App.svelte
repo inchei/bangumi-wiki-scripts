@@ -78,12 +78,25 @@
   }
 
   onMount(async () => {
+    // Guard against the global color transition flashing on load while the
+    // saved/system theme is being applied (see html.no-transitions in
+    // global.css); re-enable after the initial paint.
+    const root = document.documentElement;
+    root.classList.add("no-transitions");
+
     // Restore theme
     const saved = localStorage.getItem("theme");
     if (saved === "dark" || saved === "light") {
       themeMode = saved;
     }
     applyTheme(themeMode);
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        root.classList.remove("no-transitions");
+      });
+    });
+
     // Listen for system theme changes
     window
       .matchMedia("(prefers-color-scheme: dark)")
