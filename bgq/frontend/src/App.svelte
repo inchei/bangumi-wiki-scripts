@@ -16,6 +16,7 @@
     saveTargetSettings,
     restoreTargetSettings,
   } from "./stores.js";
+  import { decodeShareState, applyShareState, SHARE_PARAM } from "./share.js";
   import FilterTree from "./components/FilterTree.svelte";
   import ResultTable from "./components/ResultTable.svelte";
   import YamlEditor from "./components/YamlEditor.svelte";
@@ -97,6 +98,19 @@
       .addEventListener("change", () => {
         if (themeMode === "system") applyTheme("system");
       });
+
+    // Restore query from share link (?q=<payload>)
+    const payload = new URLSearchParams(window.location.search).get(
+      SHARE_PARAM,
+    );
+    if (payload) {
+      try {
+        const state = await decodeShareState(payload);
+        applyShareState(state);
+      } catch {
+        // Ignore invalid/corrupt share links; keep current state.
+      }
+    }
   });
 </script>
 

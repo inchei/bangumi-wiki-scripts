@@ -8,6 +8,7 @@
     faArrowDownWideShort,
     faArrowDownShortWide,
     faSort,
+    faShareNodes,
   } from "@fortawesome/free-solid-svg-icons";
   import {
     lastResult,
@@ -15,6 +16,7 @@
     lastQueryTarget,
     queryLoading,
   } from "../stores.js";
+  import { buildShareURL } from "../share.js";
   import { get } from "svelte/store";
   import ActionButton from "./ActionButton.svelte";
 
@@ -193,6 +195,26 @@
       .then(() => "")
       .catch(() => "复制失败");
   }
+
+  function shareAction() {
+    return (async () => {
+      let url;
+      try {
+        url = await buildShareURL();
+      } catch {
+        return "生成失败，请用YAML分享";
+      }
+      if (url === null) {
+        return "查询过大，请用YAML分享";
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+        return "";
+      } catch {
+        return "复制失败，请用YAML分享";
+      }
+    })();
+  }
 </script>
 
 <div class="results-panel">
@@ -228,6 +250,13 @@
         >
         <ActionButton icon={faCopy} text="复制表格" action={copyTableAction} />
         <ActionButton icon={faCopy} text="复制bgm_id" action={copyIdsAction} />
+        <ActionButton
+          icon={faShareNodes}
+          text="分享"
+          successText="已复制链接"
+          title="分享当前查询链接"
+          action={shareAction}
+        />
       </span>
     </div>
     {#if res.rows.length === 0}
