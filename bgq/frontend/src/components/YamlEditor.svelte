@@ -2,11 +2,14 @@
   import {
     getFiltersForAPI,
     applyFiltersFromAPI,
-    logicVersion,
     outputColumns,
     sortRules,
     resultLimit,
     queryTarget,
+    subjectRootLogic,
+    personRootLogic,
+    characterRootLogic,
+    episodeRootLogic,
   } from "../stores.js";
   import { filtersToYAML, parseYAML } from "../yaml.js";
   import { get } from "svelte/store";
@@ -16,20 +19,21 @@
   let expanded = $state(false);
   let yamlText = $state("");
   let error = $state("");
-
-  // Subscribe to logicVersion so we re-sync when filters change
-  const _ver = $derived($logicVersion); // eslint-disable-line no-unused-vars
+  // Dirty = the user has hand-edited the text; pause auto-sync so drafts
+  // survive unrelated filter changes. Cleared by both button actions.
+  let dirty = $state(false);
+  // Snapshot taken right before 应用, enabling 撤销.
+  let undoState = $state(null);
 
   function syncFromFilters() {
     error = "";
-    const cols = get(outputColumns) || "";
-    const limit = get(resultLimit) || 0;
+    dirty = false;
     try {
       yamlText = filtersToYAML(
         get(queryTarget),
         getFiltersForAPI(),
-        cols,
-        limit,
+        get(outputColumns),
+        get(resultLimit),
         get(sortRules),
       );
     } catch (e) {
@@ -42,24 +46,65 @@
       alert("YAML 内容为空");
       return;
     }
-    error = "";
+    let data;
     try {
-      const data = parseYAML(yamlText);
-      if (data.target) queryTarget.set(data.target);
-      if (data.filters?.length > 0) applyFiltersFromAPI(data.filters);
-      if (data.output?.columns)
-        outputColumns.set(data.output.columns.join(","));
-      if (data.sort) sortRules.set(data.sort);
-      if (data.limit) resultLimit.set(data.limit);
-      document.getElementById("btn-run")?.focus();
+      data = parseYAML(yamlText);
     } catch (e) {
       alert("解析失败: " + e.message);
+      return;
     }
+    error = "";
+    undoState = {
+      target: get(queryTarget),
+      filters: getFiltersForAPI(),
+      columns: get(outputColumns),
+      sort: get(sortRules),
+      limit: get(resultLimit),
+    };
+    dirty = false;
+    if (data.target) queryTarget.set(data.target);
+    if (data.filters?.length > 0) applyFiltersFromAPI(data.filters);
+    if (data.output?.columns) outputColumns.set(data.output.columns.join(","));
+    if (data.sort) sortRules.set(data.sort);
+    if (data.limit) resultLimit.set(data.limit);
+    document.getElementById("btn-run")?.focus();
   }
 
-  // Sync on mount
+  function handleUndo() {
+    if (!undoState) return;
+    const u = undoState;
+    undoState = null;
+    error = "";
+    dirty = false;
+    queryTarget.set(u.target);
+    // Unconditional: u.filters may be [] (pre-apply state was empty).
+    applyFiltersFromAPI(u.filters);
+    outputColumns.set(u.columns);
+    sortRules.set(u.sort);
+    resultLimit.set(u.limit);
+  }
+
+  // Auto-sync YAML from live filter/output state. Every store is read
+  // reactively (all four roots, since $-references below select one by
+  // target) so the textarea tracks the current configuration without any
+  // button press. Skipped while hidden or while the user has a pending
+  // hand-edited draft.
   $effect(() => {
-    syncFromFilters();
+    const target = $queryTarget;
+    const cols = $outputColumns;
+    const lim = $resultLimit;
+    const sr = $sortRules;
+    void $subjectRootLogic;
+    void $personRootLogic;
+    void $characterRootLogic;
+    void $episodeRootLogic;
+    if (!expanded || dirty) return;
+    error = "";
+    try {
+      yamlText = filtersToYAML(target, getFiltersForAPI(), cols, lim, sr);
+    } catch (e) {
+      error = "导出失败: " + e.message;
+    }
   });
 </script>
 
@@ -80,16 +125,24 @@
     <textarea
       class="yaml-editor"
       bind:value={yamlText}
+      oninput={() => (dirty = true)}
       placeholder="在此编辑 YAML 配置..."></textarea>
     {#if error}
       <div class="yaml-error">{error}</div>
     {/if}
     <div class="yaml-actions">
-      <button class="btn btn-primary btn-sm" onclick={handleApply}
-        >应用 YAML</button
-      >
+      <div class="yaml-actions-left">
+        <button class="btn btn-primary btn-sm" onclick={handleApply}
+          >应用</button
+        >
+        {#if undoState}
+          <button class="btn btn-default btn-sm" onclick={handleUndo}
+            >撤销</button
+          >
+        {/if}
+      </div>
       <button class="btn btn-default btn-sm" onclick={syncFromFilters}
-        >从筛选器同步</button
+        >同步当前配置</button
       >
     </div>
   {/if}
@@ -140,6 +193,13 @@
 
   .yaml-actions {
     margin-top: 8px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .yaml-actions-left {
     display: flex;
     gap: 8px;
   }
