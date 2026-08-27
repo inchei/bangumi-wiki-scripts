@@ -241,6 +241,10 @@ func (s *server) isAllowedOrigin(origin string) bool {
 		return false
 	}
 	host := strings.ToLower(u.Hostname())
+	// Always allow localhost for Vite dev server (5173 -> 8080 proxy)
+	if host == "localhost" || host == "127.0.0.1" || host == "::1" {
+		return true
+	}
 	if len(s.allowedHosts) == 0 {
 		return false
 	}
