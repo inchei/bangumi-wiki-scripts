@@ -16,9 +16,53 @@
     lastQueryTarget,
     queryLoading,
   } from "../stores.js";
+  import {
+    positionsByType,
+    PERSON_CHAR_TYPES,
+    PERSON_RELATIONS,
+    CHARACTER_RELATIONS,
+    relationsByType,
+    CHARACTER_ASSOC_TYPES,
+  } from "../schema-data.js";
   import { buildShareURL } from "../share.js";
   import { get } from "svelte/store";
   import ActionButton from "./ActionButton.svelte";
+
+  const ALL_POSITIONS = new Set(positionsByType(0));
+  const ALL_RELATIONS = new Set(relationsByType(0));
+  const PERSON_CHAR_SET = new Set(PERSON_CHAR_TYPES);
+  const PERSON_REL_SET = new Set(PERSON_RELATIONS);
+  const CHAR_REL_SET = new Set(CHARACTER_RELATIONS);
+  const CHAR_ASSOC_SET = new Set(CHARACTER_ASSOC_TYPES);
+
+  function groupIdLinkType(prefix, target) {
+    const isSubjectLevel = prefix.endsWith(".s");
+    const base = isSubjectLevel ? prefix.slice(0, -2) : prefix;
+    if (isSubjectLevel) return "subject";
+    if (target === "subject") {
+      if (ALL_POSITIONS.has(base)) return "person";
+      if (ALL_RELATIONS.has(base)) return "subject";
+      if (CHAR_ASSOC_SET.has(base)) return "character";
+    } else if (target === "person") {
+      if (ALL_POSITIONS.has(base)) return "subject";
+      if (PERSON_REL_SET.has(base)) return "person";
+      if (PERSON_CHAR_SET.has(base)) return "character";
+    } else if (target === "character") {
+      if (CHAR_REL_SET.has(base)) return "character";
+      if (PERSON_CHAR_SET.has(base)) return "person";
+    } else if (target === "episode") {
+      return "subject";
+    }
+    return "subject";
+  }
+
+  function groupCellIdHref(entry, field, prefix) {
+    if (!isIDColumn(field)) return null;
+    const v = entry[field];
+    if (v === null || v === undefined || v === "") return null;
+    const type = groupIdLinkType(prefix, get(lastQueryTarget));
+    return `https://bgm.tv/${type}/${encodeURIComponent(String(v))}`;
+  }
 
   function escapeHtml(s) {
     if (s === null || s === undefined) return "";
@@ -32,22 +76,63 @@
   const idRegex = /^((person|character|episode)_)?id$/;
 
   function isIDColumn(colName) {
-    const cn = colName.toLowerCase();
-    return idRegex.test(cn);
+    let field = String(colName).toLowerCase();
+    if (field.endsWith("+")) field = field.slice(0, -1);
+    const dot = field.lastIndexOf(".");
+    if (dot >= 0) field = field.slice(dot + 1);
+    return idRegex.test(field);
   }
 
   function bgmLink(id, colName) {
     if (id === null || id === undefined || id === "")
       return escapeHtml(String(id));
+    const raw = String(colName);
+    const isPlus = raw.endsWith("+");
     const s = String(id);
-    const cn = colName.toLowerCase();
+    // Handle comma-separated list for "+" columns (e.g. 导演.id+ -> "1, 2, 3")
+    if (isPlus && s.includes(",")) {
+      const baseCol = raw.slice(0, -1);
+      return s
+        .split(",")
+        .map((p) => p.trim())
+        .filter(Boolean)
+        .map((p) => bgmLink(p, baseCol))
+        .join(", ");
+    }
+    const cn = raw.toLowerCase();
     const target = get(lastQueryTarget);
+    // Try association-aware type for "prefix.id" columns
+    const dot = cn.lastIndexOf(".");
+    if (dot >= 0) {
+      const prefix = raw.slice(0, dot);
+      // Only use assoc logic for id fields
+      let fieldPart = cn.slice(dot + 1);
+      if (fieldPart.endsWith("+")) fieldPart = fieldPart.slice(0, -1);
+      if (idRegex.test(fieldPart)) {
+        const t = groupIdLinkType(prefix, target);
+        // groupIdLinkType returns "subject" as fallback; only use it if prefix is recognized
+        const base = prefix.endsWith(".s") ? prefix.slice(0, -2) : prefix;
+        const lowerBase = base.toLowerCase();
+        const recognized =
+          ALL_POSITIONS.has(base) ||
+          ALL_POSITIONS.has(lowerBase) ||
+          ALL_RELATIONS.has(base) ||
+          PERSON_CHAR_SET.has(base) ||
+          PERSON_REL_SET.has(base) ||
+          CHAR_REL_SET.has(base) ||
+          CHAR_ASSOC_SET.has(base) ||
+          prefix.toLowerCase().endsWith(".s");
+        if (recognized) {
+          return `<a href="https://bgm.tv/${t}/${encodeURIComponent(s)}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
+        }
+      }
+    }
     let type = "subject";
     if (target === "person" || cn.includes("person")) type = "person";
     else if (target === "character" || cn.includes("character"))
       type = "character";
     else if (target === "episode" || cn.includes("episode")) type = "ep";
-    return `<a href="https://bgm.tv/${type}/${s}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
+    return `<a href="https://bgm.tv/${type}/${encodeURIComponent(s)}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
   }
 
   function cellClass(col) {
@@ -82,11 +167,12 @@
           out.push({
             ci,
             field: f,
+            prefix: gc.prefix,
             label: `${gc.prefix}.${f}${gc.plus ? "+" : ""}`,
           });
         }
       } else {
-        out.push({ ci, field: "", label: col });
+        out.push({ ci, field: "", prefix: "", label: col });
       }
     });
     return out;
@@ -110,6 +196,7 @@
         out.push({
           kind: "group",
           ci: dc.ci,
+          prefix: span[0].prefix,
           span: span.length,
           fields: span.map((s) => s.field),
         });
@@ -500,9 +587,18 @@
                     {#each groupEntries(row[bc.ci]) as entry, ei (ei)}
                       <div class="cell-mini-row">
                         {#each bc.fields as f (f)}
-                          <div class="cell-mini-cell">
+                          {@const href = groupCellIdHref(entry, f, bc.prefix)}
+                          <div
+                            class="cell-mini-cell {isIDColumn(f)
+                              ? 'col-id'
+                              : ''}"
+                          >
                             {#if entry[f] === null || entry[f] === undefined || entry[f] === ""}
                               <span class="cell-null">—</span>
+                            {:else if href}
+                              <a {href} target="_blank" rel="noopener"
+                                >{entry[f]}</a
+                              >
                             {:else}
                               {entry[f]}
                             {/if}
