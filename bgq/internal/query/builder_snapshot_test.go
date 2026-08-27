@@ -343,6 +343,10 @@ func generateAllSQL() map[string]string {
 			Conditions:        []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "アル"}}},
 			SubjectConditions: []config.Filter{{Field: &config.FieldFilter{Field: "rank", Operator: "lt", Value: "5000"}}},
 		}}},
+		{"person_staff_group_json", []string{"person_id", "name", "系列构成.{name|rank|id}", "系列构成.{name|rank|id}+"}, config.Filter{Staff: &config.StaffFilter{
+			Position: "系列构成", Mode: "any",
+			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "rank", Operator: "lt", Value: "1500"}}},
+		}}},
 	}
 	for _, pt := range personOutTests {
 		cfg := &config.Config{
@@ -408,6 +412,10 @@ func generateAllSQL() map[string]string {
 			[]config.SortRule{{Field: "原作.count", Direction: "desc"}}},
 		{"sort_assoc_agg_minmax", "subject",
 			[]string{"id", "name", "导演.生日+"},
+			config.Filter{Staff: &config.StaffFilter{Position: "导演", Mode: "any"}},
+			[]config.SortRule{{Field: "导演.生日+", Direction: "desc"}}},
+		{"sort_assoc_group_json", "subject",
+			[]string{"id", "name", "导演.{name|生日|id}+"},
 			config.Filter{Staff: &config.StaffFilter{Position: "导演", Mode: "any"}},
 			[]config.SortRule{{Field: "导演.生日+", Direction: "desc"}}},
 	}

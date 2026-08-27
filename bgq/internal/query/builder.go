@@ -2128,6 +2128,13 @@ type assocSubConfig struct {
 // buildAssocSubquery generates a correlated subquery for association field output.
 func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 	field := cfg.field
+
+	// Group JSON output: "{f1,f2,...}[+]" → one JSON object per related entry
+	// (array for "+"), e.g. 导演.{name,生日,id}+.
+	if groupFields, isGroup, groupPlus := parseGroupField(field); isGroup {
+		return b.buildAssocGroupSubquery(cfg, groupFields, groupPlus)
+	}
+
 	// "~min"/"~max" suffix selects min/max aggregation (used for sorting "+"
 	// aggregation columns, e.g. 导演.生日+ → 导演.生日~max).
 	aggMinMax := ""
@@ -2202,6 +2209,116 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 		"(SELECT %s FROM %s %s %s WHERE %s.%s = %s AND %s LIMIT 1) AS %s",
 		fieldExpr, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
 	), nil
+}
+
+// parseGroupField parses a "{f1|f2|...}[+]" field into its member fields.
+// Uses "|" (not ",") so the group column stays a single field when output
+// columns are comma-separated in the UI/YAML. Returns (fields, isGroup, hasPlus).
+func parseGroupField(field string) ([]string, bool, bool) {
+	if !strings.HasPrefix(field, "{") {
+		return nil, false, false
+	}
+	end := strings.Index(field, "}")
+	if end < 0 {
+		return nil, false, false
+	}
+	hasPlus := strings.HasSuffix(field, "+")
+	var fields []string
+	for _, f := range strings.Split(field[1:end], "|") {
+		if f = strings.TrimSpace(f); f != "" {
+			fields = append(fields, f)
+		}
+	}
+	return fields, len(fields) > 0, hasPlus
+}
+
+// buildAssocGroupSubquery generates a JSON array (or single object) of related
+// entries, each an object of the group's fields. Empty values become null.
+func (b *SQLBuilder) buildAssocGroupSubquery(cfg assocSubConfig, groupFields []string, groupPlus bool) (string, error) {
+	pred := cfg.typeCond
+	if cfg.extraWhere != "" && cfg.extraWhere != "TRUE" {
+		pred = pred + " AND " + cfg.extraWhere
+	}
+	mainRef := fmt.Sprintf("%s.%s", b.mainAlias, b.tc.idColumn)
+	entityPK := cfg.entityPK
+	if entityPK == "" {
+		entityPK = "id"
+	}
+	ea := cfg.entityAlias
+
+	args := make([]string, len(groupFields))
+	for i, gf := range groupFields {
+		var e string
+		if gf == "id" || gf == "ID" {
+			e = ea + "." + entityPK
+		} else if cfg.directFields[gf] {
+			e = ea + "." + quoteIdent(gf)
+		} else {
+			e = b.infoboxExtractExpr(gf, ea)
+		}
+		args[i] = fmt.Sprintf("%s := NULLIF(CAST(%s AS VARCHAR), '')", quoteIdent(gf), e)
+	}
+	structArgs := strings.Join(args, ", ")
+
+	orderExpr, asc, _ := b.groupOrderBy(cfg.label, groupFields, ea, entityPK, cfg.directFields)
+	orderClause := ""
+	if orderExpr != "" {
+		dir := "DESC"
+		if asc {
+			dir = "ASC"
+		}
+		orderClause = fmt.Sprintf(" ORDER BY %s %s", orderExpr, dir)
+	} else {
+		orderClause = fmt.Sprintf(" ORDER BY %s.%s ASC", ea, entityPK)
+	}
+
+	if groupPlus {
+		return fmt.Sprintf(
+			"(SELECT to_json(list(struct_pack(%s)%s)) FROM %s %s %s WHERE %s.%s = %s AND %s) AS %s",
+			structArgs, orderClause, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
+		), nil
+	}
+	return fmt.Sprintf(
+		"(SELECT to_json(struct_pack(%s)) FROM %s %s %s WHERE %s.%s = %s AND %s LIMIT 1) AS %s",
+		structArgs, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
+	), nil
+}
+
+// groupOrderBy finds a sort rule matching the group column's prefix and one of
+// its member fields (e.g. group 导演.{name|生日|id}+ with sort 导演.生日+),
+// returning the normalized ORDER BY expression and ascending direction.
+func (b *SQLBuilder) groupOrderBy(label string, groupFields []string, ea, entityPK string, directFields map[string]bool) (string, bool, bool) {
+	idx := strings.Index(label, ".{")
+	if idx < 0 {
+		return "", false, false
+	}
+	prefix := label[1:idx]
+	for _, s := range b.cfg.Sort {
+		sf := strings.TrimSuffix(s.Field, "+")
+		parts := strings.SplitN(sf, ".", 2)
+		if len(parts) != 2 || parts[0] != prefix {
+			continue
+		}
+		f := parts[1]
+		if !containsString(groupFields, f) {
+			continue
+		}
+		var e string
+		if f == "id" || f == "ID" {
+			e = ea + "." + entityPK
+		} else if directFields[f] {
+			e = ea + "." + quoteIdent(f)
+		} else {
+			e = b.infoboxExtractExpr(f, ea)
+		}
+		if dateFields[f] {
+			e = normalizeDate(e)
+		} else if numericFields[f] {
+			e = extractNum(e)
+		}
+		return e, s.Direction != "desc", true
+	}
+	return "", false, false
 }
 
 // findFilter walks the filter tree to find the first filter of the given type

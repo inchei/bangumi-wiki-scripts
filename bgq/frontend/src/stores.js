@@ -29,7 +29,7 @@ function bumpVersion() {
 
 export const lastResult = writable(null);
 export const queryLoading = writable(false);
-export const sortState = writable({ col: -1, asc: true });
+export const sortState = writable({ col: -1, asc: true, field: "" });
 export const queryTarget = writable("subject");
 export const lastQueryTarget = writable("subject");
 export const outputColumns = writable("id,name,name_cn,type,");

@@ -57,6 +57,83 @@
     return "";
   }
 
+  // Parse a group JSON column: "导演.{name|生日|id}+" → { prefix, fields, plus }.
+  function parseGroupCol(col) {
+    const m = col.match(/^(.+)\.\{([^}]+)\}(\+)?$/);
+    if (!m) return null;
+    return {
+      prefix: m[1],
+      fields: m[2]
+        .split("|")
+        .map((s) => s.trim())
+        .filter(Boolean),
+      plus: !!m[3],
+    };
+  }
+
+  // Expand group columns ({f1|f2|...}[+]) into one sortable column per
+  // sub-field, so each displays as an independent column (e.g. 导演.生日+).
+  function expandColumns(columns) {
+    const out = [];
+    (columns || []).forEach((col, ci) => {
+      const gc = parseGroupCol(col);
+      if (gc) {
+        for (const f of gc.fields) {
+          out.push({
+            ci,
+            field: f,
+            label: `${gc.prefix}.${f}${gc.plus ? "+" : ""}`,
+          });
+        }
+      } else {
+        out.push({ ci, field: "", label: col });
+      }
+    });
+    return out;
+  }
+
+  let displayCols = $derived(expandColumns($lastResult?.columns));
+
+  // Body columns merge a group's sub-field columns into one spanning cell so
+  // the entries render as real aligned sub-rows (not just <br>-separated).
+  function buildBodyCols(cols) {
+    const out = [];
+    let i = 0;
+    while (i < cols.length) {
+      const dc = cols[i];
+      if (dc.field) {
+        const span = [];
+        while (i < cols.length && cols[i].field && cols[i].ci === dc.ci) {
+          span.push(cols[i]);
+          i++;
+        }
+        out.push({
+          kind: "group",
+          ci: dc.ci,
+          span: span.length,
+          fields: span.map((s) => s.field),
+        });
+      } else {
+        out.push({ kind: "single", ci: dc.ci, label: dc.label });
+        i++;
+      }
+    }
+    return out;
+  }
+
+  let bodyCols = $derived(buildBodyCols(displayCols));
+
+  // Parse a group cell's JSON into an array of entries for subgrid rendering.
+  function groupEntries(val) {
+    if (val === null || val === undefined || val === "") return [];
+    try {
+      const d = JSON.parse(val);
+      return Array.isArray(d) ? d : [d];
+    } catch {
+      return [];
+    }
+  }
+
   const MAX_DISPLAY_LEN = 80;
   let expanded = $state({});
 
@@ -99,24 +176,24 @@
     return { empty: false, num, ts, str: s.toLowerCase() };
   }
 
-  function sortTable(colIdx) {
+  function sortTable(di, ci) {
     const res = $lastResult;
     if (!res?.rows) return;
-    const newSort = { ...$sortState };
-    if (newSort.col === colIdx) newSort.asc = !newSort.asc;
-    else {
-      newSort.col = colIdx;
-      newSort.asc = true;
-    }
+    const isActive = $sortState.col === ci && $sortState.field === "";
+    const newSort = {
+      col: ci,
+      asc: isActive ? !$sortState.asc : true,
+      field: "",
+    };
     sortState.set(newSort);
 
     const rows = [...res.rows];
-    const vals = rows.map((r) => parseSortVal(r[colIdx]));
+    const vals = rows.map((r) => parseSortVal(r[ci]));
     const hasDate = vals.some((p) => !p.empty && !isNaN(p.ts));
     const hasNumeric = vals.some((p) => !p.empty && !isNaN(p.num));
     rows.sort((a, b) => {
-      const pa = parseSortVal(a[colIdx]),
-        pb = parseSortVal(b[colIdx]);
+      const pa = parseSortVal(a[ci]),
+        pb = parseSortVal(b[ci]);
       if (pa.empty && pb.empty) return 0;
       if (pa.empty) return 1;
       if (pb.empty) return -1;
@@ -130,15 +207,106 @@
     lastResult.set({ ...res, rows });
   }
 
-  function sortIcon(colIdx) {
-    if ($sortState.col === colIdx && $sortState.asc) return ArrowDownWideNarrow;
-    if ($sortState.col === colIdx && !$sortState.asc)
-      return ArrowDownNarrowWide;
+  function handleHeaderClick(di) {
+    const dc = displayCols[di];
+    if (dc.field) sortGroupField(di, dc);
+    else sortTable(di, dc.ci);
+  }
+
+  // Extract a sub-field's values across a group cell's entries and pick the
+  // sort key: min for asc, max for desc — mirroring the backend's "导演.生日+"
+  // (min(ASC) / max(DESC)) semantics.
+  function groupSortKey(entries, field, asc) {
+    const vals = entries
+      .map((e) => e[field])
+      .filter((v) => v !== null && v !== undefined && v !== "");
+    if (vals.length === 0) return { empty: true, key: 0 };
+    const parsed = vals.map((v) => parseSortVal(v));
+    const hasDate = parsed.some((p) => !p.empty && !isNaN(p.ts));
+    const hasNumeric = parsed.some((p) => !p.empty && !isNaN(p.num));
+    let best = null;
+    for (const p of parsed) {
+      if (p.empty) continue;
+      const k =
+        hasDate && !isNaN(p.ts)
+          ? p.ts
+          : hasNumeric && !isNaN(p.num)
+            ? p.num
+            : p.str;
+      if (best === null || (asc ? k < best : k > best)) best = k;
+    }
+    return { empty: best === null, key: best };
+  }
+
+  function sortGroupField(di, dc) {
+    const res = $lastResult;
+    if (!res?.rows) return;
+    const isActive = $sortState.col === dc.ci && $sortState.field === dc.field;
+    const asc = isActive ? !$sortState.asc : true;
+    sortState.set({ col: dc.ci, asc, field: dc.field });
+    const rows = [...res.rows];
+    rows.sort((a, b) => {
+      let pa, pb;
+      try {
+        pa = groupSortKey(JSON.parse(a[dc.ci]), dc.field, asc);
+      } catch {
+        pa = { empty: true, key: 0 };
+      }
+      try {
+        pb = groupSortKey(JSON.parse(b[dc.ci]), dc.field, asc);
+      } catch {
+        pb = { empty: true, key: 0 };
+      }
+      if (pa.empty && pb.empty) return 0;
+      if (pa.empty) return 1;
+      if (pb.empty) return -1;
+      let cmp;
+      if (typeof pa.key === "number" && typeof pb.key === "number")
+        cmp = pa.key - pb.key;
+      else cmp = String(pa.key).localeCompare(String(pb.key), "zh");
+      return asc ? cmp : -cmp;
+    });
+    // Re-order the sub-rows inside each cell by the sub-field, matching the
+    // backend's cell-internal ORDER BY (导演.生日+ → entries by 生日).
+    const reordered = rows.map((r) => {
+      let entries;
+      try {
+        const d = JSON.parse(r[dc.ci]);
+        if (!Array.isArray(d)) return r;
+        entries = d;
+      } catch {
+        return r;
+      }
+      const sorted = [...entries].sort((x, y) => {
+        const px = parseSortVal(x[dc.field]);
+        const py = parseSortVal(y[dc.field]);
+        if (px.empty && py.empty) return 0;
+        if (px.empty) return 1;
+        if (py.empty) return -1;
+        let cmp;
+        if (!isNaN(px.ts) && !isNaN(py.ts)) cmp = px.ts - py.ts;
+        else if (!isNaN(px.num) && !isNaN(py.num)) cmp = px.num - py.num;
+        else cmp = px.str.localeCompare(py.str, "zh");
+        return asc ? cmp : -cmp;
+      });
+      const next = [...r];
+      next[dc.ci] = JSON.stringify(sorted);
+      return next;
+    });
+    lastResult.set({ ...res, rows: reordered });
+  }
+
+  function sortIcon(di) {
+    const dc = displayCols[di];
+    const active = $sortState.col === dc.ci && $sortState.field === dc.field;
+    if (active)
+      return $sortState.asc ? ArrowDownWideNarrow : ArrowDownNarrowWide;
     return ArrowUpDown;
   }
 
-  function isSortPlaceholder(colIdx) {
-    return $sortState.col !== colIdx;
+  function isSortPlaceholder(di) {
+    const dc = displayCols[di];
+    return !($sortState.col === dc.ci && $sortState.field === dc.field);
   }
 
   function csvEscape(s) {
@@ -277,63 +445,94 @@
       </div>
     {:else}
       <div class="results-table-wrap">
-        <table class="results-table">
-          <thead>
-            <tr>
-              {#each res.columns as col, i (col)}
-                <th
-                  class="sortable"
-                  class:sort-asc={$sortState.col === i && $sortState.asc}
-                  class:sort-desc={$sortState.col === i && !$sortState.asc}
-                  aria-sort={$sortState.col === i
-                    ? $sortState.asc
-                      ? "ascending"
-                      : "descending"
-                    : "none"}
-                  title={col}
-                >
-                  <span
-                    class="sort-btn"
-                    onclick={() => sortTable(i)}
-                    onkeydown={(e) => e.key === "Enter" && sortTable(i)}
-                    tabindex="0"
-                    role="button"
-                    >{col.length > 20 ? col.substring(0, 18) + "…" : col}
-                    <MorphIcon
-                      icon={sortIcon(i)}
-                      class={isSortPlaceholder(i) ? "sort-placeholder" : ""}
-                      size={14}
-                    />
-                  </span>
-                </th>
-              {/each}
-            </tr>
-          </thead>
-          <tbody>
-            {#each res.rows as row, ri (ri)}
-              <tr>
-                <!-- eslint-disable svelte/no-at-html-tags -->
-                {#each res.columns as col, i (col)}
-                  {@const long =
-                    row[i] && String(row[i]).length > MAX_DISPLAY_LEN}
-                  <td
-                    class={cellClass(col) +
-                      (expanded[ri + "_" + i] ? " cell-expanded" : "") +
-                      (long ? " cell-expandable" : "")}
-                    onclick={long ? () => toggleExpand(ri, i) : undefined}
+        <div
+          class="results-table"
+          role="table"
+          style="grid-template-columns: repeat({displayCols.length}, minmax(0, auto))"
+        >
+          <div class="results-thead" role="rowgroup">
+            {#each displayCols as dc, di (dc.ci + ":" + dc.field)}
+              <div
+                class="results-th sortable"
+                class:sort-asc={$sortState.col === dc.ci &&
+                  $sortState.field === dc.field &&
+                  $sortState.asc}
+                class:sort-desc={$sortState.col === dc.ci &&
+                  $sortState.field === dc.field &&
+                  !$sortState.asc}
+                role="columnheader"
+                aria-sort={$sortState.col === dc.ci &&
+                $sortState.field === dc.field
+                  ? $sortState.asc
+                    ? "ascending"
+                    : "descending"
+                  : "none"}
+                title={dc.label}
+              >
+                <span
+                  class="sort-btn"
+                  onclick={() => handleHeaderClick(di)}
+                  onkeydown={(e) => e.key === "Enter" && handleHeaderClick(di)}
+                  tabindex="0"
+                  role="button"
+                  >{dc.label.length > 20
+                    ? dc.label.substring(0, 18) + "…"
+                    : dc.label}
+                  <MorphIcon
+                    icon={sortIcon(di)}
+                    class={isSortPlaceholder(di) ? "sort-placeholder" : ""}
+                    size={14}
+                  />
+                </span>
+              </div>
+            {/each}
+          </div>
+          {#each res.rows as row, ri (ri)}
+            <div class="results-tr" role="row">
+              <!-- eslint-disable svelte/no-at-html-tags -->
+              {#each bodyCols as bc, bi (bc.kind + ":" + bc.ci)}
+                {#if bc.kind === "group"}
+                  <div
+                    class="results-td results-td-group"
+                    role="cell"
+                    style="grid-column: span {bc.span}"
+                  >
+                    {#each groupEntries(row[bc.ci]) as entry, ei (ei)}
+                      <div class="cell-mini-row">
+                        {#each bc.fields as f (f)}
+                          <div class="cell-mini-cell">
+                            {#if entry[f] === null || entry[f] === undefined || entry[f] === ""}
+                              <span class="cell-null">—</span>
+                            {:else}
+                              {entry[f]}
+                            {/if}
+                          </div>
+                        {/each}
+                      </div>
+                    {/each}
+                  </div>
+                {:else}
+                  {@const val = row[bc.ci]}
+                  {@const long = val && String(val).length > MAX_DISPLAY_LEN}
+                  <div
+                    class="results-td {cellClass(bc.label)}"
+                    role={long ? "button" : "cell"}
+                    class:cell-expanded={expanded[ri + "_" + bi]}
+                    class:cell-expandable={long}
+                    onclick={long ? () => toggleExpand(ri, bi) : undefined}
                     onkeydown={long
-                      ? (e) => e.key === "Enter" && toggleExpand(ri, i)
+                      ? (e) => e.key === "Enter" && toggleExpand(ri, bi)
                       : undefined}
                     tabindex={long ? "0" : undefined}
-                    role={long ? "button" : undefined}
-                    >{@html cellHtml(col, row[i], ri, i)}</td
                   >
-                {/each}
-                <!-- eslint-enable svelte/no-at-html-tags -->
-              </tr>
-            {/each}
-          </tbody>
-        </table>
+                    {@html cellHtml(bc.label, val, ri, bi)}
+                  </div>
+                {/if}
+              {/each}
+              <!-- eslint-enable svelte/no-at-html-tags -->
+            </div>
+          {/each}
+        </div>
       </div>
     {/if}
   {:else}
@@ -424,14 +623,29 @@
   }
 
   .results-table {
-    width: 100%;
-    border-collapse: collapse;
+    display: grid;
+    grid-auto-rows: auto;
+    min-width: 100%;
     font-size: 13px;
     background: var(--white);
   }
 
-  .results-table th {
+  .results-thead,
+  .results-tr {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+  }
+
+  .results-thead {
+    position: sticky;
+    top: 0;
+    z-index: 2;
     background: var(--bg-alt);
+    border-bottom: 2px solid var(--border);
+  }
+
+  .results-th {
     padding: 10px 14px;
     text-align: left;
     font-weight: 600;
@@ -439,67 +653,108 @@
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    border-bottom: 2px solid var(--border);
-    white-space: nowrap;
+    overflow-wrap: anywhere;
   }
 
-  .results-table th.sortable {
+  .results-th.sortable {
     user-select: none;
     padding: 0;
   }
 
-  .results-table th.sortable .sort-btn {
+  .results-th.sortable .sort-btn {
     display: block;
     padding: 10px 14px;
     cursor: pointer;
     transition: background 0.15s;
   }
 
-  .results-table th.sortable .sort-btn:hover {
+  .results-th.sortable .sort-btn:hover {
     background: var(--accent-light);
     color: var(--text);
   }
 
-  .results-table th :global(svg) {
+  .results-th :global(svg) {
     font-size: 10px;
     margin-left: 4px;
     opacity: 0.7;
     vertical-align: middle;
   }
 
-  .results-table th :global(.sort-placeholder) {
+  .results-th :global(.sort-placeholder) {
     font-size: 10px;
     margin-left: 4px;
     opacity: 0.35;
   }
 
-  .results-table td {
+  .results-td {
     padding: 8px 14px;
     border-bottom: 1px solid var(--bg-alt);
     max-width: 300px;
+    min-width: 0;
   }
 
-  .results-table td.cell-expandable {
+  .results-td.cell-expandable {
     cursor: pointer;
   }
 
-  .results-table td:focus-visible {
+  .results-td:focus-visible {
     outline-offset: -2px;
   }
 
-  .results-table td.cell-expanded {
+  .results-td.cell-expanded {
     overflow-wrap: anywhere;
   }
 
-  .results-table tbody tr {
+  .results-tr {
     transition: var(--transition);
   }
 
-  .results-table tbody tr:hover {
+  .results-tr:hover {
     background: var(--accent-light);
+  }
+
+  /* When hovering a sub-row, suppress the main-row highlight so only the
+     hovered sub-row is highlighted — other sub-rows stay unhighlighted. */
+  .results-tr:has(.cell-mini-row:hover) {
+    background: transparent;
+  }
+
+  .results-tr:has(.cell-mini-row:hover) .cell-mini-row:not(:hover) {
+    background: transparent;
+  }
+
+  /* Group cell: subgrid spanning its sub-field columns so the header's
+     sub-column tracks are shared — sub-rows align with the header. */
+
+  /* Subgrid: the group cell spans its sub-field tracks and reuses the header's
+     column definitions, so sub-rows align exactly with the sub-field headers. */
+  .results-td-group {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-auto-rows: auto;
+    padding: 0;
+    max-width: none;
+  }
+
+  /* Chained subgrid: each sub-row is a real box reusing the parent's tracks,
+     so cells stay aligned with the header even when content wraps. */
+  .cell-mini-row {
+    display: grid;
+    grid-template-columns: subgrid;
+    grid-column: 1 / -1;
+  }
+
+  .cell-mini-row:not(:last-child) {
+    border-bottom: 1px solid var(--border-light);
+  }
+
+  .cell-mini-row:hover {
+    background: color-mix(in srgb, var(--accent) 14%, transparent);
+  }
+
+  .cell-mini-cell {
+    padding: 8px 14px;
+    min-width: 0;
   }
 
   :global(.results-table .col-id) {
@@ -562,7 +817,7 @@
   }
 
   @media (width <= 900px) {
-    .results-table th {
+    .results-thead {
       position: relative;
       top: auto;
       z-index: auto;

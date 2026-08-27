@@ -94,11 +94,34 @@
       );
       lastQueryTarget.set(savedTarget);
       lastResult.set(data);
-      // Sync sort state to match the first sort rule if its field is in the result columns
+      // Sync sort state to match the first sort rule if its field is in the result
+      // columns (also matching group-column sub-fields like 导演.生日+ ↔
+      // 导演.{name|生日|id}+).
       if (sort.length > 0 && data?.columns) {
-        const colIdx = data.columns.indexOf(sort[0].field);
+        const f = sort[0].field;
+        let colIdx = data.columns.indexOf(f);
+        let field = "";
+        if (colIdx < 0) {
+          const m = f.match(/^(.+)\.([^.{}+]+)\+?$/);
+          if (m) {
+            const [, prefix, sub] = m;
+            colIdx = data.columns.findIndex((c) => {
+              const gm = c.match(/^(.+)\.\{([^}]+)\}(\+)?$/);
+              if (!gm || gm[1] !== prefix) return false;
+              return gm[2]
+                .split("|")
+                .map((s) => s.trim())
+                .includes(sub);
+            });
+            if (colIdx >= 0) field = sub;
+          }
+        }
         if (colIdx >= 0) {
-          sortState.set({ col: colIdx, asc: sort[0].direction === "asc" });
+          sortState.set({
+            col: colIdx,
+            asc: sort[0].direction === "asc",
+            field,
+          });
         }
       }
     } catch (e) {

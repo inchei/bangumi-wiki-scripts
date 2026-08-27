@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 
 	"gopkg.in/yaml.v3"
 )
@@ -591,7 +592,30 @@ func (c *Config) Validate() error {
 		c.Limit = 1000
 	}
 
+	// Group JSON columns ({f1,f2,...}[+]) are display-only — not sortable.
+	for _, s := range c.Sort {
+		if strings.Contains(s.Field, "{") {
+			return fmt.Errorf("排序字段 %s 不能包含 {}（群组列不可排序，请用例如 %s）", s.Field, sortGroupHint(s.Field))
+		}
+	}
+
 	return nil
+}
+
+// sortGroupHint suggests a sortable single-field alternative for a group sort
+// field (e.g. 导演.{name|生日|id}+ → 导演.生日+).
+func sortGroupHint(field string) string {
+	idx := strings.Index(field, ".{")
+	if idx < 0 {
+		return "导演.生日+"
+	}
+	prefix := field[:idx]
+	inner := field[idx+2:]
+	if end := strings.Index(inner, "}"); end >= 0 {
+		first := strings.Split(inner[:end], "|")[0]
+		return prefix + "." + strings.TrimSpace(first) + "+"
+	}
+	return prefix + ".字段+"
 }
 
 // HasDatabase returns true if a persistent database path is set.
