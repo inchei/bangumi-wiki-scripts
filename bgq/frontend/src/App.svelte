@@ -218,7 +218,7 @@
     background: var(--white);
     border-bottom: 1px solid var(--border);
     padding: 0 24px;
-    height: 56px;
+    height: var(--header-h);
     display: flex;
     align-items: center;
     gap: 20px;
@@ -263,7 +263,7 @@
   /* ===== Layout ===== */
   :global(.container) {
     display: flex;
-    height: calc(100vh - 56px);
+    height: calc(100vh - var(--header-h));
   }
 
   :global(.panel) {
@@ -285,6 +285,12 @@
     flex: 1;
     background: var(--bg);
     padding: 20px 24px;
+
+    /* ResultTable's sticky header bar compensates for this padding:
+       sticky insets resolve against the scroller's content-box top, so the
+       bar uses top: calc(-1 * var(--panel-pad-top)) to stick flush with the
+       scrollport edge. Keep the two in sync. */
+    --panel-pad-top: 20px;
   }
 
   :global(.target-toggle) {
@@ -298,7 +304,7 @@
     :global(.container) {
       flex-direction: column;
       height: auto;
-      min-height: calc(100vh - 56px);
+      min-height: calc(100vh - var(--header-h));
     }
 
     :global(.panel-left) {

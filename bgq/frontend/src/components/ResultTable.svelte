@@ -9,6 +9,8 @@
     Download,
     Inbox,
     ClipboardList,
+    ChevronLeft,
+    ChevronRight,
   } from "lucide";
   import {
     lastResult,
@@ -209,6 +211,144 @@
   }
 
   let bodyCols = $derived(buildBodyCols(displayCols));
+
+  let wrapEl = $state(null);
+  let tableEl = $state(null);
+  let theadEl = $state(null);
+  let stripEl = $state(null);
+  let colWidths = $state([]);
+  let theadH = $state(0);
+  let canScrollLeft = $state(false);
+  let canScrollRight = $state(false);
+
+  // Native-sticky header bar. The in-grid thead can't be sticky itself: the
+  // wrap's overflow-x:auto forces overflow-y to compute to auto per spec,
+  // trapping sticky to the wrap's scrollport (which never scrolls
+  // vertically). Chasing the outer scroll with translateY lags the
+  // compositor by a frame and ghosts badly on touch devices. So the real
+  // thead stays in the grid purely as the layout/width source (hidden once
+  // measured), and a separate bar OUTSIDE the horizontal scroller renders
+  // the visible header with measured per-column widths. Vertical: zero-lag
+  // native position:sticky on both layouts. Horizontal: the strip is
+  // translateX(-scrollLeft)-synced via the scroll watchdog below.
+  let barReady = $derived(
+    theadH > 0 && colWidths.length === displayCols.length,
+  );
+
+  function measureHeader() {
+    const thead = theadEl;
+    const table = tableEl;
+    if (!thead || !table) return;
+    theadH = thead.getBoundingClientRect().height;
+    // Read the resolved GRID TRACK widths, not the th elements: th cells are
+    // capped by max-width (20ch at the header's font-size) while body cells
+    // can stretch tracks wider, so th rects can be narrower than the track.
+    colWidths = getComputedStyle(table)
+      .gridTemplateColumns.split(" ")
+      .map(parseFloat);
+  }
+
+  function syncStrip() {
+    const strip = stripEl;
+    const el = wrapEl;
+    if (!strip || !el) return;
+    strip.style.transform = `translateX(${-Math.round(el.scrollLeft)}px)`;
+  }
+
+  // Keyboard nav: focusing a strip cell beyond the visible width must NOT
+  // displace anything (the bar is a non-scrollable overflow:clip box, so
+  // the browser's scroll-into-view cannot move it). Instead reveal the
+  // corresponding column by shifting wrap.scrollLeft — the strip is
+  // translateX-synced to scrollLeft, so column and its header slide in
+  // together and stay aligned.
+  function handleStripFocus(ev) {
+    const wrap = wrapEl;
+    const cell = ev.target.closest(".sticky-th");
+    if (!wrap || !cell) return;
+    const view = wrap.getBoundingClientRect();
+    const rect = cell.getBoundingClientRect();
+    let d = 0;
+    if (rect.left < view.left) d = rect.left - view.left;
+    else if (rect.right > view.right) d = rect.right - view.right;
+    if (d) wrap.scrollLeft += d;
+  }
+
+  function updateScrollHints() {
+    const el = wrapEl;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    canScrollLeft = el.scrollLeft > 2;
+    canScrollRight = max > 8 && el.scrollLeft < max - 2;
+  }
+
+  function nudgeScroll(dir) {
+    const el = wrapEl;
+    if (!el) return;
+    el.scrollBy({
+      left: dir * Math.max(160, el.clientWidth * 0.75),
+      behavior: "smooth",
+    });
+  }
+
+  $effect(() => {
+    void displayCols;
+    void $lastResult?.rows?.length;
+    updateScrollHints();
+    measureHeader();
+    syncStrip();
+    const el = wrapEl;
+    if (!el) return;
+    // Watchdog: async (compositor-driven) horizontal scrolling can delay or
+    // coalesce scroll events; poll scrollLeft every frame while scrolling
+    // and stop after a few stable frames.
+    let rafId = 0;
+    let lastPos = -1;
+    let stable = 0;
+    const rafLoop = () => {
+      syncStrip();
+      const p = el.scrollLeft;
+      if (p !== lastPos) {
+        lastPos = p;
+        stable = 0;
+      } else if (++stable >= 3) {
+        rafId = 0;
+        return;
+      }
+      rafId = requestAnimationFrame(rafLoop);
+    };
+    const onScroll = () => {
+      syncStrip();
+      if (!rafId) {
+        lastPos = -1;
+        stable = 0;
+        rafId = requestAnimationFrame(rafLoop);
+      }
+    };
+    const ro = new ResizeObserver(() => {
+      updateScrollHints();
+      measureHeader();
+    });
+    ro.observe(el);
+    if (theadEl) ro.observe(theadEl);
+    if (tableEl) ro.observe(tableEl);
+    el.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    // Force main-thread scrolling for pans over the wrap, so the strip's
+    // translateX update lands in the same frame as the scroll.
+    const noop = () => {};
+    el.addEventListener("wheel", noop, { passive: false });
+    el.addEventListener("touchstart", noop, { passive: false });
+    el.addEventListener("touchmove", noop, { passive: false });
+    return () => {
+      ro.disconnect();
+      if (rafId) cancelAnimationFrame(rafId);
+      el.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      el.removeEventListener("wheel", noop);
+      el.removeEventListener("touchstart", noop);
+      el.removeEventListener("touchmove", noop);
+    };
+  });
 
   // Parse a group cell's JSON into an array of entries for subgrid rendering.
   function groupEntries(val) {
@@ -483,6 +623,48 @@
   }
 </script>
 
+<!-- Shared header cell, rendered in two places: the sticky bar (width =
+     measured px) and the in-grid thead (width = null, natural sizing that
+     drives column widths). -->
+{#snippet headerCell(dc, di, width)}
+  <div
+    class="results-th sortable"
+    class:sticky-th={width !== null}
+    class:sort-asc={$sortState.col === dc.ci &&
+      $sortState.field === dc.field &&
+      $sortState.asc}
+    class:sort-desc={$sortState.col === dc.ci &&
+      $sortState.field === dc.field &&
+      !$sortState.asc}
+    role="columnheader"
+    aria-sort={$sortState.col === dc.ci && $sortState.field === dc.field
+      ? $sortState.asc
+        ? "ascending"
+        : "descending"
+      : "none"}
+    title={dc.label}
+    style:width={width === null ? undefined : `${width}px`}
+  >
+    <span
+      class="sort-btn"
+      onclick={() => handleHeaderClick(di)}
+      onkeydown={(e) => e.key === "Enter" && handleHeaderClick(di)}
+      tabindex="0"
+      role="button"
+      ><span class="th-label"
+        >{dc.label.length > 20
+          ? dc.label.substring(0, 18) + "…"
+          : dc.label}</span
+      >
+      <MorphIcon
+        icon={sortIcon(di)}
+        class={isSortPlaceholder(di) ? "sort-placeholder" : ""}
+        size={14}
+      />
+    </span>
+  </div>
+{/snippet}
+
 <div class="results-panel">
   {#if $lastResult?.error}
     <div class="error-card">
@@ -531,103 +713,129 @@
         <div>没有找到符合条件的条目</div>
       </div>
     {:else}
-      <div class="results-table-wrap">
+      <div class="results-table-frame">
+        <!-- Visible sticky header: native position:sticky works here because
+             the bar sits outside the horizontal scroller (see measureHeader).
+             Height + negative margin make it exactly overlay the hidden
+             in-grid thead, which remains as the column-width source. -->
         <div
-          class="results-table"
-          role="table"
-          style="grid-template-columns: repeat({displayCols.length}, minmax(0, auto))"
+          class="results-sticky-bar"
+          class:bar-ready={barReady}
+          style:--thead-h="{theadH}px"
         >
-          <div class="results-thead" role="rowgroup">
+          <div
+            class="sticky-strip"
+            bind:this={stripEl}
+            onfocusin={handleStripFocus}
+          >
             {#each displayCols as dc, di (dc.ci + ":" + dc.field)}
-              <div
-                class="results-th sortable"
-                class:sort-asc={$sortState.col === dc.ci &&
-                  $sortState.field === dc.field &&
-                  $sortState.asc}
-                class:sort-desc={$sortState.col === dc.ci &&
-                  $sortState.field === dc.field &&
-                  !$sortState.asc}
-                role="columnheader"
-                aria-sort={$sortState.col === dc.ci &&
-                $sortState.field === dc.field
-                  ? $sortState.asc
-                    ? "ascending"
-                    : "descending"
-                  : "none"}
-                title={dc.label}
-              >
-                <span
-                  class="sort-btn"
-                  onclick={() => handleHeaderClick(di)}
-                  onkeydown={(e) => e.key === "Enter" && handleHeaderClick(di)}
-                  tabindex="0"
-                  role="button"
-                  >{dc.label.length > 20
-                    ? dc.label.substring(0, 18) + "…"
-                    : dc.label}
-                  <MorphIcon
-                    icon={sortIcon(di)}
-                    class={isSortPlaceholder(di) ? "sort-placeholder" : ""}
-                    size={14}
-                  />
-                </span>
+              {@render headerCell(dc, di, colWidths[di] ?? 0)}
+            {/each}
+          </div>
+          <button
+            type="button"
+            class="scroll-arrow scroll-arrow-left"
+            class:visible={canScrollLeft}
+            aria-label="向左滚动查看更多列"
+            tabindex="-1"
+            onclick={() => nudgeScroll(-1)}
+          >
+            <MorphIcon icon={ChevronLeft} size={16} />
+          </button>
+          <button
+            type="button"
+            class="scroll-arrow scroll-arrow-right"
+            class:visible={canScrollRight}
+            aria-label="向右滚动查看更多列"
+            tabindex="-1"
+            onclick={() => nudgeScroll(1)}
+          >
+            <MorphIcon icon={ChevronRight} size={16} />
+          </button>
+        </div>
+        <div
+          class="results-table-wrap"
+          bind:this={wrapEl}
+          onscroll={updateScrollHints}
+          /* Firefox grants scroll containers a sequential-focus tab stop
+             even when they contain focusable descendants (Chrome skips
+             them), which adds an invisible stop between the header bar and
+             the first body link — an intentional Firefox feature, see
+             https://bugzilla.mozilla.org/show_bug.cgi?id=1069739. tabindex=-1 removes it; arrow-key
+             scrolling still works while a descendant holds focus. */
+          tabindex="-1"
+        >
+          <div
+            class="results-table"
+            role="table"
+            bind:this={tableEl}
+            style="grid-template-columns: repeat({displayCols.length}, minmax(0, auto))"
+          >
+            <div
+              class="results-thead"
+              class:thead-hidden={barReady}
+              role="rowgroup"
+              bind:this={theadEl}
+            >
+              {#each displayCols as dc, di (dc.ci + ":" + dc.field)}
+                {@render headerCell(dc, di, null)}
+              {/each}
+            </div>
+            {#each res.rows as row, ri (ri)}
+              <div class="results-tr" role="row">
+                <!-- eslint-disable svelte/no-at-html-tags -->
+                {#each bodyCols as bc, bi (bc.kind + ":" + bc.ci)}
+                  {#if bc.kind === "group"}
+                    <div
+                      class="results-td results-td-group"
+                      role="cell"
+                      style="grid-column: span {bc.span}"
+                    >
+                      {#each groupEntries(row[bc.ci]) as entry, ei (ei)}
+                        <div class="cell-mini-row">
+                          {#each bc.fields as f (f)}
+                            {@const href = groupCellIdHref(entry, f, bc.prefix)}
+                            <div
+                              class="cell-mini-cell {isIDColumn(f)
+                                ? 'col-id'
+                                : ''}"
+                            >
+                              {#if entry[f] === null || entry[f] === undefined || entry[f] === ""}
+                                <span class="cell-null">—</span>
+                              {:else if href}
+                                <a {href} target="_blank" rel="noopener"
+                                  >{entry[f]}</a
+                                >
+                              {:else}
+                                {entry[f]}
+                              {/if}
+                            </div>
+                          {/each}
+                        </div>
+                      {/each}
+                    </div>
+                  {:else}
+                    {@const val = row[bc.ci]}
+                    {@const long = val && String(val).length > MAX_DISPLAY_LEN}
+                    <div
+                      class="results-td {cellClass(bc.label)}"
+                      role={long ? "button" : "cell"}
+                      class:cell-expanded={expanded[ri + "_" + bi]}
+                      class:cell-expandable={long}
+                      onclick={long ? () => toggleExpand(ri, bi) : undefined}
+                      onkeydown={long
+                        ? (e) => e.key === "Enter" && toggleExpand(ri, bi)
+                        : undefined}
+                      tabindex={long ? "0" : undefined}
+                    >
+                      {@html cellHtml(bc.label, val, ri, bi)}
+                    </div>
+                  {/if}
+                {/each}
+                <!-- eslint-enable svelte/no-at-html-tags -->
               </div>
             {/each}
           </div>
-          {#each res.rows as row, ri (ri)}
-            <div class="results-tr" role="row">
-              <!-- eslint-disable svelte/no-at-html-tags -->
-              {#each bodyCols as bc, bi (bc.kind + ":" + bc.ci)}
-                {#if bc.kind === "group"}
-                  <div
-                    class="results-td results-td-group"
-                    role="cell"
-                    style="grid-column: span {bc.span}"
-                  >
-                    {#each groupEntries(row[bc.ci]) as entry, ei (ei)}
-                      <div class="cell-mini-row">
-                        {#each bc.fields as f (f)}
-                          {@const href = groupCellIdHref(entry, f, bc.prefix)}
-                          <div
-                            class="cell-mini-cell {isIDColumn(f)
-                              ? 'col-id'
-                              : ''}"
-                          >
-                            {#if entry[f] === null || entry[f] === undefined || entry[f] === ""}
-                              <span class="cell-null">—</span>
-                            {:else if href}
-                              <a {href} target="_blank" rel="noopener"
-                                >{entry[f]}</a
-                              >
-                            {:else}
-                              {entry[f]}
-                            {/if}
-                          </div>
-                        {/each}
-                      </div>
-                    {/each}
-                  </div>
-                {:else}
-                  {@const val = row[bc.ci]}
-                  {@const long = val && String(val).length > MAX_DISPLAY_LEN}
-                  <div
-                    class="results-td {cellClass(bc.label)}"
-                    role={long ? "button" : "cell"}
-                    class:cell-expanded={expanded[ri + "_" + bi]}
-                    class:cell-expandable={long}
-                    onclick={long ? () => toggleExpand(ri, bi) : undefined}
-                    onkeydown={long
-                      ? (e) => e.key === "Enter" && toggleExpand(ri, bi)
-                      : undefined}
-                    tabindex={long ? "0" : undefined}
-                  >
-                    {@html cellHtml(bc.label, val, ri, bi)}
-                  </div>
-                {/if}
-              {/each}
-              <!-- eslint-enable svelte/no-at-html-tags -->
-            </div>
-          {/each}
         </div>
       </div>
     {/if}
@@ -711,16 +919,126 @@
     gap: 6px;
   }
 
-  .results-table-wrap {
-    overflow-x: auto;
+  .results-table-frame {
+    position: relative;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     border: 1px solid var(--border-light);
+
+    /* Clip (not hidden/auto): clips the sticky bar's overhang at the table
+       bottom without becoming a scroll container, so the bar's sticky
+       positioning still resolves against the outer scroller. */
+    overflow: clip;
+  }
+
+  .results-table-wrap {
+    overflow-x: auto;
+    border-radius: inherit;
+  }
+
+  /* Visible sticky header bar. Sits outside the horizontal scroller so
+     position:sticky engages natively (zero-lag on compositor/touch scroll).
+     height + negative margin-bottom make it exactly overlay the hidden
+     in-grid thead, which remains as the column-width source. Its sticky
+     containing block is the frame, so it releases with the table bottom. */
+  .results-sticky-bar {
+    position: sticky;
+
+    /* Sticky insets resolve against the scroller's content-box top, i.e.
+       BELOW .panel-right's padding — compensate so the bar sticks flush
+       with the scrollport edge instead of leaving a padding-wide gap. */
+    top: calc(-1 * var(--panel-pad-top, 0px));
+    z-index: 4;
+    height: var(--thead-h, 0);
+    margin-bottom: calc(0px - var(--thead-h, 0px));
+    overflow: clip;
+
+    /* Keep the focus ring visible despite clipping. The default outline
+       paints outside the border box; without a margin it would be clipped. */
+    overflow-clip-margin: 4px;
+    visibility: hidden;
+    background: var(--bg-alt);
+    border-bottom: 2px solid var(--border);
+  }
+
+  .results-sticky-bar.bar-ready {
+    visibility: visible;
+  }
+
+  /* UA ring paints just OUTSIDE the border box — into the adjacent sibling
+     cells / the bar's clip edge — where Firefox effectively hides it. Inset
+     it like .results-td does so the native ring stays fully visible. */
+  .results-th .sort-btn:focus-visible {
+    outline-offset: -2px;
+  }
+
+  .sticky-strip {
+    display: flex;
+    width: max-content;
+    will-change: transform;
+  }
+
+  .sticky-th {
+    flex: none;
+
+    /* Width comes from the measured grid track, which can legitimately
+       exceed the header's own 20ch cap (body cells stretch tracks wider). */
+    max-width: none;
+  }
+
+  .scroll-arrow {
+    position: absolute;
+    top: 7px;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--border-light);
+    background: color-mix(in srgb, var(--white) 92%, transparent);
+    box-shadow: var(--shadow);
+    color: var(--text-secondary);
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+
+    /* Arrows live inside the sticky bar, so they follow the header
+       natively; `translate` only drives the slide-in animation. */
+    transition:
+      opacity 0.15s,
+      translate 0.15s,
+      color 0.15s,
+      border-color 0.15s;
+  }
+
+  .scroll-arrow-left {
+    left: 10px;
+    translate: -4px 0;
+  }
+
+  .scroll-arrow-right {
+    right: 10px;
+    translate: 4px 0;
+  }
+
+  .scroll-arrow.visible {
+    opacity: 1;
+    pointer-events: auto;
+    translate: 0 0;
+  }
+
+  .scroll-arrow:hover {
+    color: var(--accent);
+    border-color: var(--accent);
   }
 
   .results-table {
     display: grid;
     grid-auto-rows: auto;
+    width: max-content;
     min-width: 100%;
     font-size: 13px;
     background: var(--white);
@@ -733,12 +1051,16 @@
     grid-column: 1 / -1;
   }
 
+  /* The in-grid thead is only the layout/width source; the visible header
+     is the sticky bar (see .results-sticky-bar). Kept visible until the
+     bar has been measured to avoid a headerless first frame. */
   .results-thead {
-    position: sticky;
-    top: 0;
-    z-index: 2;
     background: var(--bg-alt);
     border-bottom: 2px solid var(--border);
+  }
+
+  .results-thead.thead-hidden {
+    visibility: hidden;
   }
 
   .results-th {
@@ -749,7 +1071,11 @@
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    overflow-wrap: anywhere;
+    max-width: 20ch;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .results-th.sortable {
@@ -758,10 +1084,18 @@
   }
 
   .results-th.sortable .sort-btn {
-    display: block;
+    display: flex;
+    align-items: center;
     padding: 10px 14px;
     cursor: pointer;
     transition: background 0.15s;
+  }
+
+  .results-th .th-label {
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
   }
 
   .results-th.sortable .sort-btn:hover {
@@ -774,6 +1108,7 @@
     margin-left: 4px;
     opacity: 0.7;
     vertical-align: middle;
+    flex-shrink: 0;
   }
 
   .results-th :global(.sort-placeholder) {
@@ -785,8 +1120,9 @@
   .results-td {
     padding: 8px 14px;
     border-bottom: 1px solid var(--bg-alt);
-    max-width: 300px;
+    max-width: 20ch;
     min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   .results-td.cell-expandable {
@@ -795,10 +1131,6 @@
 
   .results-td:focus-visible {
     outline-offset: -2px;
-  }
-
-  .results-td.cell-expanded {
-    overflow-wrap: anywhere;
   }
 
   .results-tr {
@@ -850,7 +1182,9 @@
 
   .cell-mini-cell {
     padding: 8px 14px;
+    max-width: 20ch;
     min-width: 0;
+    overflow-wrap: anywhere;
   }
 
   :global(.results-table .col-id) {
@@ -913,15 +1247,24 @@
   }
 
   @media (width <= 900px) {
-    .results-thead {
-      position: relative;
-      top: auto;
-      z-index: auto;
+    /* Window is the scroller in the narrow layout: stick below the sticky
+       site header (z-index 100), which would otherwise cover the bar. */
+    .results-sticky-bar {
+      top: var(--header-h);
     }
 
-    .results-table-wrap {
-      overflow-x: auto;
-      max-height: none;
+    .results-table-frame {
+      margin-inline: -24px;
+      border-radius: 0;
+      border-inline: 0;
+    }
+
+    .scroll-arrow-left {
+      left: 6px;
+    }
+
+    .scroll-arrow-right {
+      right: 6px;
     }
   }
 </style>

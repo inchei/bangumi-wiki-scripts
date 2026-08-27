@@ -34,6 +34,7 @@
   --radius: 15px;
   --radius-sm: 10px;
   --radius-xs: 6px;
+  --header-h: 56px;
   --shadow: 0 0 0 2px rgb(0 0 0 / 4%);
   --shadow-hover: 0 2px 12px rgb(0 0 0 / 8%);
   --transition: all 0.2s ease;
