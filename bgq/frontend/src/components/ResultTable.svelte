@@ -1111,12 +1111,6 @@
     flex-shrink: 0;
   }
 
-  .results-th :global(.sort-placeholder) {
-    font-size: 10px;
-    margin-left: 4px;
-    opacity: 0.35;
-  }
-
   .results-td {
     padding: 8px 14px;
     border-bottom: 1px solid var(--bg-alt);
