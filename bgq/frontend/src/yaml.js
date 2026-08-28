@@ -1,5 +1,15 @@
 // YAML ↔ Filter conversion (frontend-only, no server round-trip)
 import { load, dump } from "js-yaml";
+import {
+  relationsByType,
+  positionsByType,
+  PERSON_RELATIONS,
+  CHARACTER_RELATIONS,
+  CHARACTER_ASSOC_TYPES,
+  PERSON_CHAR_TYPES,
+  META_TAGS,
+  PLATFORMS,
+} from "./schema-data.js";
 
 /**
  * Convert filter tree (API format) to YAML string.
@@ -133,9 +143,8 @@ export function parseYAML(raw) {
 /** Normalize YAML filters to API format (wrap in logic if needed) */
 function normalizeFilters(filters) {
   if (!Array.isArray(filters)) return [];
-  return filters
-    .map((f) => normalizeFilter(f))
-    .filter((f) => f && Object.keys(f).length > 0);
+  // Keep unrecognized items (don't drop) so validateConfig can flag them.
+  return filters.map((f) => normalizeFilter(f)).filter(Boolean);
 }
 
 function normalizeFilter(f) {
@@ -143,6 +152,9 @@ function normalizeFilter(f) {
 
   if (f.logic) {
     const lg = f.logic;
+    if (lg.op && lg.op !== "and" && lg.op !== "or") {
+      throw new Error(`logic op 必须为 and 或 or，收到「${lg.op}」`);
+    }
     return {
       logic: {
         op: lg.op === "or" ? "or" : "and",
@@ -242,15 +254,247 @@ function normalizeFilterValue(val, key) {
     }
     return out;
   }
-  // field/global/tag/meta_tag full forms: operator is required by the backend
-  if (
-    (key === "field" ||
-      key === "global" ||
-      key === "tag" ||
-      key === "meta_tag") &&
-    out.operator === undefined
-  ) {
-    out.operator = "contains";
-  }
   return out;
+}
+
+/**
+ * Semantic validation mirroring the backend's query-time existence errors
+ * (unknown relation/position/operator/type names). Returns deduplicated
+ * Chinese error strings; empty array = valid.
+ */
+export function validateConfig(cfg) {
+  const errors = new Set();
+  if (cfg.target && !TARGETS.has(cfg.target)) {
+    errors.add(`target「${cfg.target}」不存在`);
+  }
+  walkFilters(cfg.filters, errors);
+  return [...errors];
+}
+
+const TARGETS = new Set(["subject", "person", "character", "episode"]);
+const PLATFORM_CODES = new Set(PLATFORMS.map((p) => p.code));
+const OPERATORS = new Set([
+  "eq",
+  "contains",
+  "not_contains",
+  "regex",
+  "not_regex",
+  "empty",
+  "gt",
+  "gte",
+  "lt",
+  "lte",
+  "before",
+  "after",
+]);
+const MODES = new Set(["any", "all", "none", "count"]);
+const SUBJECT_TYPE_NUMS = new Set([1, 2, 3, 4, 6]);
+const SUBJECT_TYPE_NAMES = new Set(["书籍", "动画", "音乐", "游戏", "三次元"]);
+const FILTER_KEYS = [
+  "type",
+  "field",
+  "global",
+  "tag",
+  "meta_tag",
+  "relation",
+  "person_relation",
+  "character_relation",
+  "staff",
+  "character",
+  "person_character",
+  "character_person",
+  "episode",
+];
+
+function walkFilters(filters, errors) {
+  if (!Array.isArray(filters)) return;
+  for (const f of filters) {
+    if (!f || typeof f !== "object") continue;
+    if (f.logic) {
+      checkKeys("logic", f.logic, errors);
+      walkFilters(f.logic.items, errors);
+      continue;
+    }
+    for (const k of Object.keys(f)) {
+      if (!FILTER_KEYS.includes(k) && !k.startsWith("_")) {
+        errors.add(`未知筛选键「${k}」`);
+      }
+    }
+    if (!FILTER_KEYS.some((k) => f[k])) {
+      errors.add("筛选条件未包含任何有效的过滤类型");
+      continue;
+    }
+    for (const key of FILTER_KEYS) {
+      if (f[key]) {
+        checkKeys(key, f[key], errors);
+        checkNode(key, f[key], errors);
+      }
+    }
+  }
+}
+
+const FILTER_KEYS_BY_KIND = {
+  logic: ["op", "items"],
+  type: ["value"],
+  field: ["field", "operator", "value"],
+  global: ["operator", "value"],
+  tag: ["operator", "value", "negate"],
+  meta_tag: ["operator", "value", "negate"],
+  relation: ["type", "mode", "count_op", "count_val", "conditions"],
+  person_relation: ["type", "mode", "count_op", "count_val", "conditions"],
+  character_relation: ["type", "mode", "count_op", "count_val", "conditions"],
+  staff: [
+    "position",
+    "positions",
+    "mode",
+    "count_op",
+    "count_val",
+    "conditions",
+  ],
+  character: ["type", "mode", "count_op", "count_val", "conditions"],
+  person_character: [
+    "type",
+    "mode",
+    "count_op",
+    "count_val",
+    "subject_mode",
+    "subject_count_op",
+    "subject_count_val",
+    "conditions",
+    "subject_conditions",
+  ],
+  character_person: [
+    "type",
+    "mode",
+    "count_op",
+    "count_val",
+    "subject_mode",
+    "subject_count_op",
+    "subject_count_val",
+    "conditions",
+    "subject_conditions",
+  ],
+  episode: ["mode", "count_op", "count_val", "logic"],
+};
+
+function checkKeys(kind, obj, errors) {
+  const allowed = FILTER_KEYS_BY_KIND[kind];
+  if (!allowed || !obj || typeof obj !== "object") return;
+  for (const k of Object.keys(obj)) {
+    if (!allowed.includes(k) && !k.startsWith("_")) {
+      errors.add(`${kind} 中未知键「${k}」`);
+    }
+  }
+}
+
+function checkNode(key, v, errors) {
+  switch (key) {
+    case "type": {
+      const val = v.value;
+      if (val === "" || val == null) return;
+      const str = String(val);
+      if (/^\d+$/.test(str) || typeof val === "number") {
+        if (!SUBJECT_TYPE_NUMS.has(Number(str))) {
+          errors.add(`type.value「${val}」不存在`);
+        }
+      } else if (!SUBJECT_TYPE_NAMES.has(str)) {
+        errors.add(`type.value「${val}」不存在`);
+      }
+      break;
+    }
+    case "field":
+    case "global":
+    case "tag":
+    case "meta_tag":
+      if (v.operator == null || v.operator === "") {
+        errors.add(`${key}.operator 不能为空`);
+      } else if (!OPERATORS.has(v.operator)) {
+        errors.add(`operator「${v.operator}」不存在`);
+      }
+      // Only eq pins an exact platform code; contains/regex are substring
+      // queries over the code column and can't be existence-checked.
+      if (
+        key === "field" &&
+        v.field === "platform" &&
+        v.operator === "eq" &&
+        v.value !== "" &&
+        v.value != null &&
+        !PLATFORM_CODES.has(Number(v.value))
+      ) {
+        errors.add(`platform「${v.value}」不存在`);
+      }
+      if (key === "meta_tag" && v.value && !META_TAGS.includes(v.value)) {
+        errors.add(`meta_tag「${v.value}」不存在`);
+      }
+      break;
+    case "relation":
+      checkName("relation.type", v.type, relationsByType(0), errors);
+      checkModeAndConditions(v, errors);
+      break;
+    case "person_relation":
+      checkName("person_relation.type", v.type, PERSON_RELATIONS, errors);
+      checkModeAndConditions(v, errors);
+      break;
+    case "character_relation":
+      checkName("character_relation.type", v.type, CHARACTER_RELATIONS, errors);
+      checkModeAndConditions(v, errors);
+      break;
+    case "staff": {
+      const names = v.positions?.length ? v.positions : [v.position];
+      for (const n of names) {
+        checkName("staff.position", n, positionsByType(0), errors);
+      }
+      checkModeAndConditions(v, errors);
+      break;
+    }
+    case "character":
+      checkName("character.type", v.type, CHARACTER_ASSOC_TYPES, errors);
+      checkModeAndConditions(v, errors);
+      break;
+    case "person_character":
+    case "character_person":
+      checkName(`${key}.type`, v.type, PERSON_CHAR_TYPES, errors);
+      checkModeAndConditions(v, errors);
+      checkMode(v.subject_mode, errors);
+      if (v.subject_count_op && !OPERATORS.has(v.subject_count_op)) {
+        errors.add(`subject_count_op「${v.subject_count_op}」不存在`);
+      }
+      walkLogicItems(v.subject_conditions, errors);
+      break;
+    case "episode":
+      checkMode(v.mode, errors);
+      if (v.count_op && !OPERATORS.has(v.count_op)) {
+        errors.add(`count_op「${v.count_op}」不存在`);
+      }
+      if (v.logic) {
+        checkKeys("logic", v.logic, errors);
+        walkFilters(v.logic.items, errors);
+      }
+      break;
+  }
+}
+
+function checkName(label, name, set, errors) {
+  if (name === "" || name == null || name === "任意") return;
+  if (!set.includes(name)) errors.add(`${label}「${name}」不存在`);
+}
+
+function checkMode(mode, errors) {
+  if (mode && !MODES.has(mode)) errors.add(`mode「${mode}」不存在`);
+}
+
+function checkModeAndConditions(v, errors) {
+  checkMode(v.mode, errors);
+  if (v.count_op && !OPERATORS.has(v.count_op)) {
+    errors.add(`count_op「${v.count_op}」不存在`);
+  }
+  walkLogicItems(v.conditions, errors);
+}
+
+// Conditions arrive normalized as [{ logic: { op, items } }] groups.
+function walkLogicItems(conditions, errors) {
+  if (!Array.isArray(conditions)) return;
+  for (const c of conditions) {
+    if (c?.logic) walkFilters(c.logic.items, errors);
+  }
 }

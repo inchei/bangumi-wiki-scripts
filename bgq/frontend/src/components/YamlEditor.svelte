@@ -11,7 +11,7 @@
     characterRootLogic,
     episodeRootLogic,
   } from "../stores.js";
-  import { filtersToYAML, parseYAML } from "../yaml.js";
+  import { filtersToYAML, parseYAML, validateConfig } from "../yaml.js";
   import { get } from "svelte/store";
   import { MorphIcon } from "morphicons/svelte";
   import { ChevronDown } from "lucide";
@@ -53,6 +53,13 @@
       data = parseYAML(yamlText);
     } catch (e) {
       alert("解析失败: " + e.message);
+      return;
+    }
+    const errors = validateConfig(data);
+    if (errors.length > 0) {
+      const shown = errors.slice(0, 5).join("\n");
+      const more = errors.length > 5 ? `\n…等共 ${errors.length} 处` : "";
+      alert("配置有误:\n" + shown + more);
       return;
     }
     error = "";
