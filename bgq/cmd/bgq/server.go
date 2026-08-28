@@ -191,6 +191,13 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 		cfg.Limit = 10000
 	}
 
+	// Structural validation shared with the CLI path; returns request-scoped
+	// errors (400) instead of surfacing them later as query failures (500).
+	if err := cfg.Validate(); err != nil {
+		writeJSON(w, http.StatusBadRequest, apiError{Error: err.Error()})
+		return
+	}
+
 	// Use database if configured
 	if s.dbPath != "" && cfg.Database == "" {
 		cfg.Database = s.dbPath

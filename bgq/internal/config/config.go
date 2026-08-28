@@ -4,9 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/inchei/bangumi-query/internal/model"
 )
 
 const (
@@ -519,65 +522,93 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("筛选条件 %d: 每个条件只能指定一种过滤类型", i+1)
 		}
 
-		// Validate specific filter types
+		// Validate specific filter types.
+		// Empty type/position values are legal wildcards (builder treats
+		// "" / "任意" as "any"), matching how the Web UI emits unselected
+		// filters; only malformed values are rejected here.
 		switch {
+		case f.Type != nil:
+			if err := validateTypeValue(f.Type.Value); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
+			}
 		case f.Field != nil:
 			if f.Field.Field == "" {
 				return fmt.Errorf("筛选条件 %d: field 名称不能为空", i+1)
 			}
-			if f.Field.Operator == "" {
-				return fmt.Errorf("筛选条件 %d: operator 不能为空", i+1)
+			if err := validateOperator(f.Field.Operator); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
+			}
+		case f.Global != nil:
+			if err := validateOperator(f.Global.Operator); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
+			}
+		case f.Tag != nil:
+			if err := validateOperator(f.Tag.Operator); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
+			}
+		case f.MetaTag != nil:
+			if err := validateOperator(f.MetaTag.Operator); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
 			}
 		case f.Relation != nil:
-			if f.Relation.Type == "" {
-				return fmt.Errorf("筛选条件 %d: relation type 不能为空", i+1)
-			}
 			if f.Relation.Mode == "" {
 				f.Relation.Mode = "any"
 			}
-		case f.PersonRelation != nil:
-			if f.PersonRelation.Type == "" {
-				return fmt.Errorf("筛选条件 %d: person_relation type 不能为空", i+1)
+			if err := validateMode(f.Relation.Mode); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
 			}
+		case f.PersonRelation != nil:
 			if f.PersonRelation.Mode == "" {
 				f.PersonRelation.Mode = "any"
 			}
-		case f.CharacterRelation != nil:
-			if f.CharacterRelation.Type == "" {
-				return fmt.Errorf("筛选条件 %d: character_relation type 不能为空", i+1)
+			if err := validateMode(f.PersonRelation.Mode); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
 			}
+		case f.CharacterRelation != nil:
 			if f.CharacterRelation.Mode == "" {
 				f.CharacterRelation.Mode = "any"
 			}
-		case f.Staff != nil:
-			if f.Staff.Position == "" && len(f.Staff.Positions) == 0 {
-				return fmt.Errorf("筛选条件 %d: staff position 不能为空", i+1)
+			if err := validateMode(f.CharacterRelation.Mode); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
 			}
+		case f.Staff != nil:
 			if f.Staff.Mode == "" {
 				f.Staff.Mode = "any"
+			}
+			if err := validateMode(f.Staff.Mode); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
 			}
 		case f.Character != nil:
 			if f.Character.Mode == "" {
 				f.Character.Mode = "any"
 			}
+			if err := validateMode(f.Character.Mode); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
+			}
 		case f.PersonCharacter != nil:
 			if f.PersonCharacter.Mode == "" {
 				f.PersonCharacter.Mode = "any"
+			}
+			if err := validateMode(f.PersonCharacter.Mode); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
 			}
 		case f.CharacterPerson != nil:
 			if f.CharacterPerson.Mode == "" {
 				f.CharacterPerson.Mode = "any"
 			}
+			if err := validateMode(f.CharacterPerson.Mode); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
+			}
 		case f.Episode != nil:
 			if f.Episode.Mode == "" {
 				f.Episode.Mode = "any"
 			}
+			if err := validateMode(f.Episode.Mode); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
+			}
 		case f.Logic != nil:
 			if f.Logic.Op != "and" && f.Logic.Op != "or" {
 				return fmt.Errorf("筛选条件 %d: logic op 必须为 and 或 or", i+1)
-			}
-			if len(f.Logic.Items) == 0 {
-				return fmt.Errorf("筛选条件 %d: logic items 不能为空", i+1)
 			}
 		}
 	}
@@ -599,6 +630,75 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	return nil
+}
+
+// validateMode checks a quantifier mode against the set the builder
+// understands (unknown modes currently fall back to "any" silently, which
+// hides typos).
+func validateMode(mode string) error {
+	switch mode {
+	case "any", "all", "none", "count":
+		return nil
+	}
+	return fmt.Errorf("mode「%s」不存在", mode)
+}
+
+var validOperators = map[string]bool{
+	"eq":           true,
+	"contains":     true,
+	"not_contains": true,
+	"regex":        true,
+	"not_regex":    true,
+	"empty":        true,
+	"gt":           true,
+	"gte":          true,
+	"lt":           true,
+	"lte":          true,
+	"before":       true,
+	"after":        true,
+}
+
+func validateOperator(op string) error {
+	if op == "" {
+		return fmt.Errorf("operator 不能为空")
+	}
+	if !validOperators[op] {
+		return fmt.Errorf("operator「%s」不存在", op)
+	}
+	return nil
+}
+
+// validateTypeValue mirrors the builder's type filter coercion (int, numeric
+// string, or Chinese name) and rejects values it would fail on.
+func validateTypeValue(v interface{}) error {
+	switch t := v.(type) {
+	case nil:
+		return fmt.Errorf("type value 不能为空")
+	case int:
+		if _, ok := model.TypeNumToCN[t]; !ok {
+			return fmt.Errorf("未知的条目类型: %d", t)
+		}
+	case float64:
+		if _, ok := model.TypeNumToCN[int(t)]; !ok {
+			return fmt.Errorf("未知的条目类型: %v", t)
+		}
+	case string:
+		if t == "" {
+			return nil
+		}
+		if num, err := strconv.Atoi(t); err == nil {
+			if _, ok := model.TypeNumToCN[num]; !ok {
+				return fmt.Errorf("未知的条目类型: %s", t)
+			}
+			return nil
+		}
+		if _, ok := model.TypeCNToNum[t]; !ok {
+			return fmt.Errorf("未知的条目类型: %s", t)
+		}
+	default:
+		return fmt.Errorf("type filter value must be int or string, got %T", v)
+	}
 	return nil
 }
 
