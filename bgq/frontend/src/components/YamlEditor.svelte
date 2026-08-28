@@ -1,4 +1,5 @@
 <script>
+  import { onDestroy } from "svelte";
   import {
     getFiltersForAPI,
     applyFiltersFromAPI,
@@ -14,18 +15,38 @@
   import { filtersToYAML, parseYAML, validateConfig } from "../yaml.js";
   import { get } from "svelte/store";
   import { MorphIcon } from "morphicons/svelte";
-  import { ChevronDown } from "lucide";
+  import { ChevronDown, ChevronUp } from "lucide";
+
+  const INDENT = "  ";
+  const FLASH_MS = 1500;
 
   let expanded = $state(false);
   let yamlText = $state("");
   let error = $state("");
-  // Dirty = the user has hand-edited the text; pause auto-sync so drafts
-  // survive unrelated filter changes. Cleared by both button actions.
   let dirty = $state(false);
-  // Snapshot taken right before 应用, enabling 撤销.
   let undoState = $state(null);
 
-  const INDENT = "  ";
+  let appliedFlash = $state(false);
+  let syncedFlash = $state(false);
+  let applyTimer = 0;
+  let syncTimer = 0;
+
+  function pulse(which) {
+    if (which === "apply") {
+      appliedFlash = true;
+      clearTimeout(applyTimer);
+      applyTimer = setTimeout(() => (appliedFlash = false), FLASH_MS);
+    } else {
+      syncedFlash = true;
+      clearTimeout(syncTimer);
+      syncTimer = setTimeout(() => (syncedFlash = false), FLASH_MS);
+    }
+  }
+
+  onDestroy(() => {
+    clearTimeout(applyTimer);
+    clearTimeout(syncTimer);
+  });
 
   function syncFromFilters() {
     error = "";
@@ -38,6 +59,7 @@
         get(resultLimit),
         get(sortRules),
       );
+      pulse("sync");
     } catch (e) {
       error = "导出失败: " + e.message;
     }
@@ -76,6 +98,7 @@
     if (data.output?.columns) outputColumns.set(data.output.columns.join(","));
     if (data.sort) sortRules.set(data.sort);
     if (data.limit) resultLimit.set(data.limit);
+    pulse("apply");
     document.getElementById("btn-run")?.focus();
   }
 
@@ -86,12 +109,29 @@
     error = "";
     dirty = false;
     queryTarget.set(u.target);
-    // Unconditional: u.filters may be [] (pre-apply state was empty).
     applyFiltersFromAPI(u.filters);
     outputColumns.set(u.columns);
     sortRules.set(u.sort);
     resultLimit.set(u.limit);
   }
+
+  $effect(() => {
+    const target = $queryTarget;
+    const cols = $outputColumns;
+    const lim = $resultLimit;
+    const sr = $sortRules;
+    void $subjectRootLogic;
+    void $personRootLogic;
+    void $characterRootLogic;
+    void $episodeRootLogic;
+    if (!expanded || dirty) return;
+    error = "";
+    try {
+      yamlText = filtersToYAML(target, getFiltersForAPI(), cols, lim, sr);
+    } catch (e) {
+      error = "导出失败: " + e.message;
+    }
+  });
 
   function replaceRange(el, start, end, text, selStart, selEnd) {
     el.focus();
@@ -215,29 +255,6 @@
     e.preventDefault();
     deleteRange(el, s - cut, s);
   }
-
-  // Auto-sync YAML from live filter/output state. Every store is read
-  // reactively (all four roots, since $-references below select one by
-  // target) so the textarea tracks the current configuration without any
-  // button press. Skipped while hidden or while the user has a pending
-  // hand-edited draft.
-  $effect(() => {
-    const target = $queryTarget;
-    const cols = $outputColumns;
-    const lim = $resultLimit;
-    const sr = $sortRules;
-    void $subjectRootLogic;
-    void $personRootLogic;
-    void $characterRootLogic;
-    void $episodeRootLogic;
-    if (!expanded || dirty) return;
-    error = "";
-    try {
-      yamlText = filtersToYAML(target, getFiltersForAPI(), cols, lim, sr);
-    } catch (e) {
-      error = "导出失败: " + e.message;
-    }
-  });
 </script>
 
 <div class="card" class:collapsed={!expanded}>
@@ -249,8 +266,12 @@
     onkeydown={(e) => e.key === "Enter" && (expanded = !expanded)}
   >
     <span class="dot-indicator"></span>YAML 配置
-    <span class="yaml-chevron" class:open={expanded}>
-      <MorphIcon icon={ChevronDown} size={12} />
+    <span class="yaml-chevron">
+      <MorphIcon
+        icon={expanded ? ChevronUp : ChevronDown}
+        size={16}
+        reducedMotion="always"
+      />
     </span>
   </div>
   {#if expanded}
@@ -268,18 +289,18 @@
     {/if}
     <div class="yaml-actions">
       <div class="yaml-actions-left">
-        <button class="btn btn-primary btn-sm" onclick={handleApply}
-          >应用</button
-        >
+        <button class="btn btn-primary btn-sm" onclick={handleApply}>
+          {appliedFlash ? "已应用" : "应用"}
+        </button>
         {#if undoState}
           <button class="btn btn-default btn-sm" onclick={handleUndo}
             >撤销</button
           >
         {/if}
       </div>
-      <button class="btn btn-default btn-sm" onclick={syncFromFilters}
-        >同步当前配置</button
-      >
+      <button class="btn btn-default btn-sm" onclick={syncFromFilters}>
+        {syncedFlash ? "已同步" : "同步当前配置"}
+      </button>
     </div>
   {/if}
 </div>
@@ -296,13 +317,9 @@
 
   .yaml-chevron {
     margin-left: auto;
-    font-size: 11px;
     color: var(--text-secondary);
-    transition: transform 0.2s ease;
-  }
-
-  .yaml-chevron.open {
-    transform: rotate(180deg);
+    display: flex;
+    align-items: center;
   }
 
   .yaml-editor {
@@ -315,7 +332,7 @@
     border-radius: var(--radius-xs);
     resize: vertical;
     outline: none;
-    background: var(--bg-alt);
+    background: var(--white);
     color: var(--text);
     line-height: 1.6;
     tab-size: 2;
@@ -324,7 +341,6 @@
   .yaml-editor:focus {
     border-color: var(--accent);
     box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
-    background: var(--white);
   }
 
   .yaml-actions {
