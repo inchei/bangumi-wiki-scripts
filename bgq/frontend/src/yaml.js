@@ -24,7 +24,7 @@ export function filtersToYAML(target, filters, columns, limit, sort) {
   }
   if (sort && sort.length > 0) cfg.sort = sort;
   if (limit) cfg.limit = limit;
-  return dump(cfg, { indent: 1, lineWidth: -1, noRefs: true });
+  return dump(cfg, { indent: 2, lineWidth: -1, noRefs: true });
 }
 
 /** Remove internal fields (_id, _ctx, _groupNumMap) from filter tree */

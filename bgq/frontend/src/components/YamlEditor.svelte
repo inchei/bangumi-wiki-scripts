@@ -25,6 +25,8 @@
   // Snapshot taken right before 应用, enabling 撤销.
   let undoState = $state(null);
 
+  const INDENT = "  ";
+
   function syncFromFilters() {
     error = "";
     dirty = false;
@@ -84,6 +86,129 @@
     resultLimit.set(u.limit);
   }
 
+  function replaceRange(el, start, end, text, selStart, selEnd) {
+    el.focus();
+    el.setSelectionRange(start, end);
+    let ok;
+    try {
+      ok = document.execCommand("insertText", false, text);
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      const v = el.value;
+      el.value = v.slice(0, start) + text + v.slice(end);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+    const caret = selStart ?? start + text.length;
+    el.setSelectionRange(caret, selEnd ?? caret);
+  }
+
+  function deleteRange(el, start, end) {
+    el.focus();
+    el.setSelectionRange(start, end);
+    let ok;
+    try {
+      ok = document.execCommand("delete", false);
+    } catch {
+      ok = false;
+    }
+    if (!ok) {
+      const v = el.value;
+      el.value = v.slice(0, start) + v.slice(end);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.setSelectionRange(start, start);
+    }
+  }
+
+  function handleKeyDown(e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.isComposing || e.keyCode === 229) return;
+    if (e.key === "Enter") onEnter(e);
+    else if (e.key === "Tab") onTab(e);
+    else if (e.key === "Backspace") onBackspace(e);
+  }
+
+  function onEnter(e) {
+    e.preventDefault();
+    const el = e.currentTarget;
+    const v = el.value;
+    const s = el.selectionStart;
+    const t = el.selectionEnd;
+    const lineStart = v.lastIndexOf("\n", s - 1) + 1;
+    const line = v.slice(lineStart, s);
+    const ws = /^[ \t]*/.exec(line)[0];
+    const body = line.trimEnd();
+    const deeper = body.endsWith(":") || body.trim() === "-" ? INDENT : "";
+    replaceRange(el, s, t, "\n" + ws + deeper);
+  }
+
+  function onTab(e) {
+    e.preventDefault();
+    const el = e.currentTarget;
+    const v = el.value;
+    let s = el.selectionStart;
+    let t = el.selectionEnd;
+    if (s > t) [s, t] = [t, s];
+    if (e.shiftKey) return dedentSelection(el, v, s, t);
+    if (v.slice(s, t).includes("\n")) return indentSelection(el, v, s, t);
+    return replaceRange(el, s, t, INDENT);
+  }
+
+  function indentSelection(el, v, s, t) {
+    const ls = v.lastIndexOf("\n", s - 1) + 1;
+    let le = v.indexOf("\n", t);
+    if (le === -1) le = v.length;
+    const out = v
+      .slice(ls, le)
+      .split("\n")
+      .map((l) => (l.length ? INDENT + l : l))
+      .join("\n");
+    replaceRange(el, ls, le, out, ls, ls + out.length);
+  }
+
+  function dedentSelection(el, v, s, t) {
+    const ls = v.lastIndexOf("\n", s - 1) + 1;
+    let le = v.indexOf("\n", t);
+    if (le === -1) le = v.length;
+    const lines = v.slice(ls, le).split("\n");
+    const cuts = lines.map((line) =>
+      Math.min(INDENT.length, /^[ \t]*/.exec(line)[0].length),
+    );
+    if (cuts.every((c) => c === 0)) return;
+    const out = lines.map((line, i) => line.slice(cuts[i])).join("\n");
+    const map = (pos) => {
+      let lineStart = ls;
+      let removed = 0;
+      for (let i = 0; i < lines.length; i++) {
+        const lineEnd = lineStart + lines[i].length;
+        if (pos <= lineEnd) {
+          removed += Math.min(cuts[i], pos - lineStart);
+          return pos - removed;
+        }
+        removed += cuts[i];
+        lineStart = lineEnd + 1;
+      }
+      return pos - removed;
+    };
+    replaceRange(el, ls, le, out, map(s), map(t));
+  }
+
+  function onBackspace(e) {
+    const el = e.currentTarget;
+    const v = el.value;
+    const s = el.selectionStart;
+    if (s !== el.selectionEnd) return;
+    if (s === 0) return;
+    const lineStart = v.lastIndexOf("\n", s - 1) + 1;
+    const prefix = v.slice(lineStart, s);
+    if (/\S/.test(prefix)) return;
+    const cut = Math.min(INDENT.length, prefix.length);
+    if (cut === 0) return;
+    e.preventDefault();
+    deleteRange(el, s - cut, s);
+  }
+
   // Auto-sync YAML from live filter/output state. Every store is read
   // reactively (all four roots, since $-references below select one by
   // target) so the textarea tracks the current configuration without any
@@ -126,6 +251,10 @@
       class="yaml-editor"
       bind:value={yamlText}
       oninput={() => (dirty = true)}
+      onkeydown={handleKeyDown}
+      spellcheck="false"
+      autocapitalize="off"
+      autocorrect="off"
       placeholder="在此编辑 YAML 配置..."></textarea>
     {#if error}
       <div class="yaml-error">{error}</div>
