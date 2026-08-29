@@ -1,12 +1,26 @@
 <script>
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import { MorphIcon } from "morphicons/svelte";
   import { Sun, Moon, Book, User, Drama, Film } from "lucide";
   import {
     queryTarget,
     clearFilters,
+    clearOutputSettings,
+    captureClearSnapshot,
+    restoreClearSnapshot,
+    clearClearSnapshot,
     saveTargetSettings,
     restoreTargetSettings,
+    subjectRootLogic,
+    personRootLogic,
+    characterRootLogic,
+    episodeRootLogic,
+    outputColumns,
+    sortRules,
+    resultLimit,
+    manualAssoc,
+    assocSeeded,
+    sortState,
   } from "./stores.js";
   import { decodeShareState, applyShareState, SHARE_PARAM } from "./share.js";
   import FilterTree from "./components/FilterTree.svelte";
@@ -76,6 +90,43 @@
     queryTarget.set(t);
     restoreTargetSettings(t);
   }
+
+  let canUndo = $state(false);
+  let ignoreNextChange = false;
+
+  function clearAll() {
+    if (canUndo) {
+      restoreClearSnapshot();
+      canUndo = false;
+      return;
+    }
+    captureClearSnapshot();
+    ignoreNextChange = true;
+    clearFilters();
+    clearOutputSettings();
+    canUndo = true;
+    tick().then(() => {
+      ignoreNextChange = false;
+    });
+  }
+
+  $effect(() => {
+    void $subjectRootLogic;
+    void $personRootLogic;
+    void $characterRootLogic;
+    void $episodeRootLogic;
+    void $outputColumns;
+    void $sortRules;
+    void $resultLimit;
+    void $manualAssoc;
+    void $assocSeeded;
+    void $sortState;
+    void $queryTarget;
+    if (canUndo && !ignoreNextChange) {
+      clearClearSnapshot();
+      canUndo = false;
+    }
+  });
 
   onMount(async () => {
     // Guard against the global color transition flashing on load while the
@@ -165,14 +216,7 @@
 <main class="container">
   <!-- Left Panel -->
   <div class="panel panel-left">
-    <div class="card">
-      <div class="card-header">
-        <h2 class="card-title"><span class="dot-indicator"></span>筛选条件</h2>
-        <span class="spacer"></span>
-        <button class="btn btn-outline btn-xs" onclick={clearFilters}
-          >清除全部</button
-        >
-      </div>
+    <div class="target-toggle-bar">
       <div class="target-toggle">
         <button
           class="radio-pill"
@@ -198,6 +242,14 @@
           onclick={() => setTarget("episode")}
           ><MorphIcon icon={Film} size={14} /> 剧集</button
         >
+      </div>
+      <button class="btn btn-outline btn-xs" onclick={clearAll}
+        >{canUndo ? "撤销" : "清除全部"}</button
+      >
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2 class="card-title"><span class="dot-indicator"></span>筛选条件</h2>
       </div>
       <FilterTree />
     </div>
@@ -299,6 +351,20 @@
        bar uses top: calc(-1 * var(--panel-pad-top)) to stick flush with the
        scrollport edge. Keep the two in sync. */
     --panel-pad-top: 20px;
+  }
+
+  .target-toggle-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .target-toggle-bar .btn {
+    margin-left: auto;
+  }
+
+  .target-toggle-bar :global(.target-toggle) {
+    margin-bottom: 0;
   }
 
   :global(.target-toggle) {

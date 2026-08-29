@@ -40,6 +40,38 @@ export const resultLimit = writable(RESULT_LIMIT_DEFAULT);
 // Per-target output settings: { [target]: { outputColumns, sortRules, resultLimit } }
 const _targetSettings = {};
 
+// Manually managed association output rows per target ("+ 关联" and rows
+// seeded from first-level filters): { [target]: [{ prefix, _id }] }.
+// Rows are ordinary manual entries — freely renamable/removable; filters only
+// seed new rows once (assocSeeded suppresses re-seeding until the filter
+// itself disappears).
+export const manualAssoc = writable({});
+
+// Prefixes already seeded from filters, per target: { [target]: string[] }.
+export const assocSeeded = writable({});
+
+let _assocIdCounter = 0;
+export function nextAssocId() {
+  return ++_assocIdCounter;
+}
+
+// Old localStorage shape was { [target]: string[] } — upgrade to objects.
+function normalizeManualAssoc(v) {
+  if (!v || typeof v !== "object") return null;
+  const out = {};
+  for (const [t, list] of Object.entries(v)) {
+    if (!Array.isArray(list)) continue;
+    const rows = [];
+    for (const e of list) {
+      if (typeof e === "string" && e)
+        rows.push({ prefix: e, _id: nextAssocId() });
+      else if (e && typeof e === "object" && e.prefix) rows.push(e);
+    }
+    if (rows.length > 0) out[t] = rows;
+  }
+  return out;
+}
+
 const DEFAULT_SETTINGS = {
   subject: {
     outputColumns: "id,name,name_cn,type,",
@@ -65,8 +97,13 @@ const DEFAULT_SETTINGS = {
 
 export function saveTargetSettings() {
   const target = get(queryTarget);
+  const oc = get(outputColumns);
+  if (!oc?.trim()) {
+    delete _targetSettings[target];
+    return;
+  }
   _targetSettings[target] = {
-    outputColumns: get(outputColumns),
+    outputColumns: oc,
     sortRules: get(sortRules),
     resultLimit: get(resultLimit),
   };
@@ -82,6 +119,69 @@ export function restoreTargetSettings(target) {
   resultLimit.set(saved.resultLimit);
 }
 
+export function clearOutputSettings() {
+  outputColumns.set("");
+  sortRules.set([]);
+  sortState.set({ col: -1, asc: true, field: "" });
+  resultLimit.set(RESULT_LIMIT_DEFAULT);
+  manualAssoc.set({});
+  assocSeeded.set({});
+  for (const k of Object.keys(_targetSettings)) delete _targetSettings[k];
+}
+
+let _clearSnapshot = null;
+
+export function captureClearSnapshot() {
+  _clearSnapshot = {
+    subject: JSON.parse(JSON.stringify(get(subjectRootLogic))),
+    person: JSON.parse(JSON.stringify(get(personRootLogic))),
+    character: JSON.parse(JSON.stringify(get(characterRootLogic))),
+    episode: JSON.parse(JSON.stringify(get(episodeRootLogic))),
+    outputColumns: get(outputColumns),
+    sortRules: JSON.parse(JSON.stringify(get(sortRules))),
+    resultLimit: get(resultLimit),
+    manualAssoc: JSON.parse(JSON.stringify(get(manualAssoc))),
+    assocSeeded: JSON.parse(JSON.stringify(get(assocSeeded))),
+    targetSettings: JSON.parse(JSON.stringify(_targetSettings)),
+    logicIdCounter: _logicIdCounter,
+    assocIdCounter: _assocIdCounter,
+    sortState: JSON.parse(JSON.stringify(get(sortState))),
+    queryTarget: get(queryTarget),
+  };
+}
+
+export function restoreClearSnapshot() {
+  if (!_clearSnapshot) return false;
+  const s = _clearSnapshot;
+  subjectRootLogic.set(s.subject);
+  personRootLogic.set(s.person);
+  characterRootLogic.set(s.character);
+  episodeRootLogic.set(s.episode);
+  outputColumns.set(s.outputColumns);
+  sortRules.set(s.sortRules);
+  resultLimit.set(s.resultLimit);
+  manualAssoc.set(s.manualAssoc);
+  assocSeeded.set(s.assocSeeded);
+  for (const k of Object.keys(_targetSettings)) delete _targetSettings[k];
+  Object.assign(_targetSettings, s.targetSettings);
+  _logicIdCounter = s.logicIdCounter;
+  _assocIdCounter = s.assocIdCounter;
+  sortState.set(s.sortState);
+  queryTarget.set(s.queryTarget);
+  _clearSnapshot = null;
+  bumpVersion();
+  saveToStorage();
+  return true;
+}
+
+export function hasClearSnapshot() {
+  return _clearSnapshot !== null;
+}
+
+export function clearClearSnapshot() {
+  _clearSnapshot = null;
+}
+
 // Logic tree ID counter
 let _logicIdCounter = 0;
 
@@ -93,16 +193,25 @@ const STORAGE_KEY = "bgq_state";
 
 export function saveToStorage() {
   try {
+    const oc = get(outputColumns);
+    const cleanedTargetSettings = {};
+    for (const [k, v] of Object.entries(_targetSettings)) {
+      if (!v?.outputColumns?.trim()) continue;
+      cleanedTargetSettings[k] = v;
+    }
     const state = {
       target: get(queryTarget),
       subject: get(subjectRootLogic),
       person: get(personRootLogic),
       character: get(characterRootLogic),
       episode: get(episodeRootLogic),
-      outputColumns: get(outputColumns),
+      ...(oc?.trim() ? { outputColumns: oc } : {}),
       sortRules: get(sortRules),
       resultLimit: get(resultLimit),
-      targetSettings: _targetSettings,
+      targetSettings: cleanedTargetSettings,
+      manualAssoc: get(manualAssoc),
+      assocSeeded: get(assocSeeded),
+      _assocIdCounter,
       _idCounter: _logicIdCounter,
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
@@ -122,11 +231,22 @@ export function loadFromStorage() {
     if (state.person) personRootLogic.set(state.person);
     if (state.character) characterRootLogic.set(state.character);
     if (state.episode) episodeRootLogic.set(state.episode);
-    if (state.outputColumns != null) outputColumns.set(state.outputColumns);
+    if (state.outputColumns?.trim()) outputColumns.set(state.outputColumns);
     if (state.sortRules != null) sortRules.set(state.sortRules);
     if (state.resultLimit != null) resultLimit.set(state.resultLimit);
-    if (state.targetSettings)
-      Object.assign(_targetSettings, state.targetSettings);
+    if (state.targetSettings) {
+      const cleaned = {};
+      for (const [k, v] of Object.entries(state.targetSettings)) {
+        if (v?.outputColumns?.trim()) cleaned[k] = v;
+      }
+      Object.assign(_targetSettings, cleaned);
+    }
+    if (state.manualAssoc) {
+      const norm = normalizeManualAssoc(state.manualAssoc);
+      if (norm) manualAssoc.set(norm);
+    }
+    if (state.assocSeeded) assocSeeded.set(state.assocSeeded);
+    if (state._assocIdCounter != null) _assocIdCounter = state._assocIdCounter;
     if (state._idCounter != null) _logicIdCounter = state._idCounter;
     return true;
   } catch {
@@ -156,10 +276,22 @@ export const episodeRootLogic = writable(
 
 if (saved?._idCounter != null) _logicIdCounter = saved._idCounter;
 if (saved?.target) queryTarget.set(saved.target);
-if (saved?.outputColumns != null) outputColumns.set(saved.outputColumns);
+if (saved?.outputColumns?.trim()) outputColumns.set(saved.outputColumns);
 if (saved?.sortRules != null) sortRules.set(saved.sortRules);
 if (saved?.resultLimit != null) resultLimit.set(saved.resultLimit);
-if (saved?.targetSettings) Object.assign(_targetSettings, saved.targetSettings);
+if (saved?.targetSettings) {
+  const cleaned = {};
+  for (const [k, v] of Object.entries(saved.targetSettings)) {
+    if (v?.outputColumns?.trim()) cleaned[k] = v;
+  }
+  Object.assign(_targetSettings, cleaned);
+}
+if (saved?.manualAssoc) {
+  const norm = normalizeManualAssoc(saved.manualAssoc);
+  if (norm) manualAssoc.set(norm);
+}
+if (saved?.assocSeeded) assocSeeded.set(saved.assocSeeded);
+if (saved?._assocIdCounter != null) _assocIdCounter = saved._assocIdCounter;
 
 // Auto-save to localStorage on any change
 subjectRootLogic.subscribe(() => saveToStorage());
