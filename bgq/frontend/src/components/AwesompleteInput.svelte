@@ -26,6 +26,7 @@
 
   let inputEl;
   let aw = $state(null);
+  let tabPressed = false;
   // eslint-disable-next-line svelte/prefer-writable-derived -- lastValidValue is also mutated in event handlers
   let lastValidValue = $state(value);
   $effect(() => {
@@ -68,8 +69,16 @@
     }
     aw = new Awesomplete(inputEl, opts);
     inputEl.addEventListener("focus", () => aw.evaluate());
+    inputEl.addEventListener("keydown", (e) => {
+      if (e.key === "Tab") {
+        tabPressed = true;
+        if (aw?.opened) aw.close();
+      }
+    });
     inputEl.addEventListener("input", () => oninput(inputEl.value));
     inputEl.addEventListener("blur", () => {
+      const d = tabPressed ? 0 : 150;
+      tabPressed = false;
       setTimeout(() => {
         if (!inputEl) return;
         if (multiple) {
@@ -98,7 +107,7 @@
         } else {
           onchange(inputEl.value.trim());
         }
-      }, 150);
+      }, d);
     });
     return () => {
       aw = null;
