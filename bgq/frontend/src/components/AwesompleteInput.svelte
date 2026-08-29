@@ -10,7 +10,8 @@
    *   placeholder?: string,
    *   restrict?: boolean,
    *   multiple?: boolean,
-   *   separator?: string
+   *   separator?: string,
+   *   id?: string
    * }}
    */
   let {
@@ -22,6 +23,7 @@
     restrict = false,
     multiple = false,
     separator = ",",
+    id = undefined,
   } = $props();
 
   let inputEl;
@@ -116,7 +118,13 @@
 </script>
 
 <div class="aw-wrap">
-  <input bind:this={inputEl} class="input aw-input" {value} {placeholder} />
+  <input
+    bind:this={inputEl}
+    class="input aw-input"
+    {value}
+    {placeholder}
+    {id}
+  />
 </div>
 
 <style>

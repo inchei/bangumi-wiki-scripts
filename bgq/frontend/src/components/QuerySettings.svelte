@@ -143,6 +143,7 @@
   <div class="form-group">
     <label class="form-label" for="outputColumns">输出列（逗号分隔）</label>
     <AwesompleteInput
+      id="outputColumns"
       value={$outputColumns}
       {suggestions}
       onchange={(v) => outputColumns.set(v)}
