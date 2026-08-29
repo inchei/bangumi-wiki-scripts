@@ -36,6 +36,7 @@
   } from "../share.js";
   import { SvelteURL } from "svelte/reactivity";
   import { get } from "svelte/store";
+  import { tick } from "svelte";
   import ActionButton from "./ActionButton.svelte";
   import BgmHostSetting from "./BgmHostSetting.svelte";
 
@@ -236,6 +237,22 @@
   // scrollable width small. Toggling re-runs the effect below (fillMode
   // dep), which re-measures track widths after the class lands.
   let fillMode = $state(false);
+
+  // After a query settles (new result or error arrives), move focus to the
+  // results panel so keyboard/SR users land on the outcome. The panel is
+  // tabindex=-1 (programmatic focus only); :focus-visible styling shows a
+  // ring only for keyboard-initiated runs. Sorting/reordering also writes
+  // lastResult with a fresh object ({...res, rows}), so track the previous
+  // result: only focus on null→result (fresh query) or any →error.
+  let panelEl = $state(null);
+  let prevResult = null;
+  $effect(() => {
+    const result = $lastResult;
+    if (result && (prevResult === null || result.error)) {
+      tick().then(() => panelEl?.focus());
+    }
+    prevResult = result;
+  });
 
   // Native-sticky header bar. The in-grid thead can't be sticky itself: the
   // wrap's overflow-x:auto forces overflow-y to compute to auto per spec,
@@ -759,7 +776,13 @@
   </div>
 {/snippet}
 
-<div class="results-panel">
+<div
+  class="results-panel"
+  tabindex="-1"
+  role="region"
+  aria-label="查询结果"
+  bind:this={panelEl}
+>
   {#if $lastResult?.error}
     <div class="error-card">
       <div class="error-header">

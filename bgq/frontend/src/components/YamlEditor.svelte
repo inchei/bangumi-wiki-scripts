@@ -25,6 +25,7 @@
   let error = $state("");
   let dirty = $state(false);
   let undoState = $state(null);
+  let taEl = $state(null);
 
   let appliedFlash = $state(false);
   let syncedFlash = $state(false);
@@ -60,6 +61,11 @@
         get(sortRules),
       );
       pulse("sync");
+      if (taEl) {
+        taEl.focus();
+        const end = taEl.value.length;
+        taEl.setSelectionRange(end, end);
+      }
     } catch (e) {
       error = "导出失败: " + e.message;
     }
@@ -225,6 +231,7 @@
   {#if expanded}
     <textarea
       class="yaml-editor"
+      bind:this={taEl}
       bind:value={yamlText}
       oninput={() => (dirty = true)}
       onkeydown={handleKeyDown}
