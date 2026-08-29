@@ -129,6 +129,7 @@ bgq/
 │   │   ├── api.js            # Backend API calls (query only)
 │   │   ├── schema-data.js    # Auto-generated schema constants (go generate)
 │   │   ├── stores.js         # Global state (filters, conditions)
+│   │   ├── columns.js        # Association output columns: prefix registry, token parse/build, 3-stage autocomplete
 │   │   ├── yaml.js           # YAML parse/generate (js-yaml)
 │   │   └── components/
 │   │       ├── FilterTree.svelte      # Recursive filter tree

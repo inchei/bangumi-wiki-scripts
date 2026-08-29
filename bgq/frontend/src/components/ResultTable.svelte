@@ -72,7 +72,10 @@
     if (!isIDColumn(field)) return null;
     const v = entry[field];
     if (v === null || v === undefined || v === "") return null;
-    const type = groupIdLinkType(prefix, get(lastQueryTarget));
+    // "s." members are subject-level fields (person_character/character_person)
+    const type = field.startsWith("s.")
+      ? "subject"
+      : groupIdLinkType(prefix, get(lastQueryTarget));
     return `https://${host}/${type}/${encodeURIComponent(String(v))}`;
   }
 

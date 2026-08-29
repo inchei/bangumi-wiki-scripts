@@ -72,6 +72,44 @@ filters:
 | `regex` | regex match (DuckDB syntax) | `value: "^\\\\s*$"` |
 | `empty` | is null/empty | (no value needed) |
 
+## Output Columns
+
+Empty `output.columns` uses per-target defaults; explicit list fully overrides.
+
+**Direct / infobox fields**: same names as `field` filters (`id`, `score`, `发售日`, `出版社`, …). `infobox` itself is not recommended.
+
+**Association output** (`前缀.字段`):
+
+| Syntax | Meaning | Targets |
+|--------|---------|---------|
+| `前缀.字段` | first match | see below |
+| `前缀.字段+` | all matches (comma-joined) | same |
+| `前缀.count` | count | same |
+| `前缀.{f1\|f2\|...}` | single JSON object with multiple fields | same |
+| `前缀.{f1\|f2\|...}+` | JSON array of objects | same |
+| `前缀.s.字段[+]` / `前缀.s.{...}[+]` | subject-level field (only `person_character`/`character_person`) | `person`/`character` |
+
+Prefix depends on `target`:
+
+| target | prefixes |
+|--------|----------|
+| `subject` | relation types (`单行本`…), positions (`导演`…), character types (`主角`…), `episode` |
+| `person` | positions (→ subject fields), person relations, cast types (`CV` with `CV.s.` for subject) |
+| `character` | character relations, cast types (`CV.s.` for subject) |
+| `episode` | direct fields only (`subject_id` etc.) |
+
+Examples:
+
+```yaml
+output: { columns: [id, name, 导演.name, 导演.生日] }              # first director
+output: { columns: [id, name, 单行本.发售日+] }                    # all volume dates
+output: { columns: [id, name, 导演.{name|生日|id}+] }              # group array
+output: { columns: [person_id, name, CV.{id|name|s.id|s.name}+] }  # CV character + subject (person target)
+output: { columns: [id, name, 单行本.count] }                       # count
+```
+
+Sort supports association fields (including `+` via min/max, dates/numbers normalized); `{...}` group columns are not sortable.
+
 ## CLI Usage
 
 ```bash

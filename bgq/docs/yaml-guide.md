@@ -214,6 +214,53 @@ sort:
 limit: 1000                             # 最大结果数（默认 1000）
 ```
 
+## 输出列
+
+`output.columns` 为空时使用各 target 的默认列（见下表），显式指定时完全覆盖默认值。
+
+**直接字段 / Infobox 字段**：与 `field` 筛选相同的字段名可直接作为列名（`id`、`name`、`score`、`发售日`、`出版社` 等）。`infobox` 本身不建议作为列（整段 Wiki 文本）。
+
+**关联输出**（`前缀.字段`）：
+
+| 语法 | 含义 | 适用 target |
+|------|------|-------------|
+| `前缀.字段` | 首个匹配 | 见下 |
+| `前缀.字段+` | 全部匹配（逗号拼接） | 同上 |
+| `前缀.count` | 关联数量 | 同上 |
+| `前缀.{f1\|f2\|...}` | 单条关联的多字段对象（JSON） | 同上 |
+| `前缀.{f1\|f2\|...}+` | 全部关联的多字段数组（JSON） | 同上 |
+| `前缀.s.字段[+]` / `前缀.s.{...}[+]` | Subject 层字段（仅 `person_character`/`character_person`） | `person`/`character` |
+
+`前缀` 取决于 `target`：
+
+| target | 前缀来源 |
+|--------|----------|
+| `subject` | 关系类型（`单行本`/`系列`/`前传` 等）、职位（`导演`/`原作` 等）、角色类型（`主角`/`配角`）、`episode` |
+| `person` | 职位（→ 条目字段）、人物关系（`同事`等）、出演类型（`CV` 等，`CV.s.` 可取条目字段） |
+| `character` | 角色关系（`朋友`等）、出演类型（`CV.s.` 可取条目字段） |
+| `episode` | 仅直接字段（`subject_id` 等），无关联前缀 |
+
+示例：
+
+```yaml
+# subject：取首个导演的姓名与生日
+output: { columns: [id, name, 导演.name, 导演.生日] }
+
+# subject：聚合全部单行本的发售日
+output: { columns: [id, name, 单行本.发售日+] }
+
+# subject：多字段组（单条/全部）
+output: { columns: [id, name, 导演.{name|生日|id}, 导演.{name|生日|id}+] }
+
+# person：CV 角色及其出演条目的连体数据（单列内 JSON 数组）
+output: { columns: [person_id, name, CV.{id|name|s.id|s.name}+] }
+
+# 计数
+output: { columns: [id, name, 单行本.count] }
+```
+
+排序支持关联字段（含 `+` 聚合列按 `min`/`max` 排序，日期/数值自动归一化），`{...}` 组列不可直接排序。
+
 ## 高级用法
 
 ### 字段引用
