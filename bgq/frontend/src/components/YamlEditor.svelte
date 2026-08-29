@@ -172,7 +172,6 @@
     if (e.ctrlKey || e.metaKey || e.altKey) return;
     if (e.isComposing || e.keyCode === 229) return;
     if (e.key === "Enter") onEnter(e);
-    else if (e.key === "Tab") onTab(e);
     else if (e.key === "Backspace") onBackspace(e);
   }
 
@@ -188,57 +187,6 @@
     const body = line.trimEnd();
     const deeper = body.endsWith(":") || body.trim() === "-" ? INDENT : "";
     replaceRange(el, s, t, "\n" + ws + deeper);
-  }
-
-  function onTab(e) {
-    e.preventDefault();
-    const el = e.currentTarget;
-    const v = el.value;
-    let s = el.selectionStart;
-    let t = el.selectionEnd;
-    if (s > t) [s, t] = [t, s];
-    if (e.shiftKey) return dedentSelection(el, v, s, t);
-    if (v.slice(s, t).includes("\n")) return indentSelection(el, v, s, t);
-    return replaceRange(el, s, t, INDENT);
-  }
-
-  function indentSelection(el, v, s, t) {
-    const ls = v.lastIndexOf("\n", s - 1) + 1;
-    let le = v.indexOf("\n", t);
-    if (le === -1) le = v.length;
-    const out = v
-      .slice(ls, le)
-      .split("\n")
-      .map((l) => (l.length ? INDENT + l : l))
-      .join("\n");
-    replaceRange(el, ls, le, out, ls, ls + out.length);
-  }
-
-  function dedentSelection(el, v, s, t) {
-    const ls = v.lastIndexOf("\n", s - 1) + 1;
-    let le = v.indexOf("\n", t);
-    if (le === -1) le = v.length;
-    const lines = v.slice(ls, le).split("\n");
-    const cuts = lines.map((line) =>
-      Math.min(INDENT.length, /^[ \t]*/.exec(line)[0].length),
-    );
-    if (cuts.every((c) => c === 0)) return;
-    const out = lines.map((line, i) => line.slice(cuts[i])).join("\n");
-    const map = (pos) => {
-      let lineStart = ls;
-      let removed = 0;
-      for (let i = 0; i < lines.length; i++) {
-        const lineEnd = lineStart + lines[i].length;
-        if (pos <= lineEnd) {
-          removed += Math.min(cuts[i], pos - lineStart);
-          return pos - removed;
-        }
-        removed += cuts[i];
-        lineStart = lineEnd + 1;
-      }
-      return pos - removed;
-    };
-    replaceRange(el, ls, le, out, map(s), map(t));
   }
 
   function onBackspace(e) {
