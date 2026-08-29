@@ -73,6 +73,11 @@
   }
 
   async function handleRun() {
+    const filters = getFiltersForAPI();
+    if (filters.length === 0) {
+      lastResult.set({ error: "请先添加筛选条件" });
+      return;
+    }
     loading = true;
     queryLoading.set(true);
     lastResult.set(null);
@@ -86,7 +91,7 @@
     try {
       const savedTarget = get(queryTarget);
       const data = await runQuery(
-        getFiltersForAPI(),
+        filters,
         cols,
         savedTarget,
         limit,
