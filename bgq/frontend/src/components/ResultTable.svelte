@@ -26,7 +26,14 @@
     relationsByType,
     CHARACTER_ASSOC_TYPES,
   } from "../schema-data.js";
-  import { buildShareURL } from "../share.js";
+  import {
+    buildShareURL,
+    buildShareState,
+    encodeShareState,
+    MAX_PAYLOAD_LEN,
+    SHARE_PARAM,
+  } from "../share.js";
+  import { SvelteURL } from "svelte/reactivity";
   import { get } from "svelte/store";
   import ActionButton from "./ActionButton.svelte";
 
@@ -596,57 +603,113 @@
     return str;
   }
 
-  function copyTableAction() {
+  function clipboardErr(e) {
+    let detail;
+    if (e?.name === "NotAllowedError") detail = "剪贴板权限被拒绝";
+    else if (e?.name === "NotFoundError") detail = "剪贴板不可用";
+    else if (e instanceof Error && e.message) detail = e.message;
+    else if (e?.name) detail = e.name;
+    else if (e) detail = String(e);
+    else detail = "未知错误";
+    if (!window.isSecureContext && !detail.includes("需 https"))
+      detail += "（需 https）";
+    return `复制错误：${detail}，请复制YAML配置分享`;
+  }
+
+  async function writeClipboard(text) {
+    if (!navigator.clipboard?.writeText) {
+      throw new Error(
+        `剪贴板不可用${!window.isSecureContext ? "（需 https）" : "（需授权或现代浏览器）"}`,
+      );
+    }
+    return navigator.clipboard.writeText(text);
+  }
+
+  async function copyTableAction() {
     const res = $lastResult;
-    if (!res?.rows) return Promise.resolve("复制失败");
+    if (!res?.rows) return "无可复制数据";
     const cols = res.columns;
     let text = cols.map(tsvEscape).join("\t") + "\n";
     for (const row of res.rows) text += row.map(tsvEscape).join("\t") + "\n";
-    return navigator.clipboard
-      .writeText(text)
-      .then(() => "")
-      .catch(() => "复制失败");
+    try {
+      await writeClipboard(text);
+      return "";
+    } catch (e) {
+      return clipboardErr(e);
+    }
   }
 
-  function copyIdsAction() {
+  async function copyIdsAction() {
     const res = $lastResult;
     const rows = res.rows;
-    if (!rows) return Promise.resolve("复制失败");
+    if (!rows) return "无可复制数据";
     const cols = res.columns;
     const idCol = cols.findIndex((col) => isIDColumn(col));
-    if (idCol < 0) return Promise.resolve("未找到id列");
+    if (idCol < 0) return "未找到id列";
     const text = `bgm_id=${rows.map((row) => row[idCol]).join(",")}`;
-    return navigator.clipboard
-      .writeText(text)
-      .then(() => "")
-      .catch(() => "复制失败");
+    try {
+      await writeClipboard(text);
+      return "";
+    } catch (e) {
+      return clipboardErr(e);
+    }
   }
 
-  function copyErrorAction() {
+  async function copyErrorAction() {
     const text = $lastResult?.error;
-    if (!text) return Promise.resolve("复制失败");
-    return navigator.clipboard
-      .writeText(text)
-      .then(() => "")
-      .catch(() => "复制失败");
+    if (!text) return "无可复制的错误信息";
+    try {
+      await writeClipboard(text);
+      return "";
+    } catch (e) {
+      return clipboardErr(e);
+    }
   }
 
+  // Clipboard activation must happen within the user-gesture task. Build the
+  // URL synchronously, then defer clipboard-write+encode to the gesture tick.
   function shareAction() {
     return (async () => {
       let url;
       try {
-        url = await buildShareURL();
-      } catch {
-        return "生成失败，请用YAML分享";
-      }
-      if (url === null) {
-        return "查询过大，请用YAML分享";
-      }
-      try {
-        await navigator.clipboard.writeText(url);
+        const payloadPromise = encodeShareState(buildShareState());
+        // Force synchronous clipboard write BEFORE await: Safari only allows
+        // writeText within the click handler's synchronous phase. Using
+        // ClipboardItem with a Promise lets us hand Safari the clipboard
+        // synchronously while still resolving content asynchronously.
+        if (!window.ClipboardItem || !navigator.clipboard?.write) {
+          throw new Error("该浏览器不支持异步剪贴板写入");
+        }
+        const item = new window.ClipboardItem({
+          "text/plain": payloadPromise.then(async (payload) => {
+            if (payload.length > MAX_PAYLOAD_LEN) {
+              throw new Error("查询过大");
+            }
+            const u = new SvelteURL(window.location.href);
+            u.search = "";
+            u.searchParams.set(SHARE_PARAM, payload);
+            return u.toString();
+          }),
+        });
+        await navigator.clipboard.write([item]);
         return "";
-      } catch {
-        return "复制失败，请用YAML分享";
+      } catch (e) {
+        if (e instanceof Error && e.message === "查询过大") {
+          return "查询过大，请复制YAML配置分享";
+        }
+        // Fallback for browsers without ClipboardItem: prebuild then copy
+        try {
+          url = await buildShareURL();
+        } catch (e2) {
+          return `生成失败${e2 instanceof Error && e2.message ? `：${e2.message}` : ""}，请复制YAML配置分享`;
+        }
+        if (url === null) return "查询过大，请复制YAML配置分享";
+        try {
+          await writeClipboard(url);
+          return "";
+        } catch (e2) {
+          return clipboardErr(e2);
+        }
       }
     })();
   }
@@ -701,7 +764,7 @@
         <div class="error-title">查询失败</div>
         <ActionButton
           icon={Copy}
-          text="复制"
+          text="复制信息"
           variant="outline"
           action={copyErrorAction}
         />
@@ -729,8 +792,7 @@
         <ActionButton icon={Copy} text="复制bgm_id" action={copyIdsAction} />
         <ActionButton
           icon={Share2}
-          text="分享"
-          successText="已复制链接"
+          text="分享链接"
           title="分享当前查询链接"
           action={shareAction}
         />
