@@ -208,6 +208,55 @@ func TestAssocIDOutputColumn(t *testing.T) {
 	}
 }
 
+// TestGroupColumnSubjectFields verifies that group output columns with "s."
+// members (person_character / character_person) join subjects and resolve
+// those members against it, and that an output-only column loads the
+// person_characters CTE even without a matching filter.
+func TestGroupColumnSubjectFields(t *testing.T) {
+	cfg := &config.Config{
+		Target:  "person",
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"person_id", "CV.{id|name|s.id|s.name}+"}},
+		Filters: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "x"}}},
+	}
+	b := NewSQLBuilder(cfg, "/tmp/data")
+	sql, err := b.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{
+		"person_characters AS (",
+		"LEFT JOIN subjects rs ON pc.subject_id = rs.id",
+		`"s.id" := NULLIF(CAST(rs.id AS VARCHAR), '')`,
+		`"s.name" := NULLIF(CAST(rs."name" AS VARCHAR), '')`,
+		`"id" := NULLIF(CAST(c.character_id AS VARCHAR), '')`,
+		`AS "CV.{id|name|s.id|s.name}+"`,
+	} {
+		if !strings.Contains(sql, want) {
+			t.Errorf("generated SQL missing %q:\n%s", want, sql)
+		}
+	}
+
+	// Group-internal sort by an "s." member resolves against the subjects join.
+	cfgSort := &config.Config{
+		Target:  "person",
+		Limit:   10,
+		Output:  &config.Output{Format: "table", Columns: []string{"person_id", "CV.{name|s.date}+"}},
+		Filters: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "x"}}},
+		Sort:    []config.SortRule{{Field: "CV.s.date+", Direction: "desc"}},
+	}
+	bs := NewSQLBuilder(cfgSort, "/tmp/data")
+	sqlSort, err := bs.Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	// normalizeDate wraps rs."date" in a CASE; just verify the ORDER BY
+	// expression operates on rs."date" (not the character alias).
+	if !strings.Contains(sqlSort, `ORDER BY TRY_CAST(CASE WHEN regexp_matches(replace(replace(replace(TRIM(rs."date")`) {
+		t.Errorf("group-internal ORDER BY does not resolve s.date against rs:\n%s", sqlSort)
+	}
+}
+
 // TestBuildSubjectCountValRejectsInjection verifies the person_character /
 // character_person subject-count threshold is validated before interpolation.
 func TestBuildSubjectCountValRejectsInjection(t *testing.T) {

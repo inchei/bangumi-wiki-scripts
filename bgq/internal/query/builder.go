@@ -131,6 +131,7 @@ type outputCTENeeds struct {
 	characters         bool // subject_characters + characters
 	personRelations    bool // person_relations
 	characterRelations bool // character_relations
+	personCharacters   bool // person_characters
 	episodes           bool
 }
 
@@ -161,6 +162,8 @@ func (b *SQLBuilder) cteNeedsFromOutputColumns() outputCTENeeds {
 			n.personRelations = true
 		case b.target == "character" && len(b.getCharacterRelationIDsForName(prefix)) > 0:
 			n.characterRelations = true
+		case (b.target == "person" || b.target == "character") && b.isPersonCharacterTypeName(prefix):
+			n.personCharacters = true
 		}
 	}
 	return n
@@ -288,7 +291,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	}
 
 	// Person Characters CTE (three-way join: person-character-subject)
-	if b.cfg.NeedsPersonCharacters() {
+	if b.cfg.NeedsPersonCharacters() || needs.personCharacters {
 		perCharFile := b.dataDir + "/person-characters.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`person_characters AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
@@ -1673,18 +1676,23 @@ func (b *SQLBuilder) buildSelect() []string {
 // "类型.s.字段[+]") into its correlated subquery (WITH the "AS label").
 // Returns ("", false, nil) when col is not an association column.
 func (b *SQLBuilder) assocOutputColumn(col string) (string, bool, error) {
-	parts := strings.SplitN(col, ".", 3)
-	if len(parts) < 2 {
+	prefix, rest, found := strings.Cut(col, ".")
+	if !found {
 		return "", false, nil
 	}
-	prefix, field := parts[0], parts[1]
+	field := rest
 	isSubjectLevel := false
-	if len(parts) == 3 {
-		if parts[1] != "s" {
-			return "", false, nil
+	// Brace-aware split: group fields ("{f1|f2|...}") may contain dots in
+	// "s.xxx" members, so a leading "{" consumes the whole rest as field.
+	// Otherwise a second dot is only valid as the "s." subject-level marker.
+	if !strings.HasPrefix(rest, "{") {
+		if mid, tail, ok := strings.Cut(rest, "."); ok {
+			if mid != "s" {
+				return "", false, nil
+			}
+			isSubjectLevel = true
+			field = tail
 		}
-		isSubjectLevel = true
-		field = parts[2]
 	}
 
 	var subquery string
@@ -1874,11 +1882,16 @@ func (b *SQLBuilder) buildPersonCharacterOutput(typeName, field string) (string,
 		}
 	}
 	typeCond := fmt.Sprintf("pc.type = %d", typeID)
+	subjectAlias := ""
+	if groupHasSubjectFields(field) {
+		entityJoin += " LEFT JOIN subjects rs ON pc.subject_id = rs.id"
+		subjectAlias = "rs"
+	}
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "person_characters", ja: "pc", mainFK: "person_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: charWhere,
 		entityAlias: "c", entityPK: "character_id", field: field, label: fmt.Sprintf("\"%s.%s\"", typeName, field),
-		directFields: characterDirectFields, distinct: true,
+		directFields: characterDirectFields, distinct: true, subjectAlias: subjectAlias,
 	})
 }
 
@@ -1904,12 +1917,33 @@ func (b *SQLBuilder) buildCharacterPersonOutput(typeName, field string) (string,
 		}
 	}
 	typeCond := fmt.Sprintf("pc.type = %d", typeID)
+	subjectAlias := ""
+	if groupHasSubjectFields(field) {
+		entityJoin += " LEFT JOIN subjects rs ON pc.subject_id = rs.id"
+		subjectAlias = "rs"
+	}
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "person_characters", ja: "pc", mainFK: "character_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: personWhere,
 		entityAlias: "p", entityPK: "person_id", field: field, label: fmt.Sprintf("\"%s.%s\"", typeName, field),
-		directFields: personDirectFields, distinct: true,
+		directFields: personDirectFields, distinct: true, subjectAlias: subjectAlias,
 	})
+}
+
+// groupHasSubjectFields reports whether a "{f1|f2|...}[+]" group field contains
+// members prefixed "s." (subject-level fields of person_character /
+// character_person junction rows).
+func groupHasSubjectFields(field string) bool {
+	fields, isGroup, _ := parseGroupField(field)
+	if !isGroup {
+		return false
+	}
+	for _, f := range fields {
+		if strings.HasPrefix(f, "s.") {
+			return true
+		}
+	}
+	return false
 }
 
 // buildPersonCharacterSubjectOutput generates a subquery for the subject where
@@ -2123,6 +2157,7 @@ type assocSubConfig struct {
 	label        string          // column label (already quoted)
 	directFields map[string]bool // direct fields for this entity type
 	distinct     bool            // deduplicate the "+" aggregation by entity
+	subjectAlias string          // when set, group members prefixed "s." resolve against this subjects alias
 }
 
 // buildAssocSubquery generates a correlated subquery for association field output.
@@ -2249,18 +2284,18 @@ func (b *SQLBuilder) buildAssocGroupSubquery(cfg assocSubConfig, groupFields []s
 	args := make([]string, len(groupFields))
 	for i, gf := range groupFields {
 		var e string
-		if gf == "id" || gf == "ID" {
-			e = ea + "." + entityPK
-		} else if cfg.directFields[gf] {
-			e = ea + "." + quoteIdent(gf)
+		if sub, ok := strings.CutPrefix(gf, "s."); ok && cfg.subjectAlias != "" {
+			// Subject-level member (person_character / character_person):
+			// resolve against the joined subjects alias, keep "s.x" as key.
+			e = b.resolveAssocField(sub, cfg.subjectAlias, "id", subjectDirectFields)
 		} else {
-			e = b.infoboxExtractExpr(gf, ea)
+			e = b.resolveAssocField(gf, ea, entityPK, cfg.directFields)
 		}
 		args[i] = fmt.Sprintf("%s := NULLIF(CAST(%s AS VARCHAR), '')", quoteIdent(gf), e)
 	}
 	structArgs := strings.Join(args, ", ")
 
-	orderExpr, asc, _ := b.groupOrderBy(cfg.label, groupFields, ea, entityPK, cfg.directFields)
+	orderExpr, asc, _ := b.groupOrderBy(cfg.label, groupFields, ea, entityPK, cfg.directFields, cfg.subjectAlias)
 	orderClause := ""
 	if orderExpr != "" {
 		dir := "DESC"
@@ -2284,10 +2319,24 @@ func (b *SQLBuilder) buildAssocGroupSubquery(cfg assocSubConfig, groupFields []s
 	), nil
 }
 
+// resolveAssocField maps an output field name to a SQL expression on the given
+// entity alias: "id" → PK column, direct fields → quoted column, otherwise an
+// infobox extraction.
+func (b *SQLBuilder) resolveAssocField(field, alias, entityPK string, directFields map[string]bool) string {
+	if field == "id" || field == "ID" {
+		return alias + "." + entityPK
+	}
+	if directFields[field] {
+		return alias + "." + quoteIdent(field)
+	}
+	return b.infoboxExtractExpr(field, alias)
+}
+
 // groupOrderBy finds a sort rule matching the group column's prefix and one of
 // its member fields (e.g. group 导演.{name|生日|id}+ with sort 导演.生日+),
 // returning the normalized ORDER BY expression and ascending direction.
-func (b *SQLBuilder) groupOrderBy(label string, groupFields []string, ea, entityPK string, directFields map[string]bool) (string, bool, bool) {
+// Members prefixed "s." resolve against subjectAlias (subjects join).
+func (b *SQLBuilder) groupOrderBy(label string, groupFields []string, ea, entityPK string, directFields map[string]bool, subjectAlias string) (string, bool, bool) {
 	idx := strings.Index(label, ".{")
 	if idx < 0 {
 		return "", false, false
@@ -2303,17 +2352,14 @@ func (b *SQLBuilder) groupOrderBy(label string, groupFields []string, ea, entity
 		if !containsString(groupFields, f) {
 			continue
 		}
-		var e string
-		if f == "id" || f == "ID" {
-			e = ea + "." + entityPK
-		} else if directFields[f] {
-			e = ea + "." + quoteIdent(f)
-		} else {
-			e = b.infoboxExtractExpr(f, ea)
+		name, alias, pk, df := f, ea, entityPK, directFields
+		if sub, ok := strings.CutPrefix(f, "s."); ok && subjectAlias != "" {
+			name, alias, pk, df = sub, subjectAlias, "id", subjectDirectFields
 		}
-		if dateFields[f] {
+		e := b.resolveAssocField(name, alias, pk, df)
+		if dateFields[name] {
 			e = normalizeDate(e)
-		} else if numericFields[f] {
+		} else if numericFields[name] {
 			e = extractNum(e)
 		}
 		return e, s.Direction != "desc", true

@@ -343,6 +343,9 @@ func generateAllSQL() map[string]string {
 			Conditions:        []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "アル"}}},
 			SubjectConditions: []config.Filter{{Field: &config.FieldFilter{Field: "rank", Operator: "lt", Value: "5000"}}},
 		}}},
+		{"person_character_group_subject_fields", []string{"person_id", "name", "CV.{id|name|s.id|s.name}+"}, config.Filter{PersonCharacter: &config.PersonCharacterFilter{
+			Type: "CV", Mode: "any",
+		}}},
 		{"person_staff_group_json", []string{"person_id", "name", "系列构成.{name|rank|id}", "系列构成.{name|rank|id}+"}, config.Filter{Staff: &config.StaffFilter{
 			Position: "系列构成", Mode: "any",
 			Conditions: []config.Filter{{Field: &config.FieldFilter{Field: "rank", Operator: "lt", Value: "1500"}}},
@@ -378,6 +381,9 @@ func generateAllSQL() map[string]string {
 			Type: "CV", Mode: "any",
 			Conditions:        []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "水树"}}},
 			SubjectConditions: []config.Filter{{Field: &config.FieldFilter{Field: "rank", Operator: "lt", Value: "5000"}}},
+		}}},
+		{"character_person_group_subject_fields", []string{"character_id", "name", "CV.{id|name|s.id|s.name}+"}, config.Filter{CharacterPerson: &config.CharacterPersonFilter{
+			Type: "CV", Mode: "any",
 		}}},
 	}
 	for _, ct := range charOutTests {
@@ -418,6 +424,10 @@ func generateAllSQL() map[string]string {
 			[]string{"id", "name", "导演.{name|生日|id}+"},
 			config.Filter{Staff: &config.StaffFilter{Position: "导演", Mode: "any"}},
 			[]config.SortRule{{Field: "导演.生日+", Direction: "desc"}}},
+		{"sort_assoc_group_subject_field", "person",
+			[]string{"person_id", "name", "CV.{name|s.date}+"},
+			config.Filter{PersonCharacter: &config.PersonCharacterFilter{Type: "CV", Mode: "any"}},
+			[]config.SortRule{{Field: "CV.s.date+", Direction: "desc"}}},
 	}
 	for _, st := range assocSortTests {
 		cfg := &config.Config{

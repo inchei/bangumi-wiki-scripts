@@ -233,6 +233,14 @@ WHERE NOT EXISTS (
 			   )
 			 )
 LIMIT 10
+character_person_group_subject_fields	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
+SELECT c."character_id", c."name", (SELECT to_json(list(struct_pack("id" := NULLIF(CAST(p.person_id AS VARCHAR), ''), "name" := NULLIF(CAST(p."name" AS VARCHAR), ''), "s.id" := NULLIF(CAST(rs.id AS VARCHAR), ''), "s.name" := NULLIF(CAST(rs."name" AS VARCHAR), '')) ORDER BY p.person_id ASC)) FROM person_characters pc LEFT JOIN persons p ON pc.person_id = p.person_id LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.character_id = c.character_id AND pc.type = 0) AS "CV.{id|name|s.id|s.name}+"
+FROM characters c
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND pc.type = 0)
+LIMIT 10
 character_person_output	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited')),
 person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
@@ -408,6 +416,14 @@ meta_tag_subject	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subje
 SELECT s."id" as id, s."name"
 FROM subjects s
 WHERE LIST_CONTAINS(COALESCE(s.meta_tags, []), 'TV')
+LIMIT 10
+person_character_group_subject_fields	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p."person_id", p."name", (SELECT to_json(list(struct_pack("id" := NULLIF(CAST(c.character_id AS VARCHAR), ''), "name" := NULLIF(CAST(c."name" AS VARCHAR), ''), "s.id" := NULLIF(CAST(rs.id AS VARCHAR), ''), "s.name" := NULLIF(CAST(rs."name" AS VARCHAR), '')) ORDER BY c.character_id ASC)) FROM person_characters pc LEFT JOIN characters c ON pc.character_id = c.character_id LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.person_id = p.person_id AND pc.type = 0) AS "CV.{id|name|s.id|s.name}+"
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0)
 LIMIT 10
 person_character_output	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
@@ -735,6 +751,15 @@ SELECT s."id" as id, s."name", (SELECT to_json(list(struct_pack("name" := NULLIF
 FROM subjects s
 WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons  WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (2, 1016, 4002))
 ORDER BY (SELECT max(TRY_CAST(CASE WHEN regexp_matches(replace(replace(replace(TRIM(regexp_extract(p.infobox, '(?i)\|生日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)), '年', '-'), '月', '-'), '日', ''), '^\d{4}$') THEN replace(replace(replace(TRIM(regexp_extract(p.infobox, '(?i)\|生日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)), '年', '-'), '月', '-'), '日', '') || '-01-01' WHEN regexp_matches(replace(replace(replace(TRIM(regexp_extract(p.infobox, '(?i)\|生日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)), '年', '-'), '月', '-'), '日', ''), '^\d{4}-\d{1,2}$') THEN replace(replace(replace(TRIM(regexp_extract(p.infobox, '(?i)\|生日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)), '年', '-'), '月', '-'), '日', '') || '-01' ELSE replace(replace(replace(TRIM(regexp_extract(p.infobox, '(?i)\|生日\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)), '年', '-'), '月', '-'), '日', '') END AS DATE)) FROM subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id WHERE sp.subject_id = s.id AND sp.position IN (2, 1016, 4002)) DESC
+LIMIT 10
+sort_assoc_group_subject_field	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
+persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited')),
+person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.jsonlines', format='newline_delimited')),
+characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
+SELECT p."person_id", p."name", (SELECT to_json(list(struct_pack("name" := NULLIF(CAST(c."name" AS VARCHAR), ''), "s.date" := NULLIF(CAST(rs."date" AS VARCHAR), '')) ORDER BY TRY_CAST(CASE WHEN regexp_matches(replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', ''), '^\d{4}$') THEN replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', '') || '-01-01' WHEN regexp_matches(replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', ''), '^\d{4}-\d{1,2}$') THEN replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', '') || '-01' ELSE replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', '') END AS DATE) DESC)) FROM person_characters pc LEFT JOIN characters c ON pc.character_id = c.character_id LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.person_id = p.person_id AND pc.type = 0) AS "CV.{name|s.date}+"
+FROM persons p
+WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0)
+ORDER BY (SELECT max(TRY_CAST(CASE WHEN regexp_matches(replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', ''), '^\d{4}$') THEN replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', '') || '-01-01' WHEN regexp_matches(replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', ''), '^\d{4}-\d{1,2}$') THEN replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', '') || '-01' ELSE replace(replace(replace(TRIM(rs."date"), '年', '-'), '月', '-'), '日', '') END AS DATE)) FROM person_characters pc LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN characters c ON pc.character_id = c.character_id WHERE pc.person_id = p.person_id AND pc.type = 0) DESC
 LIMIT 10
 sort_assoc_staff_count	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),
