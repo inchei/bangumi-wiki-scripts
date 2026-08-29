@@ -6,6 +6,7 @@
     outputColumns,
     sortRules,
     resultLimit,
+    RESULT_LIMIT_DEFAULT,
     queryTarget,
     subjectRootLogic,
     personRootLogic,
@@ -99,11 +100,14 @@
       limit: get(resultLimit),
     };
     dirty = false;
+    // Full replace: the YAML is the whole config — settings it omits reset
+    // to defaults. Scoped to the current target (its filter tree; the target
+    // itself only switches when the YAML specifies one).
     if (data.target) queryTarget.set(data.target);
-    if (data.filters?.length > 0) applyFiltersFromAPI(data.filters);
-    if (data.output?.columns) outputColumns.set(data.output.columns.join(","));
-    if (data.sort) sortRules.set(data.sort);
-    if (data.limit) resultLimit.set(data.limit);
+    applyFiltersFromAPI(data.filters ?? []);
+    outputColumns.set((data.output?.columns ?? []).join(","));
+    sortRules.set(data.sort ?? []);
+    resultLimit.set(data.limit ?? RESULT_LIMIT_DEFAULT);
     pulse("apply");
     document.getElementById("btn-run")?.focus();
   }

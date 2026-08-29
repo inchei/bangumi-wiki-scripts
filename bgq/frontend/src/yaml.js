@@ -127,18 +127,41 @@ export function parseYAML(raw) {
     }
   }
 
-  if (!cfg || typeof cfg !== "object") {
+  if (!cfg || typeof cfg !== "object" || Array.isArray(cfg)) {
     throw new Error("配置格式错误：需要一个对象");
   }
 
+  // Reject unknown top-level keys (e.g. a typo'd "limt:") instead of
+  // silently dropping them — same keys filtersToYAML emits.
+  for (const k of Object.keys(cfg)) {
+    if (!TOP_LEVEL_KEYS.has(k)) {
+      throw new Error(`未知的顶级键「${k}」`);
+    }
+  }
+
+  // Pass-through parse; apply-side treats the YAML as the complete config
+  // (omitted sections reset to defaults). Non-array filters/sort are passed
+  // through raw so validateConfig can flag them before the destructive apply.
   const result = {};
-  if (cfg.target) result.target = cfg.target;
-  if (cfg.filters) result.filters = normalizeFilters(cfg.filters);
-  if (cfg.output) result.output = cfg.output;
-  if (cfg.sort) result.sort = cfg.sort;
-  if (cfg.limit) result.limit = cfg.limit;
+  if (cfg.target != null && cfg.target !== "") result.target = cfg.target;
+  if (cfg.filters != null) {
+    result.filters = Array.isArray(cfg.filters)
+      ? normalizeFilters(cfg.filters)
+      : cfg.filters;
+  }
+  if (cfg.output != null) result.output = cfg.output;
+  if (cfg.sort != null) result.sort = cfg.sort;
+  if (cfg.limit != null && cfg.limit !== "") result.limit = cfg.limit;
   return result;
 }
+
+const TOP_LEVEL_KEYS = new Set([
+  "target",
+  "filters",
+  "output",
+  "sort",
+  "limit",
+]);
 
 /** Normalize YAML filters to API format (wrap in logic if needed) */
 function normalizeFilters(filters) {
@@ -259,7 +282,8 @@ function normalizeFilterValue(val, key) {
 
 /**
  * Semantic validation mirroring the backend's query-time existence errors
- * (unknown relation/position/operator/type names). Returns deduplicated
+ * (unknown relation/position/operator/type names), plus output/limit shape
+ * checks mirroring the API's JSON decode constraints. Returns deduplicated
  * Chinese error strings; empty array = valid.
  */
 export function validateConfig(cfg) {
@@ -268,7 +292,82 @@ export function validateConfig(cfg) {
     errors.add(`target「${cfg.target}」不存在`);
   }
   walkFilters(cfg.filters, errors);
+  checkFilters(cfg.filters, errors);
+  checkOutput(cfg.output, errors);
+  checkLimit(cfg.limit, errors);
+  checkSort(cfg.sort, errors);
   return [...errors];
+}
+
+// Backend never errors on limit values (server.go clamps: <=0 → 1000,
+// >10000 → 10000), but silent clamping surprises the user; the UI input
+// constrains to the same 1..10000 range.
+const LIMIT_MIN = 1;
+const LIMIT_MAX = 10000;
+
+function checkOutput(output, errors) {
+  if (output == null) return;
+  if (typeof output !== "object" || Array.isArray(output)) {
+    errors.add("output 必须为对象");
+    return;
+  }
+  // The web UI only consumes output.columns; format/path are CLI-only.
+  for (const k of Object.keys(output)) {
+    if (k !== "columns") errors.add(`output 中未知键「${k}」`);
+  }
+  const cols = output.columns;
+  if (cols == null) return;
+  if (!Array.isArray(cols)) {
+    errors.add("output.columns 必须为字符串数组");
+    return;
+  }
+  for (const c of cols) {
+    if (typeof c !== "string" || c.trim() === "") {
+      errors.add(`output.columns「${c}」不是有效列名`);
+    }
+  }
+}
+
+function checkLimit(limit, errors) {
+  if (limit == null || limit === "") return;
+  const n = typeof limit === "number" ? limit : Number(String(limit).trim());
+  if (!Number.isInteger(n)) {
+    errors.add(`limit「${limit}」不是有效整数`);
+    return;
+  }
+  if (n < LIMIT_MIN || n > LIMIT_MAX) {
+    errors.add(`limit ${n} 超出范围 ${LIMIT_MIN}-${LIMIT_MAX}`);
+  }
+}
+
+// filters is normally normalized to an array by parseYAML; a raw non-array
+// here (direct validateConfig calls) must not reach the destructive apply.
+function checkFilters(filters, errors) {
+  if (filters == null) return;
+  if (!Array.isArray(filters)) errors.add("filters 必须为数组");
+}
+
+// Sort items must survive JSON decode into config.SortRule on the backend
+// (array of objects with a string field); direction is free-form there.
+function checkSort(sort, errors) {
+  if (sort == null) return;
+  if (!Array.isArray(sort)) {
+    errors.add("sort 必须为数组");
+    return;
+  }
+  for (let i = 0; i < sort.length; i++) {
+    const s = sort[i];
+    if (!s || typeof s !== "object" || Array.isArray(s)) {
+      errors.add(`sort[${i}] 必须为对象`);
+      continue;
+    }
+    if (typeof s.field !== "string") {
+      errors.add(`sort[${i}].field 必须为字符串`);
+    }
+    if (s.direction !== undefined && typeof s.direction !== "string") {
+      errors.add(`sort[${i}].direction 必须为字符串`);
+    }
+  }
 }
 
 const TARGETS = new Set(["subject", "person", "character", "episode"]);

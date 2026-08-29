@@ -34,7 +34,8 @@ export const queryTarget = writable("subject");
 export const lastQueryTarget = writable("subject");
 export const outputColumns = writable("id,name,name_cn,type,");
 export const sortRules = writable([]); // [{field: string, direction: "asc"|"desc"}]
-export const resultLimit = writable(500);
+export const RESULT_LIMIT_DEFAULT = 500;
+export const resultLimit = writable(RESULT_LIMIT_DEFAULT);
 
 // Per-target output settings: { [target]: { outputColumns, sortRules, resultLimit } }
 const _targetSettings = {};
