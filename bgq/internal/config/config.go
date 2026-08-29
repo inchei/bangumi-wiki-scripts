@@ -1,11 +1,15 @@
 package config
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
+	"sync"
 
 	"gopkg.in/yaml.v3"
 
@@ -24,7 +28,7 @@ const (
 type Config struct {
 	Database string     `yaml:"database,omitempty" json:"database,omitempty"`
 	DataDir  string     `yaml:"data_dir,omitempty" json:"data_dir,omitempty"`
-	Target   string     `yaml:"target,omitempty" json:"target,omitempty"` // "subject" (default) or "person"
+	Target   string     `yaml:"target,omitempty" json:"target,omitempty"` // subject (default), person, character, episode
 	Filters  []Filter   `yaml:"filters,omitempty" json:"filters,omitempty"`
 	Output   *Output    `yaml:"output,omitempty" json:"output,omitempty"`
 	Sort     []SortRule `yaml:"sort,omitempty" json:"sort,omitempty"`
@@ -128,7 +132,7 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 			if val.Kind == yaml.ScalarNode {
 				f.Type.Value = parseYAMLValue(val)
 			} else {
-				if err := val.Decode(f.Type); err != nil {
+				if err := decodeStrict(val, key, f.Type); err != nil {
 					return err
 				}
 			}
@@ -140,7 +144,7 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 				f.Field.Operator = "contains"
 				f.Field.Value = ""
 			} else {
-				if err := val.Decode(f.Field); err != nil {
+				if err := decodeStrict(val, key, f.Field); err != nil {
 					return err
 				}
 			}
@@ -149,7 +153,7 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 				f.Global = &GlobalFilter{Operator: "contains", Value: val.Value}
 			} else {
 				f.Global = &GlobalFilter{}
-				if err := val.Decode(f.Global); err != nil {
+				if err := decodeStrict(val, key, f.Global); err != nil {
 					return err
 				}
 			}
@@ -159,7 +163,7 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 				f.Tag = &TagFilter{Operator: "contains", Value: val.Value}
 			} else {
 				f.Tag = &TagFilter{}
-				if err := val.Decode(f.Tag); err != nil {
+				if err := decodeStrict(val, key, f.Tag); err != nil {
 					return err
 				}
 			}
@@ -169,7 +173,7 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 				f.MetaTag = &TagFilter{Operator: "contains", Value: val.Value}
 			} else {
 				f.MetaTag = &TagFilter{}
-				if err := val.Decode(f.MetaTag); err != nil {
+				if err := decodeStrict(val, key, f.MetaTag); err != nil {
 					return err
 				}
 			}
@@ -178,7 +182,7 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 				f.Relation = &RelationFilter{Type: val.Value, Mode: "any"}
 			} else {
 				f.Relation = &RelationFilter{}
-				if err := val.Decode(f.Relation); err != nil {
+				if err := decodeStrict(val, key, f.Relation); err != nil {
 					return err
 				}
 			}
@@ -187,7 +191,7 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 				f.PersonRelation = &PersonRelationFilter{Type: val.Value, Mode: "any"}
 			} else {
 				f.PersonRelation = &PersonRelationFilter{}
-				if err := val.Decode(f.PersonRelation); err != nil {
+				if err := decodeStrict(val, key, f.PersonRelation); err != nil {
 					return err
 				}
 			}
@@ -196,7 +200,7 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 				f.CharacterRelation = &CharacterRelationFilter{Type: val.Value, Mode: "any"}
 			} else {
 				f.CharacterRelation = &CharacterRelationFilter{}
-				if err := val.Decode(f.CharacterRelation); err != nil {
+				if err := decodeStrict(val, key, f.CharacterRelation); err != nil {
 					return err
 				}
 			}
@@ -205,40 +209,83 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 				f.Staff = &StaffFilter{Position: val.Value, Mode: "any"}
 			} else {
 				f.Staff = &StaffFilter{}
-				if err := val.Decode(f.Staff); err != nil {
+				if err := decodeStrict(val, key, f.Staff); err != nil {
 					return err
 				}
 			}
 		case "character":
 			f.Character = &CharacterFilter{}
-			if err := val.Decode(f.Character); err != nil {
+			if err := decodeStrict(val, key, f.Character); err != nil {
 				return err
 			}
 		case "person_character":
 			f.PersonCharacter = &PersonCharacterFilter{}
-			if err := val.Decode(f.PersonCharacter); err != nil {
+			if err := decodeStrict(val, key, f.PersonCharacter); err != nil {
 				return err
 			}
 		case "character_person":
 			f.CharacterPerson = &CharacterPersonFilter{}
-			if err := val.Decode(f.CharacterPerson); err != nil {
+			if err := decodeStrict(val, key, f.CharacterPerson); err != nil {
 				return err
 			}
 		case "episode":
 			f.Episode = &EpisodeFilter{}
-			if err := val.Decode(f.Episode); err != nil {
+			if err := decodeStrict(val, key, f.Episode); err != nil {
 				return err
 			}
 		case "logic":
 			f.Logic = &LogicFilter{}
-			if err := val.Decode(f.Logic); err != nil {
+			if err := decodeStrict(val, key, f.Logic); err != nil {
 				return err
 			}
 		default:
-			return fmt.Errorf("未知的筛选类型: %s", key)
+			return fmt.Errorf("未知筛选键「%s」", key)
 		}
 	}
 	return nil
+}
+
+// strictYAMLKeys caches the yaml-tagged field names per struct type.
+var strictYAMLKeys sync.Map // reflect.Type -> map[string]struct{}
+
+func strictYAMLKeysFor(t reflect.Type) map[string]struct{} {
+	if cached, ok := strictYAMLKeys.Load(t); ok {
+		return cached.(map[string]struct{})
+	}
+	keys := make(map[string]struct{})
+	for i := 0; i < t.NumField(); i++ {
+		name := strings.Split(t.Field(i).Tag.Get("yaml"), ",")[0]
+		if name == "" || name == "-" {
+			continue
+		}
+		keys[name] = struct{}{}
+	}
+	actual, _ := strictYAMLKeys.LoadOrStore(t, keys)
+	return actual.(map[string]struct{})
+}
+
+// decodeStrict decodes a mapping node into target, rejecting keys that are
+// not yaml-tagged fields of the target struct. KnownFields(true) does not
+// propagate through custom UnmarshalYAML → node.Decode, so nested filter
+// values would otherwise silently drop unknown keys while the Web UI's YAML
+// editor rejects them (kind names the error like the frontend does).
+func decodeStrict(node *yaml.Node, kind string, target interface{}) error {
+	if node.Kind == yaml.MappingNode {
+		t := reflect.TypeOf(target)
+		if t.Kind() == reflect.Pointer {
+			t = t.Elem()
+		}
+		if t.Kind() == reflect.Struct {
+			allowed := strictYAMLKeysFor(t)
+			for i := 0; i < len(node.Content); i += 2 {
+				key := node.Content[i].Value
+				if _, ok := allowed[key]; !ok {
+					return fmt.Errorf("%s 中未知键「%s」", kind, key)
+				}
+			}
+		}
+	}
+	return node.Decode(target)
 }
 
 // parseYAMLValue converts a YAML scalar node to a Go value.
@@ -401,7 +448,12 @@ func Load(path string) (*Config, error) {
 // ParseYAML parses YAML (or JSON) config from bytes.
 func ParseYAML(data []byte) (*Config, error) {
 	cfg := &Config{}
-	if err := yaml.Unmarshal(data, cfg); err != nil {
+	// KnownFields mirrors the Web UI's YAML editor: unknown top-level and
+	// nested keys (e.g. a typo'd "limt:") are rejected instead of silently
+	// dropped.
+	dec := yaml.NewDecoder(bytes.NewReader(data))
+	dec.KnownFields(true)
+	if err := dec.Decode(cfg); err != nil && err != io.EOF {
 		return nil, fmt.Errorf("解析YAML配置失败: %w", err)
 	}
 
@@ -457,6 +509,14 @@ func countFilterTree(filters []Filter, depth int) (count int, maxDepth int) {
 
 // Validate checks the configuration for errors.
 func (c *Config) Validate() error {
+	// Mirror the Web UI's YAML editor: unknown targets are rejected instead
+	// of silently falling back to "subject".
+	switch c.Target {
+	case "", "subject", "person", "character", "episode":
+	default:
+		return fmt.Errorf("target「%s」不存在", c.Target)
+	}
+
 	// data_dir/database will be provided via CLI if not in config
 	if len(c.Filters) == 0 {
 		return fmt.Errorf("至少需要一个筛选条件 (filters)")

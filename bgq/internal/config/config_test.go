@@ -57,3 +57,52 @@ func TestValidateRejectsGroupSort(t *testing.T) {
 		t.Fatalf("expected group-sort rejection, got %v", err)
 	}
 }
+
+func TestValidateTarget(t *testing.T) {
+	for _, target := range []string{"", "subject", "person", "character", "episode"} {
+		cfg := &Config{Target: target, Filters: []Filter{{Field: &FieldFilter{Field: "name", Operator: "contains", Value: "x"}}}}
+		if err := cfg.Validate(); err != nil {
+			t.Fatalf("target %q should be valid, got %v", target, err)
+		}
+	}
+	cfg := &Config{Target: "music", Filters: []Filter{{Field: &FieldFilter{Field: "name", Operator: "contains", Value: "x"}}}}
+	err := cfg.Validate()
+	if err == nil || !strings.Contains(err.Error(), "target「music」不存在") {
+		t.Fatalf("expected unknown target error, got %v", err)
+	}
+}
+
+func TestValidateLimitUncapped(t *testing.T) {
+	// The 1..10000 window is a Web UI/API concern (frontend validation +
+	// server-side clamp); the CLI must stay uncapped for bulk exports.
+	cfg := &Config{
+		Filters: []Filter{{Field: &FieldFilter{Field: "name", Operator: "contains", Value: "x"}}},
+		Limit:   1000000,
+	}
+	if err := cfg.Validate(); err != nil {
+		t.Fatalf("CLI limit should be uncapped, got %v", err)
+	}
+}
+
+func TestParseYAMLKnownFields(t *testing.T) {
+	t.Run("unknown top-level key", func(t *testing.T) {
+		_, err := ParseYAML([]byte("filters: []\nlimt: 500\n"))
+		if err == nil || !strings.Contains(err.Error(), "limt") {
+			t.Fatalf("expected unknown key error, got %v", err)
+		}
+	})
+
+	t.Run("unknown nested filter key", func(t *testing.T) {
+		_, err := ParseYAML([]byte("filters:\n  - field:\n      field: name\n      operator: contains\n      value: x\n      typo: 1\n"))
+		if err == nil || !strings.Contains(err.Error(), "typo") {
+			t.Fatalf("expected unknown nested key error, got %v", err)
+		}
+	})
+
+	t.Run("empty input skips decode but fails validation", func(t *testing.T) {
+		_, err := ParseYAML([]byte(""))
+		if err == nil || !strings.Contains(err.Error(), "至少需要一个筛选条件") {
+			t.Fatalf("expected filters-required error (not EOF), got %v", err)
+		}
+	})
+}
