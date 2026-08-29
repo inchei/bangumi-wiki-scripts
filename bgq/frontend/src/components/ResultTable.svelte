@@ -220,6 +220,13 @@
   let theadH = $state(0);
   let canScrollLeft = $state(false);
   let canScrollRight = $state(false);
+  // Fill mode: the CAPPED layout fits without horizontal scrolling, so
+  // cells drop their 20ch caps and stretch with their tracks to fill the
+  // container, matching the header strip (which always spans the full
+  // track width). When scrolling IS needed the caps stay on, keeping the
+  // scrollable width small. Toggling re-runs the effect below (fillMode
+  // dep), which re-measures track widths after the class lands.
+  let fillMode = $state(false);
 
   // Native-sticky header bar. The in-grid thead can't be sticky itself: the
   // wrap's overflow-x:auto forces overflow-y to compute to auto per spec,
@@ -281,6 +288,23 @@
     canScrollRight = max > 8 && el.scrollLeft < max - 2;
   }
 
+  // Decide fill mode by measuring the CAPPED layout: in fill mode the
+  // table is pinned to width:100% and grid sizing compresses all tracks
+  // into the container, so scrollWidth can never overflow and the mode
+  // would latch on forever. Briefly drop the class, force a reflow, and
+  // restore it — all within one JS task, so nothing paints in between
+  // and Svelte's class:fill binding stays in sync (its value is unchanged).
+  function updateFillMode() {
+    const el = wrapEl;
+    const table = tableEl;
+    if (!el || !table) return;
+    const had = table.classList.contains("fill");
+    if (had) table.classList.remove("fill");
+    const max = el.scrollWidth - el.clientWidth;
+    if (had) table.classList.add("fill");
+    fillMode = max <= 8;
+  }
+
   function nudgeScroll(dir) {
     const el = wrapEl;
     if (!el) return;
@@ -293,7 +317,11 @@
   $effect(() => {
     void displayCols;
     void $lastResult?.rows?.length;
+    // Dependency: updateFillMode() may toggle fillMode, which changes
+    // the layout; re-run so measureHeader() reads the post-toggle tracks.
+    void fillMode;
     updateScrollHints();
+    updateFillMode();
     measureHeader();
     syncStrip();
     const el = wrapEl;
@@ -326,6 +354,7 @@
     };
     const ro = new ResizeObserver(() => {
       updateScrollHints();
+      updateFillMode();
       measureHeader();
     });
     ro.observe(el);
@@ -767,6 +796,7 @@
         >
           <div
             class="results-table"
+            class:fill={fillMode}
             role="table"
             bind:this={tableEl}
             style="grid-template-columns: repeat({displayCols.length}, minmax(0, auto))"
@@ -978,11 +1008,11 @@
     will-change: transform;
   }
 
-  .sticky-th {
+  /* Specificity must beat `.results-th { max-width: 20ch }` below: width
+     comes from the measured grid track, which can legitimately exceed the
+     header's own 20ch cap when few columns stretch to fill the container. */
+  .results-th.sticky-th {
     flex: none;
-
-    /* Width comes from the measured grid track, which can legitimately
-       exceed the header's own 20ch cap (body cells stretch tracks wider). */
     max-width: none;
   }
 
@@ -1042,6 +1072,22 @@
     min-width: 100%;
     font-size: 13px;
     background: var(--white);
+  }
+
+  /* Fill mode (no horizontal scrolling needed): pin the table to the
+     container width — with caps removed, `width: max-content` would size
+     it to the full content length and CREATE the overflow fill mode is
+     meant to avoid (oscillating between modes). Uncapped cells then
+     stretch with their tracks, which grid sizing distributes across the
+     container up to each column's content length. */
+  .results-table.fill {
+    width: 100%;
+  }
+
+  .results-table.fill .results-th,
+  .results-table.fill .results-td,
+  .results-table.fill .cell-mini-cell {
+    max-width: none;
   }
 
   .results-thead,
