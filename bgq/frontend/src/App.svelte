@@ -120,14 +120,14 @@
 </script>
 
 <!-- Header -->
-<div class="header">
+<header class="header">
   <div class="header-logo">
     <div
       class="logo-sprite"
       style="background-position: {logoX}px {logoY}px"
       onclick={cycleLogo}
     ></div>
-    <span>Bangumi Query</span>
+    <h1 class="app-name">Bangumi Query</h1>
   </div>
   <span class="spacer"></span>
   <a
@@ -159,15 +159,15 @@
   >
     <MorphIcon icon={resolvedTheme() === "light" ? Sun : Moon} size={16} />
   </button>
-</div>
+</header>
 
 <!-- Main Container -->
-<div class="container">
+<main class="container">
   <!-- Left Panel -->
   <div class="panel panel-left">
     <div class="card">
       <div class="card-header">
-        <span class="dot-indicator"></span>筛选条件
+        <h2 class="card-title"><span class="dot-indicator"></span>筛选条件</h2>
         <span class="spacer"></span>
         <button class="btn btn-outline btn-xs" onclick={clearFilters}
           >清除全部</button
@@ -210,7 +210,7 @@
   <div class="panel panel-right">
     <ResultTable />
   </div>
-</div>
+</main>
 
 <style>
   /* ===== Header ===== */
@@ -240,6 +240,14 @@
     color: var(--text);
     display: flex;
     align-items: center;
+  }
+
+  /* Real h1 for the app name; reset UA heading styles to inherit the
+     header-logo typography above. */
+  .app-name {
+    margin: 0;
+    font-size: inherit;
+    font-weight: inherit;
   }
 
   .logo-sprite {

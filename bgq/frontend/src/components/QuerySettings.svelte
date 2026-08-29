@@ -139,7 +139,7 @@
 </script>
 
 <div class="card">
-  <div class="card-header"><span class="dot-indicator"></span>输出设置</div>
+  <h2 class="card-header"><span class="dot-indicator"></span>输出设置</h2>
   <div class="form-group">
     <label class="form-label" for="outputColumns">输出列（逗号分隔）</label>
     <AwesompleteInput

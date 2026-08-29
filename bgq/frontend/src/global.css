@@ -135,7 +135,19 @@ a:hover {
   font-size: 15px;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 16px;
+  margin: 0 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Card title as a real heading (h2) inside a flex card-header; reset the
+   UA heading styles so it inherits the card-header typography, and keep the
+   dot-to-text gap that the flex card-header gap provided before wrapping. */
+.card-title {
+  margin: 0;
+  font-size: inherit;
+  font-weight: inherit;
   display: flex;
   align-items: center;
   gap: 8px;
