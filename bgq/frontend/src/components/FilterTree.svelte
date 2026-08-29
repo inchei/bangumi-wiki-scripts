@@ -55,16 +55,18 @@
   );
 
   let containerEl;
-  // Per-target state for the "add condition" dropdown
+  // Per-context state for the "add condition" dropdown (nested FilterTrees
+  // for relation/staff subject_conditions use a different ctx than the root)
   let newTypeSelectMap = $state({
-    subject: "field",
-    person: "field",
-    character: "field",
-    episode: "field",
+    [CTX_SUBJECT]: "field",
+    [CTX_PERSON]: "field",
+    [CTX_STAFF_PERSON]: "field",
+    [CTX_CHARACTER]: "field",
+    [CTX_EPISODE]: "field",
   });
-  let newTypeSelect = $derived(newTypeSelectMap[$queryTarget] || "field");
+  let newTypeSelect = $derived(newTypeSelectMap[effectiveCtx] || "field");
   function setNewTypeSelect(val) {
-    newTypeSelectMap[$queryTarget] = val;
+    newTypeSelectMap[effectiveCtx] = val;
   }
 
   // Reset newTypeSelect when options change and current value is no longer valid

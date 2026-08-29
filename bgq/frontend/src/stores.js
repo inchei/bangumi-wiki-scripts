@@ -331,14 +331,17 @@ export function resetLogicBuilder() {
 // ---- Logic tree helpers ----
 
 // Iterate all condition arrays in an item (relation, staff, character, etc.)
-// Calls fn(conditions, key) for each `.conditions` and `.subject_conditions` array.
+// Calls fn(conditions, key, condKey) for each `.conditions` and
+// `.subject_conditions` array. `key` is the filter kind ("person_character"
+// etc.), `condKey` is the array field name so callers can write updates back
+// to the correct array.
 function forEachCondArray(item, fn) {
   for (const key of Object.keys(item)) {
     const val = item[key];
     if (val && typeof val === "object") {
-      if (Array.isArray(val.conditions)) fn(val.conditions, key);
+      if (Array.isArray(val.conditions)) fn(val.conditions, key, "conditions");
       if (Array.isArray(val.subject_conditions))
-        fn(val.subject_conditions, key);
+        fn(val.subject_conditions, key, "subject_conditions");
     }
   }
 }
@@ -365,7 +368,7 @@ function findAndReplace(node, id, replacer) {
     }
     if (!found) {
       // Nested conditions: { relation: { conditions: [{ logic: ... }] } }
-      forEachCondArray(item, (conds, key) => {
+      forEachCondArray(item, (conds, key, condKey) => {
         if (found) return;
         const newConds = [];
         let condChanged = false;
@@ -382,7 +385,7 @@ function findAndReplace(node, id, replacer) {
         }
         if (condChanged) {
           const val = item[key];
-          const newVal = { ...val, conditions: newConds };
+          const newVal = { ...val, [condKey]: newConds };
           newItems.push({ ...item, [key]: newVal });
           found = true;
           changed = true;
@@ -714,7 +717,7 @@ function removeItemById(node, id) {
     }
     // Recurse into condition arrays
     let found = false;
-    forEachCondArray(item, (conds, key) => {
+    forEachCondArray(item, (conds, key, condKey) => {
       if (found) return;
       const newConds = [];
       let condChanged = false;
@@ -731,7 +734,7 @@ function removeItemById(node, id) {
       }
       if (condChanged) {
         const val = item[key];
-        newItems.push({ ...item, [key]: { ...val, conditions: newConds } });
+        newItems.push({ ...item, [key]: { ...val, [condKey]: newConds } });
         found = true;
         changed = true;
       }
