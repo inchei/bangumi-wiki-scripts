@@ -17,6 +17,7 @@
     sortState,
     lastQueryTarget,
     queryLoading,
+    bgmHost,
   } from "../stores.js";
   import {
     positionsByType,
@@ -36,6 +37,7 @@
   import { SvelteURL } from "svelte/reactivity";
   import { get } from "svelte/store";
   import ActionButton from "./ActionButton.svelte";
+  import BgmHostSetting from "./BgmHostSetting.svelte";
 
   const ALL_POSITIONS = new Set(positionsByType(0));
   const ALL_RELATIONS = new Set(relationsByType(0));
@@ -65,12 +67,12 @@
     return "subject";
   }
 
-  function groupCellIdHref(entry, field, prefix) {
+  function groupCellIdHref(entry, field, prefix, host) {
     if (!isIDColumn(field)) return null;
     const v = entry[field];
     if (v === null || v === undefined || v === "") return null;
     const type = groupIdLinkType(prefix, get(lastQueryTarget));
-    return `https://bgm.tv/${type}/${encodeURIComponent(String(v))}`;
+    return `https://${host}/${type}/${encodeURIComponent(String(v))}`;
   }
 
   function escapeHtml(s) {
@@ -92,7 +94,7 @@
     return idRegex.test(field);
   }
 
-  function bgmLink(id, colName) {
+  function bgmLink(id, colName, host) {
     if (id === null || id === undefined || id === "")
       return escapeHtml(String(id));
     const raw = String(colName);
@@ -105,7 +107,7 @@
         .split(",")
         .map((p) => p.trim())
         .filter(Boolean)
-        .map((p) => bgmLink(p, baseCol))
+        .map((p) => bgmLink(p, baseCol, host))
         .join(", ");
     }
     const cn = raw.toLowerCase();
@@ -132,7 +134,7 @@
           CHAR_ASSOC_SET.has(base) ||
           prefix.toLowerCase().endsWith(".s");
         if (recognized) {
-          return `<a href="https://bgm.tv/${t}/${encodeURIComponent(s)}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
+          return `<a href="https://${host}/${t}/${encodeURIComponent(s)}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
         }
       }
     }
@@ -141,7 +143,7 @@
     else if (target === "character" || cn.includes("character"))
       type = "character";
     else if (target === "episode" || cn.includes("episode")) type = "ep";
-    return `<a href="https://bgm.tv/${type}/${encodeURIComponent(s)}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
+    return `<a href="https://${host}/${type}/${encodeURIComponent(s)}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
   }
 
   function cellClass(col) {
@@ -405,8 +407,8 @@
     expanded = { ...expanded, [key]: !expanded[key] };
   }
 
-  function cellHtml(col, val, ri, ci) {
-    if (isIDColumn(col)) return bgmLink(val, col);
+  function cellHtml(col, val, ri, ci, host) {
+    if (isIDColumn(col)) return bgmLink(val, col, host);
     if (val === null || val === undefined || val === "")
       return '<span class="cell-null">—</span>';
     const s = String(val);
@@ -798,6 +800,9 @@
         />
       </span>
     </div>
+    <div class="host-line">
+      <BgmHostSetting />
+    </div>
     {#if res.rows.length === 0}
       <div class="results-empty">
         <div class="icon"><MorphIcon icon={Inbox} size={48} /></div>
@@ -886,7 +891,12 @@
                       {#each groupEntries(row[bc.ci]) as entry, ei (ei)}
                         <div class="cell-mini-row">
                           {#each bc.fields as f (f)}
-                            {@const href = groupCellIdHref(entry, f, bc.prefix)}
+                            {@const href = groupCellIdHref(
+                              entry,
+                              f,
+                              bc.prefix,
+                              $bgmHost,
+                            )}
                             <div
                               class="cell-mini-cell {isIDColumn(f)
                                 ? 'col-id'
@@ -920,7 +930,7 @@
                         : undefined}
                       tabindex={long ? "0" : undefined}
                     >
-                      {@html cellHtml(bc.label, val, ri, bi)}
+                      {@html cellHtml(bc.label, val, ri, bi, $bgmHost)}
                     </div>
                   {/if}
                 {/each}
@@ -978,11 +988,18 @@
     }
   }
 
+  .results-panel {
+    /* Container for the host-line alignment query below: its inline size
+       equals the toolbar's, which wraps exactly when it drops under the
+       count+actions width. */
+    container-type: inline-size;
+  }
+
   .results-toolbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
     flex-wrap: wrap;
     gap: 8px;
   }
@@ -1009,6 +1026,23 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+  }
+
+  /* Host line: always its own row below the toolbar. Right-aligned under
+     the button text edge on wide screens; when the toolbar is too narrow
+     for count+buttons to share a line (buttons wrap left below the count),
+     anchor it left like the buttons. Threshold ≈ the real wrap point:
+     count (~120-150px) + gap 8 + sizer-fixed actions row (~412px). */
+  .host-line {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 16px;
+  }
+
+  @container (width < 555px) {
+    .host-line {
+      justify-content: flex-start;
+    }
   }
 
   .results-table-frame {

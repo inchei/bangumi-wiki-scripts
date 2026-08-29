@@ -1018,3 +1018,26 @@ export function clearFilters() {
   resetLogicBuilder();
   bumpVersion();
 }
+
+// ---- Bangumi host (mirror support) ----
+// Host used when generating subject/person/character links in results.
+// Persisted separately so mirror users can point links at their mirror.
+const HOST_KEY = "bgm_host";
+
+function loadBgmHost() {
+  try {
+    return localStorage.getItem(HOST_KEY) || "bgm.tv";
+  } catch {
+    return "bgm.tv";
+  }
+}
+
+export const bgmHost = writable(loadBgmHost());
+
+bgmHost.subscribe((v) => {
+  try {
+    localStorage.setItem(HOST_KEY, v);
+  } catch {
+    // ignore quota errors
+  }
+});
