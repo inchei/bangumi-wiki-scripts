@@ -27,12 +27,13 @@ type server struct {
 }
 
 type apiQueryRequest struct {
-	Target  string            `json:"target,omitempty"`
-	Filters []config.Filter   `json:"filters,omitempty"`
-	Columns []string          `json:"columns,omitempty"`
-	Sort    []config.SortRule `json:"sort,omitempty"`
-	Limit   int               `json:"limit,omitempty"`
-	Format  string            `json:"format,omitempty"`
+	Target     string            `json:"target,omitempty"`
+	Filters    []config.Filter   `json:"filters,omitempty"`
+	Columns    []string          `json:"columns,omitempty"`
+	Sort       []config.SortRule `json:"sort,omitempty"`
+	Limit      int               `json:"limit,omitempty"`
+	AssocLimit int               `json:"assoc_limit,omitempty"`
+	Format     string            `json:"format,omitempty"`
 }
 
 type apiError struct {
@@ -184,18 +185,19 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if cfg.Limit <= 0 {
-		cfg.Limit = 1000
-	}
-	if cfg.Limit > 10000 {
-		cfg.Limit = 10000
-	}
-
 	// Structural validation shared with the CLI path; returns request-scoped
 	// errors (400) instead of surfacing them later as query failures (500).
 	if err := cfg.Validate(); err != nil {
 		writeJSON(w, http.StatusBadRequest, apiError{Error: err.Error()})
 		return
+	}
+
+	// Server-side clamps (Web UI/API concern, CLI stays uncapped)
+	if cfg.Limit <= 0 {
+		cfg.Limit = 1000
+	}
+	if cfg.Limit > 10000 {
+		cfg.Limit = 10000
 	}
 
 	// Use database if configured
@@ -205,6 +207,15 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 
 	if len(req.Columns) > 0 {
 		cfg.Output.Columns = req.Columns
+	}
+	if req.AssocLimit != 0 {
+		cfg.Output.AssocLimit = req.AssocLimit
+	}
+	if cfg.Output.AssocLimit < 1 {
+		cfg.Output.AssocLimit = 20
+	}
+	if cfg.Output.AssocLimit > 100 {
+		cfg.Output.AssocLimit = 100
 	}
 	if req.Format != "" {
 		cfg.Output.Format = req.Format

@@ -16,7 +16,14 @@ import {
  * The API format uses `{ logic: { op, items } }` wrapper; the YAML format
  * uses the same structure but without the `_id` / `_ctx` internal fields.
  */
-export function filtersToYAML(target, filters, columns, limit, sort) {
+export function filtersToYAML(
+  target,
+  filters,
+  columns,
+  limit,
+  sort,
+  assocLimit,
+) {
   const cfg = {};
   if (target && target !== "subject") cfg.target = target;
   if (filters && filters.length > 0) {
@@ -30,7 +37,15 @@ export function filtersToYAML(target, filters, columns, limit, sort) {
             .map((s) => s.trim())
             .filter(Boolean)
         : columns;
-    if (cols.length > 0) cfg.output = { columns: cols };
+    if (cols.length > 0) {
+      cfg.output = { columns: cols };
+      if (assocLimit != null && assocLimit !== 20)
+        cfg.output.assoc_limit = assocLimit;
+    } else if (assocLimit != null && assocLimit !== 20) {
+      cfg.output = { assoc_limit: assocLimit };
+    }
+  } else if (assocLimit != null && assocLimit !== 20) {
+    cfg.output = { assoc_limit: assocLimit };
   }
   if (sort && sort.length > 0) cfg.sort = sort;
   if (limit) cfg.limit = limit;
@@ -152,6 +167,8 @@ export function parseYAML(raw) {
   if (cfg.output != null) result.output = cfg.output;
   if (cfg.sort != null) result.sort = cfg.sort;
   if (cfg.limit != null && cfg.limit !== "") result.limit = cfg.limit;
+  if (cfg.output?.assoc_limit != null)
+    result.assocLimit = cfg.output.assoc_limit;
   return result;
 }
 
@@ -313,7 +330,19 @@ function checkOutput(output, errors) {
   }
   // The web UI only consumes output.columns; format/path are CLI-only.
   for (const k of Object.keys(output)) {
-    if (k !== "columns") errors.add(`output 中未知键「${k}」`);
+    if (k !== "columns" && k !== "assoc_limit")
+      errors.add(`output 中未知键「${k}」`);
+  }
+  if (output.assoc_limit != null && output.assoc_limit !== "") {
+    const n =
+      typeof output.assoc_limit === "number"
+        ? output.assoc_limit
+        : Number(String(output.assoc_limit).trim());
+    if (!Number.isInteger(n) || n < 1 || n > 100) {
+      errors.add(
+        `output.assoc_limit must be in range 1-100, got ${output.assoc_limit}`,
+      );
+    }
   }
   const cols = output.columns;
   if (cols == null) return;

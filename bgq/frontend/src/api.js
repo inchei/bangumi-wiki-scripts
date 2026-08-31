@@ -1,7 +1,21 @@
 // API client — all fetch calls to the Go backend
 
-export async function runQuery(filters, columns, target, limit, sort) {
-  const body = JSON.stringify({ target, filters, columns, limit, sort });
+export async function runQuery(
+  filters,
+  columns,
+  target,
+  limit,
+  sort,
+  assocLimit,
+) {
+  const body = JSON.stringify({
+    target,
+    filters,
+    columns,
+    limit,
+    sort,
+    assoc_limit: assocLimit,
+  });
   const r = await fetch("/api/query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -21,7 +35,7 @@ export async function runQuery(filters, columns, target, limit, sort) {
   return r.json();
 }
 
-export function exportCSV(filters, columns, target, limit, sort) {
+export function exportCSV(filters, columns, target, limit, sort, assocLimit) {
   fetch("/api/query", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -31,6 +45,7 @@ export function exportCSV(filters, columns, target, limit, sort) {
       columns,
       format: "csv",
       limit: Math.min(limit * 10, 10000),
+      assoc_limit: assocLimit,
       sort: sort && sort.length > 0 ? sort : undefined,
     }),
   })

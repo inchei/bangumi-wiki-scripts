@@ -425,9 +425,10 @@ type EpisodeFilter struct {
 
 // Output configures the query output.
 type Output struct {
-	Format  string   `yaml:"format,omitempty" json:"format,omitempty"`   // csv, json, table
-	Path    string   `yaml:"path,omitempty" json:"path,omitempty"`       // output file path (empty = stdout)
-	Columns []string `yaml:"columns,omitempty" json:"columns,omitempty"` // columns to include
+	Format     string   `yaml:"format,omitempty" json:"format,omitempty"`           // csv, json, table
+	Path       string   `yaml:"path,omitempty" json:"path,omitempty"`               // output file path (empty = stdout)
+	Columns    []string `yaml:"columns,omitempty" json:"columns,omitempty"`         // columns to include
+	AssocLimit int      `yaml:"assoc_limit,omitempty" json:"assoc_limit,omitempty"` // max items for "+" / group array columns (0 = default 20)
 }
 
 // SortRule defines a sort order.
@@ -678,6 +679,9 @@ func (c *Config) Validate() error {
 	}
 	if c.Output.Format == "" {
 		c.Output.Format = "table"
+	}
+	if c.Output.AssocLimit <= 0 {
+		c.Output.AssocLimit = 20
 	}
 	if c.Limit <= 0 {
 		c.Limit = 1000

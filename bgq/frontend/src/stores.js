@@ -35,6 +35,8 @@ export const outputColumns = writable("id,name,name_cn,type,");
 export const sortRules = writable([]); // [{field: string, direction: "asc"|"desc"}]
 export const RESULT_LIMIT_DEFAULT = 500;
 export const resultLimit = writable(RESULT_LIMIT_DEFAULT);
+export const ASSOC_LIMIT_DEFAULT = 20;
+export const assocLimit = writable(ASSOC_LIMIT_DEFAULT);
 
 // Per-target output settings: { [target]: { outputColumns, sortRules, resultLimit } }
 const _targetSettings = {};
@@ -123,6 +125,7 @@ export function clearOutputSettings() {
   sortRules.set([]);
   sortState.set({ col: -1, asc: true, field: "" });
   resultLimit.set(RESULT_LIMIT_DEFAULT);
+  assocLimit.set(ASSOC_LIMIT_DEFAULT);
   manualAssoc.set({});
   assocSeeded.set({});
   for (const k of Object.keys(_targetSettings)) delete _targetSettings[k];
@@ -139,6 +142,7 @@ export function captureClearSnapshot() {
     outputColumns: get(outputColumns),
     sortRules: JSON.parse(JSON.stringify(get(sortRules))),
     resultLimit: get(resultLimit),
+    assocLimit: get(assocLimit),
     manualAssoc: JSON.parse(JSON.stringify(get(manualAssoc))),
     assocSeeded: JSON.parse(JSON.stringify(get(assocSeeded))),
     targetSettings: JSON.parse(JSON.stringify(_targetSettings)),
@@ -159,6 +163,7 @@ export function restoreClearSnapshot() {
   outputColumns.set(s.outputColumns);
   sortRules.set(s.sortRules);
   resultLimit.set(s.resultLimit);
+  if (s.assocLimit != null) assocLimit.set(s.assocLimit);
   manualAssoc.set(s.manualAssoc);
   assocSeeded.set(s.assocSeeded);
   for (const k of Object.keys(_targetSettings)) delete _targetSettings[k];
@@ -219,6 +224,7 @@ export function saveToStorage() {
       ...(oc?.trim() ? { outputColumns: oc } : {}),
       sortRules: get(sortRules),
       resultLimit: get(resultLimit),
+      assocLimit: get(assocLimit),
       targetSettings: cleanedTargetSettings,
       manualAssoc: get(manualAssoc),
       assocSeeded: get(assocSeeded),
@@ -245,6 +251,13 @@ export function loadFromStorage() {
     if (state.outputColumns?.trim()) outputColumns.set(state.outputColumns);
     if (state.sortRules != null) sortRules.set(state.sortRules);
     if (state.resultLimit != null) resultLimit.set(state.resultLimit);
+    if (state.assocLimit != null)
+      assocLimit.set(
+        Math.min(
+          100,
+          Math.max(1, Number(state.assocLimit) || ASSOC_LIMIT_DEFAULT),
+        ),
+      );
     if (state.targetSettings) {
       const cleaned = {};
       for (const [k, v] of Object.entries(state.targetSettings)) {
@@ -290,6 +303,10 @@ if (saved?.target) queryTarget.set(saved.target);
 if (saved?.outputColumns?.trim()) outputColumns.set(saved.outputColumns);
 if (saved?.sortRules != null) sortRules.set(saved.sortRules);
 if (saved?.resultLimit != null) resultLimit.set(saved.resultLimit);
+if (saved?.assocLimit != null)
+  assocLimit.set(
+    Math.min(100, Math.max(1, Number(saved.assocLimit) || ASSOC_LIMIT_DEFAULT)),
+  );
 if (saved?.targetSettings) {
   const cleaned = {};
   for (const [k, v] of Object.entries(saved.targetSettings)) {
@@ -313,6 +330,7 @@ queryTarget.subscribe(() => saveToStorage());
 outputColumns.subscribe(() => saveToStorage());
 sortRules.subscribe(() => saveToStorage());
 resultLimit.subscribe(() => saveToStorage());
+assocLimit.subscribe(() => saveToStorage());
 
 export function getTargetStore() {
   const target = get(queryTarget);

@@ -4,7 +4,9 @@
     outputColumns,
     sortRules,
     resultLimit,
+    assocLimit,
     RESULT_LIMIT_DEFAULT,
+    ASSOC_LIMIT_DEFAULT,
     queryTarget,
     subjectRootLogic,
     personRootLogic,
@@ -59,6 +61,7 @@
         get(outputColumns),
         get(resultLimit),
         get(sortRules),
+        get(assocLimit),
       );
       pulse("sync");
       if (taEl) {
@@ -97,6 +100,7 @@
       columns: get(outputColumns),
       sort: get(sortRules),
       limit: get(resultLimit),
+      assocLimit: get(assocLimit),
     };
     dirty = false;
     // Full replace: the YAML is the whole config — settings it omits reset
@@ -107,6 +111,22 @@
     outputColumns.set((data.output?.columns ?? []).join(","));
     sortRules.set(data.sort ?? []);
     resultLimit.set(data.limit ?? RESULT_LIMIT_DEFAULT);
+    assocLimit.set(
+      data.assocLimit != null
+        ? Math.min(
+            100,
+            Math.max(1, Number(data.assocLimit) || ASSOC_LIMIT_DEFAULT),
+          )
+        : data.output?.assoc_limit != null
+          ? Math.min(
+              100,
+              Math.max(
+                1,
+                Number(data.output.assoc_limit) || ASSOC_LIMIT_DEFAULT,
+              ),
+            )
+          : ASSOC_LIMIT_DEFAULT,
+    );
     pulse("apply");
     document.getElementById("btn-run")?.focus();
   }
@@ -122,12 +142,14 @@
     outputColumns.set(u.columns);
     sortRules.set(u.sort);
     resultLimit.set(u.limit);
+    if (u.assocLimit != null) assocLimit.set(u.assocLimit);
   }
 
   $effect(() => {
     const target = $queryTarget;
     const cols = $outputColumns;
     const lim = $resultLimit;
+    const al = $assocLimit;
     const sr = $sortRules;
     void $subjectRootLogic;
     void $personRootLogic;
@@ -136,7 +158,7 @@
     if (!expanded || dirty) return;
     error = "";
     try {
-      yamlText = filtersToYAML(target, getFiltersForAPI(), cols, lim, sr);
+      yamlText = filtersToYAML(target, getFiltersForAPI(), cols, lim, sr, al);
     } catch (e) {
       error = "导出失败: " + e.message;
     }
