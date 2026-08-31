@@ -587,6 +587,7 @@ func (b *SQLBuilder) staffFilter(f *config.StaffFilter) (string, error) {
 		mode:           f.Mode,
 		countOp:        f.CountOp,
 		countVal:       f.CountVal,
+		countDistinct:  posIDSets[0] == nil,
 	})
 }
 
@@ -618,22 +619,42 @@ func (b *SQLBuilder) multiStaffFilter(nested *nestedEntityConfig, posIDSets [][]
 		}
 	}
 
-	allConds := strings.Join(conds, " AND ")
+	baseConds := strings.Join(conds, " AND ")
+	joinsBase := append([]string(nil), joins...)
+	allConds := baseConds
+	joinsAll := joinsBase
 	if personWhere != "" && personWhere != "TRUE" {
 		allConds += " AND " + personWhere
-		joins = append(joins, fmt.Sprintf("LEFT JOIN %s %s ON sp1.%s = %s.%s",
+		joinsAll = append(append([]string(nil), joinsBase...), fmt.Sprintf("LEFT JOIN %s %s ON sp1.%s = %s.%s",
 			nested.relatedTable, nested.relatedAlias, nested.relatedFK, nested.relatedAlias, nested.relatedPK))
+	}
+
+	// count / all semantics: works (or persons) where the same entity holds all
+	// the listed positions at once, counted / compared with DISTINCT dedup.
+	if f.Mode == "count" {
+		countExpr := fmt.Sprintf("(SELECT COUNT(DISTINCT sp1.%s) FROM %s sp1 %s WHERE %s)",
+			nested.relatedFK, jt, strings.Join(joinsAll, " "), allConds)
+		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+	}
+	if f.Mode == "all" {
+		existsClause := fmt.Sprintf("EXISTS (SELECT 1 FROM %s sp1 %s WHERE %s)",
+			jt, strings.Join(joinsBase, " "), baseConds)
+		matchCount := fmt.Sprintf("(SELECT COUNT(DISTINCT sp1.%s) FROM %s sp1 %s WHERE %s)",
+			nested.relatedFK, jt, strings.Join(joinsAll, " "), allConds)
+		totalCount := fmt.Sprintf("(SELECT COUNT(DISTINCT sp1.%s) FROM %s sp1 %s WHERE %s)",
+			nested.relatedFK, jt, strings.Join(joinsBase, " "), baseConds)
+		return fmt.Sprintf("%s AND\n %s =\n %s", existsClause, matchCount, totalCount), nil
 	}
 
 	// none mode
 	if f.Mode == "none" {
 		return fmt.Sprintf("NOT EXISTS (SELECT 1 FROM %s sp1 %s WHERE %s)",
-			jt, strings.Join(joins, " "), allConds), nil
+			jt, strings.Join(joinsAll, " "), allConds), nil
 	}
 
 	// any mode
 	return fmt.Sprintf("EXISTS (SELECT 1 FROM %s sp1 %s WHERE %s)",
-		jt, strings.Join(joins, " "), allConds), nil
+		jt, strings.Join(joinsAll, " "), allConds), nil
 }
 
 func (b *SQLBuilder) characterFilter(f *config.CharacterFilter) (string, error) {

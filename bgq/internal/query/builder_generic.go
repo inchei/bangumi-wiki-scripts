@@ -22,6 +22,7 @@ type manyToManyConfig struct {
 	mode           string
 	countOp        string
 	countVal       interface{}
+	countDistinct  bool
 }
 
 // manyToManyFilter generates SQL for a generic many-to-many relationship filter.
@@ -89,18 +90,32 @@ func (b *SQLBuilder) manyToManyFilter(cfg manyToManyConfig) (string, error) {
 			jc, ja, ja, jmf, ma, mp, existsExtra)
 
 		// Count rows matching all conditions vs total rows with extra condition
-		matchCount := fmt.Sprintf("(SELECT COUNT(*) FROM %s %s %s WHERE %s.%s = %s.%s AND %s)",
-			jc, ja, relJoin, ja, jmf, ma, mp, pred)
-		totalCount := fmt.Sprintf("(SELECT COUNT(*) FROM %s %s WHERE %s.%s = %s.%s AND %s)",
-			jc, ja, ja, jmf, ma, mp, existsExtra)
+		var matchCount, totalCount string
+		if cfg.countDistinct {
+			matchCount = fmt.Sprintf("(SELECT COUNT(DISTINCT %s.%s) FROM %s %s %s WHERE %s.%s = %s.%s AND %s)",
+				ja, cfg.relatedFK, jc, ja, relJoin, ja, jmf, ma, mp, pred)
+			totalCount = fmt.Sprintf("(SELECT COUNT(DISTINCT %s.%s) FROM %s %s WHERE %s.%s = %s.%s AND %s)",
+				ja, cfg.relatedFK, jc, ja, ja, jmf, ma, mp, existsExtra)
+		} else {
+			matchCount = fmt.Sprintf("(SELECT COUNT(*) FROM %s %s %s WHERE %s.%s = %s.%s AND %s)",
+				jc, ja, relJoin, ja, jmf, ma, mp, pred)
+			totalCount = fmt.Sprintf("(SELECT COUNT(*) FROM %s %s WHERE %s.%s = %s.%s AND %s)",
+				jc, ja, ja, jmf, ma, mp, existsExtra)
+		}
 
 		return fmt.Sprintf("%s AND\n %s =\n %s", existsClause, matchCount, totalCount), nil
 	}
 
 	// count mode
 	if cfg.mode == "count" {
-		countExpr := fmt.Sprintf("(SELECT COUNT(*) FROM %s %s %s WHERE %s.%s = %s.%s AND %s)",
-			jc, ja, relJoin, ja, jmf, ma, mp, pred)
+		var countExpr string
+		if cfg.countDistinct {
+			countExpr = fmt.Sprintf("(SELECT COUNT(DISTINCT %s.%s) FROM %s %s %s WHERE %s.%s = %s.%s AND %s)",
+				ja, cfg.relatedFK, jc, ja, relJoin, ja, jmf, ma, mp, pred)
+		} else {
+			countExpr = fmt.Sprintf("(SELECT COUNT(*) FROM %s %s %s WHERE %s.%s = %s.%s AND %s)",
+				jc, ja, relJoin, ja, jmf, ma, mp, pred)
+		}
 		return b.buildCondition(countExpr, cfg.countOp, fmt.Sprintf("%v", cfg.countVal))
 	}
 
@@ -210,13 +225,13 @@ func (b *SQLBuilder) threeWayFilter(cfg threeWayConfig) (string, error) {
 		if cfg.mode == "all" {
 			return fmt.Sprintf(
 				`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.%s = %s.%s AND %s) AND
-				 (SELECT COUNT(*) FROM %s WHERE pc.%s = %s.%s AND %s) =
-				 (SELECT COUNT(*) FROM person_characters pc WHERE pc.%s = %s.%s AND %s)`,
-				mf, ma, mf, typeCond, fromClause, mf, ma, mf, cond, mf, ma, mf, typeCond), nil
+				 (SELECT COUNT(DISTINCT pc.%s) FROM %s WHERE pc.%s = %s.%s AND %s) =
+				 (SELECT COUNT(DISTINCT pc.%s) FROM person_characters pc WHERE pc.%s = %s.%s AND %s)`,
+				mf, ma, mf, typeCond, cfg.countDistinctCol, fromClause, mf, ma, mf, cond, cfg.countDistinctCol, mf, ma, mf, typeCond), nil
 		}
 		if cfg.mode == "count" {
-			countExpr := fmt.Sprintf("(SELECT COUNT(*) FROM %s WHERE pc.%s = %s.%s AND %s)",
-				fromClause, mf, ma, mf, cond)
+			countExpr := fmt.Sprintf("(SELECT COUNT(DISTINCT pc.%s) FROM %s WHERE pc.%s = %s.%s AND %s)",
+				cfg.countDistinctCol, fromClause, mf, ma, mf, cond)
 			return b.buildCondition(countExpr, cfg.countOp, fmt.Sprintf("%v", cfg.countVal))
 		}
 		return fmt.Sprintf("EXISTS (SELECT 1 FROM %s WHERE pc.%s = %s.%s AND %s)",

@@ -630,6 +630,12 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 
 	// Count mode
 	if field == "count" && aggMinMax == "" {
+		if cfg.distinct {
+			return fmt.Sprintf(
+				"(SELECT COUNT(DISTINCT %s.%s) FROM %s %s %s WHERE %s.%s = %s AND %s) AS %s",
+				cfg.entityAlias, entityPK, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
+			), nil
+		}
 		return fmt.Sprintf(
 			"(SELECT COUNT(*) FROM %s %s %s WHERE %s.%s = %s AND %s) AS %s",
 			cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
