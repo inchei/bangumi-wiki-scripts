@@ -1,8 +1,6 @@
 <script>
   import { onDestroy } from "svelte";
   import {
-    getFiltersForAPI,
-    applyFiltersFromAPI,
     outputColumns,
     sortRules,
     resultLimit,
@@ -13,6 +11,7 @@
     characterRootLogic,
     episodeRootLogic,
   } from "../stores.js";
+  import { getFiltersForAPI, applyFiltersFromAPI } from "../logic-tree.js";
   import { filtersToYAML, parseYAML, validateConfig } from "../yaml.js";
   import { get } from "svelte/store";
   import { MorphIcon } from "morphicons/svelte";

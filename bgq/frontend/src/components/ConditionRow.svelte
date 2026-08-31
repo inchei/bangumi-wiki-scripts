@@ -1,9 +1,6 @@
 <script>
   import {
-    removeLogicLeaf,
-    updateCondition,
     queryTarget,
-    updateStaffPositions,
     ctxFieldConfigs,
     fieldSelectOptions,
     opLabel,
@@ -18,6 +15,11 @@
     CAREER_OPTIONS,
     isPersonCtx,
   } from "../stores.js";
+  import {
+    removeLogicLeaf,
+    updateCondition,
+    updateStaffPositions,
+  } from "../logic-tree.js";
   import {
     relationsByType,
     positionsByType,

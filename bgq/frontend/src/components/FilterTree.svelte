@@ -6,10 +6,6 @@
     characterRootLogic,
     episodeRootLogic,
     queryTarget,
-    toggleLogicOp,
-    addCondition,
-    addLogicGroupTo,
-    removeLogicGroup,
     ctxFieldConfigs,
     CTX_SUBJECT,
     CTX_PERSON,
@@ -21,6 +17,12 @@
     focusRequest,
     isPersonCtx,
   } from "../stores.js";
+  import {
+    toggleLogicOp,
+    addCondition,
+    addLogicGroupTo,
+    removeLogicGroup,
+  } from "../logic-tree.js";
   import ConditionRow from "./ConditionRow.svelte";
   import Self from "./FilterTree.svelte";
 

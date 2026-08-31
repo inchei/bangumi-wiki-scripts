@@ -1,7 +1,6 @@
 <script>
   import { tick } from "svelte";
   import {
-    getFiltersForAPI,
     queryTarget,
     lastResult,
     lastQueryTarget,
@@ -23,6 +22,7 @@
     assocSeeded,
     nextAssocId,
   } from "../stores.js";
+  import { getFiltersForAPI } from "../logic-tree.js";
   import { positionsByType, PERSON_CHAR_TYPES } from "../schema-data.js";
   import {
     assocRowsFromFilters,

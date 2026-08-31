@@ -7,13 +7,12 @@
 // (which is the natural escape hatch for very large queries).
 
 import {
-  getFiltersForAPI,
-  applyFiltersFromAPI,
   queryTarget,
   outputColumns,
   sortRules,
   resultLimit,
 } from "./stores.js";
+import { getFiltersForAPI, applyFiltersFromAPI } from "./logic-tree.js";
 import { get } from "svelte/store";
 
 const STATE_VERSION = 1;
