@@ -244,7 +244,7 @@
         >
       </div>
       <button class="btn btn-outline btn-xs" onclick={clearAll}
-        >{canUndo ? "撤销" : "清除全部"}</button
+        >{canUndo ? "撤销" : "清空"}</button
       >
     </div>
     <div class="card">
