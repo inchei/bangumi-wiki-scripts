@@ -169,20 +169,18 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var cfg *config.Config
-
-	if len(req.Filters) > 0 {
-		cfg = &config.Config{
-			Target:  req.Target,
-			DataDir: s.dataDir,
-			Filters: req.Filters,
-			Output:  &config.Output{Format: "json"},
-			Sort:    req.Sort,
-			Limit:   req.Limit,
-		}
-	} else {
-		writeJSON(w, http.StatusBadRequest, apiError{Error: "请提供 filters"})
+	if len(req.Filters) == 0 && len(req.Sort) == 0 {
+		writeJSON(w, http.StatusBadRequest, apiError{Error: "请提供 filters 或 sort"})
 		return
+	}
+
+	cfg := &config.Config{
+		Target:  req.Target,
+		DataDir: s.dataDir,
+		Filters: req.Filters,
+		Output:  &config.Output{Format: "json"},
+		Sort:    req.Sort,
+		Limit:   req.Limit,
 	}
 
 	// Structural validation shared with the CLI path; returns request-scoped

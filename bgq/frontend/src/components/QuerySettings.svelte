@@ -381,8 +381,9 @@
 
   async function handleRun() {
     const filters = getFiltersForAPI();
-    if (filters.length === 0) {
-      lastResult.set({ error: "请先添加筛选条件" });
+    const sort = $sortRules.filter((r) => r.field);
+    if (filters.length === 0 && sort.length === 0) {
+      lastResult.set({ error: "请先添加筛选条件或排序" });
       return;
     }
     loading = true;
@@ -395,7 +396,6 @@
         .filter(Boolean) || [];
     const limit = parseInt($resultLimit) || 500;
     const al = Math.min(100, Math.max(1, parseInt($assocLimit) || 20));
-    const sort = $sortRules.filter((r) => r.field);
     try {
       const savedTarget = get(queryTarget);
       const data = await runQuery(

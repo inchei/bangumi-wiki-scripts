@@ -519,8 +519,8 @@ func (c *Config) Validate() error {
 	}
 
 	// data_dir/database will be provided via CLI if not in config
-	if len(c.Filters) == 0 {
-		return fmt.Errorf("至少需要一个筛选条件 (filters)")
+	if len(c.Filters) == 0 && len(c.Sort) == 0 {
+		return fmt.Errorf("至少需要一个筛选条件 (filters) 或排序条件 (sort)")
 	}
 
 	// Bound filter tree size to prevent pathological query generation.
