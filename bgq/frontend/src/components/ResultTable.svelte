@@ -489,23 +489,25 @@
 
   // Keep in sync with backend builder.go:
   // - extractNum() — first number from multi-value fields like "{ [121页] [128页] }"
-  // - infoboxFirstDateExpr + normalizeDate — first date from "|发售日={ [2004-08-14] }"
+  // - infoboxFirstDateExpr + normalizeDate — first date from "|发售日={ [2004-08-14] }" / "13 June 1892"
+  //   Backend: regexp_extract(infobox, '(\d{4}(?:[-年]\d{1,2}(?:[-月]\d{1,2})?)?)') → normalizeDate (pad YYYY / YYYY-MM to YYYY-01-01 / YYYY-MM-01)
   function parseSortVal(v) {
     if (v === null || v === undefined || v === "")
-      return { empty: true, num: NaN, str: "" };
+      return { empty: true, num: NaN, ts: NaN, str: "" };
     const s = String(v).trim();
     const m = s.match(/\d[\d,.]*(?:\.\d+)?/);
     const num = m ? parseFloat(m[0].replace(/,/g, "")) : NaN;
-    // Date detection: extract first YYYY-MM-DD or YYYY年M月D日
-    const re = /(\d{4})[-年](\d{1,2})(?:[-月](\d{1,2}))?/;
-    const dm = s.match(re);
-    const ts = dm
-      ? new Date(
-          parseInt(dm[1]),
-          parseInt(dm[2]) - 1,
-          parseInt(dm[3]) || 1,
-        ).getTime()
-      : NaN;
+    // Backend-compatible date extraction: first YYYY(-M(-D)) / YYYY年M(月D) occurrence
+    let ts = NaN;
+    const dm = s.match(/(\d{4})(?:[-年](\d{1,2})(?:[-月](\d{1,2}))?)?/);
+    if (dm) {
+      const y = parseInt(dm[1], 10);
+      const mo = dm[2] ? parseInt(dm[2], 10) : 1;
+      const da = dm[3] ? parseInt(dm[3], 10) : 1;
+      // Use UTC to avoid local TZ shifting (aligns with DuckDB DATE semantics)
+      const t = Date.UTC(y, mo - 1, da);
+      if (!isNaN(t)) ts = t;
+    }
     return { empty: false, num, ts, str: s.toLowerCase() };
   }
 
