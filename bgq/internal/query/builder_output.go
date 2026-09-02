@@ -89,7 +89,7 @@ func (b *SQLBuilder) buildSelect() []string {
 		realCol := b.actualColumn(col)
 		switch {
 		case col == "id" || col == "ID":
-			result = append(result, a+"."+quoteIdent(realCol)+" as id")
+			result = append(result, a+"."+quoteIdent(realCol))
 		case col == "subject_id" && b.target == "episode":
 			result = append(result, a+".subject_id")
 		case col == "type" && tc.typeColumn != "type":

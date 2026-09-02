@@ -80,17 +80,17 @@ export const DEFAULT_SETTINGS = {
     resultLimit: 500,
   },
   person: {
-    outputColumns: "person_id,name,简体中文名,",
+    outputColumns: "id,name,简体中文名,",
     sortRules: [],
     resultLimit: 500,
   },
   character: {
-    outputColumns: "character_id,name,简体中文名,",
+    outputColumns: "id,name,简体中文名,",
     sortRules: [],
     resultLimit: 500,
   },
   episode: {
-    outputColumns: "episode_id,name,name_cn,",
+    outputColumns: "id,name,name_cn,",
     sortRules: [],
     resultLimit: 500,
   },
