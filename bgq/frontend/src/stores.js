@@ -99,12 +99,8 @@ export const DEFAULT_SETTINGS = {
 export function saveTargetSettings() {
   const target = get(queryTarget);
   const oc = get(outputColumns);
-  if (!oc?.trim()) {
-    delete _targetSettings[target];
-    return;
-  }
   _targetSettings[target] = {
-    outputColumns: oc,
+    outputColumns: oc ?? "",
     sortRules: get(sortRules),
     resultLimit: get(resultLimit),
   };
@@ -212,7 +208,7 @@ export function saveToStorage() {
     const oc = get(outputColumns);
     const cleanedTargetSettings = {};
     for (const [k, v] of Object.entries(_targetSettings)) {
-      if (!v?.outputColumns?.trim()) continue;
+      if (!v) continue;
       cleanedTargetSettings[k] = v;
     }
     const state = {
@@ -221,7 +217,7 @@ export function saveToStorage() {
       person: get(personRootLogic),
       character: get(characterRootLogic),
       episode: get(episodeRootLogic),
-      ...(oc?.trim() ? { outputColumns: oc } : {}),
+      outputColumns: oc ?? "",
       sortRules: get(sortRules),
       resultLimit: get(resultLimit),
       assocLimit: get(assocLimit),
@@ -248,7 +244,7 @@ export function loadFromStorage() {
     if (state.person) personRootLogic.set(state.person);
     if (state.character) characterRootLogic.set(state.character);
     if (state.episode) episodeRootLogic.set(state.episode);
-    if (state.outputColumns?.trim()) outputColumns.set(state.outputColumns);
+    if (state.outputColumns != null) outputColumns.set(state.outputColumns);
     if (state.sortRules != null) sortRules.set(state.sortRules);
     if (state.resultLimit != null) resultLimit.set(state.resultLimit);
     if (state.assocLimit != null)
@@ -261,7 +257,8 @@ export function loadFromStorage() {
     if (state.targetSettings) {
       const cleaned = {};
       for (const [k, v] of Object.entries(state.targetSettings)) {
-        if (v?.outputColumns?.trim()) cleaned[k] = v;
+        if (!v) continue;
+        cleaned[k] = v;
       }
       Object.assign(_targetSettings, cleaned);
     }
@@ -300,7 +297,7 @@ export const episodeRootLogic = writable(
 
 if (saved?._idCounter != null) _logicIdCounter = saved._idCounter;
 if (saved?.target) queryTarget.set(saved.target);
-if (saved?.outputColumns?.trim()) outputColumns.set(saved.outputColumns);
+if (saved?.outputColumns != null) outputColumns.set(saved.outputColumns);
 if (saved?.sortRules != null) sortRules.set(saved.sortRules);
 if (saved?.resultLimit != null) resultLimit.set(saved.resultLimit);
 if (saved?.assocLimit != null)
@@ -310,7 +307,8 @@ if (saved?.assocLimit != null)
 if (saved?.targetSettings) {
   const cleaned = {};
   for (const [k, v] of Object.entries(saved.targetSettings)) {
-    if (v?.outputColumns?.trim()) cleaned[k] = v;
+    if (!v) continue;
+    cleaned[k] = v;
   }
   Object.assign(_targetSettings, cleaned);
 }
