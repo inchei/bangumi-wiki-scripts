@@ -419,6 +419,54 @@
     }
   }
 
+  // Merge group entries sharing identical entity-field values (fields without
+  // the "s." prefix): one visual sub-row per distinct entity, with each
+  // subject-level ("s.*") field collected into a list of its values — the
+  // same character/person appears once, its works listed separately.
+  // Returns [{ entry, subject }] where subject maps "s.x" → value list
+  // (null when there is no entity field to group by — rows kept as-is).
+  function mergedGroupRows(val, fields) {
+    const entries = groupEntries(val);
+    if (entries.length === 0) return [];
+    const entityFields = fields.filter((f) => !f.startsWith("s."));
+    const subjectFields = fields.filter((f) => f.startsWith("s."));
+    if (entityFields.length === 0) {
+      return entries.map((entry) => ({ entry, subject: null }));
+    }
+    const rows = [];
+    const byKey = Object.create(null);
+    for (const entry of entries) {
+      const key = JSON.stringify(entityFields.map((f) => entry[f] ?? null));
+      let m = byKey[key];
+      if (!m) {
+        m = { entry, subject: {} };
+        for (const f of subjectFields) m.subject[f] = [];
+        byKey[key] = m;
+        rows.push(m);
+      }
+      for (const f of subjectFields) {
+        const v = entry[f];
+        if (v === null || v === undefined || v === "") continue;
+        if (!m.subject[f].some((x) => String(x) === String(v)))
+          m.subject[f].push(v);
+      }
+    }
+    return rows;
+  }
+
+  // Grid rows a merged entry spans: the longest subject-level value list.
+  // Entity cells span all of them so works align across the s.* columns.
+  function workRowCount(m, fields) {
+    if (!m || !m.subject) return 1;
+    let n = 1;
+    for (const f of fields) {
+      if (!f.startsWith("s.")) continue;
+      const len = (m.subject[f] || []).length;
+      if (len > n) n = len;
+    }
+    return n;
+  }
+
   const MAX_DISPLAY_LEN = 80;
   let expanded = $state({});
 
@@ -914,30 +962,73 @@
                       role="cell"
                       style="grid-column: span {bc.span}"
                     >
-                      {#each groupEntries(row[bc.ci]) as entry, ei (ei)}
+                      {#each mergedGroupRows(row[bc.ci], bc.fields) as m, ei (ei)}
+                        {@const workRows = workRowCount(m, bc.fields)}
                         <div class="cell-mini-row">
-                          {#each bc.fields as f (f)}
-                            {@const href = groupCellIdHref(
-                              entry,
-                              f,
-                              bc.prefix,
-                              $bgmHost,
-                            )}
-                            <div
-                              class="cell-mini-cell {isIDColumn(f)
-                                ? 'col-id'
-                                : ''}"
-                            >
-                              {#if entry[f] === null || entry[f] === undefined || entry[f] === ""}
-                                <span class="cell-null">—</span>
-                              {:else if href}
-                                <a {href} target="_blank" rel="noopener"
-                                  >{entry[f]}</a
+                          {#each bc.fields as f, fi (f)}
+                            {#if f.startsWith("s.") && m.subject}
+                              {#if m.subject[f].length === 0}
+                                <div
+                                  class="cell-mini-cell"
+                                  style="grid-column: {fi + 1}; grid-row: 1"
                                 >
+                                  <span class="cell-null">—</span>
+                                </div>
                               {:else}
-                                {entry[f]}
+                                {#each m.subject[f] as v, vi (vi)}
+                                  {@const vhref = groupCellIdHref(
+                                    { [f]: v },
+                                    f,
+                                    bc.prefix,
+                                    $bgmHost,
+                                  )}
+                                  <div
+                                    class="cell-mini-cell cell-sub-line {isIDColumn(
+                                      f,
+                                    )
+                                      ? 'col-id'
+                                      : ''}"
+                                    class:cell-sub-sep={vi + 1 < workRows}
+                                    style="grid-column: {fi +
+                                      1}; grid-row: {vi + 1}"
+                                  >
+                                    {#if vhref}
+                                      <a
+                                        href={vhref}
+                                        target="_blank"
+                                        rel="noopener">{v}</a
+                                      >
+                                    {:else}
+                                      {v}
+                                    {/if}
+                                  </div>
+                                {/each}
                               {/if}
-                            </div>
+                            {:else}
+                              {@const href = groupCellIdHref(
+                                m.entry,
+                                f,
+                                bc.prefix,
+                                $bgmHost,
+                              )}
+                              <div
+                                class="cell-mini-cell {isIDColumn(f)
+                                  ? 'col-id'
+                                  : ''}"
+                                style="grid-column: {fi +
+                                  1}; grid-row: 1 / span {workRows}"
+                              >
+                                {#if m.entry[f] === null || m.entry[f] === undefined || m.entry[f] === ""}
+                                  <span class="cell-null">—</span>
+                                {:else if href}
+                                  <a {href} target="_blank" rel="noopener"
+                                    >{m.entry[f]}</a
+                                  >
+                                {:else}
+                                  {m.entry[f]}
+                                {/if}
+                              </div>
+                            {/if}
                           {/each}
                         </div>
                       {/each}
@@ -1347,6 +1438,12 @@
     max-width: 20ch;
     min-width: 0;
     overflow-wrap: anywhere;
+  }
+
+  /* Subject-level values inside a merged entity row: one grid row per work,
+     aligned across the s.* columns (entity cells span all work rows). */
+  .cell-sub-sep {
+    border-top: 1px dashed var(--border-light);
   }
 
   :global(.results-table .col-id) {
