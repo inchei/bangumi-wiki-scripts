@@ -2,10 +2,9 @@
 // suggestion generators for the output/sort inputs in QuerySettings.
 //
 // Backend syntax mirrored here (see internal/query/builder.go):
-//   前缀.字段        first match, scalar
-//   前缀.字段+       all matches, comma-joined
+//   前缀.字段        association field (comma-joined, limit via assocLimit)
 //   前缀.count       count of matches
-//   前缀.{f1|f2}[+]  group JSON (object / array); members prefixed "s." are
+//   前缀.{f1|f2}     group JSON array; members prefixed "s." are
 //                    subject-level fields (person_character/character_person)
 //
 // Name collisions: a BARE token identical to an association prefix (e.g. "导演"
@@ -145,10 +144,7 @@ export function assocRowsFromFilters(target, rootItems) {
 export function parseAssocToken(token, prefix) {
   const head = prefix + ".";
   if (!token.startsWith(head) || token.startsWith(head + "s.")) return null;
-  let rest = token.slice(head.length);
-  if (!rest) return null;
-  // "+" suffix is compat-ignored (all associations are limit-driven)
-  rest = rest.replace(/\+$/, "");
+  const rest = token.slice(head.length);
   if (!rest) return null;
   if (rest === "count" || /~min|~max/.test(rest)) return { raw: true };
   if (rest.startsWith("{")) {
@@ -162,15 +158,14 @@ export function parseAssocToken(token, prefix) {
       if (v.startsWith("s.")) subjectFields.push(v.slice(2));
       else fields.push(v);
     }
-    return { fields, subjectFields, plus: true };
+    return { fields, subjectFields };
   }
   const field = rest;
   if (!field || field.includes(".")) return { raw: true };
-  return { fields: [field], subjectFields: [], plus: true };
+  return { fields: [field], subjectFields: [] };
 }
 
-// buildAssocToken renders a row's fields back into a token (unified: always
-// aggregated via assocLimit, "+" suffix is compat-ignored).
+// buildAssocToken renders a row's fields back into a token.
 export function buildAssocToken(prefix, fields, subjectFields) {
   const all = [
     ...(fields || []),
@@ -181,8 +176,8 @@ export function buildAssocToken(prefix, fields, subjectFields) {
   return `${prefix}.{${all.join("|")}}`;
 }
 
-// Default fields when an association filter first appears: {id|name}+
-// (dual rows also get the subject-level pair → CV.{id|name|s.id|s.name}+).
+// Default fields when an association filter first appears: {id|name}
+// (dual rows also get the subject-level pair → CV.{id|name|s.id|s.name}).
 export const DEFAULT_ROW_FIELDS = ["id", "name"];
 
 // makeOutputTokenLister builds the 3-stage autocomplete for the output
@@ -211,8 +206,7 @@ export function makeOutputTokenLister(target, plainFields) {
     const rest = t.slice(dot + 1);
     if (rest.startsWith("{")) {
       if (rest.includes("}")) return [];
-      let content = rest.slice(1);
-      if (content.endsWith("+")) content = content.slice(0, -1);
+      const content = rest.slice(1);
       const members = content
         .split("|")
         .map((s) => s.trim())

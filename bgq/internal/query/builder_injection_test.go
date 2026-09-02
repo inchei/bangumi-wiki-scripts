@@ -191,11 +191,11 @@ func TestAssocIDOutputColumn(t *testing.T) {
 		}
 	}
 
-	// Aggregation mode (field+) orders by the entity PK, not the main id column.
+	// Aggregation mode orders by the entity PK, not the main id column.
 	cfgAll := &config.Config{
 		Target:  "subject",
 		Limit:   10,
-		Output:  &config.Output{Format: "table", Columns: []string{"原作.name+"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"原作.name"}},
 		Filters: []config.Filter{{Type: &config.TypeFilter{Value: 1}}},
 	}
 	ba := NewSQLBuilder(cfgAll, "/tmp/data")
@@ -216,7 +216,7 @@ func TestGroupColumnSubjectFields(t *testing.T) {
 	cfg := &config.Config{
 		Target:  "person",
 		Limit:   10,
-		Output:  &config.Output{Format: "table", Columns: []string{"person_id", "CV.{id|name|s.id|s.name}+"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"person_id", "CV.{id|name|s.id|s.name}"}},
 		Filters: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "x"}}},
 	}
 	b := NewSQLBuilder(cfg, "/tmp/data")
@@ -230,7 +230,7 @@ func TestGroupColumnSubjectFields(t *testing.T) {
 		`"s.id" := NULLIF(CAST(rs.id AS VARCHAR), '')`,
 		`"s.name" := NULLIF(CAST(rs."name" AS VARCHAR), '')`,
 		`"id" := NULLIF(CAST(c.character_id AS VARCHAR), '')`,
-		`AS "CV.{id|name|s.id|s.name}+"`,
+		`AS "CV.{id|name|s.id|s.name}"`,
 	} {
 		if !strings.Contains(sql, want) {
 			t.Errorf("generated SQL missing %q:\n%s", want, sql)
@@ -241,9 +241,9 @@ func TestGroupColumnSubjectFields(t *testing.T) {
 	cfgSort := &config.Config{
 		Target:  "person",
 		Limit:   10,
-		Output:  &config.Output{Format: "table", Columns: []string{"person_id", "CV.{name|s.date}+"}},
+		Output:  &config.Output{Format: "table", Columns: []string{"person_id", "CV.{name|s.date}"}},
 		Filters: []config.Filter{{Field: &config.FieldFilter{Field: "name", Operator: "contains", Value: "x"}}},
-		Sort:    []config.SortRule{{Field: "CV.s.date+", Direction: "desc"}},
+		Sort:    []config.SortRule{{Field: "CV.s.date", Direction: "desc"}},
 	}
 	bs := NewSQLBuilder(cfgSort, "/tmp/data")
 	sqlSort, err := bs.Build()

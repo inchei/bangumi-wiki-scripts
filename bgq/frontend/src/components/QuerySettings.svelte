@@ -418,15 +418,14 @@
         let colIdx = data.columns.indexOf(f);
         let field = "";
         if (colIdx < 0) {
-          // "导演.生日+" ↔ 导演.{name|生日|id}+；"CV.s.date+" 的子字段名带 s. 前缀
+          // "导演.生日" ↔ 导演.{name|生日|id}；"CV.s.date" 的子字段名带 s. 前缀
           const m =
-            f.match(/^(.+)\.s\.([^.{}+]+)\+?$/) ||
-            f.match(/^(.+)\.([^.{}+]+)\+?$/);
+            f.match(/^(.+)\.s\.([^.{}]+)$/) || f.match(/^(.+)\.([^.{}]+)$/);
           if (m) {
             const prefix = m[1];
             const sub = f.includes(".s.") ? "s." + m[2] : m[2];
             colIdx = data.columns.findIndex((c) => {
-              const gm = c.match(/^(.+)\.\{([^}]+)\}(\+)?$/);
+              const gm = c.match(/^(.+)\.\{([^}]+)\}$/);
               if (!gm || gm[1] !== prefix) return false;
               return gm[2]
                 .split("|")

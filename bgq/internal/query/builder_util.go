@@ -38,8 +38,8 @@ func (b *SQLBuilder) buildOrderBy() string {
 			dir = "DESC"
 		}
 
-		// Association output column sort (unified: all associations are aggregated via assocLimit, "+" suffix is compat-ignored)
-		sortField := strings.TrimSuffix(s.Field, "+")
+		// Association output column sort: all associations are aggregated via assocLimit.
+		sortField := s.Field
 		agg := "min"
 		if dir == "DESC" {
 			agg = "max"

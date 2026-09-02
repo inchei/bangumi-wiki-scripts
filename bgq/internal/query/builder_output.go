@@ -79,9 +79,8 @@ func (b *SQLBuilder) buildSelect() []string {
 
 	var result []string
 	for _, col := range cols {
-		// Association output column syntax: "类型.字段名", "类型.字段名+",
-		// or "类型.s.字段名" (subject-level field for person_character /
-		// character_person types, e.g. CV.s.name).
+		// Association output column syntax: "类型.字段名" or "类型.s.字段名"
+		// or group form "类型.{f1|f2|...}" / "类型.s.{f1|f2|...}" (e.g. CV.s.name).
 		if subquery, ok, err := b.assocOutputColumn(col); ok && err == nil {
 			result = append(result, subquery)
 			continue
@@ -107,8 +106,8 @@ func (b *SQLBuilder) buildSelect() []string {
 	return result
 }
 
-// assocOutputColumn resolves an association output column ("类型.字段[+]" or
-// "类型.s.字段[+]") into its correlated subquery (WITH the "AS label").
+// assocOutputColumn resolves an association output column ("类型.字段" or
+// "类型.s.字段" or group "类型.{f1|f2|...}") into its correlated subquery (WITH the "AS label").
 // Returns ("", false, nil) when col is not an association column.
 func (b *SQLBuilder) assocOutputColumn(col string) (string, bool, error) {
 	prefix, rest, found := strings.Cut(col, ".")
@@ -365,11 +364,11 @@ func (b *SQLBuilder) buildCharacterPersonOutput(typeName, field string) (string,
 	})
 }
 
-// groupHasSubjectFields reports whether a "{f1|f2|...}[+]" group field contains
+// groupHasSubjectFields reports whether a "{f1|f2|...}" group field contains
 // members prefixed "s." (subject-level fields of person_character /
 // character_person junction rows).
 func groupHasSubjectFields(field string) bool {
-	fields, isGroup, _ := parseGroupField(field)
+	fields, isGroup := parseGroupField(field)
 	if !isGroup {
 		return false
 	}
@@ -588,10 +587,10 @@ type assocSubConfig struct {
 	extraWhere   string          // additional conditions from filter
 	entityAlias  string          // entity alias for field resolution
 	entityPK     string          // entity primary key column ("id" for subjects; persons/characters/episodes rename it to person_id/character_id/episode_id)
-	field        string          // field name (supports "count", "field+")
+	field        string          // field name (supports "count")
 	label        string          // column label (already quoted)
 	directFields map[string]bool // direct fields for this entity type
-	distinct     bool            // deduplicate the "+" aggregation by entity
+	distinct     bool            // deduplicate the aggregation by entity
 	subjectAlias string          // when set, group members prefixed "s." resolve against this subjects alias
 }
 
@@ -599,20 +598,17 @@ type assocSubConfig struct {
 func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 	field := cfg.field
 
-	// Group JSON output: "{f1,f2,...}[+]" → JSON array (unified, "+" suffix ignored for compat).
-	if groupFields, isGroup, _ := parseGroupField(field); isGroup {
-		return b.buildAssocGroupSubquery(cfg, groupFields, true)
+	// Group JSON output: "{f1|f2|...}" → JSON array.
+	if groupFields, isGroup := parseGroupField(field); isGroup {
+		return b.buildAssocGroupSubquery(cfg, groupFields)
 	}
 
-	// "~min"/"~max" suffix selects min/max aggregation (used for sorting
-	// aggregation columns, e.g. 导演.生日+ → 导演.生日~max).
+	// "~min"/"~max" suffix selects min/max aggregation for sorting association columns.
 	aggMinMax := ""
 	if strings.HasSuffix(field, "~min") || strings.HasSuffix(field, "~max") {
 		aggMinMax = field[len(field)-3:]
 		field = strings.TrimSuffix(field, "~"+aggMinMax)
 	}
-	// "+" suffix is now ignored (compat) — all associations are aggregated via assocLimit.
-	field = strings.TrimSuffix(field, "+")
 
 	pred := cfg.typeCond
 	if cfg.extraWhere != "" && cfg.extraWhere != "TRUE" {
@@ -650,7 +646,7 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 		fieldExpr = b.infoboxExtractExpr(field, ea)
 	}
 
-	// Min/max aggregation (ORDER BY for "+" columns): normalize dates/numbers
+	// Min/max aggregation for association columns: normalize dates/numbers
 	// first so min/max are chronological / numeric.
 	if aggMinMax != "" {
 		fe := fieldExpr
@@ -679,30 +675,29 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 	), nil
 }
 
-// parseGroupField parses a "{f1|f2|...}[+]" field into its member fields.
+// parseGroupField parses a "{f1|f2|...}" field into its member fields.
 // Uses "|" (not ",") so the group column stays a single field when output
-// columns are comma-separated in the UI/YAML. Returns (fields, isGroup, hasPlus).
-func parseGroupField(field string) ([]string, bool, bool) {
+// columns are comma-separated in the UI/YAML. Returns (fields, isGroup).
+func parseGroupField(field string) ([]string, bool) {
 	if !strings.HasPrefix(field, "{") {
-		return nil, false, false
+		return nil, false
 	}
 	end := strings.Index(field, "}")
 	if end < 0 {
-		return nil, false, false
+		return nil, false
 	}
-	hasPlus := strings.HasSuffix(field, "+")
 	var fields []string
 	for _, f := range strings.Split(field[1:end], "|") {
 		if f = strings.TrimSpace(f); f != "" {
 			fields = append(fields, f)
 		}
 	}
-	return fields, len(fields) > 0, hasPlus
+	return fields, len(fields) > 0
 }
 
-// buildAssocGroupSubquery generates a JSON array (or single object) of related
-// entries, each an object of the group's fields. Empty values become null.
-func (b *SQLBuilder) buildAssocGroupSubquery(cfg assocSubConfig, groupFields []string, groupPlus bool) (string, error) {
+// buildAssocGroupSubquery generates a JSON array of related entries, each an
+// object of the group's fields. Empty values become null.
+func (b *SQLBuilder) buildAssocGroupSubquery(cfg assocSubConfig, groupFields []string) (string, error) {
 	pred := cfg.typeCond
 	if cfg.extraWhere != "" && cfg.extraWhere != "TRUE" {
 		pred = pred + " AND " + cfg.extraWhere
@@ -760,7 +755,7 @@ func (b *SQLBuilder) resolveAssocField(field, alias, entityPK string, directFiel
 }
 
 // groupOrderBy finds a sort rule matching the group column's prefix and one of
-// its member fields (e.g. group 导演.{name|生日|id}+ with sort 导演.生日+),
+// its member fields (e.g. group 导演.{name|生日|id} with sort 导演.生日),
 // returning the normalized ORDER BY expression and ascending direction.
 // Members prefixed "s." resolve against subjectAlias (subjects join).
 func (b *SQLBuilder) groupOrderBy(label string, groupFields []string, ea, entityPK string, directFields map[string]bool, subjectAlias string) (string, bool, bool) {
@@ -770,7 +765,7 @@ func (b *SQLBuilder) groupOrderBy(label string, groupFields []string, ea, entity
 	}
 	prefix := label[1:idx]
 	for _, s := range b.cfg.Sort {
-		sf := strings.TrimSuffix(s.Field, "+")
+		sf := s.Field
 		parts := strings.SplitN(sf, ".", 2)
 		if len(parts) != 2 || parts[0] != prefix {
 			continue

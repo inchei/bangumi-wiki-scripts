@@ -92,7 +92,6 @@
 
   function isIDColumn(colName) {
     let field = String(colName).toLowerCase();
-    if (field.endsWith("+")) field = field.slice(0, -1);
     const dot = field.lastIndexOf(".");
     if (dot >= 0) field = field.slice(dot + 1);
     return idRegex.test(field);
@@ -102,16 +101,14 @@
     if (id === null || id === undefined || id === "")
       return escapeHtml(String(id));
     const raw = String(colName);
-    const isPlus = raw.endsWith("+");
     const s = String(id);
-    // Handle comma-separated list for "+" columns (e.g. 导演.id+ -> "1, 2, 3")
-    if (isPlus && s.includes(",")) {
-      const baseCol = raw.slice(0, -1);
+    // Handle comma-separated list for association columns (e.g. 导演.id -> "1, 2, 3")
+    if (s.includes(",") && raw.includes(".")) {
       return s
         .split(",")
         .map((p) => p.trim())
         .filter(Boolean)
-        .map((p) => bgmLink(p, baseCol, host))
+        .map((p) => bgmLink(p, raw, host))
         .join(", ");
     }
     const cn = raw.toLowerCase();
@@ -121,8 +118,7 @@
     if (dot >= 0) {
       const prefix = raw.slice(0, dot);
       // Only use assoc logic for id fields
-      let fieldPart = cn.slice(dot + 1);
-      if (fieldPart.endsWith("+")) fieldPart = fieldPart.slice(0, -1);
+      const fieldPart = cn.slice(dot + 1);
       if (idRegex.test(fieldPart)) {
         const t = groupIdLinkType(prefix, target);
         // groupIdLinkType returns "subject" as fallback; only use it if prefix is recognized
@@ -157,9 +153,9 @@
     return "";
   }
 
-  // Parse a group JSON column: "导演.{name|生日|id}+" → { prefix, fields, plus }.
+  // Parse a group JSON column: "导演.{name|生日|id}" → { prefix, fields }.
   function parseGroupCol(col) {
-    const m = col.match(/^(.+)\.\{([^}]+)\}(\+)?$/);
+    const m = col.match(/^(.+)\.\{([^}]+)\}$/);
     if (!m) return null;
     return {
       prefix: m[1],
@@ -167,12 +163,11 @@
         .split("|")
         .map((s) => s.trim())
         .filter(Boolean),
-      plus: !!m[3],
     };
   }
 
-  // Expand group columns ({f1|f2|...}[+]) into one sortable column per
-  // sub-field, so each displays as an independent column (e.g. 导演.生日+).
+  // Expand group columns ({f1|f2|...}) into one sortable column per
+  // sub-field, so each displays as an independent column (e.g. 导演.生日).
   function expandColumns(columns) {
     const out = [];
     (columns || []).forEach((col, ci) => {
@@ -183,7 +178,7 @@
             ci,
             field: f,
             prefix: gc.prefix,
-            label: `${gc.prefix}.${f}${gc.plus ? "+" : ""}`,
+            label: `${gc.prefix}.${f}`,
           });
         }
       } else {
@@ -549,7 +544,7 @@
   }
 
   // Extract a sub-field's values across a group cell's entries and pick the
-  // sort key: min for asc, max for desc — mirroring the backend's "导演.生日+"
+  // sort key: min for asc, max for desc — mirroring the backend's "导演.生日"
   // (min(ASC) / max(DESC)) semantics.
   function groupSortKey(entries, field, asc) {
     const vals = entries
@@ -602,7 +597,7 @@
       return asc ? cmp : -cmp;
     });
     // Re-order the sub-rows inside each cell by the sub-field, matching the
-    // backend's cell-internal ORDER BY (导演.生日+ → entries by 生日).
+    // backend's cell-internal ORDER BY (导演.生日 → entries by 生日).
     const reordered = rows.map((r) => {
       let entries;
       try {

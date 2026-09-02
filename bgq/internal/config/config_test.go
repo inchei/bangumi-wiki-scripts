@@ -50,7 +50,7 @@ func TestValidateFilterTreeLimits(t *testing.T) {
 func TestValidateRejectsGroupSort(t *testing.T) {
 	cfg := &Config{
 		Filters: []Filter{{Field: &FieldFilter{Field: "name", Operator: "contains", Value: "x"}}},
-		Sort:    []SortRule{{Field: "导演.{name|生日|id}+", Direction: "desc"}},
+		Sort:    []SortRule{{Field: "导演.{name|生日|id}", Direction: "desc"}},
 	}
 	err := cfg.Validate()
 	if err == nil || !strings.Contains(err.Error(), "不能包含 {}") {

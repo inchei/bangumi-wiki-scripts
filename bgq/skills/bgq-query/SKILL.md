@@ -82,12 +82,10 @@ Empty `output.columns` uses per-target defaults; explicit list fully overrides.
 
 | Syntax | Meaning | Targets |
 |--------|---------|---------|
-| `前缀.字段` | first match | see below |
-| `前缀.字段+` | all matches (comma-joined) | same |
+| `前缀.字段` | association field (comma-joined, limit via `assoc_limit`) | see below |
 | `前缀.count` | count | same |
-| `前缀.{f1\|f2\|...}` | single JSON object with multiple fields | same |
-| `前缀.{f1\|f2\|...}+` | JSON array of objects | same |
-| `前缀.s.字段[+]` / `前缀.s.{...}[+]` | subject-level field (only `person_character`/`character_person`) | `person`/`character` |
+| `前缀.{f1\|f2\|...}` | JSON array of objects | same |
+| `前缀.s.字段` / `前缀.s.{...}` | subject-level field (only `person_character`/`character_person`) | `person`/`character` |
 
 Prefix depends on `target`:
 
@@ -101,14 +99,14 @@ Prefix depends on `target`:
 Examples:
 
 ```yaml
-output: { columns: [id, name, 导演.name, 导演.生日] }              # first director
-output: { columns: [id, name, 单行本.发售日+] }                    # all volume dates
-output: { columns: [id, name, 导演.{name|生日|id}+] }              # group array
-output: { columns: [person_id, name, CV.{id|name|s.id|s.name}+] }  # CV character + subject (person target)
-output: { columns: [id, name, 单行本.count] }                       # count
+output: { columns: [id, name, 导演.name, 导演.生日] }
+output: { columns: [id, name, 单行本.发售日] }
+output: { columns: [id, name, 导演.{name|生日|id}] }
+output: { columns: [person_id, name, CV.{id|name|s.id|s.name}] }
+output: { columns: [id, name, 单行本.count] }
 ```
 
-Sort supports association fields (including `+` via min/max, dates/numbers normalized); `{...}` group columns are not sortable.
+Sort supports association fields (dates/numbers normalized); `{...}` group columns are not sortable.
 
 ## CLI Usage
 

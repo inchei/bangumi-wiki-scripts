@@ -224,12 +224,10 @@ limit: 1000                             # 最大结果数（默认 1000）
 
 | 语法 | 含义 | 适用 target |
 |------|------|-------------|
-| `前缀.字段` | 首个匹配 | 见下 |
-| `前缀.字段+` | 全部匹配（逗号拼接） | 同上 |
+| `前缀.字段` | 关联字段（逗号拼接，数量由 `assoc_limit` 控制） | 见下 |
 | `前缀.count` | 关联数量 | 同上 |
-| `前缀.{f1\|f2\|...}` | 单条关联的多字段对象（JSON） | 同上 |
-| `前缀.{f1\|f2\|...}+` | 全部关联的多字段数组（JSON） | 同上 |
-| `前缀.s.字段[+]` / `前缀.s.{...}[+]` | Subject 层字段（仅 `person_character`/`character_person`） | `person`/`character` |
+| `前缀.{f1\|f2\|...}` | 多字段数组（JSON） | 同上 |
+| `前缀.s.字段` / `前缀.s.{...}` | Subject 层字段（仅 `person_character`/`character_person`） | `person`/`character` |
 
 `前缀` 取决于 `target`：
 
@@ -243,23 +241,23 @@ limit: 1000                             # 最大结果数（默认 1000）
 示例：
 
 ```yaml
-# subject：取首个导演的姓名与生日
+# subject：导演的姓名与生日
 output: { columns: [id, name, 导演.name, 导演.生日] }
 
-# subject：聚合全部单行本的发售日
-output: { columns: [id, name, 单行本.发售日+] }
+# subject：单行本的发售日
+output: { columns: [id, name, 单行本.发售日] }
 
-# subject：多字段组（单条/全部）
-output: { columns: [id, name, 导演.{name|生日|id}, 导演.{name|生日|id}+] }
+# subject：多字段组
+output: { columns: [id, name, 导演.{name|生日|id}] }
 
-# person：CV 角色及其出演条目的连体数据（单列内 JSON 数组）
-output: { columns: [person_id, name, CV.{id|name|s.id|s.name}+] }
+# person：CV 角色及其出演条目的连体数据（JSON 数组）
+output: { columns: [person_id, name, CV.{id|name|s.id|s.name}] }
 
 # 计数
 output: { columns: [id, name, 单行本.count] }
 ```
 
-排序支持关联字段（含 `+` 聚合列按 `min`/`max` 排序，日期/数值自动归一化），`{...}` 组列不可直接排序。
+排序支持关联字段（日期/数值自动归一化），`{...}` 组列不可直接排序。
 
 ## 高级用法
 

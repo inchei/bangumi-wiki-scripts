@@ -428,7 +428,7 @@ type Output struct {
 	Format     string   `yaml:"format,omitempty" json:"format,omitempty"`           // csv, json, table
 	Path       string   `yaml:"path,omitempty" json:"path,omitempty"`               // output file path (empty = stdout)
 	Columns    []string `yaml:"columns,omitempty" json:"columns,omitempty"`         // columns to include
-	AssocLimit int      `yaml:"assoc_limit,omitempty" json:"assoc_limit,omitempty"` // max items for "+" / group array columns (0 = default 20)
+	AssocLimit int      `yaml:"assoc_limit,omitempty" json:"assoc_limit,omitempty"` // max items for association columns (0 = default 1)
 }
 
 // SortRule defines a sort order.
@@ -687,7 +687,7 @@ func (c *Config) Validate() error {
 		c.Limit = 1000
 	}
 
-	// Group JSON columns ({f1,f2,...}[+]) are display-only — not sortable.
+	// Group JSON columns ({f1|f2|...}) are display-only — not sortable.
 	for _, s := range c.Sort {
 		if strings.Contains(s.Field, "{") {
 			return fmt.Errorf("排序字段 %s 不能包含 {}（群组列不可排序，请用例如 %s）", s.Field, sortGroupHint(s.Field))
@@ -767,19 +767,19 @@ func validateTypeValue(v interface{}) error {
 }
 
 // sortGroupHint suggests a sortable single-field alternative for a group sort
-// field (e.g. 导演.{name|生日|id}+ → 导演.生日+).
+// field (e.g. 导演.{name|生日|id} → 导演.生日).
 func sortGroupHint(field string) string {
 	idx := strings.Index(field, ".{")
 	if idx < 0 {
-		return "导演.生日+"
+		return "导演.生日"
 	}
 	prefix := field[:idx]
 	inner := field[idx+2:]
 	if end := strings.Index(inner, "}"); end >= 0 {
 		first := strings.Split(inner[:end], "|")[0]
-		return prefix + "." + strings.TrimSpace(first) + "+"
+		return prefix + "." + strings.TrimSpace(first)
 	}
-	return prefix + ".字段+"
+	return prefix + ".字段"
 }
 
 // HasDatabase returns true if a persistent database path is set.
