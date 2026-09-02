@@ -259,6 +259,15 @@ output: { columns: [id, name, 单行本.count] }
 
 排序支持关联字段（日期/数值自动归一化），`{...}` 组列不可直接排序。
 
+> **同名前缀写两条时，输出/排序只认第一条**
+> 比如写了两条 `导演` 过滤，一条限生日、一条限血型：主查询会要求两条同时满足（AND，`any`/`all` 各自按其语义筛条目），但 `output: { columns: [导演.生日] }` 或 `sort: 导演.生日` 只会用过滤树里从上往下数的第一条 `导演` 的子条件去决定显示/排序哪些人，第二条的条件不会影响输出列。想让输出和排序同时受两个条件约束，请合并成一条：
+> ```yaml
+> - staff:
+>     position: 导演
+>     conditions:
+>       - logic: { op: and, items: [{ field: { field: 生日, operator: after, value: "1980-01-01" } }, { field: { field: 血型, operator: contains, value: "A" } }] }
+> ```
+
 ## 高级用法
 
 ### 字段引用
