@@ -630,7 +630,7 @@
     const dc = displayCols[di];
     const active = $sortState.col === dc.ci && $sortState.field === dc.field;
     if (active)
-      return $sortState.asc ? ArrowDownWideNarrow : ArrowDownNarrowWide;
+      return $sortState.asc ? ArrowDownNarrowWide : ArrowDownWideNarrow;
     return ArrowUpDown;
   }
 

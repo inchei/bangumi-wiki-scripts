@@ -576,8 +576,8 @@
         >
           <MorphIcon
             icon={rule.direction === "asc"
-              ? ArrowDownWideNarrow
-              : ArrowDownNarrowWide}
+              ? ArrowDownNarrowWide
+              : ArrowDownWideNarrow}
             size={14}
           />
           {rule.direction === "asc" ? "升序" : "降序"}
