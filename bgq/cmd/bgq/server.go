@@ -210,7 +210,7 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 		cfg.Output.AssocLimit = req.AssocLimit
 	}
 	if cfg.Output.AssocLimit < 1 {
-		cfg.Output.AssocLimit = 20
+		cfg.Output.AssocLimit = 1
 	}
 	if cfg.Output.AssocLimit > 100 {
 		cfg.Output.AssocLimit = 100

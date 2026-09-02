@@ -76,8 +76,8 @@
 
   // ---- Association output rows ----
   // Rows are manual entries (persisted), seeded once from first-level filter
-  // associations. Each row's prefix is editable; field boxes and the
-  // 仅首个 switch manage the corresponding token in the main input.
+  // associations. Each row's prefix is editable; field boxes manage the
+  // corresponding token in the main input (limit via assocLimit).
 
   let rootItems = $derived(
     (target === "person"
@@ -196,7 +196,6 @@
           p,
           DEFAULT_ROW_FIELDS,
           info?.dual ? DEFAULT_ROW_FIELDS : [],
-          true,
         );
         if (tk) {
           tokens.push(tk);
@@ -228,8 +227,7 @@
   }
 
   // View state per row: derived from the managed token when present. An
-  // empty/cleared field input means "don't output this column" — clearing
-  // every box removes the token (no checkbox needed).
+  // empty/cleared field input means "don't output this column".
   function rowState(row, colsStr) {
     const tokens = splitTokens(colsStr);
     const idx = findManagedIndex(tokens, row.prefix);
@@ -238,19 +236,18 @@
       return {
         fields: p.fields,
         subjectFields: p.subjectFields || [],
-        firstOnly: !p.plus,
       };
     }
-    return { fields: [], subjectFields: [], firstOnly: false };
+    return { fields: [], subjectFields: [] };
   }
 
   let assocRowViews = $derived(
     assocRows.map((r) => ({ ...r, ...rowState(r, $outputColumns) })),
   );
 
-  function updateRowToken(row, fields, subjectFields, firstOnly) {
+  function updateRowToken(row, fields, subjectFields) {
     const tokens = splitTokens(get(outputColumns));
-    const tk = buildAssocToken(row.prefix, fields, subjectFields, !firstOnly);
+    const tk = buildAssocToken(row.prefix, fields, subjectFields);
     const idx = findManagedIndex(tokens, row.prefix);
     if (idx >= 0) {
       if (tk) tokens[idx] = tk;
@@ -295,7 +292,6 @@
         newPrefix,
         DEFAULT_ROW_FIELDS,
         info?.dual ? DEFAULT_ROW_FIELDS : [],
-        true,
       );
       if (tk) {
         tokens.push(tk);
@@ -308,7 +304,7 @@
       const p = parseAssocToken(tokens[idx], row.prefix);
       const tk =
         p && !p.raw
-          ? buildAssocToken(newPrefix, p.fields, p.subjectFields || [], p.plus)
+          ? buildAssocToken(newPrefix, p.fields, p.subjectFields || [])
           : null;
       if (tk) tokens[idx] = tk;
       else tokens.splice(idx, 1);
@@ -401,7 +397,7 @@
         .map((s) => s.trim())
         .filter(Boolean) || [];
     const limit = parseInt($resultLimit) || 500;
-    const al = Math.min(100, Math.max(1, parseInt($assocLimit) || 20));
+    const al = Math.min(100, Math.max(1, parseInt($assocLimit) || 1));
     try {
       const savedTarget = get(queryTarget);
       const data = await runQuery(
@@ -514,12 +510,7 @@
                   multiple={true}
                   separator="|"
                   onchange={(v) =>
-                    updateRowToken(
-                      row,
-                      parseFieldList(v),
-                      row.subjectFields,
-                      row.firstOnly,
-                    )}
+                    updateRowToken(row, parseFieldList(v), row.subjectFields)}
                 />
               </div>
               <div class="assoc-field-line">
@@ -533,12 +524,7 @@
                   multiple={true}
                   separator="|"
                   onchange={(v) =>
-                    updateRowToken(
-                      row,
-                      row.fields,
-                      parseFieldList(v),
-                      row.firstOnly,
-                    )}
+                    updateRowToken(row, row.fields, parseFieldList(v))}
                 />
               </div>
             </div>
@@ -551,35 +537,10 @@
                 multiple={true}
                 separator="|"
                 onchange={(v) =>
-                  updateRowToken(
-                    row,
-                    parseFieldList(v),
-                    row.subjectFields,
-                    row.firstOnly,
-                  )}
+                  updateRowToken(row, parseFieldList(v), row.subjectFields)}
               />
             </div>
           {/if}
-          <label
-            class="assoc-check"
-            title={!row.prefix
-              ? "请先选择关联前缀"
-              : "开启后只显示首个匹配（去掉 + 聚合）"}
-          >
-            <input
-              type="checkbox"
-              checked={row.firstOnly}
-              disabled={!row.prefix}
-              onchange={(e) =>
-                updateRowToken(
-                  row,
-                  row.fields,
-                  row.subjectFields,
-                  e.currentTarget.checked,
-                )}
-            />
-            仅首个
-          </label>
           <button
             class="tag-remove"
             title="移除该关联行"

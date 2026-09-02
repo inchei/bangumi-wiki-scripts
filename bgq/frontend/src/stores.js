@@ -35,7 +35,7 @@ export const outputColumns = writable("id,name,name_cn,type,");
 export const sortRules = writable([]); // [{field: string, direction: "asc"|"desc"}]
 export const RESULT_LIMIT_DEFAULT = 500;
 export const resultLimit = writable(RESULT_LIMIT_DEFAULT);
-export const ASSOC_LIMIT_DEFAULT = 20;
+export const ASSOC_LIMIT_DEFAULT = 1;
 export const assocLimit = writable(ASSOC_LIMIT_DEFAULT);
 
 // Per-target output settings: { [target]: { outputColumns, sortRules, resultLimit } }

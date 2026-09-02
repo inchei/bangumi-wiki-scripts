@@ -38,34 +38,30 @@ func (b *SQLBuilder) buildOrderBy() string {
 			dir = "DESC"
 		}
 
-		// Association output column sort (e.g. 导演.生日, 主角.count, CV.s.发售日)
-		sortField := s.Field
-		// "+" aggregation columns: sort by min (asc) / max (desc) of the values.
-		isAgg := strings.HasSuffix(sortField, "+")
-		if isAgg {
-			agg := "min"
-			if dir == "DESC" {
-				agg = "max"
-			}
-			sortField = strings.TrimSuffix(sortField, "+") + "~" + agg
+		// Association output column sort (unified: all associations are aggregated via assocLimit, "+" suffix is compat-ignored)
+		sortField := strings.TrimSuffix(s.Field, "+")
+		agg := "min"
+		if dir == "DESC" {
+			agg = "max"
 		}
-		if expr, ok, err := b.assocOrderExpr(sortField); ok && err == nil {
-			if !isAgg {
-				fieldPart := s.Field
-				if i := strings.LastIndex(fieldPart, "."); i >= 0 {
-					fieldPart = fieldPart[i+1:]
-				}
-				if dateFields[fieldPart] {
-					expr = normalizeDate(expr)
-				} else if numericFields[fieldPart] {
-					expr = extractNum(expr)
-				}
-			}
+		candidate := sortField + "~" + agg
+		if expr, ok, err := b.assocOrderExpr(candidate); ok && err == nil {
 			parts = append(parts, fmt.Sprintf("%s %s", expr, dir))
 			continue
 		}
-		if isAgg {
-			// Association "+" column not resolved — skip.
+		if expr, ok, err := b.assocOrderExpr(sortField); ok && err == nil {
+			// Fallback for non-~min/~max forms (e.g. count, plain field)
+			// Normalize date/num for single-value fallback
+			fieldPart := sortField
+			if i := strings.LastIndex(fieldPart, "."); i >= 0 {
+				fieldPart = fieldPart[i+1:]
+			}
+			if dateFields[fieldPart] {
+				expr = normalizeDate(expr)
+			} else if numericFields[fieldPart] {
+				expr = extractNum(expr)
+			}
+			parts = append(parts, fmt.Sprintf("%s %s", expr, dir))
 			continue
 		}
 

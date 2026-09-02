@@ -681,7 +681,7 @@ func (c *Config) Validate() error {
 		c.Output.Format = "table"
 	}
 	if c.Output.AssocLimit <= 0 {
-		c.Output.AssocLimit = 20
+		c.Output.AssocLimit = 1
 	}
 	if c.Limit <= 0 {
 		c.Limit = 1000

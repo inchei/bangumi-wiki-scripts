@@ -145,11 +145,14 @@ export function assocRowsFromFilters(target, rootItems) {
 export function parseAssocToken(token, prefix) {
   const head = prefix + ".";
   if (!token.startsWith(head) || token.startsWith(head + "s.")) return null;
-  const rest = token.slice(head.length);
+  let rest = token.slice(head.length);
+  if (!rest) return null;
+  // "+" suffix is compat-ignored (all associations are limit-driven)
+  rest = rest.replace(/\+$/, "");
   if (!rest) return null;
   if (rest === "count" || /~min|~max/.test(rest)) return { raw: true };
   if (rest.startsWith("{")) {
-    const m = rest.match(/^\{([^}]*)\}(\+)?$/);
+    const m = rest.match(/^\{([^}]*)\}$/);
     if (!m) return { raw: true };
     const fields = [];
     const subjectFields = [];
@@ -159,25 +162,23 @@ export function parseAssocToken(token, prefix) {
       if (v.startsWith("s.")) subjectFields.push(v.slice(2));
       else fields.push(v);
     }
-    return { fields, subjectFields, plus: !!m[2] };
+    return { fields, subjectFields, plus: true };
   }
-  const plus = rest.endsWith("+");
-  const field = plus ? rest.slice(0, -1) : rest;
+  const field = rest;
   if (!field || field.includes(".")) return { raw: true };
-  return { fields: [field], subjectFields: [], plus };
+  return { fields: [field], subjectFields: [], plus: true };
 }
 
-// buildAssocToken renders a row's fields back into a token. A single field
-// with first-only collapses to the scalar form (前缀.name); everything else is
-// the group form. Returns null when no fields remain.
-export function buildAssocToken(prefix, fields, subjectFields, plus) {
+// buildAssocToken renders a row's fields back into a token (unified: always
+// aggregated via assocLimit, "+" suffix is compat-ignored).
+export function buildAssocToken(prefix, fields, subjectFields) {
   const all = [
     ...(fields || []),
     ...(subjectFields || []).map((f) => "s." + f),
   ].filter(Boolean);
   if (all.length === 0) return null;
-  if (all.length === 1 && !plus) return `${prefix}.${all[0]}`;
-  return `${prefix}.{${all.join("|")}}${plus ? "+" : ""}`;
+  if (all.length === 1) return `${prefix}.${all[0]}`;
+  return `${prefix}.{${all.join("|")}}`;
 }
 
 // Default fields when an association filter first appears: {id|name}+
@@ -237,18 +238,17 @@ export function makeOutputTokenLister(target, plainFields) {
 }
 
 // sortColumnSuggestions: flat combos for the sort field input (sorting uses
-// scalar fields; group columns are not sortable, count is). Typing a prefix
-// name surfaces all its "前缀.字段" / "前缀.字段+" combos without needing ".".
+// scalar fields; group columns are not sortable, count is).
 export function sortColumnSuggestions(target, plainFields) {
   const out = [...plainFields];
   for (const info of assocPrefixesForTarget(target)) {
     out.push(`${info.prefix}.count`);
     for (const f of ENTITY_FIELDS[info.entity]) {
-      out.push(`${info.prefix}.${f}`, `${info.prefix}.${f}+`);
+      out.push(`${info.prefix}.${f}`);
     }
     if (info.dual) {
       for (const f of ENTITY_FIELDS.subject) {
-        out.push(`${info.prefix}.s.${f}`, `${info.prefix}.s.${f}+`);
+        out.push(`${info.prefix}.s.${f}`);
       }
     }
   }

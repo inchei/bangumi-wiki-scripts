@@ -39,12 +39,12 @@ export function filtersToYAML(
         : columns;
     if (cols.length > 0) {
       cfg.output = { columns: cols };
-      if (assocLimit != null && assocLimit !== 20)
+      if (assocLimit != null && assocLimit !== 1)
         cfg.output.assoc_limit = assocLimit;
-    } else if (assocLimit != null && assocLimit !== 20) {
+    } else if (assocLimit != null && assocLimit !== 1) {
       cfg.output = { assoc_limit: assocLimit };
     }
-  } else if (assocLimit != null && assocLimit !== 20) {
+  } else if (assocLimit != null && assocLimit !== 1) {
     cfg.output = { assoc_limit: assocLimit };
   }
   if (sort && sort.length > 0) cfg.sort = sort;

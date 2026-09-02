@@ -24,7 +24,7 @@ func (b *SQLBuilder) assocLimit() int {
 	if b.cfg.Output != nil && b.cfg.Output.AssocLimit > 0 {
 		return b.cfg.Output.AssocLimit
 	}
-	return 20
+	return 1
 }
 
 // cteNeedsFromOutputColumns scans cfg.Output.Columns for "prefix.field"
@@ -599,23 +599,20 @@ type assocSubConfig struct {
 func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 	field := cfg.field
 
-	// Group JSON output: "{f1,f2,...}[+]" → one JSON object per related entry
-	// (array for "+"), e.g. 导演.{name,生日,id}+.
-	if groupFields, isGroup, groupPlus := parseGroupField(field); isGroup {
-		return b.buildAssocGroupSubquery(cfg, groupFields, groupPlus)
+	// Group JSON output: "{f1,f2,...}[+]" → JSON array (unified, "+" suffix ignored for compat).
+	if groupFields, isGroup, _ := parseGroupField(field); isGroup {
+		return b.buildAssocGroupSubquery(cfg, groupFields, true)
 	}
 
-	// "~min"/"~max" suffix selects min/max aggregation (used for sorting "+"
+	// "~min"/"~max" suffix selects min/max aggregation (used for sorting
 	// aggregation columns, e.g. 导演.生日+ → 导演.生日~max).
 	aggMinMax := ""
 	if strings.HasSuffix(field, "~min") || strings.HasSuffix(field, "~max") {
 		aggMinMax = field[len(field)-3:]
 		field = strings.TrimSuffix(field, "~"+aggMinMax)
 	}
-	allMode := strings.HasSuffix(field, "+")
-	if allMode {
-		field = strings.TrimSuffix(field, "+")
-	}
+	// "+" suffix is now ignored (compat) — all associations are aggregated via assocLimit.
+	field = strings.TrimSuffix(field, "+")
 
 	pred := cfg.typeCond
 	if cfg.extraWhere != "" && cfg.extraWhere != "TRUE" {
@@ -668,23 +665,17 @@ func (b *SQLBuilder) buildAssocSubquery(cfg assocSubConfig) (string, error) {
 		), nil
 	}
 
-	if allMode {
-		lim := b.assocLimit()
-		if cfg.distinct {
-			// Deduplicate by entity then aggregate, ordering by the entity PK.
-			return fmt.Sprintf(
-				`(SELECT string_agg(CAST("agg"."_v" AS VARCHAR), ', ' ORDER BY "agg"."%[1]s") FROM (SELECT DISTINCT %[2]s.%[1]s AS "%[1]s", %[3]s AS "_v" FROM %[4]s %[5]s %[6]s WHERE %[5]s.%[7]s = %[8]s AND %[9]s ORDER BY %[2]s.%[1]s LIMIT %[11]d) "agg") AS %[10]s`,
-				entityPK, ea, fieldExpr, cfg.junction, cfg.ja, cfg.entityJoin, cfg.mainFK, mainRef, pred, cfg.label, lim,
-			), nil
-		}
+	lim := b.assocLimit()
+	if cfg.distinct {
+		// Deduplicate by entity then aggregate, ordering by the entity PK.
 		return fmt.Sprintf(
-			`(SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT %s AS "_v", %s.%s AS "_ord" FROM %s %s %s WHERE %s.%s = %s AND %s ORDER BY %s.%s LIMIT %d) t) AS %s`,
-			fieldExpr, ea, entityPK, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, ea, entityPK, lim, cfg.label,
+			`(SELECT string_agg(CAST("agg"."_v" AS VARCHAR), ', ' ORDER BY "agg"."%[1]s") FROM (SELECT DISTINCT %[2]s.%[1]s AS "%[1]s", %[3]s AS "_v" FROM %[4]s %[5]s %[6]s WHERE %[5]s.%[7]s = %[8]s AND %[9]s ORDER BY %[2]s.%[1]s LIMIT %[11]d) "agg") AS %[10]s`,
+			entityPK, ea, fieldExpr, cfg.junction, cfg.ja, cfg.entityJoin, cfg.mainFK, mainRef, pred, cfg.label, lim,
 		), nil
 	}
 	return fmt.Sprintf(
-		"(SELECT %s FROM %s %s %s WHERE %s.%s = %s AND %s LIMIT 1) AS %s",
-		fieldExpr, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
+		`(SELECT string_agg(CAST(t."_v" AS VARCHAR), ', ' ORDER BY t."_ord") FROM (SELECT %s AS "_v", %s.%s AS "_ord" FROM %s %s %s WHERE %s.%s = %s AND %s ORDER BY %s.%s LIMIT %d) t) AS %s`,
+		fieldExpr, ea, entityPK, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, ea, entityPK, lim, cfg.label,
 	), nil
 }
 
@@ -749,15 +740,9 @@ func (b *SQLBuilder) buildAssocGroupSubquery(cfg assocSubConfig, groupFields []s
 		orderClause = fmt.Sprintf(" ORDER BY %s.%s ASC", ea, entityPK)
 	}
 
-	if groupPlus {
-		return fmt.Sprintf(
-			"(SELECT to_json(list(_r._s)) FROM (SELECT struct_pack(%s) AS _s FROM %s %s %s WHERE %s.%s = %s AND %s%s LIMIT %d) _r) AS %s",
-			structArgs, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, orderClause, b.assocLimit(), cfg.label,
-		), nil
-	}
 	return fmt.Sprintf(
-		"(SELECT to_json(struct_pack(%s)) FROM %s %s %s WHERE %s.%s = %s AND %s LIMIT 1) AS %s",
-		structArgs, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, cfg.label,
+		"(SELECT to_json(list(_r._s)) FROM (SELECT struct_pack(%s) AS _s FROM %s %s %s WHERE %s.%s = %s AND %s%s LIMIT %d) _r) AS %s",
+		structArgs, cfg.junction, cfg.ja, cfg.entityJoin, cfg.ja, cfg.mainFK, mainRef, pred, orderClause, b.assocLimit(), cfg.label,
 	), nil
 }
 
