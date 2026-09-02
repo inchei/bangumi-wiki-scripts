@@ -73,7 +73,7 @@ function normalizeManualAssoc(v) {
   return out;
 }
 
-const DEFAULT_SETTINGS = {
+export const DEFAULT_SETTINGS = {
   subject: {
     outputColumns: "id,name,name_cn,type,",
     sortRules: [],

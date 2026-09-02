@@ -22,6 +22,7 @@
     manualAssoc,
     assocSeeded,
     nextAssocId,
+    DEFAULT_SETTINGS,
   } from "../stores.js";
   import { getFiltersForAPI } from "../logic-tree.js";
   import { positionsByType, PERSON_CHAR_TYPES } from "../schema-data.js";
@@ -67,6 +68,11 @@
     makeOutputTokenLister(target, plainColumns),
   );
   let sortSuggestions = $derived(sortColumnSuggestions(target, plainColumns));
+  let outputPlaceholder = $derived(
+    (
+      DEFAULT_SETTINGS[target] || DEFAULT_SETTINGS.subject
+    ).outputColumns.replace(/,+$/, ""),
+  );
 
   // ---- Association output rows ----
   // Rows are manual entries (persisted), seeded once from first-level filter
@@ -463,7 +469,7 @@
       getTokenList={getColumnTokenList}
       onchange={(v) => outputColumns.set(v)}
       oninput={(v) => outputColumns.set(v)}
-      placeholder="id/name/infobox字段名/..."
+      placeholder={outputPlaceholder}
       multiple={true}
       separator=","
     />
