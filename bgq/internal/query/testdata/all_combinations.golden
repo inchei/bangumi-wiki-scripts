@@ -753,7 +753,7 @@ persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(
 SELECT s."id" as id, s."name", (SELECT COUNT(*) FROM subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id WHERE sp.subject_id = s.id AND sp.position IN (1, 1015, 2007, 3005, 4001)) AS "原作.count"
 FROM subjects s
 WHERE EXISTS (SELECT 1 FROM subject_persons subject_persons  WHERE subject_persons.subject_id = s.id AND subject_persons.position IN (1, 1015, 2007, 3005, 4001))
-ORDER BY (SELECT max(regexp_extract(p.infobox, '(?i)\|count\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)', 1)) FROM subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id WHERE sp.subject_id = s.id AND sp.position IN (1, 1015, 2007, 3005, 4001)) DESC
+ORDER BY (SELECT COUNT(*) FROM subject_persons sp LEFT JOIN persons p ON sp.person_id = p.person_id WHERE sp.subject_id = s.id AND sp.position IN (1, 1015, 2007, 3005, 4001)) DESC
 LIMIT 10
 sort_assoc_staff_date	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
 subject_persons AS (SELECT * FROM read_json_auto('$DATA_DIR/subject-persons.jsonlines', format='newline_delimited')),

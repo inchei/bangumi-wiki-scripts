@@ -40,17 +40,26 @@ func (b *SQLBuilder) buildOrderBy() string {
 
 		// Association output column sort: all associations are aggregated via assocLimit.
 		sortField := s.Field
-		agg := "min"
-		if dir == "DESC" {
-			agg = "max"
+		// count is already aggregated (COUNT(*)), no min/max needed.
+		isCount := false
+		if idx := strings.LastIndex(sortField, "."); idx >= 0 {
+			if sortField[idx+1:] == "count" {
+				isCount = true
+			}
 		}
-		candidate := sortField + "~" + agg
-		if expr, ok, err := b.assocOrderExpr(candidate); ok && err == nil {
-			parts = append(parts, fmt.Sprintf("%s %s", expr, dir))
-			continue
+		if !isCount {
+			agg := "min"
+			if dir == "DESC" {
+				agg = "max"
+			}
+			candidate := sortField + "~" + agg
+			if expr, ok, err := b.assocOrderExpr(candidate); ok && err == nil {
+				parts = append(parts, fmt.Sprintf("%s %s", expr, dir))
+				continue
+			}
 		}
 		if expr, ok, err := b.assocOrderExpr(sortField); ok && err == nil {
-			// Fallback for non-~min/~max forms (e.g. count, plain field)
+			// Fallback for count or plain field
 			// Normalize date/num for single-value fallback
 			fieldPart := sortField
 			if i := strings.LastIndex(fieldPart, "."); i >= 0 {
