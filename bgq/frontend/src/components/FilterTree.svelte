@@ -162,6 +162,7 @@
         opts.push({ value: "relation", label: "条目关系" });
         opts.push({ value: "character", label: "角色" });
         opts.push({ value: "episode", label: "剧集" });
+        opts.push({ value: "subject_cast", label: "出演" });
       }
       opts.push({
         value: "staff",

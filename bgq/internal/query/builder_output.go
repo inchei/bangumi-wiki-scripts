@@ -521,6 +521,9 @@ func combineWhere(a, b string) string {
 }
 
 // buildCharacterOutput generates a subquery for character fields (主角.name).
+// When a subject_cast filter with matching type exists, its person/character
+// conditions are also applied so that 主角.{name|} reflects the voice-actor
+// filter (e.g. 主角声优为神谷浩史).
 func (b *SQLBuilder) buildCharacterOutput(charType, field string, typeID int) (string, error) {
 	cf := b.findFilter(filterTypeCharacter, charType)
 	var charWhere string
@@ -532,6 +535,28 @@ func (b *SQLBuilder) buildCharacterOutput(charType, field string, typeID int) (s
 			charWhere, err = b.buildCharacterWhereForAlias(c.Conditions)
 			if err != nil {
 				return "", fmt.Errorf("character output: %w", err)
+			}
+		}
+	}
+	// If a subject_cast filter matches this character type, narrow the output
+	// to characters whose voice actor satisfies its person/character conditions.
+	if sc := b.findFilter(filterTypeSubjectCast, charType); sc != nil {
+		if f, ok := sc.(*config.SubjectCastFilter); ok {
+			if len(f.CharacterConditions) > 0 {
+				cw, err := b.buildClauses(f.CharacterConditions, clauseContext{alias: "c", isCharacterCtx: true})
+				if err != nil {
+					return "", fmt.Errorf("subject_cast character output: %w", err)
+				}
+				charWhere = combineWhere(charWhere, cw)
+			}
+			if len(f.PersonConditions) > 0 {
+				pw, err := b.buildClauses(f.PersonConditions, clauseContext{alias: "p", isPersonCtx: true})
+				if err != nil {
+					return "", fmt.Errorf("subject_cast person output: %w", err)
+				}
+				// sc and c are in the outer assoc subquery; correlate via subject+character
+				exists := fmt.Sprintf("EXISTS (SELECT 1 FROM person_characters pc2 JOIN persons p ON p.person_id = pc2.person_id WHERE pc2.subject_id = sc.subject_id AND pc2.character_id = c.character_id AND %s)", pw)
+				charWhere = combineWhere(charWhere, exists)
 			}
 		}
 	}
@@ -891,6 +916,10 @@ func findFilterInNode(f config.Filter, ft filterType, typeName string) interface
 		if f.CharacterPerson != nil && (f.CharacterPerson.Type == typeName || f.CharacterPerson.Type == "") {
 			return f.CharacterPerson
 		}
+	case filterTypeSubjectCast:
+		if f.SubjectCast != nil && (f.SubjectCast.Type == typeName || f.SubjectCast.Type == "") {
+			return f.SubjectCast
+		}
 	}
 	// Recurse into logic and other containers
 	if f.Logic != nil {
@@ -945,6 +974,18 @@ func findFilterInNode(f config.Filter, ft filterType, typeName string) interface
 			}
 		}
 		for _, child := range f.CharacterPerson.SubjectConditions {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+	}
+	if f.SubjectCast != nil {
+		for _, child := range f.SubjectCast.PersonConditions {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+		for _, child := range f.SubjectCast.CharacterConditions {
 			if result := findFilterInNode(child, ft, typeName); result != nil {
 				return result
 			}

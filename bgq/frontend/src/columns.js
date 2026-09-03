@@ -114,6 +114,7 @@ export function assocRowsFromFilters(target, rootItems) {
         for (const p of parts) push(p, "person");
       }
       if (item.character) push(item.character.type, "character");
+      if (item.subject_cast) push(item.subject_cast.type, "character");
       if (item.episode) push("episode", "episode");
     } else if (target === "person") {
       if (item.staff) {

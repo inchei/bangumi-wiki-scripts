@@ -943,6 +943,76 @@ func (b *SQLBuilder) personCastSubjectFilter(f *config.PersonCastSubjectFilter) 
 	})
 }
 
+// subjectCastFilter filters subjects by their cast (via subject_characters + person_characters), distinct persons.
+func (b *SQLBuilder) subjectCastFilter(f *config.SubjectCastFilter) (string, error) {
+	if b.target != "subject" {
+		return "", fmt.Errorf("subject_cast filter only supported for subject target")
+	}
+	anyType := f.Type == "" || f.Type == "任意"
+	var typeCond string
+	if anyType {
+		typeCond = "TRUE"
+	} else {
+		typeID, found := b.getCharacterAssociationTypeID(f.Type)
+		if !found {
+			return "", fmt.Errorf("未找到角色关联类型: %s", f.Type)
+		}
+		typeCond = fmt.Sprintf("sc.type = %d", typeID)
+	}
+	personWhere := "TRUE"
+	if len(f.PersonConditions) > 0 {
+		var err error
+		personWhere, err = b.buildClauses(f.PersonConditions, clauseContext{alias: "p", isPersonCtx: true})
+		if err != nil {
+			return "", fmt.Errorf("subject_cast person condition: %w", err)
+		}
+	}
+	charWhere := "TRUE"
+	if len(f.CharacterConditions) > 0 {
+		var err error
+		charWhere, err = b.buildClauses(f.CharacterConditions, clauseContext{alias: "c", isCharacterCtx: true})
+		if err != nil {
+			return "", fmt.Errorf("subject_cast character condition: %w", err)
+		}
+	}
+	// combined predicate at row level
+	pred := typeCond
+	if charWhere != "TRUE" {
+		if pred == "TRUE" {
+			pred = charWhere
+		} else {
+			pred = pred + " AND " + charWhere
+		}
+	}
+	if personWhere != "TRUE" {
+		if pred == "TRUE" {
+			pred = personWhere
+		} else {
+			pred = pred + " AND " + personWhere
+		}
+	}
+	baseFrom := "subject_characters sc JOIN characters c ON c.character_id = sc.character_id JOIN person_characters pc ON pc.subject_id = sc.subject_id AND pc.character_id = sc.character_id JOIN persons p ON p.person_id = pc.person_id"
+	switch f.Mode {
+	case "none":
+		return fmt.Sprintf("NOT EXISTS (SELECT 1 FROM %s WHERE sc.subject_id = s.id AND %s)", baseFrom, pred), nil
+	case "count":
+		countExpr := fmt.Sprintf("(SELECT COUNT(DISTINCT p.person_id) FROM %s WHERE sc.subject_id = s.id AND %s)", baseFrom, pred)
+		return b.buildCondition(countExpr, f.CountOp, fmt.Sprintf("%v", f.CountVal))
+	case "all":
+		// every distinct cast person for this subject (with type) must satisfy pred
+		matchCount := fmt.Sprintf("(SELECT COUNT(DISTINCT p.person_id) FROM %s WHERE sc.subject_id = s.id AND %s)", baseFrom, pred)
+		totalCond := typeCond
+		if totalCond == "TRUE" {
+			totalCount := fmt.Sprintf("(SELECT COUNT(DISTINCT p.person_id) FROM %s WHERE sc.subject_id = s.id)", baseFrom)
+			return fmt.Sprintf("EXISTS (SELECT 1 FROM %s WHERE sc.subject_id = s.id AND %s) AND %s = %s", baseFrom, typeCond, matchCount, totalCount), nil
+		}
+		totalCount := fmt.Sprintf("(SELECT COUNT(DISTINCT p.person_id) FROM %s WHERE sc.subject_id = s.id AND %s)", baseFrom, totalCond)
+		return fmt.Sprintf("EXISTS (SELECT 1 FROM %s WHERE sc.subject_id = s.id AND %s) AND %s = %s", baseFrom, typeCond, matchCount, totalCount), nil
+	default: // any
+		return fmt.Sprintf("EXISTS (SELECT 1 FROM %s WHERE sc.subject_id = s.id AND %s)", baseFrom, pred), nil
+	}
+}
+
 // getPersonCharacterTypeID returns the ID for a Chinese CV type name.
 func (b *SQLBuilder) getPersonCharacterTypeID(name string) (int, bool) {
 	for id, cnName := range model.PersonCharacterTypes {

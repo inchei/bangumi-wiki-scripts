@@ -25,6 +25,8 @@ function forEachCondArray(item, fn) {
         fn(val.subject_conditions, key, "subject_conditions");
       if (Array.isArray(val.character_conditions))
         fn(val.character_conditions, key, "character_conditions");
+      if (Array.isArray(val.person_conditions))
+        fn(val.person_conditions, key, "person_conditions");
     }
   }
 }
@@ -292,6 +294,15 @@ export function createEmptyCondition(type) {
           mode: "any",
           character_mode: "any",
           conditions: [{ logic: newLogicGroup("and") }],
+          character_conditions: [{ logic: newLogicGroup("and") }],
+        },
+      };
+    case "subject_cast":
+      return {
+        subject_cast: {
+          type: "",
+          mode: "any",
+          person_conditions: [{ logic: newLogicGroup("and") }],
           character_conditions: [{ logic: newLogicGroup("and") }],
         },
       };
@@ -568,12 +579,14 @@ function assignFilterIds(item) {
     "person_character",
     "person_cast_subject",
     "character_person",
+    "subject_cast",
   ]) {
     const v = item[key];
     if (!v) continue;
     for (const c of v.conditions || []) assignFilterIds(c);
     for (const c of v.subject_conditions || []) assignFilterIds(c);
     for (const c of v.character_conditions || []) assignFilterIds(c);
+    for (const c of v.person_conditions || []) assignFilterIds(c);
   }
   if (item.episode?.logic) assignLogicIds(item.episode.logic);
 }

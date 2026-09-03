@@ -50,6 +50,7 @@ type Filter struct {
 	PersonCharacter   *PersonCharacterFilter   `yaml:"person_character,omitempty" json:"person_character,omitempty"`
 	PersonCastSubject *PersonCastSubjectFilter `yaml:"person_cast_subject,omitempty" json:"person_cast_subject,omitempty"`
 	CharacterPerson   *CharacterPersonFilter   `yaml:"character_person,omitempty" json:"character_person,omitempty"`
+	SubjectCast       *SubjectCastFilter       `yaml:"subject_cast,omitempty" json:"subject_cast,omitempty"`
 	Episode           *EpisodeFilter           `yaml:"episode,omitempty" json:"episode,omitempty"`
 	Logic             *LogicFilter             `yaml:"logic,omitempty" json:"logic,omitempty"`
 }
@@ -105,6 +106,9 @@ func (f *Filter) UnmarshalJSON(data []byte) error {
 		case "person_cast_subject":
 			f.PersonCastSubject = &PersonCastSubjectFilter{}
 			return json.Unmarshal(val, f.PersonCastSubject)
+		case "subject_cast":
+			f.SubjectCast = &SubjectCastFilter{}
+			return json.Unmarshal(val, f.SubjectCast)
 		case "character_person":
 			f.CharacterPerson = &CharacterPersonFilter{}
 			return json.Unmarshal(val, f.CharacterPerson)
@@ -116,7 +120,7 @@ func (f *Filter) UnmarshalJSON(data []byte) error {
 			return json.Unmarshal(val, f.Logic)
 		}
 	}
-	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, person_relation, character_relation, staff, character, person_character, person_cast_subject, character_person, episode, logic")
+	return fmt.Errorf("filter must have one of: type, field, global, tag, meta_tag, relation, person_relation, character_relation, staff, character, person_character, person_cast_subject, character_person, subject_cast, episode, logic")
 }
 
 // UnmarshalYAML implements custom YAML unmarshaling for Filter.
@@ -230,6 +234,11 @@ func (f *Filter) UnmarshalYAML(value *yaml.Node) error {
 		case "person_cast_subject":
 			f.PersonCastSubject = &PersonCastSubjectFilter{}
 			if err := decodeStrict(val, key, f.PersonCastSubject); err != nil {
+				return err
+			}
+		case "subject_cast":
+			f.SubjectCast = &SubjectCastFilter{}
+			if err := decodeStrict(val, key, f.SubjectCast); err != nil {
 				return err
 			}
 		case "character_person":
@@ -438,6 +447,17 @@ type PersonCastSubjectFilter struct {
 	CharacterConditions []Filter    `yaml:"character_conditions,omitempty" json:"character_conditions,omitempty"` // conditions on the character (c)
 }
 
+// SubjectCastFilter filters subjects by their cast (via subject_characters + person_characters).
+// Reuses CV prefix semantics; type is character association type (主角/配角...).
+type SubjectCastFilter struct {
+	Type                string      `yaml:"type,omitempty" json:"type,omitempty"` // 角色关联类型 (主角/配角/客串...)
+	Mode                string      `yaml:"mode" json:"mode"`                     // any, all, none, count — distinct persons
+	CountOp             string      `yaml:"count_op,omitempty" json:"count_op,omitempty"`
+	CountVal            interface{} `yaml:"count_val,omitempty" json:"count_val,omitempty"`
+	PersonConditions    []Filter    `yaml:"person_conditions,omitempty" json:"person_conditions,omitempty"`       // on persons p
+	CharacterConditions []Filter    `yaml:"character_conditions,omitempty" json:"character_conditions,omitempty"` // on characters c
+}
+
 // EpisodeFilter filters by episode.
 type EpisodeFilter struct {
 	Mode     string       `yaml:"mode" json:"mode"`                             // any, all, count
@@ -515,6 +535,8 @@ func countFilterTree(filters []Filter, depth int) (count int, maxDepth int) {
 			nested = append(nested, f.PersonCharacter.Conditions, f.PersonCharacter.SubjectConditions)
 		case f.PersonCastSubject != nil:
 			nested = append(nested, f.PersonCastSubject.Conditions, f.PersonCastSubject.CharacterConditions)
+		case f.SubjectCast != nil:
+			nested = append(nested, f.SubjectCast.PersonConditions, f.SubjectCast.CharacterConditions)
 		case f.CharacterPerson != nil:
 			nested = append(nested, f.CharacterPerson.Conditions, f.CharacterPerson.SubjectConditions)
 		case f.Episode != nil:
@@ -596,6 +618,9 @@ func (c *Config) Validate() error {
 			set++
 		}
 		if f.CharacterPerson != nil {
+			set++
+		}
+		if f.SubjectCast != nil {
 			set++
 		}
 		if f.Episode != nil {
@@ -692,6 +717,13 @@ func (c *Config) Validate() error {
 				if err := validateMode(f.PersonCastSubject.CharacterMode); err != nil {
 					return fmt.Errorf("筛选条件 %d: %w", i+1, err)
 				}
+			}
+		case f.SubjectCast != nil:
+			if f.SubjectCast.Mode == "" {
+				f.SubjectCast.Mode = "any"
+			}
+			if err := validateMode(f.SubjectCast.Mode); err != nil {
+				return fmt.Errorf("筛选条件 %d: %w", i+1, err)
 			}
 		case f.CharacterPerson != nil:
 			if f.CharacterPerson.Mode == "" {
@@ -902,7 +934,7 @@ func (c *Config) NeedsCharacters() bool {
 
 func filtersNeedCharacters(filters []Filter) bool {
 	for _, f := range filters {
-		if f.Character != nil {
+		if f.Character != nil || f.SubjectCast != nil {
 			return true
 		}
 		if f.Logic != nil && filtersNeedCharacters(f.Logic.Items) {
@@ -919,7 +951,7 @@ func (c *Config) NeedsPersonCharacters() bool {
 
 func filtersNeedPersonCharacters(filters []Filter) bool {
 	for _, f := range filters {
-		if f.PersonCharacter != nil || f.CharacterPerson != nil || f.PersonCastSubject != nil {
+		if f.PersonCharacter != nil || f.CharacterPerson != nil || f.PersonCastSubject != nil || f.SubjectCast != nil {
 			return true
 		}
 		if f.Logic != nil && filtersNeedPersonCharacters(f.Logic.Items) {

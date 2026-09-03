@@ -75,6 +75,7 @@ function cleanFilter(f) {
     "character",
     "person_character",
     "person_cast_subject",
+    "subject_cast",
     "character_person",
     "episode",
   ]) {
@@ -113,6 +114,16 @@ function cleanValue(val, key) {
     const out = { ...val };
     if (out.conditions) {
       out.conditions = cleanFilters(out.conditions);
+    }
+    if (out.character_conditions) {
+      out.character_conditions = cleanFilters(out.character_conditions);
+    }
+    return out;
+  }
+  if (key === "subject_cast") {
+    const out = { ...val };
+    if (out.person_conditions) {
+      out.person_conditions = cleanFilters(out.person_conditions);
     }
     if (out.character_conditions) {
       out.character_conditions = cleanFilters(out.character_conditions);
@@ -229,6 +240,7 @@ function normalizeFilter(f) {
     "character",
     "person_character",
     "person_cast_subject",
+    "subject_cast",
     "character_person",
     "episode",
   ]) {
@@ -302,6 +314,14 @@ function normalizeFilterValue(val, key) {
   if (key === "person_cast_subject") {
     if (out.mode === undefined) out.mode = "any";
     out.conditions = normalizeNestedConditions(out.conditions);
+    out.character_conditions = normalizeNestedConditions(
+      out.character_conditions,
+    );
+    return out;
+  }
+  if (key === "subject_cast") {
+    if (out.mode === undefined) out.mode = "any";
+    out.person_conditions = normalizeNestedConditions(out.person_conditions);
     out.character_conditions = normalizeNestedConditions(
       out.character_conditions,
     );
@@ -451,6 +471,7 @@ const FILTER_KEYS = [
   "character",
   "person_character",
   "person_cast_subject",
+  "subject_cast",
   "character_person",
   "episode",
 ];
@@ -521,6 +542,14 @@ const FILTER_KEYS_BY_KIND = {
     "character_count_op",
     "character_count_val",
     "conditions",
+    "character_conditions",
+  ],
+  subject_cast: [
+    "type",
+    "mode",
+    "count_op",
+    "count_val",
+    "person_conditions",
     "character_conditions",
   ],
   character_person: [
@@ -628,6 +657,12 @@ function checkNode(key, v, errors) {
       if (v.character_count_op && !OPERATORS.has(v.character_count_op)) {
         errors.add(`character_count_op「${v.character_count_op}」不存在`);
       }
+      walkLogicItems(v.character_conditions, errors);
+      break;
+    case "subject_cast":
+      checkName(`${key}.type`, v.type, CHARACTER_ASSOC_TYPES, errors);
+      checkModeAndConditions(v, errors);
+      walkLogicItems(v.person_conditions, errors);
       walkLogicItems(v.character_conditions, errors);
       break;
     case "episode":
