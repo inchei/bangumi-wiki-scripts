@@ -876,6 +876,73 @@ func (b *SQLBuilder) buildCharPersonPersonWhere(filters []config.Filter) (string
 	return b.buildClauses(filters, clauseContext{alias: "p", isPersonCtx: true})
 }
 
+// personCastSubjectFilter filters persons by their cast subjects (via person_characters), subject-centered.
+func (b *SQLBuilder) personCastSubjectFilter(f *config.PersonCastSubjectFilter) (string, error) {
+	if b.target != "person" {
+		return "", fmt.Errorf("person_cast_subject filter only supported for person target")
+	}
+
+	anyType := f.Type == "" || f.Type == "任意"
+	var typeCond string
+	if anyType {
+		typeCond = "TRUE"
+	} else {
+		typeID, found := b.getPersonCharacterTypeID(f.Type)
+		if !found {
+			return "", fmt.Errorf("未找到出演类型: %s", f.Type)
+		}
+		typeCond = fmt.Sprintf("pc.type = %d", typeID)
+	}
+
+	// Build subject-level conditions (primary, counted entity)
+	subjWhere := "TRUE"
+	if len(f.Conditions) > 0 {
+		var err error
+		subjWhere, err = b.buildWhereForAlias(f.Conditions, "rs")
+		if err != nil {
+			return "", fmt.Errorf("person_cast_subject condition: %w", err)
+		}
+	}
+
+	// Build character-level conditions (per-subject secondary)
+	charWhere := "TRUE"
+	if len(f.CharacterConditions) > 0 {
+		var err error
+		charWhere, err = b.buildPersonCharCharacterWhere(f.CharacterConditions)
+		if err != nil {
+			return "", fmt.Errorf("person_cast_subject character condition: %w", err)
+		}
+	}
+
+	sideJoin := ""
+	if subjWhere != "TRUE" {
+		sideJoin = "LEFT JOIN subjects rs ON pc.subject_id = rs.id"
+	}
+
+	return b.threeWayFilter(threeWayConfig{
+		mainAlias:        "p",
+		mainFK:           "person_id",
+		sideAlias:        "rs",
+		sideTable:        "subjects",
+		sideFK:           "subject_id",
+		typeCond:         typeCond,
+		mode:             f.Mode,
+		countOp:          f.CountOp,
+		countVal:         f.CountVal,
+		sideWhere:        subjWhere,
+		sideJoin:         sideJoin,
+		thirdTable:       "characters",
+		thirdAlias:       "c",
+		thirdFK:          "character_id",
+		thirdPK:          "character_id",
+		thirdWhere:       charWhere,
+		thirdMode:        f.CharacterMode,
+		thirdCountOp:     f.CharacterCountOp,
+		thirdCountVal:    f.CharacterCountVal,
+		countDistinctCol: "subject_id",
+	})
+}
+
 // getPersonCharacterTypeID returns the ID for a Chinese CV type name.
 func (b *SQLBuilder) getPersonCharacterTypeID(name string) (int, bool) {
 	for id, cnName := range model.PersonCharacterTypes {

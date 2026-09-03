@@ -74,6 +74,7 @@ function cleanFilter(f) {
     "staff",
     "character",
     "person_character",
+    "person_cast_subject",
     "character_person",
     "episode",
   ]) {
@@ -105,6 +106,16 @@ function cleanValue(val, key) {
     }
     if (out.subject_conditions) {
       out.subject_conditions = cleanFilters(out.subject_conditions);
+    }
+    return out;
+  }
+  if (key === "person_cast_subject") {
+    const out = { ...val };
+    if (out.conditions) {
+      out.conditions = cleanFilters(out.conditions);
+    }
+    if (out.character_conditions) {
+      out.character_conditions = cleanFilters(out.character_conditions);
     }
     return out;
   }
@@ -217,6 +228,7 @@ function normalizeFilter(f) {
     "staff",
     "character",
     "person_character",
+    "person_cast_subject",
     "character_person",
     "episode",
   ]) {
@@ -285,6 +297,14 @@ function normalizeFilterValue(val, key) {
     if (out.mode === undefined) out.mode = "any";
     out.conditions = normalizeNestedConditions(out.conditions);
     out.subject_conditions = normalizeNestedConditions(out.subject_conditions);
+    return out;
+  }
+  if (key === "person_cast_subject") {
+    if (out.mode === undefined) out.mode = "any";
+    out.conditions = normalizeNestedConditions(out.conditions);
+    out.character_conditions = normalizeNestedConditions(
+      out.character_conditions,
+    );
     return out;
   }
   if (key === "episode") {
@@ -430,6 +450,7 @@ const FILTER_KEYS = [
   "staff",
   "character",
   "person_character",
+  "person_cast_subject",
   "character_person",
   "episode",
 ];
@@ -490,6 +511,17 @@ const FILTER_KEYS_BY_KIND = {
     "subject_count_val",
     "conditions",
     "subject_conditions",
+  ],
+  person_cast_subject: [
+    "type",
+    "mode",
+    "count_op",
+    "count_val",
+    "character_mode",
+    "character_count_op",
+    "character_count_val",
+    "conditions",
+    "character_conditions",
   ],
   character_person: [
     "type",
@@ -588,6 +620,15 @@ function checkNode(key, v, errors) {
         errors.add(`subject_count_op「${v.subject_count_op}」不存在`);
       }
       walkLogicItems(v.subject_conditions, errors);
+      break;
+    case "person_cast_subject":
+      checkName(`${key}.type`, v.type, PERSON_CHAR_TYPES, errors);
+      checkModeAndConditions(v, errors);
+      checkMode(v.character_mode, errors);
+      if (v.character_count_op && !OPERATORS.has(v.character_count_op)) {
+        errors.add(`character_count_op「${v.character_count_op}」不存在`);
+      }
+      walkLogicItems(v.character_conditions, errors);
       break;
     case "episode":
       checkMode(v.mode, errors);

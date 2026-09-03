@@ -46,6 +46,7 @@
     if (item.person_relation) return "person_relation";
     if (item.character_relation) return "character_relation";
     if (item.person_character) return "person_character";
+    if (item.person_cast_subject) return "person_cast_subject";
     if (item.character_person) return "character_person";
     if (item.character) return "character";
     if (item.staff) return "staff";
@@ -479,6 +480,124 @@
         />
       </div>
     {/if}
+  {:else if condType === "person_cast_subject"}
+    {@const pcs = item.person_cast_subject}
+    <div class="cond-row-inner">
+      <span class="cond-type">出演作品</span>
+      <AwesompleteInput
+        restrict={true}
+        value={pcs.type || ""}
+        suggestions={["任意"].concat(PERSON_CHAR_TYPES)}
+        onchange={(v) => updateCondition(group, idx, condType, "type", v)}
+        placeholder="出演类型"
+      />
+      <select
+        class="select select-sm"
+        value={pcs.mode}
+        onchange={(e) =>
+          updateCondition(group, idx, condType, "mode", e.target.value)}
+      >
+        <option value="any">任意</option>
+        <option value="all">全部</option>
+        <option value="none">排除</option>
+        <option value="count">数量</option>
+      </select>
+      {#if pcs.mode === "count"}
+        <select
+          class="select select-sm"
+          value={pcs.count_op || "gte"}
+          onchange={(e) =>
+            updateCondition(group, idx, condType, "count_op", e.target.value)}
+        >
+          {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+            <option value={op}>{opLabel(op)}</option>
+          {/each}
+        </select>
+        <input
+          class="input"
+          type="number"
+          value={pcs.count_val || ""}
+          onchange={(e) =>
+            updateCondition(group, idx, condType, "count_val", e.target.value)}
+        />
+      {/if}
+      <button
+        class="tag-remove"
+        onclick={() => removeLogicLeaf(group, idx)}
+        title="删除">&times;</button
+      >
+    </div>
+    {#if pcs.conditions?.length > 0 && pcs.conditions[0].logic}
+      <div class="nested">
+        <span class="cond-type">作品条件</span>
+        <FilterTree
+          lg={pcs.conditions[0].logic}
+          isRoot={false}
+          ctx={CTX_SUBJECT}
+          hideDelete={true}
+        />
+      </div>
+    {/if}
+    {#if pcs.character_conditions?.length > 0 && pcs.character_conditions[0].logic}
+      <div class="nested">
+        <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
+          <span class="cond-type">相关角色</span>
+          <select
+            class="select select-sm"
+            value={pcs.character_mode || "any"}
+            onchange={(e) =>
+              updateCondition(
+                group,
+                idx,
+                condType,
+                "character_mode",
+                e.target.value,
+              )}
+          >
+            <option value="any">任意</option>
+            <option value="all">全部</option>
+            <option value="count">数量</option>
+          </select>
+          {#if (pcs.character_mode || "any") === "count"}
+            <select
+              class="select select-sm"
+              value={pcs.character_count_op || "gte"}
+              onchange={(e) =>
+                updateCondition(
+                  group,
+                  idx,
+                  condType,
+                  "character_count_op",
+                  e.target.value,
+                )}
+            >
+              {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+                <option value={op}>{opLabel(op)}</option>
+              {/each}
+            </select>
+            <input
+              class="input"
+              type="number"
+              value={pcs.character_count_val || ""}
+              onchange={(e) =>
+                updateCondition(
+                  group,
+                  idx,
+                  condType,
+                  "character_count_val",
+                  e.target.value,
+                )}
+            />
+          {/if}
+        </div>
+        <FilterTree
+          lg={pcs.character_conditions[0].logic}
+          isRoot={false}
+          ctx={CTX_CHARACTER}
+          hideDelete={true}
+        />
+      </div>
+    {/if}
   {:else if condType === "staff"}
     {@const s = item.staff}
     {@const posText =
@@ -573,7 +692,7 @@
     <span class="cond-unknown">{JSON.stringify(item)}</span>
   {/if}
 
-  {#if !["relation", "staff", "character", "person_relation", "character_relation", "person_character", "character_person", "episode"].includes(condType)}
+  {#if !["relation", "staff", "character", "person_relation", "character_relation", "person_character", "person_cast_subject", "character_person", "episode"].includes(condType)}
     <button
       class="tag-remove"
       onclick={() => removeLogicLeaf(group, idx)}

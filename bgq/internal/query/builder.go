@@ -19,6 +19,7 @@ const (
 	filterTypeCharacterRelation
 	filterTypePersonCharacter
 	filterTypeCharacterPerson
+	filterTypePersonCastSubject
 )
 
 // SQLBuilder generates DuckDB SQL from a Config.
@@ -411,6 +412,8 @@ func (b *SQLBuilder) filterToSQLMain(f config.Filter, idx int) (string, error) {
 		return b.characterFilter(f.Character)
 	case f.PersonCharacter != nil:
 		return b.personCharacterFilter(f.PersonCharacter)
+	case f.PersonCastSubject != nil:
+		return b.personCastSubjectFilter(f.PersonCastSubject)
 	case f.CharacterPerson != nil:
 		return b.characterPersonFilter(f.CharacterPerson)
 	case f.Episode != nil:

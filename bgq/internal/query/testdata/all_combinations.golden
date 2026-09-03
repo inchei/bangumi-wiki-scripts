@@ -43,8 +43,7 @@ SELECT c."character_id", c."name"
 FROM characters c
 WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND pc.type = 0) AND
 			 (SELECT COUNT(*) FROM (
-			   SELECT pc.person_id FROM person_characters pc 
-			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			   SELECT pc.person_id FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id
 			   WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs."score" AS DOUBLE) > 8
 			   GROUP BY pc.person_id
 			 ) t) =
@@ -61,8 +60,7 @@ WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.chara
 			   SELECT 1 FROM person_characters pc 
 			   WHERE pc.character_id = c.character_id AND pc.type = 0
 			   AND EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     SELECT 1 FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
 			     AND NOT (CAST(rs."score" AS DOUBLE) > 8)
 			   )
@@ -76,8 +74,7 @@ SELECT c."character_id", c."name"
 FROM characters c
 WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.character_id AND pc.type = 0) AND
 			 (SELECT COUNT(*) FROM (
-			   SELECT pc.person_id FROM person_characters pc 
-			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			   SELECT pc.person_id FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id
 			   WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs."score" AS DOUBLE) > 8
 			   GROUP BY pc.person_id
 			 ) t) =
@@ -93,8 +90,7 @@ WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.character_id = c.chara
 			 NOT EXISTS (
 			   SELECT 1 FROM person_characters pc 
 			   WHERE pc.character_id = c.character_id AND pc.type = 0
-			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
 			     AND CAST(rs."score" AS DOUBLE) > 8) >= 1)
 			 )
@@ -105,8 +101,7 @@ person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.
 persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT c."character_id", c."name"
 FROM characters c
-WHERE EXISTS (SELECT 1 FROM person_characters pc 
-			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+WHERE EXISTS (SELECT 1 FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id
 			 WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs."score" AS DOUBLE) > 8)
 LIMIT 10
 character_person_character_any_subjall	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
@@ -119,8 +114,7 @@ WHERE EXISTS (
 		   SELECT 1 FROM person_characters pc 
 		   WHERE pc.character_id = c.character_id AND pc.type = 0
 		   AND NOT EXISTS (
-		     SELECT 1 FROM person_characters pc2
-		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+		     SELECT 1 FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 		     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
 		     AND NOT (CAST(rs."score" AS DOUBLE) > 8)
 		   )
@@ -132,8 +126,7 @@ person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.
 persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT c."character_id", c."name"
 FROM characters c
-WHERE EXISTS (SELECT 1 FROM person_characters pc 
-			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+WHERE EXISTS (SELECT 1 FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id
 			 WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(rs."score" AS DOUBLE) > 8)
 LIMIT 10
 character_person_character_any_subjcount	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
@@ -145,8 +138,7 @@ FROM characters c
 WHERE EXISTS (
 		   SELECT 1 FROM person_characters pc 
 		   WHERE pc.character_id = c.character_id AND pc.type = 0
-		   AND (SELECT COUNT(*) FROM person_characters pc2
-		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+		   AND (SELECT COUNT(*) FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 		     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
 		     AND CAST(rs."score" AS DOUBLE) > 8) >= 1
 		 )
@@ -201,8 +193,7 @@ WHERE NOT EXISTS (
 			   SELECT 1 FROM person_characters pc 
 			   WHERE pc.character_id = c.character_id AND pc.type = 0
 			   AND NOT EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     SELECT 1 FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
 			     AND NOT (CAST(rs."score" AS DOUBLE) > 8)
 			   )
@@ -226,8 +217,7 @@ WHERE NOT EXISTS (
 			   SELECT 1 FROM person_characters pc 
 			   WHERE pc.character_id = c.character_id AND pc.type = 0
 			   AND NOT EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     SELECT 1 FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 			     WHERE pc2.character_id = c.character_id AND pc2.person_id = pc.person_id
 			     AND NOT (CAST(rs."score" AS DOUBLE) > 8)
 			   )
@@ -255,8 +245,7 @@ person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.
 persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('$DATA_DIR/person.jsonlines', format='newline_delimited'))
 SELECT c."character_id", c."name", (SELECT string_agg(CAST("agg"."_v" AS VARCHAR), ', ' ORDER BY "agg"."id") FROM (SELECT DISTINCT rs.id AS "id", rs."name" AS "_v" FROM person_characters pc LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN persons p ON pc.person_id = p.person_id WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(p.name AS VARCHAR) LIKE '%水树%' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000 ORDER BY rs.id LIMIT 1) "agg") AS "CV.s.name"
 FROM characters c
-WHERE EXISTS (SELECT 1 FROM person_characters pc LEFT JOIN persons p ON pc.person_id = p.person_id
-			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+WHERE EXISTS (SELECT 1 FROM person_characters pc LEFT JOIN persons p ON pc.person_id = p.person_id LEFT JOIN subjects rs ON pc.subject_id = rs.id
 			 WHERE pc.character_id = c.character_id AND pc.type = 0 AND CAST(p.name AS VARCHAR) LIKE '%水树%' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000)
 LIMIT 10
 character_relation_character_all	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
@@ -441,8 +430,7 @@ SELECT p."person_id", p."name"
 FROM persons p
 WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0) AND
 			 (SELECT COUNT(*) FROM (
-			   SELECT pc.character_id FROM person_characters pc 
-			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			   SELECT pc.character_id FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id
 			   WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs."score" AS DOUBLE) > 8
 			   GROUP BY pc.character_id
 			 ) t) =
@@ -459,8 +447,7 @@ WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_i
 			   SELECT 1 FROM person_characters pc 
 			   WHERE pc.person_id = p.person_id AND pc.type = 0
 			   AND EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     SELECT 1 FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
 			     AND NOT (CAST(rs."score" AS DOUBLE) > 8)
 			   )
@@ -474,8 +461,7 @@ SELECT p."person_id", p."name"
 FROM persons p
 WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_id AND pc.type = 0) AND
 			 (SELECT COUNT(*) FROM (
-			   SELECT pc.character_id FROM person_characters pc 
-			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			   SELECT pc.character_id FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id
 			   WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs."score" AS DOUBLE) > 8
 			   GROUP BY pc.character_id
 			 ) t) =
@@ -491,8 +477,7 @@ WHERE EXISTS (SELECT 1 FROM person_characters pc WHERE pc.person_id = p.person_i
 			 NOT EXISTS (
 			   SELECT 1 FROM person_characters pc 
 			   WHERE pc.person_id = p.person_id AND pc.type = 0
-			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
 			     AND CAST(rs."score" AS DOUBLE) > 8) >= 1)
 			 )
@@ -503,8 +488,7 @@ person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.
 characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
 SELECT p."person_id", p."name"
 FROM persons p
-WHERE EXISTS (SELECT 1 FROM person_characters pc 
-			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+WHERE EXISTS (SELECT 1 FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id
 			 WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs."score" AS DOUBLE) > 8)
 LIMIT 10
 person_character_person_any_subjall	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
@@ -517,8 +501,7 @@ WHERE EXISTS (
 		   SELECT 1 FROM person_characters pc 
 		   WHERE pc.person_id = p.person_id AND pc.type = 0
 		   AND NOT EXISTS (
-		     SELECT 1 FROM person_characters pc2
-		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+		     SELECT 1 FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 		     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
 		     AND NOT (CAST(rs."score" AS DOUBLE) > 8)
 		   )
@@ -530,8 +513,7 @@ person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.
 characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
 SELECT p."person_id", p."name"
 FROM persons p
-WHERE EXISTS (SELECT 1 FROM person_characters pc 
-			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+WHERE EXISTS (SELECT 1 FROM person_characters pc  LEFT JOIN subjects rs ON pc.subject_id = rs.id
 			 WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(rs."score" AS DOUBLE) > 8)
 LIMIT 10
 person_character_person_any_subjcount	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),
@@ -543,8 +525,7 @@ FROM persons p
 WHERE EXISTS (
 		   SELECT 1 FROM person_characters pc 
 		   WHERE pc.person_id = p.person_id AND pc.type = 0
-		   AND (SELECT COUNT(*) FROM person_characters pc2
-		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+		   AND (SELECT COUNT(*) FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 		     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
 		     AND CAST(rs."score" AS DOUBLE) > 8) >= 1
 		 )
@@ -599,8 +580,7 @@ WHERE NOT EXISTS (
 			   SELECT 1 FROM person_characters pc 
 			   WHERE pc.person_id = p.person_id AND pc.type = 0
 			   AND NOT EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     SELECT 1 FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
 			     AND NOT (CAST(rs."score" AS DOUBLE) > 8)
 			   )
@@ -624,8 +604,7 @@ WHERE NOT EXISTS (
 			   SELECT 1 FROM person_characters pc 
 			   WHERE pc.person_id = p.person_id AND pc.type = 0
 			   AND NOT EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     SELECT 1 FROM person_characters pc2 LEFT JOIN subjects rs ON pc2.subject_id = rs.id
 			     WHERE pc2.person_id = p.person_id AND pc2.character_id = pc.character_id
 			     AND NOT (CAST(rs."score" AS DOUBLE) > 8)
 			   )
@@ -637,8 +616,7 @@ person_characters AS (SELECT * FROM read_json_auto('$DATA_DIR/person-characters.
 characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('$DATA_DIR/character.jsonlines', format='newline_delimited'))
 SELECT p."person_id", p."name", (SELECT string_agg(CAST("agg"."_v" AS VARCHAR), ', ' ORDER BY "agg"."id") FROM (SELECT DISTINCT rs.id AS "id", rs."name" AS "_v" FROM person_characters pc LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN characters c ON pc.character_id = c.character_id WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(c.name AS VARCHAR) LIKE '%アル%' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000 ORDER BY rs.id LIMIT 1) "agg") AS "CV.s.name"
 FROM persons p
-WHERE EXISTS (SELECT 1 FROM person_characters pc LEFT JOIN characters c ON pc.character_id = c.character_id
-			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+WHERE EXISTS (SELECT 1 FROM person_characters pc LEFT JOIN characters c ON pc.character_id = c.character_id LEFT JOIN subjects rs ON pc.subject_id = rs.id
 			 WHERE pc.person_id = p.person_id AND pc.type = 0 AND CAST(c.name AS VARCHAR) LIKE '%アル%' AND rs."rank" != 0 AND CAST(rs."rank" AS DOUBLE) < 5000)
 LIMIT 10
 person_relation_output	WITH subjects AS (SELECT * FROM read_json_auto('$DATA_DIR/subject.jsonlines', format='newline_delimited')),

@@ -128,9 +128,9 @@ func (b *SQLBuilder) manyToManyFilter(cfg manyToManyConfig) (string, error) {
 type threeWayConfig struct {
 	mainAlias        string        // main entity alias ("p" or "c")
 	mainFK           string        // main FK in junction ("person_id" or "character_id")
-	sideAlias        string        // side entity alias ("c" or "p")
+	sideAlias        string        // side entity alias ("c" or "p" / "rs" for subject-centered)
 	sideTable        string        // side entity table
-	sideFK           string        // side FK in junction ("character_id" or "person_id")
+	sideFK           string        // side FK in junction ("character_id" or "person_id" / "subject_id")
 	sideCtx          clauseContext // context for side conditions
 	typeCond         string        // type condition (already compiled)
 	mode             string
@@ -138,16 +138,26 @@ type threeWayConfig struct {
 	countVal         interface{}
 	sideWhere        string // conditions on side entity (already compiled)
 	sideJoin         string // JOIN clause for side entity
-	subjectMode      string
-	subjectCountOp   string
-	subjectCountVal  interface{}
-	subjectWhere     string // conditions on related subject (already compiled)
-	countDistinctCol string // column for COUNT(DISTINCT pc.X)
+	countDistinctCol string // column for COUNT(DISTINCT pc.X) when mode==count flat or with third conds
+	// generic third leg (was subject leg)
+	thirdTable    string // e.g. "subjects" or "characters"
+	thirdAlias    string // e.g. "rs" or "c"
+	thirdFK       string // column in pc (subject_id / character_id)
+	thirdPK       string // PK column on third entity (id / character_id)
+	thirdWhere    string // conditions on third entity (already compiled)
+	thirdMode     string
+	thirdCountOp  string
+	thirdCountVal interface{}
+	// legacy subject fields (deprecated, mapped to third* above)
+	subjectMode     string
+	subjectCountOp  string
+	subjectCountVal interface{}
+	subjectWhere    string
 }
 
 // threeWayFilter generates SQL for a three-way join filter (person_characters).
-// Handles none/any/all/count modes × any/all/count subject modes.
-// Used by personCharacterFilter and characterPersonFilter.
+// Handles none/any/all/count modes × any/all/count third modes.
+// Used by personCharacterFilter, characterPersonFilter and personCastSubjectFilter.
 func (b *SQLBuilder) threeWayFilter(cfg threeWayConfig) (string, error) {
 	ma := cfg.mainAlias
 	mf := cfg.mainFK
@@ -157,15 +167,40 @@ func (b *SQLBuilder) threeWayFilter(cfg threeWayConfig) (string, error) {
 		sideWhere = "TRUE"
 	}
 	sideJoin := cfg.sideJoin
-	subjWhere := cfg.subjectWhere
-	if subjWhere == "" {
-		subjWhere = "TRUE"
+	// normalize third leg: prefer new fields, fallback to legacy subject fields
+	thirdWhere := cfg.thirdWhere
+	if thirdWhere == "" {
+		thirdWhere = cfg.subjectWhere
 	}
-	hasSubjConds := subjWhere != "TRUE"
-	subjMode := cfg.subjectMode
-	if subjMode == "" {
-		subjMode = "any"
+	if thirdWhere == "" {
+		thirdWhere = "TRUE"
 	}
+	thirdMode := cfg.thirdMode
+	if thirdMode == "" {
+		thirdMode = cfg.subjectMode
+	}
+	if thirdMode == "" {
+		thirdMode = "any"
+	}
+	thirdCountOp := cfg.thirdCountOp
+	if thirdCountOp == "" {
+		thirdCountOp = cfg.subjectCountOp
+	}
+	thirdCountVal := cfg.thirdCountVal
+	if thirdCountVal == nil {
+		thirdCountVal = cfg.subjectCountVal
+	}
+	thirdTable := cfg.thirdTable
+	thirdAlias := cfg.thirdAlias
+	thirdFK := cfg.thirdFK
+	thirdPK := cfg.thirdPK
+	if thirdAlias == "" {
+		thirdTable = "subjects"
+		thirdAlias = "rs"
+		thirdFK = "subject_id"
+		thirdPK = "id"
+	}
+	hasThirdConds := thirdWhere != "TRUE"
 
 	// Build predicates
 	charPred := typeCond
@@ -177,9 +212,16 @@ func (b *SQLBuilder) threeWayFilter(cfg threeWayConfig) (string, error) {
 		}
 	}
 
+	thirdJoinOuter := ""
+	thirdJoinInner := ""
+	if hasThirdConds {
+		thirdJoinOuter = fmt.Sprintf(" LEFT JOIN %s %s ON pc.%s = %s.%s", thirdTable, thirdAlias, thirdFK, thirdAlias, thirdPK)
+		thirdJoinInner = fmt.Sprintf(" LEFT JOIN %s %s ON pc2.%s = %s.%s", thirdTable, thirdAlias, thirdFK, thirdAlias, thirdPK)
+	}
+
 	// none mode
 	if cfg.mode == "none" {
-		if !hasSubjConds || subjMode == "any" {
+		if !hasThirdConds || thirdMode == "any" {
 			if typeCond == "TRUE" && sideWhere == "TRUE" {
 				return fmt.Sprintf("NOT EXISTS (SELECT 1 FROM person_characters pc WHERE pc.%s = %s.%s)",
 					mf, ma, mf), nil
@@ -187,35 +229,33 @@ func (b *SQLBuilder) threeWayFilter(cfg threeWayConfig) (string, error) {
 			return fmt.Sprintf("NOT EXISTS (SELECT 1 FROM person_characters pc %s WHERE pc.%s = %s.%s AND %s)",
 				sideJoin, mf, ma, mf, charPred), nil
 		}
-		// subject_mode=all
+		// third_mode=all
 		if typeCond == "TRUE" && sideWhere == "TRUE" {
 			return fmt.Sprintf(
 				`NOT EXISTS (
 				   SELECT 1 FROM person_characters pc
 				   WHERE pc.%s = %s.%s
 				   AND NOT EXISTS (
-				     SELECT 1 FROM person_characters pc2
-				     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+				     SELECT 1 FROM person_characters pc2%s
 				     WHERE pc2.%s = %s.%s AND pc2.%s = pc.%s
 				     AND NOT (%s)
 				   )
-				 )`, mf, ma, mf, mf, ma, mf, cfg.sideFK, cfg.sideFK, subjWhere), nil
+				 )`, mf, ma, mf, thirdJoinInner, mf, ma, mf, cfg.sideFK, cfg.sideFK, thirdWhere), nil
 		}
 		return fmt.Sprintf(
 			`NOT EXISTS (
 			   SELECT 1 FROM person_characters pc %s
 			   WHERE pc.%s = %s.%s AND %s
 			   AND NOT EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     SELECT 1 FROM person_characters pc2%s
 			     WHERE pc2.%s = %s.%s AND pc2.%s = pc.%s
 			     AND NOT (%s)
 			   )
-			 )`, sideJoin, mf, ma, mf, charPred, mf, ma, mf, cfg.sideFK, cfg.sideFK, subjWhere), nil
+			 )`, sideJoin, mf, ma, mf, charPred, thirdJoinInner, mf, ma, mf, cfg.sideFK, cfg.sideFK, thirdWhere), nil
 	}
 
-	// No subject conditions — simple flat query
-	if !hasSubjConds {
+	// No third conditions — simple flat query
+	if !hasThirdConds {
 		fromClause := "person_characters pc"
 		if sideJoin != "" {
 			fromClause = "person_characters pc " + sideJoin
@@ -238,70 +278,66 @@ func (b *SQLBuilder) threeWayFilter(cfg threeWayConfig) (string, error) {
 			fromClause, mf, ma, mf, cond), nil
 	}
 
-	// Has subject conditions — two-level quantifier
-	// Count mode with subject conditions
+	// Has third conditions — two-level quantifier
+	// Count mode with third conditions
 	if cfg.mode == "count" {
 		countExpr := fmt.Sprintf(
-			"(SELECT COUNT(DISTINCT pc.%s) FROM person_characters pc %s LEFT JOIN subjects rs ON pc.subject_id = rs.id WHERE pc.%s = %s.%s AND %s AND %s)",
-			cfg.countDistinctCol, sideJoin, mf, ma, mf, charPred, subjWhere)
+			"(SELECT COUNT(DISTINCT pc.%s) FROM person_characters pc %s%s WHERE pc.%s = %s.%s AND %s AND %s)",
+			cfg.countDistinctCol, sideJoin, thirdJoinOuter, mf, ma, mf, charPred, thirdWhere)
 		return b.buildCondition(countExpr, cfg.countOp, fmt.Sprintf("%v", cfg.countVal))
 	}
 
 	switch {
-	case cfg.mode == "any" && subjMode == "any":
+	case cfg.mode == "any" && thirdMode == "any":
 		return fmt.Sprintf(
-			`EXISTS (SELECT 1 FROM person_characters pc %s
-			 LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			`EXISTS (SELECT 1 FROM person_characters pc %s%s
 			 WHERE pc.%s = %s.%s AND %s AND %s)`,
-			sideJoin, mf, ma, mf, charPred, subjWhere), nil
+			sideJoin, thirdJoinOuter, mf, ma, mf, charPred, thirdWhere), nil
 
-	case cfg.mode == "any" && subjMode == "all":
+	case cfg.mode == "any" && thirdMode == "all":
 		return fmt.Sprintf(
 			`EXISTS (
 		   SELECT 1 FROM person_characters pc %s
 		   WHERE pc.%s = %s.%s AND %s
 		   AND NOT EXISTS (
-		     SELECT 1 FROM person_characters pc2
-		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+		     SELECT 1 FROM person_characters pc2%s
 		     WHERE pc2.%s = %s.%s AND pc2.%s = pc.%s
 		     AND NOT (%s)
 		   )
-		 )`, sideJoin, mf, ma, mf, charPred, mf, ma, mf, cfg.sideFK, cfg.sideFK, subjWhere), nil
+		 )`, sideJoin, mf, ma, mf, charPred, thirdJoinInner, mf, ma, mf, cfg.sideFK, cfg.sideFK, thirdWhere), nil
 
-	case cfg.mode == "all" && subjMode == "any":
+	case cfg.mode == "all" && thirdMode == "any":
 		return fmt.Sprintf(
 			`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.%s = %s.%s AND %s) AND
 			 (SELECT COUNT(*) FROM (
-			   SELECT pc.%s FROM person_characters pc %s
-			   LEFT JOIN subjects rs ON pc.subject_id = rs.id
+			   SELECT pc.%s FROM person_characters pc %s%s
 			   WHERE pc.%s = %s.%s AND %s AND %s
 			   GROUP BY pc.%s
 			 ) t) =
 			 (SELECT COUNT(DISTINCT pc.%s) FROM person_characters pc WHERE pc.%s = %s.%s AND %s)`,
 			mf, ma, mf, typeCond,
-			cfg.sideFK, sideJoin, mf, ma, mf, charPred, subjWhere, cfg.sideFK,
+			cfg.sideFK, sideJoin, thirdJoinOuter, mf, ma, mf, charPred, thirdWhere, cfg.sideFK,
 			cfg.countDistinctCol, mf, ma, mf, typeCond), nil
 
-	case cfg.mode == "all" && subjMode == "all":
+	case cfg.mode == "all" && thirdMode == "all":
 		return fmt.Sprintf(
 			`EXISTS (SELECT 1 FROM person_characters pc WHERE pc.%s = %s.%s AND %s) AND
 			 NOT EXISTS (
 			   SELECT 1 FROM person_characters pc %s
 			   WHERE pc.%s = %s.%s AND %s
 			   AND EXISTS (
-			     SELECT 1 FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			     SELECT 1 FROM person_characters pc2%s
 			     WHERE pc2.%s = %s.%s AND pc2.%s = pc.%s
 			     AND NOT (%s)
 			   )
 			 )`,
 			mf, ma, mf, typeCond,
 			sideJoin, mf, ma, mf, charPred,
-			mf, ma, mf, cfg.sideFK, cfg.sideFK, subjWhere), nil
+			thirdJoinInner, mf, ma, mf, cfg.sideFK, cfg.sideFK, thirdWhere), nil
 
-	case cfg.mode == "any" && subjMode == "count":
-		subjCountOp := toSQLOp(cfg.subjectCountOp)
-		num, err := safeNum(fmt.Sprintf("%v", cfg.subjectCountVal))
+	case cfg.mode == "any" && thirdMode == "count":
+		subjCountOp := toSQLOp(thirdCountOp)
+		num, err := safeNum(fmt.Sprintf("%v", thirdCountVal))
 		if err != nil {
 			return "", err
 		}
@@ -309,18 +345,17 @@ func (b *SQLBuilder) threeWayFilter(cfg threeWayConfig) (string, error) {
 			`EXISTS (
 		   SELECT 1 FROM person_characters pc %s
 		   WHERE pc.%s = %s.%s AND %s
-		   AND (SELECT COUNT(*) FROM person_characters pc2
-		     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+		   AND (SELECT COUNT(*) FROM person_characters pc2%s
 		     WHERE pc2.%s = %s.%s AND pc2.%s = pc.%s
 		     AND %s) %s %s
 		 )`,
 			sideJoin, mf, ma, mf, charPred,
-			mf, ma, mf, cfg.sideFK, cfg.sideFK,
-			subjWhere, subjCountOp, num), nil
+			thirdJoinInner, mf, ma, mf, cfg.sideFK, cfg.sideFK,
+			thirdWhere, subjCountOp, num), nil
 
-	case cfg.mode == "all" && subjMode == "count":
-		subjCountOp := toSQLOp(cfg.subjectCountOp)
-		num, err := safeNum(fmt.Sprintf("%v", cfg.subjectCountVal))
+	case cfg.mode == "all" && thirdMode == "count":
+		subjCountOp := toSQLOp(thirdCountOp)
+		num, err := safeNum(fmt.Sprintf("%v", thirdCountVal))
 		if err != nil {
 			return "", err
 		}
@@ -329,15 +364,14 @@ func (b *SQLBuilder) threeWayFilter(cfg threeWayConfig) (string, error) {
 			 NOT EXISTS (
 			   SELECT 1 FROM person_characters pc %s
 			   WHERE pc.%s = %s.%s AND %s
-			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2
-			     LEFT JOIN subjects rs ON pc2.subject_id = rs.id
+			   AND NOT ((SELECT COUNT(*) FROM person_characters pc2%s
 			     WHERE pc2.%s = %s.%s AND pc2.%s = pc.%s
 			     AND %s) %s %s)
 			 )`,
 			mf, ma, mf, typeCond,
 			sideJoin, mf, ma, mf, charPred,
-			mf, ma, mf, cfg.sideFK, cfg.sideFK,
-			subjWhere, subjCountOp, num), nil
+			thirdJoinInner, mf, ma, mf, cfg.sideFK, cfg.sideFK,
+			thirdWhere, subjCountOp, num), nil
 	}
 
 	return "TRUE", nil

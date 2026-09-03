@@ -296,24 +296,40 @@ func (b *SQLBuilder) buildStaffOutputForPerson(position, field string) (string, 
 
 // buildPersonCharacterOutput generates a subquery for a person's character
 // association (target: person) — e.g. CV.name returns the first character the
-// person voices, matching the person_character filter conditions.
+// person voices, matching the person_character / person_cast_subject filter conditions.
 func (b *SQLBuilder) buildPersonCharacterOutput(typeName, field string) (string, error) {
 	typeID, ok := b.getPersonCharacterTypeID(typeName)
 	if !ok {
 		return "", fmt.Errorf("未找到出演类型: %s", typeName)
 	}
-	pf := b.findFilter(filterTypePersonCharacter, typeName)
-	var charWhere string
+	var charWhereParts []string
 	entityJoin := "LEFT JOIN characters c ON pc.character_id = c.character_id"
-	if pf != nil {
-		f := pf.(*config.PersonCharacterFilter)
-		if len(f.Conditions) > 0 {
-			var err error
-			charWhere, err = b.buildPersonCharCharacterWhere(f.Conditions)
+	// collect character conditions from both filter kinds sharing this prefix
+	if pf0 := b.findFilter(filterTypePersonCharacter, typeName); pf0 != nil {
+		if f, ok := pf0.(*config.PersonCharacterFilter); ok && len(f.Conditions) > 0 {
+			cw, err := b.buildPersonCharCharacterWhere(f.Conditions)
 			if err != nil {
 				return "", fmt.Errorf("person_character output: %w", err)
 			}
+			if cw != "" && cw != "TRUE" {
+				charWhereParts = append(charWhereParts, cw)
+			}
 		}
+	}
+	if pf1 := b.findFilter(filterTypePersonCastSubject, typeName); pf1 != nil {
+		if f, ok := pf1.(*config.PersonCastSubjectFilter); ok && len(f.CharacterConditions) > 0 {
+			cw, err := b.buildPersonCharCharacterWhere(f.CharacterConditions)
+			if err != nil {
+				return "", fmt.Errorf("person_cast_subject output: %w", err)
+			}
+			if cw != "" && cw != "TRUE" {
+				charWhereParts = append(charWhereParts, cw)
+			}
+		}
+	}
+	charWhere := ""
+	if len(charWhereParts) > 0 {
+		charWhere = strings.Join(charWhereParts, " AND ")
 	}
 	typeCond := fmt.Sprintf("pc.type = %d", typeID)
 	subjectAlias := ""
@@ -383,31 +399,66 @@ func groupHasSubjectFields(field string) bool {
 // buildPersonCharacterSubjectOutput generates a subquery for the subject where
 // a person voices a character (target: person) — e.g. CV.s.name returns the
 // first subject the person voices in as typeName, matching the person_character
-// filter's character conditions AND subject conditions.
+// filter's character conditions AND subject conditions, or person_cast_subject
+// filter's subject conditions AND character conditions.
 func (b *SQLBuilder) buildPersonCharacterSubjectOutput(typeName, field string) (string, error) {
 	typeID, ok := b.getPersonCharacterTypeID(typeName)
 	if !ok {
 		return "", fmt.Errorf("未找到出演类型: %s", typeName)
 	}
-	pf := b.findFilter(filterTypePersonCharacter, typeName)
-	var charWhere, subjectWhere string
+	var charWhereParts, subjectWhereParts []string
 	entityJoin := "LEFT JOIN subjects rs ON pc.subject_id = rs.id LEFT JOIN characters c ON pc.character_id = c.character_id"
-	if pf != nil {
-		f := pf.(*config.PersonCharacterFilter)
-		if len(f.Conditions) > 0 {
-			var err error
-			charWhere, err = b.buildPersonCharCharacterWhere(f.Conditions)
-			if err != nil {
-				return "", fmt.Errorf("person_character subject output: %w", err)
+	if pf0 := b.findFilter(filterTypePersonCharacter, typeName); pf0 != nil {
+		if f, ok := pf0.(*config.PersonCharacterFilter); ok {
+			if len(f.Conditions) > 0 {
+				cw, err := b.buildPersonCharCharacterWhere(f.Conditions)
+				if err != nil {
+					return "", fmt.Errorf("person_character subject output: %w", err)
+				}
+				if cw != "" && cw != "TRUE" {
+					charWhereParts = append(charWhereParts, cw)
+				}
+			}
+			if len(f.SubjectConditions) > 0 {
+				sw, err := b.buildWhereForAlias(f.SubjectConditions, "rs")
+				if err != nil {
+					return "", fmt.Errorf("person_character subject output: %w", err)
+				}
+				if sw != "" && sw != "TRUE" {
+					subjectWhereParts = append(subjectWhereParts, sw)
+				}
 			}
 		}
-		if len(f.SubjectConditions) > 0 {
-			var err error
-			subjectWhere, err = b.buildWhereForAlias(f.SubjectConditions, "rs")
-			if err != nil {
-				return "", fmt.Errorf("person_character subject output: %w", err)
+	}
+	if pf1 := b.findFilter(filterTypePersonCastSubject, typeName); pf1 != nil {
+		if f, ok := pf1.(*config.PersonCastSubjectFilter); ok {
+			if len(f.CharacterConditions) > 0 {
+				cw, err := b.buildPersonCharCharacterWhere(f.CharacterConditions)
+				if err != nil {
+					return "", fmt.Errorf("person_cast_subject subject output: %w", err)
+				}
+				if cw != "" && cw != "TRUE" {
+					charWhereParts = append(charWhereParts, cw)
+				}
+			}
+			if len(f.Conditions) > 0 {
+				sw, err := b.buildWhereForAlias(f.Conditions, "rs")
+				if err != nil {
+					return "", fmt.Errorf("person_cast_subject subject output: %w", err)
+				}
+				if sw != "" && sw != "TRUE" {
+					subjectWhereParts = append(subjectWhereParts, sw)
+				}
 			}
 		}
+	}
+	charWhere := ""
+	if len(charWhereParts) > 0 {
+		charWhere = strings.Join(charWhereParts, " AND ")
+	}
+	subjectWhere := ""
+	if len(subjectWhereParts) > 0 {
+		subjectWhere = strings.Join(subjectWhereParts, " AND ")
 	}
 	typeCond := fmt.Sprintf("pc.type = %d", typeID)
 	return b.buildAssocSubquery(assocSubConfig{
@@ -832,6 +883,10 @@ func findFilterInNode(f config.Filter, ft filterType, typeName string) interface
 		if f.PersonCharacter != nil && (f.PersonCharacter.Type == typeName || f.PersonCharacter.Type == "") {
 			return f.PersonCharacter
 		}
+	case filterTypePersonCastSubject:
+		if f.PersonCastSubject != nil && (f.PersonCastSubject.Type == typeName || f.PersonCastSubject.Type == "") {
+			return f.PersonCastSubject
+		}
 	case filterTypeCharacterPerson:
 		if f.CharacterPerson != nil && (f.CharacterPerson.Type == typeName || f.CharacterPerson.Type == "") {
 			return f.CharacterPerson
@@ -866,6 +921,18 @@ func findFilterInNode(f config.Filter, ft filterType, typeName string) interface
 			}
 		}
 		for _, child := range f.PersonCharacter.SubjectConditions {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+	}
+	if f.PersonCastSubject != nil {
+		for _, child := range f.PersonCastSubject.Conditions {
+			if result := findFilterInNode(child, ft, typeName); result != nil {
+				return result
+			}
+		}
+		for _, child := range f.PersonCastSubject.CharacterConditions {
 			if result := findFilterInNode(child, ft, typeName); result != nil {
 				return result
 			}

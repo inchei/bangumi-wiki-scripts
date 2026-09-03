@@ -126,6 +126,8 @@ export function assocRowsFromFilters(target, rootItems) {
       if (item.person_relation) push(item.person_relation.type, "person");
       if (item.person_character)
         push(item.person_character.type, "character", true);
+      if (item.person_cast_subject)
+        push(item.person_cast_subject.type, "character", true);
     } else if (target === "character") {
       if (item.character_relation)
         push(item.character_relation.type, "character");
@@ -223,9 +225,15 @@ export function makeOutputTokenLister(target, plainFields) {
       }
       return out;
     }
-    // Stage 2: only while the remainder is empty or a partial of "count".
+    // Stage 2: count is available as 前缀.count (character/person count); for dual
+    // prefixes an extra 前缀.s.count (distinct works) is also valid.
     if (rest === "" || (rest !== "count" && "count".startsWith(rest))) {
-      return [`${prefix}.count`, `${prefix}.{`];
+      const out = [`${prefix}.count`, `${prefix}.{`];
+      if (info.dual) out.splice(1, 0, `${prefix}.s.count`);
+      return out;
+    }
+    if (info.dual && (rest === "s" || "s.count".startsWith(rest))) {
+      return [`${prefix}.s.count`];
     }
     return [];
   };
@@ -237,6 +245,7 @@ export function sortColumnSuggestions(target, plainFields) {
   const out = [...plainFields];
   for (const info of assocPrefixesForTarget(target)) {
     out.push(`${info.prefix}.count`);
+    if (info.dual) out.push(`${info.prefix}.s.count`);
     for (const f of ENTITY_FIELDS[info.entity]) {
       out.push(`${info.prefix}.${f}`);
     }

@@ -148,6 +148,7 @@
       if (qTarget === "person") {
         opts.push({ value: "person_relation", label: "人物关系" });
         opts.push({ value: "person_character", label: "角色" });
+        opts.push({ value: "person_cast_subject", label: "出演作品" });
       }
       opts.push({ value: "staff", label: "条目" });
     } else {

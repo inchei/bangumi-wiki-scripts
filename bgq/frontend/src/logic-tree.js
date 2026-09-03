@@ -23,6 +23,8 @@ function forEachCondArray(item, fn) {
       if (Array.isArray(val.conditions)) fn(val.conditions, key, "conditions");
       if (Array.isArray(val.subject_conditions))
         fn(val.subject_conditions, key, "subject_conditions");
+      if (Array.isArray(val.character_conditions))
+        fn(val.character_conditions, key, "character_conditions");
     }
   }
 }
@@ -283,6 +285,16 @@ export function createEmptyCondition(type) {
           subject_conditions: [{ logic: newLogicGroup("and") }],
         },
       };
+    case "person_cast_subject":
+      return {
+        person_cast_subject: {
+          type: "",
+          mode: "any",
+          character_mode: "any",
+          conditions: [{ logic: newLogicGroup("and") }],
+          character_conditions: [{ logic: newLogicGroup("and") }],
+        },
+      };
     case "appear_eps":
       return {
         field: { field: "appear_eps", operator: "contains", value: "" },
@@ -504,6 +516,11 @@ export function updateCondition(group, idx, kind, field, value) {
     if (!updated.subject_count_op) updated.subject_count_op = "gte";
     if (!updated.subject_count_val) updated.subject_count_val = "";
   }
+  // When switching character_mode to "count", initialize character_count_op/character_count_val defaults
+  if (field === "character_mode" && value === "count") {
+    if (!updated.character_count_op) updated.character_count_op = "gte";
+    if (!updated.character_count_val) updated.character_count_val = "";
+  }
   const newItem = { ...oldItem, [kind]: updated };
   applyMutation(group._id, (items) => {
     items[idx] = newItem;
@@ -549,12 +566,14 @@ function assignFilterIds(item) {
     "staff",
     "character",
     "person_character",
+    "person_cast_subject",
     "character_person",
   ]) {
     const v = item[key];
     if (!v) continue;
     for (const c of v.conditions || []) assignFilterIds(c);
     for (const c of v.subject_conditions || []) assignFilterIds(c);
+    for (const c of v.character_conditions || []) assignFilterIds(c);
   }
   if (item.episode?.logic) assignLogicIds(item.episode.logic);
 }
