@@ -517,6 +517,9 @@
     };
     sortState.set(newSort);
 
+    const label = displayCols[di]?.label ?? res.columns[ci] ?? "";
+    const isRank = label === "rank";
+    const rankZero = (v) => isRank && String(v ?? "").trim() === "0";
     const rows = [...res.rows];
     const vals = rows.map((r) => parseSortVal(r[ci]));
     const hasDate = vals.some((p) => !p.empty && !isNaN(p.ts));
@@ -524,9 +527,11 @@
     rows.sort((a, b) => {
       const pa = parseSortVal(a[ci]),
         pb = parseSortVal(b[ci]);
-      if (pa.empty && pb.empty) return 0;
-      if (pa.empty) return 1;
-      if (pb.empty) return -1;
+      const aEmpty = pa.empty || rankZero(a[ci]);
+      const bEmpty = pb.empty || rankZero(b[ci]);
+      if (aEmpty && bEmpty) return 0;
+      if (aEmpty) return 1;
+      if (bEmpty) return -1;
       let cmp;
       if (hasDate && !isNaN(pa.ts) && !isNaN(pb.ts)) cmp = pa.ts - pb.ts;
       else if (hasNumeric && !isNaN(pa.num) && !isNaN(pb.num))
@@ -547,9 +552,10 @@
   // sort key: min for asc, max for desc — mirroring the backend's "导演.生日"
   // (min(ASC) / max(DESC)) semantics.
   function groupSortKey(entries, field, asc) {
+    const rankZero = (v) => field === "rank" && String(v ?? "").trim() === "0";
     const vals = entries
       .map((e) => e[field])
-      .filter((v) => v !== null && v !== undefined && v !== "");
+      .filter((v) => v !== null && v !== undefined && v !== "" && !rankZero(v));
     if (vals.length === 0) return { empty: true, key: 0 };
     const parsed = vals.map((v) => parseSortVal(v));
     const hasDate = parsed.some((p) => !p.empty && !isNaN(p.ts));
@@ -608,6 +614,17 @@
         return r;
       }
       const sorted = [...entries].sort((x, y) => {
+        const isRank = dc.field === "rank";
+        const rankZero = (v) => isRank && String(v ?? "").trim() === "0";
+        const px0 = rankZero(x[dc.field])
+          ? { empty: true }
+          : parseSortVal(x[dc.field]);
+        const py0 = rankZero(y[dc.field])
+          ? { empty: true }
+          : parseSortVal(y[dc.field]);
+        if (px0.empty && py0.empty) return 0;
+        if (px0.empty) return 1;
+        if (py0.empty) return -1;
         const px = parseSortVal(x[dc.field]);
         const py = parseSortVal(y[dc.field]);
         if (px.empty && py.empty) return 0;

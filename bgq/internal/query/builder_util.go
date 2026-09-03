@@ -88,7 +88,13 @@ func (b *SQLBuilder) buildOrderBy() string {
 		if dateFields[s.Field] && b.isDirectField(fieldName) {
 			expr = normalizeDate(expr)
 		}
-		parts = append(parts, fmt.Sprintf("%s %s", expr, dir))
+		// rank 0 means no ranking → always last regardless of ASC/DESC
+		if s.Field == "rank" || fieldName == "rank" {
+			parts = append(parts, fmt.Sprintf("CASE WHEN %s IS NULL OR %s = 0 THEN 1 ELSE 0 END", expr, expr))
+			parts = append(parts, fmt.Sprintf("%s %s", expr, dir))
+		} else {
+			parts = append(parts, fmt.Sprintf("%s %s", expr, dir))
+		}
 	}
 	return strings.Join(parts, ", ")
 }
