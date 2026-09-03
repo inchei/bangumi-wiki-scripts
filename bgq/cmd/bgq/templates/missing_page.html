@@ -48,6 +48,12 @@
   for (var i = 0; i < spans.length; i++) {
     if (spans[i].textContent === hl) {
       var det = spans[i].closest('details.person');
+      if (!det.open) {
+        det.open = true;
+        if (!det.querySelector('ul') && typeof renderSubjects === 'function') {
+          renderSubjects(parseInt(det.dataset.idx), det);
+        }
+      }
       det.classList.add('hl-target');
       det.scrollIntoView({ block: 'center' });
       setTimeout(function() { det.classList.add('hl-target-done'); }, 3000);
