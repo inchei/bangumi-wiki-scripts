@@ -70,7 +70,7 @@ function renderSubjects(idx, container) {
     var li = document.createElement('li');
     li.innerHTML = '<span class="type">[' + (_typeNames[stype] || stype) + ']</span> '
       + '<a href="https://bgm.tv/subject/' + sid + '" target="_blank">' + entry.name + '</a> '
-      + '<span class="pos">[' + entry.positions.map(function(p) { return _posNames[p] || p; }).join('\u3001') + ']</span>';
+      + '<span class="pos">[' + entry.positions.map(function(p) { return _posNames[p] || p; }).join('、') + ']</span>';
     ul.appendChild(li);
   }
   container.appendChild(ul);
@@ -105,7 +105,7 @@ document.addEventListener('click', function(e) {
   var idx = parseInt(btn.dataset.idx);
   var name = btn.dataset.name;
   _bgmMpPending = JSON.stringify(_pendingData[idx]);
-  showResult(btn, '\u641C\u7D22\u4E2D\u2026', 'sr-loading');
+  showResult(btn, '搜索中…', 'sr-loading');
   waitOpenCC().then(function() {
     return fetch('https://api.bgm.tv/v0/search/persons?limit=5', {
       method: 'POST',
@@ -122,17 +122,17 @@ document.addEventListener('click', function(e) {
         _bgmMpPending = null;
         var links = results.map(function(p) {
           return '<a href="https://bgm.tv/person/' + p.id + '" target="_blank">' + p.name + ' (ID:' + p.id + ')</a>'
-            + '<a class="btn-relate" href="#relate-' + p.id + '" data-idx="' + idx + '" data-id="' + p.id + '">\u5173\u8054</a>';
+            + '<a class="btn btn-relate" href="#relate-' + p.id + '" data-idx="' + idx + '" data-id="' + p.id + '">关联</a>';
         }).join(' ');
-        showResult(btn, '\u2705 ' + links
-          + ' <a class="btn-create-still" href="https://bgm.tv/person/new?name=' + encodeURIComponent(name) + '&bgm_mp=1" target="_blank">\u4ECD\u7136\u521B\u5EFA</a>', 'sr-found');
+        showResult(btn, '✅ ' + links
+          + ' <a class="btn btn-create-still" href="https://bgm.tv/person/new?name=' + encodeURIComponent(name) + '&bgm_mp=1" target="_blank">仍然创建</a>', 'sr-found');
         return;
       }
-      showResult(btn, '\u2796 \u672A\u521B\u5EFA', 'sr-missing');
+      showResult(btn, '➖ 未创建', 'sr-missing');
       window.open('https://bgm.tv/person/new?name=' + encodeURIComponent(name) + '&bgm_mp=1', '_blank');
     })
     .catch(function() {
-      showResult(btn, '\u641C\u7D22\u5931\u8D25', 'sr-loading');
+      showResult(btn, '搜索失败', 'sr-loading');
     });
 });
 
