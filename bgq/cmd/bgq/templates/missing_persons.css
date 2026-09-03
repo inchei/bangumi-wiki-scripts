@@ -40,24 +40,45 @@ summary .type {
   font-size: 0.75em;
 }
 
-.btn-create {
+.btn {
   font-size: 0.7em;
-  margin-left: 0.5em;
   cursor: pointer;
   padding: 0 0.5em;
-  border: 1px solid #4caf50;
+  border: 1px solid transparent;
   border-radius: 3px;
-  background: #e8f5e9;
-  color: #2e7d32;
   vertical-align: middle;
   text-decoration: none;
+  display: inline-block;
+}
+
+.btn-create {
+  margin-left: 0.5em;
+  border-color: #4caf50;
+  background: #e8f5e9;
+  color: #2e7d32;
 }
 
 .btn-create:hover {
   background: #c8e6c9;
 }
 
-.btn-create:visited {
+.btn-relate,
+.btn-create-still {
+  border-color: #ff9800;
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.btn-relate:hover,
+.btn-create-still:hover {
+  background: #ffe0b2;
+}
+
+.btn-create-still {
+  margin-left: 0.6em;
+}
+
+.btn:visited {
   background: #d7d7d7;
   color: #888;
   border-color: #bbb;
@@ -96,16 +117,6 @@ li .pos {
 
 .sr a {
   margin-right: 0.5em;
-}
-
-.sr-found .btn-create-still {
-  display: inline-block;
-  margin-left: 0.6em;
-  padding: 0.15em 0.6em;
-  border-radius: 3px;
-  background: #fff3e0;
-  color: #b35900;
-  font-weight: bold;
 }
 
 .nav {
@@ -208,53 +219,19 @@ h1 {
   margin-left: 0.5em;
 }
 
-.btn-relate {
-  font-size: 0.7em;
-  cursor: pointer;
-  padding: 0 0.5em;
-  border: 1px solid #ff9800;
-  border-radius: 3px;
-  background: #fff3e0;
-  color: #e65100;
-  vertical-align: middle;
-  text-decoration: none;
-}
-
-.btn-relate:hover {
-  background: #ffe0b2;
-}
-
-.btn-relate:visited {
-  background: #d7d7d7;
-  color: #888;
-  border-color: #bbb;
-}
-
 .btn-relate:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
 .btn-alias {
-  font-size: 0.7em;
-  cursor: pointer;
-  padding: 0 0.5em;
-  border: 1px solid #2196f3;
-  border-radius: 3px;
+  border-color: #2196f3;
   background: #e3f2fd;
   color: #0d47a1;
-  vertical-align: middle;
-  text-decoration: none;
 }
 
 .btn-alias:hover {
   background: #bbdefb;
-}
-
-.btn-alias:visited {
-  background: #d7d7d7;
-  color: #888;
-  border-color: #bbb;
 }
 
 .relate-select {
@@ -317,12 +294,14 @@ details.person.hl-target-done {
   .btn-create:hover {
     background: #2e7d32;
   }
-  .btn-relate {
+  .btn-relate,
+  .btn-create-still {
     background: #e65100;
     color: #ffe0b2;
     border-color: #ff9800;
   }
-  .btn-relate:hover {
+  .btn-relate:hover,
+  .btn-create-still:hover {
     background: #bf360c;
   }
   .btn-alias {
@@ -333,13 +312,7 @@ details.person.hl-target-done {
   .btn-alias:hover {
     background: #1565c0;
   }
-  .btn-create:visited,
-  .btn-relate:visited {
-    background: #444;
-    color: #999;
-    border-color: #666;
-  }
-  .btn-alias:visited {
+  .btn:visited {
     background: #444;
     color: #999;
     border-color: #666;
