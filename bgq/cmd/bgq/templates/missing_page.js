@@ -76,11 +76,12 @@ function renderSubjects(idx, container) {
   container.appendChild(ul);
 }
 
-document.addEventListener('click', function(e) {
-  var det = e.target.closest('details.person');
-  if (!det || det.querySelector('ul')) return;
+document.addEventListener('toggle', function(e) {
+  var det = e.target;
+  if (!det.matches || !det.matches('details.person')) return;
+  if (!det.open || det.querySelector('ul')) return;
   renderSubjects(parseInt(det.dataset.idx), det);
-});
+}, true);
 
 function showResult(btn, html, className) {
   var sr = btn.parentElement.querySelector('.sr');
@@ -102,6 +103,8 @@ window.addEventListener('message', function(e) {
 document.addEventListener('click', function(e) {
   var btn = e.target.closest('.btn-create');
   if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
   var idx = parseInt(btn.dataset.idx);
   var name = btn.dataset.name;
   _bgmMpPending = JSON.stringify(_pendingData[idx]);
@@ -140,6 +143,8 @@ document.addEventListener('click', function(e) {
 document.addEventListener('click', function(e) {
   var btn = e.target.closest('.btn-relate');
   if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
   var idx = parseInt(btn.dataset.idx);
   var personId = parseInt(btn.dataset.id);
   openRelate(personId, _pendingData[idx]);

@@ -13,17 +13,18 @@ function renderSubjects(idx, container) {
     var li = document.createElement('li');
     li.innerHTML = '<span class="type">[' + (_typeNames[stype] || stype) + ']</span> '
       + '<a href="https://bgm.tv/subject/' + sid + '" target="_blank">' + entry.name + '</a> '
-      + '<span class="pos">[' + entry.positions.map(function(p) { return _posNames[p] || p; }).join('\u3001') + ']</span>';
+      + '<span class="pos">[' + entry.positions.map(function(p) { return _posNames[p] || p; }).join('、') + ']</span>';
     ul.appendChild(li);
   }
   container.appendChild(ul);
 }
 
-document.addEventListener('click', function(e) {
-  var det = e.target.closest('details.person');
-  if (!det || det.querySelector('ul')) return;
+document.addEventListener('toggle', function(e) {
+  var det = e.target;
+  if (!det.matches || !det.matches('details.person')) return;
+  if (!det.open || det.querySelector('ul')) return;
   renderSubjects(parseInt(det.dataset.idx), det);
-});
+}, true);
 
 window.addEventListener('message', function(e) {
   if (e.data && e.data.type === 'bgm_mp_request' && _bgmMpPending) {
@@ -41,6 +42,8 @@ window.addEventListener('message', function(e) {
 document.addEventListener('click', function(e) {
   var btn = e.target.closest('.btn-create');
   if (!btn || btn.dataset.force !== '1') return;
+  e.preventDefault();
+  e.stopPropagation();
   var idx = parseInt(btn.dataset.idx);
   var name = btn.dataset.name;
   var data = _relatedData[idx];
@@ -57,6 +60,8 @@ document.addEventListener('click', function(e) {
 document.addEventListener('click', function(e) {
   var btn = e.target.closest('.btn-relate');
   if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
   var idx = parseInt(btn.dataset.idx);
   var data = _relatedData[idx];
   if (!data) return;
@@ -71,6 +76,8 @@ document.addEventListener('click', function(e) {
 document.addEventListener('click', function(e) {
   var btn = e.target.closest('.btn-alias');
   if (!btn) return;
+  e.preventDefault();
+  e.stopPropagation();
   var idx = parseInt(btn.dataset.idx);
   var data = _relatedData[idx];
   if (!data) return;
