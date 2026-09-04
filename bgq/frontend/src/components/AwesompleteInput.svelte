@@ -13,8 +13,12 @@
    *   separator?: string,
    *   id?: undefined | string,
    *   maxItems?: number,
-   *   getTokenList?: null | ((token: string) => string[]),
-   *   disabled?: boolean
+   *   getTokenList?: null | ((
+   *     token: string,
+   *     inner: { fieldFragment: string } | null,
+   *   ) => string[]),
+   *   disabled?: boolean,
+   *   sort?: false | undefined
    * }}
    */
   let {
@@ -30,6 +34,9 @@
     maxItems = Infinity,
     getTokenList = null,
     disabled = false,
+    // Awesomplete sort option; false keeps the caller's list order (e.g.
+    // priority-pinned items) instead of the default length-based sort.
+    sort = undefined,
   } = $props();
 
   let inputEl;
@@ -111,7 +118,9 @@
   function updateDynamicList() {
     if (!aw || !getTokenList) return;
     const inner = getInnerFieldInfo();
-    aw.list = getTokenList(inner ? inner.synthetic : currentToken());
+    // `inner` is non-null while the caret is inside "{...}" of a group column;
+    // callers use it to tell stage-3 (field fragment) from whole-token stages.
+    aw.list = getTokenList(inner ? inner.synthetic : currentToken(), inner);
   }
 
   // A suggestion ending in "{" or "|" (or ".") is a continuation into a
@@ -132,6 +141,7 @@
       maxItems,
       autoFirst: true,
     };
+    if (sort !== undefined) opts.sort = sort;
     if (multiple) {
       const sep = separator;
       // Inside braces, filter/highlight against the field fragment under the

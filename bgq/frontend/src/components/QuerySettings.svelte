@@ -33,12 +33,14 @@
     buildAssocToken,
     makeOutputTokenLister,
     sortColumnSuggestions,
+    prioritize,
     ENTITY_FIELDS,
     ENTITY_LABELS,
     DEFAULT_ROW_FIELDS,
   } from "../columns.js";
   import { runQuery } from "../api.js";
   import { get } from "svelte/store";
+  import { SvelteMap } from "svelte/reactivity";
   import AwesompleteInput from "./AwesompleteInput.svelte";
   import { MorphIcon } from "morphicons/svelte";
   import { ArrowDownWideNarrow, ArrowDownNarrowWide, Search } from "lucide";
@@ -64,10 +66,6 @@
 
   let target = $derived($queryTarget);
   let plainColumns = $derived(TARGET_COLUMNS[target] || TARGET_COLUMNS.subject);
-  let getColumnTokenList = $derived(
-    makeOutputTokenLister(target, plainColumns),
-  );
-  let sortSuggestions = $derived(sortColumnSuggestions(target, plainColumns));
   let outputPlaceholder = $derived(
     (
       DEFAULT_SETTINGS[target] || DEFAULT_SETTINGS.subject
@@ -116,6 +114,125 @@
   let filterAssocPrefixes = $derived(
     assocRowsFromFilters(target, rootItems).map((r) => r.prefix),
   );
+
+  // ---- Suggestion priority (pinned to the top while not searching) ----
+  // Rank sources, in order: common fields of the default output columns →
+  // content referenced by first-level filters → existing output columns →
+  // existing sort fields. Three views: bare tokens (output stage 1 and plain
+  // sort fields), full sort entries (前缀.count etc.), and per-prefix group
+  // members (stage-3 fields inside 前缀.{...}).
+  let suggestionPriority = $derived.by(() => {
+    const general = [];
+    const sortEntries = [];
+    const members = new SvelteMap();
+    const push = (arr, v) => {
+      if (v && !arr.includes(v)) arr.push(v);
+    };
+    const pushMember = (prefix, field) => {
+      if (!prefix || !field) return;
+      const arr = members.get(prefix) || [];
+      push(arr, field);
+      members.set(prefix, arr);
+    };
+    // 1. Default output columns' common fields
+    for (const f of splitTokens(
+      (DEFAULT_SETTINGS[target] || DEFAULT_SETTINGS.subject).outputColumns,
+    )) {
+      push(general, f);
+      push(sortEntries, f);
+    }
+    // 2. First-level filter content: plain fields + association prefixes
+    for (const item of rootItems) {
+      if (!item || item.logic) continue;
+      if (item.field?.field) {
+        push(general, item.field.field);
+        push(sortEntries, item.field.field);
+      }
+      if (item.type?.value) {
+        push(general, "type");
+        push(sortEntries, "type");
+      }
+    }
+    for (const p of filterAssocPrefixes) {
+      if (!prefixInfoMap.has(p)) continue;
+      push(general, p);
+      push(sortEntries, `${p}.count`);
+      if (prefixInfoMap.get(p).dual) push(sortEntries, `${p}.s.count`);
+    }
+    // 3. Existing output columns (assoc tokens also rank their prefix and
+    //    member fields)
+    for (const tok of splitTokens($outputColumns)) {
+      const dot = tok.indexOf(".");
+      if (dot < 0) {
+        push(general, tok);
+        push(sortEntries, tok);
+        continue;
+      }
+      const pfx = tok.slice(0, dot);
+      push(general, pfx);
+      const p = parseAssocToken(tok, pfx);
+      if (p && !p.raw) {
+        for (const f of p.fields) {
+          push(sortEntries, `${pfx}.${f}`);
+          pushMember(pfx, f);
+        }
+        for (const f of p.subjectFields) {
+          push(sortEntries, `${pfx}.s.${f}`);
+          pushMember(pfx, `s.${f}`);
+        }
+      }
+    }
+    // 4. Existing sort fields (assoc ones also rank their prefix and the
+    //    field inside stage-3 group editing)
+    for (const rule of $sortRules) {
+      const f = (rule.field || "").trim();
+      if (!f) continue;
+      push(general, f);
+      push(sortEntries, f);
+      const dot = f.indexOf(".");
+      if (dot > 0) {
+        const pfx = f.slice(0, dot);
+        push(general, pfx);
+        pushMember(pfx, f.slice(dot + 1));
+      }
+    }
+    return { general, sortEntries, members };
+  });
+
+  let sortSuggestions = $derived(sortColumnSuggestions(target, plainColumns));
+
+  // Output columns autocomplete: while the column token (or the field
+  // fragment inside {...}) is empty — i.e. not searching — priority
+  // suggestions are pinned to the top of the list.
+  let getColumnTokenList = $derived.by(() => {
+    const base = makeOutputTokenLister(target, plainColumns);
+    const { general, members } = suggestionPriority;
+    return (token, inner) => {
+      const list = base(token);
+      if (inner) {
+        if (inner.fieldFragment.trim()) return list;
+        const mp = members.get(token.slice(0, token.indexOf(".")));
+        return mp && mp.length > 0
+          ? prioritize(
+              list,
+              mp.map((m) => `${m}|`),
+            )
+          : list;
+      }
+      if (token.trim()) return list;
+      return prioritize(list, general);
+    };
+  });
+
+  // Sort field autocomplete: priority suggestions pinned while empty.
+  let getSortTokenList = $derived.by(() => {
+    const base = sortSuggestions;
+    const { sortEntries } = suggestionPriority;
+    return (token) => {
+      if ((token || "").trim()) return base;
+      return prioritize(base, sortEntries);
+    };
+  });
 
   // Prefixes not yet used by any row — candidates for "+ 关联"/renames.
   let addablePrefixes = $derived.by(() => {
@@ -467,6 +584,7 @@
       placeholder={outputPlaceholder}
       multiple={true}
       separator=","
+      sort={false}
     />
   </div>
   {#if assocRowViews.length > 0 || addablePrefixes.length > 0}
@@ -564,6 +682,8 @@
           <AwesompleteInput
             value={rule.field}
             suggestions={sortSuggestions}
+            getTokenList={getSortTokenList}
+            sort={false}
             maxItems={30}
             onchange={(v) => updateSortField(i, v)}
             oninput={(v) => updateSortField(i, v)}

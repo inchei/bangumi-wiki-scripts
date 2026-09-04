@@ -258,3 +258,21 @@ export function sortColumnSuggestions(target, plainFields) {
   }
   return [...new Set(out)];
 }
+
+// prioritize reorders `list` so entries present in `priority` come first
+// (following `priority` order); all other entries keep their relative order.
+// Priority entries missing from `list` are ignored.
+export function prioritize(list, priority) {
+  if (!Array.isArray(list) || !Array.isArray(priority) || priority.length === 0)
+    return list;
+  const rank = new Map();
+  for (const p of priority) {
+    if (p && !rank.has(p)) rank.set(p, rank.size);
+  }
+  if (rank.size === 0) return list;
+  const max = priority.length;
+  return [...list].sort(
+    (a, b) =>
+      (rank.has(a) ? rank.get(a) : max) - (rank.has(b) ? rank.get(b) : max),
+  );
+}
