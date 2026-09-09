@@ -290,9 +290,9 @@ def main():
     columns = reader.fieldnames or []
     rows = list(reader)
 
-    if not rows:
-        print("CSV 为空，跳过")
-        return
+    if not columns:
+        print("错误: CSV 为空或缺少表头", file=sys.stderr)
+        sys.exit(1)
 
     cat, id_col = detect_id_column(columns)
     if id_col not in columns:
