@@ -339,6 +339,7 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
+    scrollbar-gutter: stable both-edges;
   }
 
   :global(.panel-right) {
