@@ -1371,7 +1371,88 @@ func resolveArchiveDir(candidates ...string) string {
 	return ""
 }
 
-func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, personFile, outputDir string) {
+type missingStats struct {
+	CreatedAt     string               `json:"created_at"`
+	Date          string               `json:"date"`
+	TotalSubjects int                  `json:"totalSubjects"`
+	TotalMissing  int                  `json:"totalMissing"`
+	TotalRelated  int                  `json:"totalRelated"`
+	TotalBare     int                  `json:"totalBare"`
+	TotalVariant  int                  `json:"totalVariant"`
+	Remaining     int                  `json:"remaining"`
+	ByType        map[string]typeStats `json:"byType"`
+}
+
+type typeStats struct {
+	Missing int `json:"missing"`
+	Related int `json:"related"`
+	Bare    int `json:"bare"`
+	Variant int `json:"variant"`
+}
+
+func statsCreatedAt(archiveDir string) string {
+	if data, err := os.ReadFile(filepath.Join(archiveDir, "data_version.json")); err == nil {
+		var v struct {
+			CreatedAt string `json:"created_at"`
+		}
+		if err := json.Unmarshal(data, &v); err == nil && v.CreatedAt != "" {
+			return v.CreatedAt
+		}
+	}
+	return ""
+}
+
+func writeStatsJSON(path string, stats missingStats) error {
+	data, err := json.MarshalIndent(stats, "", "  ")
+	if err != nil {
+		return err
+	}
+	data = append(data, '\n')
+	if path == "" {
+		_, err = os.Stdout.Write(data)
+		return err
+	}
+	return os.WriteFile(path, data, 0644)
+}
+
+func buildStatsByType(missing []*missingPerson, related, bare, variant []*missingRelatedPerson) map[string]typeStats {
+	m := make(map[string]typeStats)
+	for _, mp := range missing {
+		for t := range mp.TypeCounts {
+			k := strconv.Itoa(t)
+			v := m[k]
+			v.Missing++
+			m[k] = v
+		}
+	}
+	for _, rp := range related {
+		for t := range rp.TypeCounts {
+			k := strconv.Itoa(t)
+			v := m[k]
+			v.Related++
+			m[k] = v
+		}
+	}
+	for _, rp := range bare {
+		for t := range rp.TypeCounts {
+			k := strconv.Itoa(t)
+			v := m[k]
+			v.Bare++
+			m[k] = v
+		}
+	}
+	for _, rp := range variant {
+		for t := range rp.TypeCounts {
+			k := strconv.Itoa(t)
+			v := m[k]
+			v.Variant++
+			m[k] = v
+		}
+	}
+	return m
+}
+
+func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, personFile, outputDir string, statsOnly bool, statsJSON string) {
 	t0 := time.Now()
 
 	fmt.Fprintf(os.Stderr, "查询条目中...\n")
@@ -1485,6 +1566,40 @@ func runMissingPersons(ctx context.Context, dbPath, archiveDir, aliasFile, perso
 	fmt.Fprintf(os.Stderr, "  缺失且 ≥%d 次出现的人数: %d\n", missingPersonsMinCount, totalMissing)
 	fmt.Fprintf(os.Stderr, "  关联缺失且 ≥%d 次出现的人数: %d (其中无关联 %d)\n", missingRelatedMinCount, totalRelated, totalBare)
 	fmt.Fprintf(os.Stderr, "  变体字同名且已存在的人数: %d\n", totalVariant)
+
+	// 统计 JSON（供外层 Python 趋势图使用）
+	createdAt := statsCreatedAt(archiveDir)
+	dateStr := ""
+	if len(createdAt) >= 10 {
+		dateStr = createdAt[:10]
+	} else {
+		dateStr = time.Now().Format("2006-01-02")
+	}
+	stats := missingStats{
+		CreatedAt:     createdAt,
+		Date:          dateStr,
+		TotalSubjects: len(records),
+		TotalMissing:  totalMissing,
+		TotalRelated:  totalRelated,
+		TotalBare:     totalBare,
+		TotalVariant:  totalVariant,
+		Remaining:     totalMissing + totalRelated + totalBare,
+		ByType:        buildStatsByType(missing, related, relatedBare, variantDupes),
+	}
+	if statsOnly {
+		if err := writeStatsJSON(statsJSON, stats); err != nil {
+			fmt.Fprintf(os.Stderr, "写入统计失败: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Fprintf(os.Stderr, "\n总计耗时: %.1fs\n", time.Since(t0).Seconds())
+		return
+	}
+	if statsJSON != "" {
+		if err := writeStatsJSON(statsJSON, stats); err != nil {
+			fmt.Fprintf(os.Stderr, "写入统计失败: %v\n", err)
+			os.Exit(1)
+		}
+	}
 
 	if totalMissing == 0 && totalRelated == 0 && totalBare == 0 && totalVariant == 0 {
 		fmt.Fprintln(os.Stderr, "没有需要处理的人物")

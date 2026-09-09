@@ -1,4 +1,4 @@
-name: publish filter results
+name: test results pages
 
 on:
   workflow_dispatch:

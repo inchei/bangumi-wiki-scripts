@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '30 21 * * 2'
   workflow_dispatch:
+    inputs:
+      seed_history:
+        description: '首次手动传入的历史 JSON（仅 cache 为空时使用，内容为时间-数量对数组）'
+        required: false
+        type: string
 
 permissions:
   contents: write
@@ -136,8 +141,32 @@ jobs:
         env:
           DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
         run: |
-          bgq/bin/bgq missing persons --db bgq/bangumi.db --archive-dir bangumi_archive --aliases-file person_alias.json
+          bgq/bin/bgq missing persons --db bgq/bangumi.db --archive-dir bangumi_archive --aliases-file person_alias.json --stats-json /tmp/missing-stats.json
           cp -r docs/missing-persons _site/missing-persons
+
+      - name: 恢复趋势历史
+        uses: actions/cache@v4
+        with:
+          path: trend-history.json
+          key: missing-trend-${{ github.run_id }}
+          restore-keys: missing-trend-
+
+      - name: 安装 xkcd 字体
+        run: |
+          mkdir -p ~/.local/share/fonts/xkcd
+          curl -sL --fail --retry 3 -o ~/.local/share/fonts/xkcd/xkcd-script.ttf "https://github.com/ipython/xkcd-font/releases/download/v2026.2/xkcd-script-2026.2.ttf"
+          fc-cache -f ~/.local/share/fonts/xkcd/
+
+      - name: 更新缺失人物趋势图
+        env:
+          SEED_HISTORY: ${{ inputs.seed_history }}
+        run: |
+          if [ ! -f trend-history.json ] && [ -n "$SEED_HISTORY" ]; then
+            echo "$SEED_HISTORY" > trend-history.json
+            echo "已写入手动传入的首次历史数据"
+          fi
+          uv run tools/missing_trend.py --history trend-history.json --stats /tmp/missing-stats.json --out _site/missing-trend.png
+          cp trend-history.json _site/missing-trend.json
 
       - name: 转换为 HTML
         run: uv run .github/scripts/results_to_html.py

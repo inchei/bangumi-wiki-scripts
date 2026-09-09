@@ -1,4 +1,4 @@
-name: update missing persons
+name: test missing persons
 
 on:
   workflow_dispatch:

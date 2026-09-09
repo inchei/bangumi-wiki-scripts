@@ -1,4 +1,4 @@
-name: find duplicate person names
+name: test duplicate person names
 
 on:
   workflow_dispatch:

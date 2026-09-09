@@ -1,4 +1,4 @@
-name: sync indices
+name: test sync indices
 
 on:
   workflow_dispatch:

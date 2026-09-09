@@ -1,4 +1,4 @@
-name: validate person alias
+name: test person alias
 
 on:
   workflow_dispatch:

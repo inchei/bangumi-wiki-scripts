@@ -1,0 +1,62 @@
+name: test missing trend chart
+
+on:
+  workflow_dispatch:
+    inputs:
+      seed_history:
+        description: '手动传入的历史 JSON（测试种子链路，不填则用合成数据）'
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v7
+
+      - name: 设置 Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: '3.10'
+
+      - name: 安装 uv
+        uses: astral-sh/setup-uv@v10.0.1
+        with:
+          cache-dependency-glob: '**/*.py'
+
+      - name: 安装 xkcd 字体
+        run: |
+          mkdir -p ~/.local/share/fonts/xkcd
+          curl -sL --fail --retry 3 -o ~/.local/share/fonts/xkcd/xkcd-script.ttf "https://github.com/ipython/xkcd-font/releases/download/v2026.2/xkcd-script-2026.2.ttf"
+          fc-cache -f ~/.local/share/fonts/xkcd/
+
+      - name: 合成历史并绘图
+        env:
+          SEED_HISTORY: ${{ inputs.seed_history }}
+        run: |
+          if [ -n "$SEED_HISTORY" ]; then
+            echo "$SEED_HISTORY" > trend-history.json
+            echo "使用手动传入的种子测试种子链路"
+          else
+            python3 -c "
+            import json
+            trend = [
+              {'date': '2026-08-25', 'created_at': '2026-08-25T21:03:36Z', 'totalSubjects': 428210, 'totalMissing': 95521, 'totalRelated': 41984, 'totalBare': 112, 'totalVariant': 59, 'remaining': 137617, 'byType': {}},
+              {'date': '2026-09-01', 'created_at': '2026-09-01T21:03:29Z', 'totalSubjects': 429046, 'totalMissing': 95776, 'totalRelated': 42073, 'totalBare': 111, 'totalVariant': 42, 'remaining': 137960, 'byType': {}},
+            ]
+            open('trend-history.json', 'w').write(json.dumps(trend) + chr(10))
+            "
+          fi
+          uv run tools/missing_trend.py --history trend-history.json --out missing-trend.png --plot-only
+          test -s missing-trend.png
+          file missing-trend.png
+
+      - name: 上传图表
+        uses: actions/upload-artifact@v4
+        with:
+          name: missing-trend
+          path: missing-trend.png

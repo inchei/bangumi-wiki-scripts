@@ -49,7 +49,7 @@ func cmdMissing(args []string) {
 func printMissingUsage() {
 	fmt.Fprintln(os.Stderr, "用法: bgq missing subjects <人名> --type <条目类型> [--db <数据库>]")
 	fmt.Fprintln(os.Stderr, "       bgq missing episodes <人名> [--db <数据库>]")
-	fmt.Fprintln(os.Stderr, "       bgq missing persons [--db <数据库>] [--archive-dir <归档目录>] [--aliases-file <别名文件>]")
+	fmt.Fprintln(os.Stderr, "       bgq missing persons [--db <数据库>] [--archive-dir <归档目录>] [--aliases-file <别名文件>] [--stats-only] [--stats-json <路径>]")
 }
 
 func cmdMissingSubjects(args []string) {
@@ -315,10 +315,14 @@ WHERE LOWER(REPLACE(REPLACE(TRIM(p.name), '　', ''), ' ', '')) = LOWER(REPLACE(
 func cmdMissingPersons(args []string) {
 	fs := flag.NewFlagSet("missing persons", flag.ExitOnError)
 	var dbPath, archiveDir, aliasFile, outputDir string
+	var statsOnly bool
+	var statsJSON string
 	fs.StringVar(&dbPath, "db", "", "数据库路径")
 	fs.StringVar(&archiveDir, "archive-dir", "", "归档目录")
 	fs.StringVar(&aliasFile, "aliases-file", "", "别名文件（person_alias.json）")
 	fs.StringVar(&outputDir, "output-dir", "", "输出目录")
+	fs.BoolVar(&statsOnly, "stats-only", false, "仅输出统计，不生成 HTML")
+	fs.StringVar(&statsJSON, "stats-json", "", "统计 JSON 输出路径（默认 stdout）")
 	_ = fs.Parse(args)
 
 	if dbPath == "" {
@@ -345,7 +349,7 @@ func cmdMissingPersons(args []string) {
 	ctx, cancel := context.WithTimeout(context.Background(), missingQueryTimeout)
 	defer cancel()
 
-	runMissingPersons(ctx, dbPath, archiveDir, aliasFile, "", outputDir)
+	runMissingPersons(ctx, dbPath, archiveDir, aliasFile, "", outputDir, statsOnly, statsJSON)
 }
 
 func positionsName(pidStr string) string {
