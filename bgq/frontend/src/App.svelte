@@ -247,7 +247,7 @@
         >{canUndo ? "撤销" : "清空"}</button
       >
     </div>
-    <div class="card">
+    <div class="card card-filter">
       <div class="card-header">
         <h2 class="card-title"><span class="dot-indicator"></span>筛选条件</h2>
       </div>

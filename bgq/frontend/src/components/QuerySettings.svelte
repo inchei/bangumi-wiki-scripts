@@ -47,6 +47,26 @@
 
   let loading = $state(false);
 
+  // Ctrl+Enter triggers the query; macOS has no Ctrl convention, so Cmd
+  // (both accepted) and the hint label differ per platform.
+  const IS_MAC = /mac/i.test(
+    navigator.platform || navigator.userAgent || navigator.userAgentData || "",
+  );
+  const SHORTCUT_HINT = IS_MAC ? "⌘↵" : "Ctrl+↵";
+  const SHORTCUT_TITLE = `焦点在筛选或输出设置时按 ${SHORTCUT_HINT} 直接查询`;
+
+  function handleShortcut(e) {
+    if (e.key !== "Enter") return;
+    if (e.isComposing || e.keyCode === 229) return;
+    // Accept both Ctrl and Cmd regardless of platform.
+    if (!e.ctrlKey && !e.metaKey) return;
+    if (!document.activeElement?.closest(".card-filter, .card-settings"))
+      return;
+    e.preventDefault();
+    e.stopPropagation();
+    if (!loading) handleRun();
+  }
+
   const STAFF_POSITIONS = positionsByType(0);
 
   const TARGET_COLUMNS = {
@@ -569,7 +589,9 @@
   }
 </script>
 
-<div class="card">
+<svelte:window onkeydowncapture={handleShortcut} />
+
+<div class="card card-settings">
   <div class="card-header">
     <h2 class="card-title"><span class="dot-indicator"></span>输出设置</h2>
   </div>
@@ -744,17 +766,32 @@
     class="btn btn-primary btn-block"
     onclick={handleRun}
     disabled={loading}
+    title={SHORTCUT_TITLE}
     style="height:42px;font-size:15px"
   >
     {#if loading}
       查询中...
     {:else}
       <MorphIcon icon={Search} size={16} /> 执行查询
+      <kbd class="kbd-hint">{SHORTCUT_HINT}</kbd>
     {/if}
   </button>
 </div>
 
 <style>
+  .kbd-hint {
+    margin-left: 8px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1;
+    color: var(--white);
+    background: rgb(0 0 0 / 5%);
+    border: 1px solid rgb(0 0 0 / 8%);
+    border-radius: 4px;
+    padding: 3px 8px;
+  }
+
   .sort-row {
     display: flex;
     gap: 6px;
