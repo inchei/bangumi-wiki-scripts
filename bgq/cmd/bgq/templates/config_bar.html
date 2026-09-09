@@ -1,0 +1,62 @@
+{{define "config_bar"}}
+<div id="mp-cfg"><span id="mp-cfg-text"></span><button type="button" onclick="mpConfigure()">配置</button></div>
+<script>
+const MP_DEFAULT_API = 'https://api.bgm.tv';
+const MP_DEFAULT_BGM = 'https://bgm.tv';
+
+function mpGetApi() {
+  try {
+    const v = localStorage.getItem('mp_api');
+    return v ? v.replace(/\/+$/, '') : MP_DEFAULT_API;
+  } catch (e) {
+    return MP_DEFAULT_API;
+  }
+}
+
+function mpGetBgm() {
+  try {
+    const v = localStorage.getItem('mp_bgm');
+    return v ? v.replace(/\/+$/, '') : MP_DEFAULT_BGM;
+  } catch (e) {
+    return MP_DEFAULT_BGM;
+  }
+}
+
+function mpSetApi(v) {
+  try {
+    if (!v) localStorage.removeItem('mp_api');
+    else localStorage.setItem('mp_api', v.replace(/\/+$/, ''));
+  } catch (e) {}
+}
+
+function mpSetBgm(v) {
+  try {
+    if (!v) localStorage.removeItem('mp_bgm');
+    else localStorage.setItem('mp_bgm', v.replace(/\/+$/, ''));
+  } catch (e) {}
+}
+
+function mpRenderCfg() {
+  const el = document.getElementById('mp-cfg-text');
+  if (el) el.textContent = 'API: ' + mpGetApi() + ' | Bangumi: ' + mpGetBgm() + ' ';
+}
+
+function mpConfigure() {
+  const curApi = mpGetApi();
+  const curBgm = mpGetBgm();
+  let api = prompt('API 地址', curApi);
+  if (api === null) return;
+  api = api.trim();
+  // 空则回退到默认
+  mpSetApi(api);
+  let bgm = prompt('Bangumi 地址', curBgm);
+  if (bgm === null) return;
+  bgm = bgm.trim();
+  mpSetBgm(bgm);
+  mpRenderCfg();
+  location.reload();
+}
+
+document.addEventListener('DOMContentLoaded', mpRenderCfg);
+</script>
+{{end}}

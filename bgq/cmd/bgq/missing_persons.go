@@ -793,6 +793,12 @@ var relatedPageJS string
 //go:embed templates/relate_common.js
 var relateCommonJS string
 
+//go:embed templates/config_bar.html
+var configBarHTML string
+
+//go:embed templates/nav.html
+var navHTML string
+
 //go:embed templates/index.html
 var indexHTML string
 
@@ -805,10 +811,17 @@ var relatedPageHTML string
 //go:embed templates/search_page.html
 var searchPageHTML string
 
-var indexTpl = template.Must(template.New("index").Parse(indexHTML))
-var missingPageTpl = template.Must(template.New("missing").Parse(missingPageHTML))
-var relatedPageTpl = template.Must(template.New("related").Parse(relatedPageHTML))
-var searchPageTpl = template.Must(template.New("search").Parse(searchPageHTML))
+func buildTpl(name, body string) *template.Template {
+	base := template.New(name)
+	template.Must(base.Parse(configBarHTML))
+	template.Must(base.Parse(navHTML))
+	return template.Must(base.Parse(body))
+}
+
+var indexTpl = buildTpl("index", indexHTML)
+var missingPageTpl = buildTpl("missing", missingPageHTML)
+var relatedPageTpl = buildTpl("related", relatedPageHTML)
+var searchPageTpl = buildTpl("search", searchPageHTML)
 
 func filterAlreadyLinked(ctx context.Context, dbPath string, related []*missingRelatedPerson, keepEmpty bool) ([]*missingRelatedPerson, error) {
 	if len(related) == 0 {

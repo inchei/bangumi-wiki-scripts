@@ -7,11 +7,8 @@
 <style>{{.CSS}}</style>
 </head>
 <body>
-<div class="nav">
-  <a href="index.html">&#x2190; 返回首页</a>
-{{if .PrevLink}}  <a href="{{.PrevLink}}">&#x2190; 上一页</a>{{end}}
-{{if .NextLink}}  <a href="{{.NextLink}}">下一页 &#x2192;</a>{{end}}
-</div>
+{{template "config_bar"}}
+{{template "nav_paged" .}}
 {{if .PageInfo}}<p>{{.PageInfo}}</p>{{end}}
 
 <h2 class="section-title">{{if eq .PageKind "variant"}}变体字同名的人物{{else}}缺失关联的人物{{end}}<span class="section-note">（同名已存在，可直接关联）</span></h2>
