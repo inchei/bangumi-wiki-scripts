@@ -9,9 +9,10 @@ function renderSubjects(idx, container) {
     const sid = parts[1];
     const entry = entries[i][1];
     const li = document.createElement('li');
+    const bgm = typeof mpGetBgm === 'function' ? mpGetBgm() : 'https://bgm.tv';
     const posText = entry.positions.map((p) => _posNames[p] || p).join('、');
     li.innerHTML = `<span class="type">[${_typeNames[stype] || stype}]</span> `
-      + `<a href="https://bgm.tv/subject/${sid}" target="_blank">${entry.name}</a> `
+      + `<a href="${bgm}/subject/${sid}" target="_blank">${entry.name}</a> `
       + `<span class="pos">[${posText}]</span>`;
     ul.appendChild(li);
   }
@@ -52,7 +53,8 @@ document.addEventListener('click', (e) => {
     subjectsData: data.subjectsData,
     episodesData: data.episodesData,
   });
-  window.open(`https://bgm.tv/person/new?name=${encodeURIComponent(name)}&bgm_mp=1`, '_blank');
+  const bgm = typeof mpGetBgm === 'function' ? mpGetBgm() : 'https://bgm.tv';
+  window.open(`${bgm}/person/new?name=${encodeURIComponent(name)}&bgm_mp=1`, '_blank');
 });
 
 // 关联 button
@@ -90,7 +92,8 @@ document.addEventListener('click', (e) => {
     personName: data.personName,
     personId,
   });
-  window.open(`https://bgm.tv/person/${personId}/edit?bgm_mp_alias=1`, '_blank');
+  const bgm = typeof mpGetBgm === 'function' ? mpGetBgm() : 'https://bgm.tv';
+  window.open(`${bgm}/person/${personId}/edit?bgm_mp_alias=1`, '_blank');
 });
 
 // Sync link href when select changes
@@ -99,5 +102,19 @@ document.addEventListener('change', (e) => {
   if (!sel) return;
   const wrap = sel.parentElement;
   const link = wrap.querySelector('.relate-link');
-  if (link) link.href = `https://bgm.tv/person/${sel.value}`;
+  if (link) {
+    const bgm = typeof mpGetBgm === 'function' ? mpGetBgm() : 'https://bgm.tv';
+    link.href = `${bgm}/person/${sel.value}`;
+  }
+});
+
+// 页面加载时根据配置重写静态关联链接
+document.addEventListener('DOMContentLoaded', () => {
+  const bgm = typeof mpGetBgm === 'function' ? mpGetBgm() : 'https://bgm.tv';
+  document.querySelectorAll('.relate-link[href^="https://bgm.tv/person/"]').forEach((a) => {
+    try {
+      const url = new URL(a.href);
+      a.href = bgm + url.pathname + url.search + url.hash;
+    } catch {}
+  });
 });

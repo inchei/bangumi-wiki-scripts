@@ -64,9 +64,10 @@ function renderSubjects(idx, container) {
     const sid = parts[1];
     const entry = entries[i][1];
     const li = document.createElement('li');
+    const bgm = typeof mpGetBgm === 'function' ? mpGetBgm() : 'https://bgm.tv';
     const posText = entry.positions.map((p) => _posNames[p] || p).join('、');
     li.innerHTML = `<span class="type">[${_typeNames[stype] || stype}]</span> `
-      + `<a href="https://bgm.tv/subject/${sid}" target="_blank">${entry.name}</a> `
+      + `<a href="${bgm}/subject/${sid}" target="_blank">${entry.name}</a> `
       + `<span class="pos">[${posText}]</span>`;
     ul.appendChild(li);
   }
@@ -107,8 +108,11 @@ document.addEventListener('click', (e) => {
   _bgmMpPending = JSON.stringify(_pendingData[idx]);
   showResult(btn, '搜索中…', 'sr-loading');
 
+  const apiBase = typeof mpGetApi === 'function' ? mpGetApi() : 'https://api.bgm.tv';
+  const bgmBase = typeof mpGetBgm === 'function' ? mpGetBgm() : 'https://bgm.tv';
+
   waitOpenCC()
-    .then(() => fetch('https://api.bgm.tv/v0/search/persons?limit=5', {
+    .then(() => fetch(`${apiBase}/v0/search/persons?limit=5`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ keyword: name }),
@@ -119,14 +123,14 @@ document.addEventListener('click', (e) => {
       if (results.length) {
         _bgmMpPending = null;
         const links = results.map((p) =>
-          `<a href="https://bgm.tv/person/${p.id}" target="_blank">${p.name} (ID:${p.id})</a>`
+          `<a href="${bgmBase}/person/${p.id}" target="_blank">${p.name} (ID:${p.id})</a>`
           + `<a class="btn btn-relate" href="#relate-${p.id}" data-idx="${idx}" data-id="${p.id}">关联</a>`
         ).join(' ');
-        showResult(btn, `✅ ${links} <a class="btn btn-create-still" href="https://bgm.tv/person/new?name=${encodeURIComponent(name)}&bgm_mp=1" target="_blank">仍然创建</a>`, 'sr-found');
+        showResult(btn, `✅ ${links} <a class="btn btn-create-still" href="${bgmBase}/person/new?name=${encodeURIComponent(name)}&bgm_mp=1" target="_blank">仍然创建</a>`, 'sr-found');
         return;
       }
       showResult(btn, '➖ 未创建', 'sr-missing');
-      window.open(`https://bgm.tv/person/new?name=${encodeURIComponent(name)}&bgm_mp=1`, '_blank');
+      window.open(`${bgmBase}/person/new?name=${encodeURIComponent(name)}&bgm_mp=1`, '_blank');
     })
     .catch(() => {
       showResult(btn, '搜索失败', 'sr-loading');

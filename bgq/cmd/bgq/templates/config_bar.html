@@ -1,5 +1,5 @@
 {{define "config_bar"}}
-<div id="mp-cfg"><span id="mp-cfg-text"></span><button type="button" onclick="mpConfigure()">配置</button></div>
+<div id="mp-cfg" style="text-align:right;font-size:13px;"><span>API: <a id="mp-cfg-api" target="_blank"></a> <a href="javascript:void(0)" onclick="mpConfigureApi()">[配置]</a> | Bangumi: <a id="mp-cfg-bgm" target="_blank"></a> <a href="javascript:void(0)" onclick="mpConfigureBgm()">[配置]</a></span></div>
 <script>
 const MP_DEFAULT_API = 'https://api.bgm.tv';
 const MP_DEFAULT_BGM = 'https://bgm.tv';
@@ -37,22 +37,38 @@ function mpSetBgm(v) {
 }
 
 function mpRenderCfg() {
-  const el = document.getElementById('mp-cfg-text');
-  if (el) el.textContent = 'API: ' + mpGetApi() + ' | Bangumi: ' + mpGetBgm() + ' ';
+  const api = mpGetApi();
+  const bgm = mpGetBgm();
+  const apiEl = document.getElementById('mp-cfg-api');
+  if (apiEl) {
+    apiEl.textContent = api;
+    apiEl.href = api;
+  }
+  const bgmEl = document.getElementById('mp-cfg-bgm');
+  if (bgmEl) {
+    bgmEl.textContent = bgm;
+    bgmEl.href = bgm;
+  }
+  const appLink = document.getElementById('mp-bgm-app-link');
+  if (appLink) appLink.href = bgm + '/dev/app/6476';
 }
 
-function mpConfigure() {
-  const curApi = mpGetApi();
-  const curBgm = mpGetBgm();
-  let api = prompt('API 地址', curApi);
-  if (api === null) return;
-  api = api.trim();
-  // 空则回退到默认
-  mpSetApi(api);
-  let bgm = prompt('Bangumi 地址', curBgm);
-  if (bgm === null) return;
-  bgm = bgm.trim();
-  mpSetBgm(bgm);
+function mpConfigureApi() {
+  const cur = mpGetApi();
+  let v = prompt('API 地址', cur);
+  if (v === null) return;
+  v = v.trim();
+  mpSetApi(v);
+  mpRenderCfg();
+  location.reload();
+}
+
+function mpConfigureBgm() {
+  const cur = mpGetBgm();
+  let v = prompt('Bangumi 地址', cur);
+  if (v === null) return;
+  v = v.trim();
+  mpSetBgm(v);
   mpRenderCfg();
   location.reload();
 }

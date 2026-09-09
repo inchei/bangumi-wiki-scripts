@@ -23,5 +23,6 @@ function openRelate(personId, data) {
     if (t) { firstType = t; break; }
   }
   const typeExt = { 1: 'book', 2: 'anime', 3: 'music', 4: 'game', 6: 'real' }[firstType] || 'book';
-  window.open(`https://bgm.tv/person/${personId}/add_related/${typeExt}?bgm_mp_relate=1`, '_blank');
+  const bgm = typeof mpGetBgm === 'function' ? mpGetBgm() : 'https://bgm.tv';
+  window.open(`${bgm}/person/${personId}/add_related/${typeExt}?bgm_mp_relate=1`, '_blank');
 }
