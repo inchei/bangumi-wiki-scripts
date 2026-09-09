@@ -29,28 +29,28 @@
 {{else}}<p>暂无</p>{{end}}
 
 <script>{{.JS}}</script>
-<script>var _relatedData = {{.PendingData}};</script>
-<script>var _bgmMpRelateData = null;</script>
-<script>var _bgmMpAliasData = null;</script>
-<script>var _bgmMpPending = null;</script>
-<script>var _posNames = { {{.PosTable}} };var _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
+<script>const _relatedData = {{.PendingData}};</script>
+<script>let _bgmMpRelateData = null;</script>
+<script>let _bgmMpAliasData = null;</script>
+<script>let _bgmMpPending = null;</script>
+<script>const _posNames = { {{.PosTable}} }; const _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
 <script>
-(function() {
-  var hl = new URLSearchParams(location.search).get('hl');
+(() => {
+  const hl = new URLSearchParams(location.search).get('hl');
   if (!hl) return;
-  var spans = document.querySelectorAll('details.person .name');
-  for (var i = 0; i < spans.length; i++) {
+  const spans = document.querySelectorAll('details.person .name');
+  for (let i = 0; i < spans.length; i++) {
     if (spans[i].textContent === hl) {
-      var det = spans[i].closest('details.person');
+      const det = spans[i].closest('details.person');
       if (!det.open) {
         det.open = true;
         if (!det.querySelector('ul') && typeof renderSubjects === 'function') {
-          renderSubjects(parseInt(det.dataset.idx), det);
+          renderSubjects(parseInt(det.dataset.idx, 10), det);
         }
       }
       det.classList.add('hl-target');
       det.scrollIntoView({ block: 'center' });
-      setTimeout(function() { det.classList.add('hl-target-done'); }, 3000);
+      setTimeout(() => det.classList.add('hl-target-done'), 3000);
       break;
     }
   }

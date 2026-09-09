@@ -23,40 +23,40 @@
 {{else}}<p>暂无</p>{{end}}
 
 <script>{{.JS}}</script>
-<script>var _pendingData = {{.PendingData}};var _bgmMpPending = null;var _bgmMpRelateData = null;</script>
-<script>var _posNames = { {{.PosTable}} };var _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
+<script>const _pendingData = {{.PendingData}}; let _bgmMpPending = null; let _bgmMpRelateData = null;</script>
+<script>const _posNames = { {{.PosTable}} }; const _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
 <script>
-(function() {
-  var srcs = [
+(() => {
+  const srcs = [
     'https://cdn.jsdmirror.com/npm/opencc-js@1.0.5/dist/umd/full.js',
-    'https://cdn.jsdmirror.com/npm/opencc-cn-name@0.1.1/dist/umd/opencc-cn-name.js'
+    'https://cdn.jsdmirror.com/npm/opencc-cn-name@0.1.1/dist/umd/opencc-cn-name.js',
   ];
-  var remaining = srcs.length;
-  srcs.forEach(function(src) {
-    var s = document.createElement('script');
+  let remaining = srcs.length;
+  srcs.forEach((src) => {
+    const s = document.createElement('script');
     s.src = src;
-    s.onload = s.onerror = function() { if (--remaining === 0) _openccReady = true; };
+    s.onload = s.onerror = () => { if (--remaining === 0) window._openccReady = true; };
     document.head.appendChild(s);
   });
 })();
 </script>
 <script>
-(function() {
-  var hl = new URLSearchParams(location.search).get('hl');
+(() => {
+  const hl = new URLSearchParams(location.search).get('hl');
   if (!hl) return;
-  var spans = document.querySelectorAll('details.person .name');
-  for (var i = 0; i < spans.length; i++) {
+  const spans = document.querySelectorAll('details.person .name');
+  for (let i = 0; i < spans.length; i++) {
     if (spans[i].textContent === hl) {
-      var det = spans[i].closest('details.person');
+      const det = spans[i].closest('details.person');
       if (!det.open) {
         det.open = true;
         if (!det.querySelector('ul') && typeof renderSubjects === 'function') {
-          renderSubjects(parseInt(det.dataset.idx), det);
+          renderSubjects(parseInt(det.dataset.idx, 10), det);
         }
       }
       det.classList.add('hl-target');
       det.scrollIntoView({ block: 'center' });
-      setTimeout(function() { det.classList.add('hl-target-done'); }, 3000);
+      setTimeout(() => det.classList.add('hl-target-done'), 3000);
       break;
     }
   }

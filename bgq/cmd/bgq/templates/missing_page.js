@@ -1,15 +1,12 @@
 function normalize(s) {
   return s.replace(/[\s-]/g, '')
-    .replace(/[\u30A1-\u30F6]/g, function(m) {
-      return String.fromCharCode(m.charCodeAt(0) - 0x60);
-    })
-    .replace(/[\uFF21-\uFF5A]/g, function(m) {
-      return String.fromCharCode(m.charCodeAt(0) - 0xFEE0);
-    })
+    .replace(/[\u30A1-\u30F6]/g, (m) => String.fromCharCode(m.charCodeAt(0) - 0x60))
+    .replace(/[\uFF21-\uFF5A]/g, (m) => String.fromCharCode(m.charCodeAt(0) - 0xFEE0))
     .toLowerCase();
 }
 
-var _openccConverters = null;
+let _openccConverters = null;
+
 function getConverters() {
   if (!_openccConverters && typeof OpenCC !== 'undefined') {
     _openccConverters = {
@@ -17,26 +14,27 @@ function getConverters() {
       t2s: OpenCC.Converter({ from: 'tw', to: 'cn' }),
       tw2s: OpenCC.Converter({ from: 'tw', to: 'cn' }),
       hk2s: OpenCC.Converter({ from: 'hk', to: 'cn' }),
-      t2jp: OpenCC.Converter({ from: 'tw', to: 'jp' })
+      t2jp: OpenCC.Converter({ from: 'tw', to: 'jp' }),
     };
   }
   return _openccConverters;
 }
 
-var _openccWaiters = null;
+let _openccWaiters = null;
+
 function waitOpenCC() {
   if (typeof OpenCC !== 'undefined' && typeof openccCN !== 'undefined') {
     return Promise.resolve();
   }
   if (!_openccWaiters) {
-    _openccWaiters = new Promise(function(resolve) {
-      var started = Date.now();
-      var t = setInterval(function() {
+    _openccWaiters = new Promise((resolve) => {
+      const started = Date.now();
+      const timer = setInterval(() => {
         if (typeof OpenCC !== 'undefined' && typeof openccCN !== 'undefined') {
-          clearInterval(t);
+          clearInterval(timer);
           resolve();
         } else if (Date.now() - started > 8000) {
-          clearInterval(t);
+          clearInterval(timer);
           resolve();
         }
       }, 100);
@@ -50,41 +48,40 @@ function waitOpenCC() {
 // (OpenCC jp→cn pipeline + variant tables, e.g. 髙橋 → 高橋).
 function refinedSame(a, b) {
   if (normalize(a) === normalize(b)) return true;
-  var conv = getConverters();
+  const conv = getConverters();
   if (!conv || typeof openccCN === 'undefined') return false;
   return openccCN.refinedToCN(a, conv) === openccCN.refinedToCN(b, conv);
 }
 
 function renderSubjects(idx, container) {
-  var data = _pendingData[idx];
+  const data = _pendingData[idx];
   if (!data || !data.subjectsData) return;
-  var ul = document.createElement('ul');
-  var entries = Object.entries(data.subjectsData).sort(function(a, b) {
-    return a[0].localeCompare(b[0]);
-  });
-  for (var i = 0; i < entries.length; i++) {
-    var parts = entries[i][0].split(':');
-    var stype = parseInt(parts[0]);
-    var sid = parts[1];
-    var entry = entries[i][1];
-    var li = document.createElement('li');
-    li.innerHTML = '<span class="type">[' + (_typeNames[stype] || stype) + ']</span> '
-      + '<a href="https://bgm.tv/subject/' + sid + '" target="_blank">' + entry.name + '</a> '
-      + '<span class="pos">[' + entry.positions.map(function(p) { return _posNames[p] || p; }).join('、') + ']</span>';
+  const ul = document.createElement('ul');
+  const entries = Object.entries(data.subjectsData).sort((a, b) => a[0].localeCompare(b[0]));
+  for (let i = 0; i < entries.length; i++) {
+    const parts = entries[i][0].split(':');
+    const stype = parseInt(parts[0], 10);
+    const sid = parts[1];
+    const entry = entries[i][1];
+    const li = document.createElement('li');
+    const posText = entry.positions.map((p) => _posNames[p] || p).join('、');
+    li.innerHTML = `<span class="type">[${_typeNames[stype] || stype}]</span> `
+      + `<a href="https://bgm.tv/subject/${sid}" target="_blank">${entry.name}</a> `
+      + `<span class="pos">[${posText}]</span>`;
     ul.appendChild(li);
   }
   container.appendChild(ul);
 }
 
-document.addEventListener('toggle', function(e) {
-  var det = e.target;
+document.addEventListener('toggle', (e) => {
+  const det = e.target;
   if (!det.matches || !det.matches('details.person')) return;
   if (!det.open || det.querySelector('ul')) return;
-  renderSubjects(parseInt(det.dataset.idx), det);
+  renderSubjects(parseInt(det.dataset.idx, 10), det);
 }, true);
 
 function showResult(btn, html, className) {
-  var sr = btn.parentElement.querySelector('.sr');
+  let sr = btn.parentElement.querySelector('.sr');
   if (!sr) {
     sr = document.createElement('div');
     sr.className = 'sr';
@@ -94,58 +91,55 @@ function showResult(btn, html, className) {
   sr.innerHTML = html;
 }
 
-window.addEventListener('message', function(e) {
+window.addEventListener('message', (e) => {
   if (e.data && e.data.type === 'bgm_mp_request' && _bgmMpPending) {
     e.source.postMessage({ type: 'bgm_mp_data', data: _bgmMpPending }, '*');
   }
 });
 
-document.addEventListener('click', function(e) {
-  var btn = e.target.closest('.btn-create');
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-create');
   if (!btn) return;
   e.preventDefault();
   e.stopPropagation();
-  var idx = parseInt(btn.dataset.idx);
-  var name = btn.dataset.name;
+  const idx = parseInt(btn.dataset.idx, 10);
+  const name = btn.dataset.name;
   _bgmMpPending = JSON.stringify(_pendingData[idx]);
   showResult(btn, '搜索中…', 'sr-loading');
-  waitOpenCC().then(function() {
-    return fetch('https://api.bgm.tv/v0/search/persons?limit=5', {
+
+  waitOpenCC()
+    .then(() => fetch('https://api.bgm.tv/v0/search/persons?limit=5', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keyword: name })
-    });
-  })
-    .then(function(r) { return r.json(); })
-    .then(function(data) {
-      var results = (data.data || []).filter(function(p) {
-        return normalize(p.name) === normalize(name) || refinedSame(p.name, name);
-      });
+      body: JSON.stringify({ keyword: name }),
+    }))
+    .then((r) => r.json())
+    .then((data) => {
+      const results = (data.data || []).filter((p) => normalize(p.name) === normalize(name) || refinedSame(p.name, name));
       if (results.length) {
         _bgmMpPending = null;
-        var links = results.map(function(p) {
-          return '<a href="https://bgm.tv/person/' + p.id + '" target="_blank">' + p.name + ' (ID:' + p.id + ')</a>'
-            + '<a class="btn btn-relate" href="#relate-' + p.id + '" data-idx="' + idx + '" data-id="' + p.id + '">关联</a>';
-        }).join(' ');
-        showResult(btn, '✅ ' + links
-          + ' <a class="btn btn-create-still" href="https://bgm.tv/person/new?name=' + encodeURIComponent(name) + '&bgm_mp=1" target="_blank">仍然创建</a>', 'sr-found');
+        const links = results.map((p) =>
+          `<a href="https://bgm.tv/person/${p.id}" target="_blank">${p.name} (ID:${p.id})</a>`
+          + `<a class="btn btn-relate" href="#relate-${p.id}" data-idx="${idx}" data-id="${p.id}">关联</a>`
+        ).join(' ');
+        showResult(btn, `✅ ${links} <a class="btn btn-create-still" href="https://bgm.tv/person/new?name=${encodeURIComponent(name)}&bgm_mp=1" target="_blank">仍然创建</a>`, 'sr-found');
         return;
       }
       showResult(btn, '➖ 未创建', 'sr-missing');
-      window.open('https://bgm.tv/person/new?name=' + encodeURIComponent(name) + '&bgm_mp=1', '_blank');
+      window.open(`https://bgm.tv/person/new?name=${encodeURIComponent(name)}&bgm_mp=1`, '_blank');
     })
-    .catch(function() {
+    .catch(() => {
       showResult(btn, '搜索失败', 'sr-loading');
     });
 });
 
 // 关联 button (search results)
-document.addEventListener('click', function(e) {
-  var btn = e.target.closest('.btn-relate');
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.btn-relate');
   if (!btn) return;
   e.preventDefault();
   e.stopPropagation();
-  var idx = parseInt(btn.dataset.idx);
-  var personId = parseInt(btn.dataset.id);
+  const idx = parseInt(btn.dataset.idx, 10);
+  const personId = parseInt(btn.dataset.id, 10);
   openRelate(personId, _pendingData[idx]);
 });

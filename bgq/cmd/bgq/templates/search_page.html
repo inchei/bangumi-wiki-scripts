@@ -16,44 +16,44 @@
   <span id="person-search-count" class="person-search-count"></span>
 </div>
 <div id="person-search-results" class="person-search-results"></div>
-<script>var _searchItems = {{.SearchItems}};</script>
+<script>const _searchItems = {{.SearchItems}};</script>
 <script>
-(function() {
-  var input = document.getElementById('person-search-input');
-  var btn = document.getElementById('person-search-btn');
-  var results = document.getElementById('person-search-results');
-  var count = document.getElementById('person-search-count');
+(() => {
+  const input = document.getElementById('person-search-input');
+  const btn = document.getElementById('person-search-btn');
+  const results = document.getElementById('person-search-results');
+  const count = document.getElementById('person-search-count');
   if (!input || !results) return;
 
-  var q = (new URLSearchParams(window.location.search).get('q') || '').trim();
+  const q = (new URLSearchParams(window.location.search).get('q') || '').trim();
   if (q) input.value = q;
 
   function rowMarkup(it) {
-    var href = it.href + '#:~:text=' + encodeURIComponent(it.displayName);
-    return '<div class="search-result"><a class="name-link" href="' + href + '" target="_blank">' + it.displayName + '</a></div>';
+    const href = `${it.href}#:~:text=${encodeURIComponent(it.displayName)}`;
+    return `<div class="search-result"><a class="name-link" href="${href}" target="_blank">${it.displayName}</a></div>`;
   }
 
   function render(query) {
-    var s = query.trim().toLowerCase();
+    const s = query.trim().toLowerCase();
     results.innerHTML = '';
     if (!s) {
       count.textContent = '';
       return;
     }
-    var matched = [];
-    for (var i = 0; i < _searchItems.length; i++) {
-      if (_searchItems[i].displayName.toLowerCase().indexOf(s) !== -1) {
+    const matched = [];
+    for (let i = 0; i < _searchItems.length; i++) {
+      if (_searchItems[i].displayName.toLowerCase().includes(s)) {
         matched.push(_searchItems[i]);
       }
     }
-    count.textContent = '匹配 ' + matched.length + ' / ' + _searchItems.length + ' 人';
-    for (var j = 0; j < matched.length; j++) {
+    count.textContent = `匹配 ${matched.length} / ${_searchItems.length} 人`;
+    for (let j = 0; j < matched.length; j++) {
       results.insertAdjacentHTML('beforeend', rowMarkup(matched[j]));
     }
   }
 
-  if (btn) btn.addEventListener('click', function() { render(input.value); });
-  input.addEventListener('keydown', function(e) {
+  if (btn) btn.addEventListener('click', () => render(input.value));
+  input.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
       render(input.value);
