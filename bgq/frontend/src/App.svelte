@@ -269,7 +269,8 @@
   .header {
     background: var(--white);
     border-bottom: 1px solid var(--border);
-    padding: 0 24px;
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
     height: var(--header-h);
     display: flex;
     align-items: center;
@@ -335,7 +336,9 @@
     min-width: 420px;
     background: var(--white);
     border-right: 1px solid var(--border);
-    padding: 20px;
+    padding: 20px 15px;
+    padding-left: max(15px, env(safe-area-inset-left));
+    padding-right: max(15px, env(safe-area-inset-right));
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -346,6 +349,8 @@
     flex: 1;
     background: var(--bg);
     padding: 20px 24px;
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
 
     /* ResultTable's sticky header bar compensates for this padding:
        sticky insets resolve against the scroller's content-box top, so the

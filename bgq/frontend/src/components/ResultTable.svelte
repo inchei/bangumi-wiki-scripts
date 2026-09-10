@@ -1527,7 +1527,8 @@
     }
 
     .results-table-frame {
-      margin-inline: -24px;
+      margin-left: calc(-1 * max(24px, env(safe-area-inset-left)));
+      margin-right: calc(-1 * max(24px, env(safe-area-inset-right)));
       border-radius: 0;
       border-inline: 0;
     }
