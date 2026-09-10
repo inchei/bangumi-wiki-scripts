@@ -863,8 +863,11 @@
     </div>
   {:else if $queryLoading}
     <div class="results-loading">
-      <div class="spinner"></div>
-      <div>查询中...</div>
+      <div class="bouncy" role="status" aria-label="查询中...">
+        <div class="bouncy-cube"><div class="bouncy-cube-inner"></div></div>
+        <div class="bouncy-cube"><div class="bouncy-cube-inner"></div></div>
+        <div class="bouncy-cube"><div class="bouncy-cube-inner"></div></div>
+      </div>
     </div>
   {:else if $lastResult?.rows}
     {@const res = $lastResult}
@@ -1097,25 +1100,141 @@
   }
 
   .results-loading {
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: calc(100vh - var(--header-h) - 40px);
     padding: 60px 20px;
+
+    /* Optical centering: sit slightly above the geometric center. */
+    padding-bottom: calc(60px + 10vh);
     color: var(--text-secondary);
   }
 
-  .results-loading .spinner {
-    display: inline-block;
-    width: 32px;
-    height: 32px;
-    margin-bottom: 16px;
-    border: 3px solid var(--border);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
+  /* Bouncy loader from https://github.com/GriffinJohnston/ldrs (MIT).
+     Tune via --uib-size / --uib-color / --uib-speed. */
+  .bouncy {
+    --uib-size: 45px;
+    --uib-color: var(--accent);
+    --uib-speed: 1.75s;
+
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    width: var(--uib-size);
+    height: calc(var(--uib-size) * 0.6);
+
+    /* Delayed show: fast queries resolve before this lands, so no flash. */
+    opacity: 0;
+    animation: bouncy-fade-in 0.2s ease 250ms forwards;
   }
 
-  @keyframes spin {
+  .bouncy-cube {
+    flex-shrink: 0;
+    width: calc(var(--uib-size) * 0.2);
+    height: calc(var(--uib-size) * 0.2);
+    animation: bouncy-jump var(--uib-speed) ease-in-out infinite;
+  }
+
+  .bouncy-cube-inner {
+    display: block;
+    height: 100%;
+    width: 100%;
+    border-radius: 25%;
+    background-color: var(--uib-color);
+    transform-origin: center bottom;
+    animation: bouncy-morph var(--uib-speed) ease-in-out infinite;
+    transition: background-color 0.3s ease;
+  }
+
+  .bouncy-cube:nth-child(2) {
+    animation-delay: calc(var(--uib-speed) * -0.36);
+  }
+
+  .bouncy-cube:nth-child(2) .bouncy-cube-inner {
+    animation-delay: calc(var(--uib-speed) * -0.36);
+  }
+
+  .bouncy-cube:nth-child(3) {
+    animation-delay: calc(var(--uib-speed) * -0.2);
+  }
+
+  .bouncy-cube:nth-child(3) .bouncy-cube-inner {
+    animation-delay: calc(var(--uib-speed) * -0.2);
+  }
+
+  @keyframes bouncy-jump {
+    0% {
+      transform: translateY(0);
+    }
+
+    30% {
+      transform: translateY(0);
+      animation-timing-function: ease-out;
+    }
+
+    50% {
+      transform: translateY(-200%);
+      animation-timing-function: ease-in;
+    }
+
+    75% {
+      transform: translateY(0);
+      animation-timing-function: ease-in;
+    }
+  }
+
+  @keyframes bouncy-morph {
+    0% {
+      transform: scaleY(1);
+    }
+
+    10% {
+      transform: scaleY(1);
+    }
+
+    20%,
+    25% {
+      transform: scaleY(0.6) scaleX(1.3);
+      animation-timing-function: ease-in-out;
+    }
+
+    30% {
+      transform: scaleY(1.15) scaleX(0.9);
+      animation-timing-function: ease-in-out;
+    }
+
+    40% {
+      transform: scaleY(1);
+    }
+
+    70%,
+    85%,
+    100% {
+      transform: scaleY(1);
+    }
+
+    75% {
+      transform: scaleY(0.8) scaleX(1.2);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .bouncy {
+      opacity: 1;
+      animation: none;
+    }
+
+    .bouncy-cube,
+    .bouncy-cube-inner {
+      animation: none;
+    }
+  }
+
+  @keyframes bouncy-fade-in {
     to {
-      transform: rotate(360deg);
+      opacity: 1;
     }
   }
 
@@ -1539,6 +1658,11 @@
 
     .scroll-arrow-right {
       right: 6px;
+    }
+
+    /* Narrow layout scrolls the window, so keep the loader compact. */
+    .results-loading {
+      min-height: 40vh;
     }
   }
 </style>
