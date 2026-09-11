@@ -56,6 +56,14 @@ html.no-transitions *::after {
   transition: none !important;
 }
 
+html {
+  color-scheme: light;
+}
+
+html[data-theme="dark"] {
+  color-scheme: dark;
+}
+
 [data-theme="dark"] {
   --accent: #f09199;
   --accent-hover: #f5a3aa;
