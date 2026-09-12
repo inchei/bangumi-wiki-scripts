@@ -230,6 +230,16 @@ a:hover {
   padding-right: 28px;
 }
 
+/* iOS Safari auto-zooms on focus when form text < 16px: bump to 16px
+   only on small touch devices (phones). Narrow desktop windows
+   (pointer: fine) and tablets (wide) keep the compact sizes. */
+@media (pointer: coarse) and (width < 768px) {
+  .input,
+  .select {
+    font-size: 16px;
+  }
+}
+
 .select-sm {
   height: 32px;
   font-size: 12px;

@@ -820,6 +820,13 @@
     font-weight: 500;
   }
 
+  /* iOS Safari auto-zooms on focus when form text < 16px: phones only */
+  @media (pointer: coarse) and (width < 768px) {
+    .assoc-prefix-box :global(input.input) {
+      font-size: 16px;
+    }
+  }
+
   /* Custom checkbox: accent fill, white check mark */
   .assoc-check {
     display: flex;

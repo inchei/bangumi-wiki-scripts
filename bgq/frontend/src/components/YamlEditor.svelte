@@ -323,6 +323,13 @@
     box-shadow: 0 0 0 2px rgb(240 145 153 / 15%);
   }
 
+  /* iOS Safari auto-zooms on focus when form text < 16px: phones only */
+  @media (pointer: coarse) and (width < 768px) {
+    .yaml-editor {
+      font-size: 16px;
+    }
+  }
+
   .yaml-actions {
     margin-top: 8px;
     display: flex;

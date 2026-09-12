@@ -303,6 +303,14 @@
     padding: 0 12px;
   }
 
+  /* iOS Safari auto-zooms on focus when form text < 16px: phones only */
+  @media (pointer: coarse) and (width < 768px) {
+    .logic-group :global(select),
+    .logic-group :global(input.input) {
+      font-size: 16px;
+    }
+  }
+
   .logic-group :global(select) {
     padding-right: 30px !important;
   }
