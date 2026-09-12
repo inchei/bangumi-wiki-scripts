@@ -295,20 +295,7 @@ func (b *SQLBuilder) buildWhere() (string, error) {
 // buildClauses recursively builds WHERE clauses from a list of filters.
 // Logic filters are handled recursively, with OR groups wrapped in parentheses.
 func (b *SQLBuilder) buildClauses(filters []config.Filter, ctx clauseContext) (string, error) {
-	var clauses []string
-	for i, f := range filters {
-		clause, err := b.filterToCtx(f, ctx, i)
-		if err != nil {
-			return "", err
-		}
-		if clause != "" {
-			clauses = append(clauses, clause)
-		}
-	}
-	if len(clauses) == 0 {
-		return "TRUE", nil
-	}
-	return strings.Join(clauses, " AND "), nil
+	return b.buildClausesWithOp(filters, ctx, "and")
 }
 
 // buildClausesWithOp recursively builds clauses and joins with the given op ("and" or "or").

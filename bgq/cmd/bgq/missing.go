@@ -54,55 +54,60 @@ func printMissingUsage() {
 
 func cmdMissingSubjects(args []string) {
 	fs := flag.NewFlagSet("missing subjects", flag.ExitOnError)
-	var dbPath string
-	var ignoredDataDir string
+	dbPath := addMissingDBFlags(fs)
 	var typeCode int
-	fs.StringVar(&dbPath, "db", "", "数据库路径")
-	fs.StringVar(&ignoredDataDir, "data-dir", "", "数据目录（兼容参数，missing 只使用已导入的数据库）")
-	fs.StringVar(&ignoredDataDir, "d", "", "数据目录（兼容参数）")
 	fs.IntVar(&typeCode, "type", 0, "条目类型: 1(书籍) 2(动画) 3(音乐) 4(游戏) 6(三次元)")
-	_ = fs.Parse(args)
-
-	posArgs := fs.Args()
-	if len(posArgs) < 1 {
-		printMissingUsage()
-		os.Exit(1)
-	}
-	name := posArgs[0]
+	name := mustParseMissingNameArg(fs, args)
 
 	if typeCode == 0 {
 		fmt.Fprintln(os.Stderr, "需要 --type 参数: 1(书籍) 2(动画) 3(音乐) 4(游戏) 6(三次元)")
 		os.Exit(1)
 	}
-	if dbPath == "" {
-		dbPath = findDefaultDB([]string{"bangumi.db"})
-	}
-	if dbPath == "" {
-		fmt.Fprintln(os.Stderr, "错误: 未找到 bangumi.db，请先运行 bgq ingest 或在当前目录放置 bangumi.db，或指定 --db 参数")
-		os.Exit(1)
-	}
+	dbPathStr := mustResolveMissingDB(*dbPath)
 
 	ctx, cancel := context.WithTimeout(context.Background(), missingQueryTimeout)
 	defer cancel()
-	runMissingSubjects(ctx, name, typeCode, dbPath)
+	runMissingSubjects(ctx, name, typeCode, dbPathStr)
 }
 
 func cmdMissingEpisodes(args []string) {
 	fs := flag.NewFlagSet("missing episodes", flag.ExitOnError)
+	dbPath := addMissingDBFlags(fs)
+	name := mustParseMissingNameArg(fs, args)
+
+	dbPathStr := mustResolveMissingDB(*dbPath)
+
+	ctx, cancel := context.WithTimeout(context.Background(), missingQueryTimeout)
+	defer cancel()
+	runMissingEpisodes(ctx, name, dbPathStr)
+}
+
+// addMissingDBFlags registers the common --db/--data-dir/-d flags shared by
+// the missing subcommands and returns a pointer to the parsed db path.
+func addMissingDBFlags(fs *flag.FlagSet) *string {
 	var dbPath string
 	var ignoredDataDir string
 	fs.StringVar(&dbPath, "db", "", "数据库路径")
 	fs.StringVar(&ignoredDataDir, "data-dir", "", "数据目录（兼容参数，missing 只使用已导入的数据库）")
 	fs.StringVar(&ignoredDataDir, "d", "", "数据目录（兼容参数）")
-	_ = fs.Parse(args)
+	return &dbPath
+}
 
+// mustParseMissingNameArg parses flags and returns the required positional
+// <人名> argument, exiting with usage on absence.
+func mustParseMissingNameArg(fs *flag.FlagSet, args []string) string {
+	_ = fs.Parse(args)
 	posArgs := fs.Args()
 	if len(posArgs) < 1 {
 		printMissingUsage()
 		os.Exit(1)
 	}
-	name := posArgs[0]
+	return posArgs[0]
+}
 
+// mustResolveMissingDB fills in the default bangumi.db, exiting with a usage
+// error when no database can be found.
+func mustResolveMissingDB(dbPath string) string {
 	if dbPath == "" {
 		dbPath = findDefaultDB([]string{"bangumi.db"})
 	}
@@ -110,10 +115,7 @@ func cmdMissingEpisodes(args []string) {
 		fmt.Fprintln(os.Stderr, "错误: 未找到 bangumi.db，请先运行 bgq ingest 或在当前目录放置 bangumi.db，或指定 --db 参数")
 		os.Exit(1)
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), missingQueryTimeout)
-	defer cancel()
-	runMissingEpisodes(ctx, name, dbPath)
+	return dbPath
 }
 
 func runMissingSubjects(ctx context.Context, name string, typeCode int, dbPath string) {
@@ -163,18 +165,10 @@ func runMissingEpisodes(ctx context.Context, name string, dbPath string) {
 		delimClass, regexp.QuoteMeta(nameClean), delimClass))
 
 	escapedNameSQL := strings.ReplaceAll(name, "'", "''")
-	linked := queryLinkedCLI(ctx, dbPath, escapedNameSQL)
+	// CLI has no archive dataDir and no target person-ID ("0" → name lookup).
+	linked := queryLinked(ctx, dbPath, "", escapedNameSQL, 0)
 
-	sql := fmt.Sprintf(`
-SELECT e.episode_id, e.subject_id, s.name AS subject_name, e.sort, e.type, e.description
-FROM episodes e
-JOIN subjects s ON e.subject_id = s.id
-WHERE e.disc = 0
-  AND s.type = 2
-  AND REPLACE(REPLACE(e.description, '　', ''), ' ', '')
-        LIKE '%%' || REPLACE(REPLACE('%s', '　', ''), ' ', '') || '%%'
-ORDER BY e.subject_id, e.sort, e.type
-`, escapedNameSQL)
+	sql := buildEpSearchSQL(escapedNameSQL)
 
 	engine := query.NewEngine(dbPath, "")
 	result, err := engine.ExecuteRaw(ctx, sql)
@@ -183,91 +177,11 @@ ORDER BY e.subject_id, e.sort, e.type
 		os.Exit(1)
 	}
 
-	type unmatchedEp struct {
-		EpisodeID int
-		Label     string
-	}
-
-	type epSubject struct {
-		Name      string
-		Episodes  map[int][]string
-		AllEps    []unmatchedEp
-		LinkedSet map[string]bool
-	}
-
-	temp := make(map[int]*epSubject)
-	for _, row := range result.Rows {
-		if len(row) < 6 {
-			continue
-		}
-		episodeID, _ := strconv.Atoi(row[0])
-		sid, _ := strconv.Atoi(row[1])
-		subjName := row[2]
-		sortNum, _ := strconv.ParseFloat(row[3], 64)
-		epType, _ := strconv.Atoi(row[4])
-		desc := row[5]
-
-		label := epLabel(sortNum, epType)
-		cleanDesc := strings.ReplaceAll(desc, "\r", "")
-
-		if temp[sid] == nil {
-			temp[sid] = &epSubject{
-				Name:     subjName,
-				Episodes: make(map[int][]string),
-			}
-		}
-		temp[sid].AllEps = append(temp[sid].AllEps, unmatchedEp{EpisodeID: episodeID, Label: label})
-
-		allMatches := combinedRe.FindAllStringIndex(cleanDesc, -1)
-		if allMatches == nil {
-			continue
-		}
-
-		accepted := resolveOverlaps(allMatches)
-
-		for i, m := range accepted {
-			matchedStr := cleanDesc[m[0]:m[1]]
-			posID, ok := lit2pid[matchedStr]
-			if !ok {
-				continue
-			}
-
-			if linked[posID] != nil {
-				if epLabels, ok := linked[posID][sid]; ok {
-					if epLabels[label] {
-						if temp[sid].LinkedSet == nil {
-							temp[sid].LinkedSet = make(map[string]bool)
-						}
-						temp[sid].LinkedSet[label] = true
-						continue
-					}
-				}
-			}
-
-			segEnd := len(cleanDesc)
-			if i+1 < len(accepted) {
-				segEnd = accepted[i+1][0]
-			}
-			seg := cleanDesc[m[1]:segEnd]
-
-			if !nameRe.MatchString(seg) {
-				continue
-			}
-
-			temp[sid].Episodes[posID] = append(temp[sid].Episodes[posID], label)
-		}
-	}
+	temp := collectEpMatches(result.Rows, lit2pid, combinedRe, nameRe, linked)
 
 	matchedCount := 0
 	for sid, subj := range temp {
-		matchedSet := make(map[string]bool)
-		m := make(map[int][]string)
-		for pid, labels := range subj.Episodes {
-			m[pid] = labels
-			for _, l := range labels {
-				matchedSet[l] = true
-			}
-		}
+		m, _ := splitMatched(subj.Episodes)
 		if len(m) > 0 {
 			matchedCount++
 			fmt.Printf("✓ %s (id=%d):\n", subj.Name, sid)
@@ -280,36 +194,6 @@ ORDER BY e.subject_id, e.sort, e.type
 	if matchedCount == 0 {
 		fmt.Println("未发现匹配剧集")
 	}
-}
-
-func queryLinkedCLI(ctx context.Context, dbPath, escapedNameSQL string) map[int]map[int]map[string]bool {
-	sql := fmt.Sprintf(`
-SELECT subject_id, position, COALESCE(appear_eps, '') AS appear_eps
-FROM subject_persons sp
-JOIN persons p ON sp.person_id = p.person_id
-WHERE LOWER(REPLACE(REPLACE(TRIM(p.name), '　', ''), ' ', '')) = LOWER(REPLACE(REPLACE('%s', '　', ''), ' ', ''))
-`, escapedNameSQL)
-
-	engine := query.NewEngine(dbPath, "")
-	result, err := engine.ExecuteRaw(ctx, sql)
-	if err != nil {
-		return make(map[int]map[int]map[string]bool)
-	}
-
-	linked := make(map[int]map[int]map[string]bool)
-	for _, row := range result.Rows {
-		if len(row) < 3 {
-			continue
-		}
-		pid, _ := strconv.Atoi(row[1])
-		sid, _ := strconv.Atoi(row[0])
-		epSet := expandAppearEps(row[2])
-		if linked[pid] == nil {
-			linked[pid] = make(map[int]map[string]bool)
-		}
-		linked[pid][sid] = epSet
-	}
-	return linked
 }
 
 func cmdMissingPersons(args []string) {

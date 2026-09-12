@@ -508,7 +508,10 @@ func generateStaffData(yamlData []byte, outDir, tmplDir string) {
 
 // --- MetaTags ---
 
-func generateMetaTags(dataDir, outDir, tmplDir string) {
+// collectMetaTags scans subject.jsonlines in dataDir and returns the set
+// of meta tags per subject type. Shared by generateMetaTags and
+// generateSchemaData.
+func collectMetaTags(dataDir string) map[int]map[string]bool {
 	subjectFile := filepath.Join(dataDir, "subject.jsonlines")
 	file, err := os.Open(subjectFile)
 	if err != nil {
@@ -537,12 +540,13 @@ func generateMetaTags(dataDir, outDir, tmplDir string) {
 			typeMetaTags[subject.Type][tag] = true
 		}
 	}
+	return typeMetaTags
+}
 
-	type tagEntry struct {
-		TypeCode int
-		Tags     string
-	}
-	var entries []tagEntry
+// sortedTagLists returns the sorted meta tag list per subject type,
+// skipping types absent from the archive data.
+func sortedTagLists(typeMetaTags map[int]map[string]bool) map[int][]string {
+	out := make(map[int][]string)
 	for _, tc := range []int{1, 2, 3, 4, 6} {
 		tags := typeMetaTags[tc]
 		if tags == nil {
@@ -553,6 +557,25 @@ func generateMetaTags(dataDir, outDir, tmplDir string) {
 			tagList = append(tagList, tag)
 		}
 		sort.Strings(tagList)
+		out[tc] = tagList
+	}
+	return out
+}
+
+func generateMetaTags(dataDir, outDir, tmplDir string) {
+	typeMetaTags := collectMetaTags(dataDir)
+
+	type tagEntry struct {
+		TypeCode int
+		Tags     string
+	}
+	tagLists := sortedTagLists(typeMetaTags)
+	var entries []tagEntry
+	for _, tc := range []int{1, 2, 3, 4, 6} {
+		tagList, ok := tagLists[tc]
+		if !ok {
+			continue
+		}
 		quoted := make([]string, len(tagList))
 		for i, tag := range tagList {
 			quoted[i] = `"` + tag + `"`
@@ -705,51 +728,18 @@ func generateSchemaData(platformsYAML, subjectRelationsYAML, personRelationsYAML
 	}
 
 	// --- Meta tags ---
-	subjectFile := filepath.Join(dataDir, "subject.jsonlines")
-	file, err := os.Open(subjectFile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to open %s: %v\n", subjectFile, err)
-		os.Exit(1)
-	}
-	defer func() { _ = file.Close() }()
-
-	typeMetaTags := make(map[int]map[string]bool)
-	decoder := json.NewDecoder(file)
-	for decoder.More() {
-		var subject struct {
-			Type     int      `json:"type"`
-			MetaTags []string `json:"meta_tags"`
-		}
-		if err := decoder.Decode(&subject); err != nil {
-			break
-		}
-		if subject.MetaTags == nil {
-			continue
-		}
-		if typeMetaTags[subject.Type] == nil {
-			typeMetaTags[subject.Type] = make(map[string]bool)
-		}
-		for _, tag := range subject.MetaTags {
-			typeMetaTags[subject.Type][tag] = true
-		}
-	}
+	typeMetaTags := collectMetaTags(dataDir)
 
 	type metaTagEntry struct {
 		TypeCode string
 		Tags     []string
 	}
+	tagLists := sortedTagLists(typeMetaTags)
 	var metaTagEntries []metaTagEntry
 	for _, tc := range []int{1, 2, 3, 4, 6} {
-		tags := typeMetaTags[tc]
-		if tags == nil {
-			continue
+		if tagList, ok := tagLists[tc]; ok {
+			metaTagEntries = append(metaTagEntries, metaTagEntry{fmt.Sprint(tc), tagList})
 		}
-		var tagList []string
-		for tag := range tags {
-			tagList = append(tagList, tag)
-		}
-		sort.Strings(tagList)
-		metaTagEntries = append(metaTagEntries, metaTagEntry{fmt.Sprint(tc), tagList})
 	}
 
 	// --- Render template ---

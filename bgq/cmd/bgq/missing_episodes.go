@@ -217,19 +217,10 @@ func (s *server) handleMissingEpisodes(w http.ResponseWriter, r *http.Request) {
 	escapedNameSQL := strings.ReplaceAll(name, "'", "''")
 
 	// Phase 0: pre-load linked subjects for this person
-	linked := queryLinked(r.Context(), s, escapedNameSQL, targetID)
+	linked := queryLinked(r.Context(), s.dbPath, s.dataDir, escapedNameSQL, targetID)
 
 	// Phase 1: DuckDB wide filter
-	sql := fmt.Sprintf(`
-SELECT e.episode_id, e.subject_id, s.name AS subject_name, e.sort, e.type, e.description
-FROM episodes e
-JOIN subjects s ON e.subject_id = s.id
-WHERE e.disc = 0
-  AND s.type = 2
-  AND REPLACE(REPLACE(e.description, '　', ''), ' ', '')
-        LIKE '%%' || REPLACE(REPLACE('%s', '　', ''), ' ', '') || '%%'
-ORDER BY e.subject_id, e.sort, e.type
-`, escapedNameSQL)
+	sql := buildEpSearchSQL(escapedNameSQL)
 
 	engine := query.NewEngine(s.dbPath, s.dataDir)
 	result, err := engine.ExecuteRaw(r.Context(), sql)
@@ -239,80 +230,7 @@ ORDER BY e.subject_id, e.sort, e.type
 	}
 
 	// Phase 2: Go position matching
-	type unmatchedEp struct {
-		EpisodeID int    `json:"episode_id"`
-		Label     string `json:"label"`
-	}
-
-	type epSubject struct {
-		Name      string
-		Episodes  map[int][]string
-		AllEps    []unmatchedEp
-		LinkedSet map[string]bool // labels already linked (to exclude from unmatched)
-	}
-
-	temp := make(map[int]*epSubject)
-	for _, row := range result.Rows {
-		if len(row) < 6 {
-			continue
-		}
-		episodeID, _ := strconv.Atoi(row[0])
-		sid, _ := strconv.Atoi(row[1])
-		subjName := row[2]
-		sortNum, _ := strconv.ParseFloat(row[3], 64)
-		epType, _ := strconv.Atoi(row[4])
-		desc := row[5]
-
-		label := epLabel(sortNum, epType)
-		cleanDesc := strings.ReplaceAll(desc, "\r", "")
-
-		if temp[sid] == nil {
-			temp[sid] = &epSubject{
-				Name:     subjName,
-				Episodes: make(map[int][]string),
-			}
-		}
-		temp[sid].AllEps = append(temp[sid].AllEps, unmatchedEp{EpisodeID: episodeID, Label: label})
-
-		allMatches := combinedRe.FindAllStringIndex(cleanDesc, -1)
-		if allMatches == nil {
-			continue
-		}
-
-		accepted := resolveOverlaps(allMatches)
-
-		for i, m := range accepted {
-			matchedStr := cleanDesc[m[0]:m[1]]
-			posID, ok := lit2pid[matchedStr]
-			if !ok {
-				continue
-			}
-
-			if linked[posID] != nil {
-				if epLabels, ok := linked[posID][sid]; ok {
-					if epLabels[label] {
-						if temp[sid].LinkedSet == nil {
-							temp[sid].LinkedSet = make(map[string]bool)
-						}
-						temp[sid].LinkedSet[label] = true
-						continue
-					}
-				}
-			}
-
-			segEnd := len(cleanDesc)
-			if i+1 < len(accepted) {
-				segEnd = accepted[i+1][0]
-			}
-			seg := cleanDesc[m[1]:segEnd]
-
-			if !nameRe.MatchString(seg) {
-				continue
-			}
-
-			temp[sid].Episodes[posID] = append(temp[sid].Episodes[posID], label)
-		}
-	}
+	temp := collectEpMatches(result.Rows, lit2pid, combinedRe, nameRe, linked)
 
 	type epSubjectMatched struct {
 		Name     string           `json:"name"`
@@ -327,14 +245,7 @@ ORDER BY e.subject_id, e.sort, e.type
 	matched := make(map[int]epSubjectMatched)
 	unmatched := make(map[int]epSubjectUnmatched)
 	for sid, subj := range temp {
-		matchedSet := make(map[string]bool)
-		m := make(map[int][]string)
-		for pid, labels := range subj.Episodes {
-			m[pid] = labels
-			for _, l := range labels {
-				matchedSet[l] = true
-			}
-		}
+		m, matchedSet := splitMatched(subj.Episodes)
 		if len(m) > 0 {
 			matched[sid] = epSubjectMatched{Name: subj.Name, Episodes: m}
 		}
@@ -408,7 +319,7 @@ func buildEpPositionTable(positions map[int]string) (map[string]int, *regexp.Reg
 	return lit2pid, re
 }
 
-func queryLinked(ctx context.Context, s *server, escapedNameSQL string, targetID int) map[int]map[int]map[string]bool {
+func queryLinked(ctx context.Context, dbPath, dataDir, escapedNameSQL string, targetID int) map[int]map[int]map[string]bool {
 	var sql string
 	if targetID > 0 {
 		sql = fmt.Sprintf(`
@@ -425,7 +336,7 @@ WHERE LOWER(REPLACE(REPLACE(TRIM(p.name), '　', ''), ' ', '')) = LOWER(REPLACE(
 `, escapedNameSQL)
 	}
 
-	engine := query.NewEngine(s.dbPath, s.dataDir)
+	engine := query.NewEngine(dbPath, dataDir)
 	result, err := engine.ExecuteRaw(ctx, sql)
 	if err != nil {
 		return make(map[int]map[int]map[string]bool)
@@ -445,6 +356,121 @@ WHERE LOWER(REPLACE(REPLACE(TRIM(p.name), '　', ''), ' ', '')) = LOWER(REPLACE(
 		linked[pid][sid] = epSet
 	}
 	return linked
+}
+
+// unmatchedEp is a single episode that matched the description filter.
+type unmatchedEp struct {
+	EpisodeID int    `json:"episode_id"`
+	Label     string `json:"label"`
+}
+
+// epSubject accumulates per-subject episode match state. Shared by the
+// `missing episodes` CLI and the HTTP handler.
+type epSubject struct {
+	Name      string
+	Episodes  map[int][]string
+	AllEps    []unmatchedEp
+	LinkedSet map[string]bool // labels already linked (to exclude from unmatched)
+}
+
+// buildEpSearchSQL returns the DuckDB wide-filter query for episode
+// descriptions mentioning a person name. `escapedNameSQL` must already
+// have single quotes escaped.
+func buildEpSearchSQL(escapedNameSQL string) string {
+	return fmt.Sprintf(`
+SELECT e.episode_id, e.subject_id, s.name AS subject_name, e.sort, e.type, e.description
+FROM episodes e
+JOIN subjects s ON e.subject_id = s.id
+WHERE e.disc = 0
+  AND s.type = 2
+  AND REPLACE(REPLACE(e.description, '　', ''), ' ', '')
+        LIKE '%%' || REPLACE(REPLACE('%s', '　', ''), ' ', '') || '%%'
+ORDER BY e.subject_id, e.sort, e.type
+`, escapedNameSQL)
+}
+
+// collectEpMatches runs position matching over DuckDB episode rows and
+// returns per-subject accumulation. Shared by the `missing episodes` CLI
+// and the HTTP handler; callers render CLI text or JSON.
+func collectEpMatches(rows [][]string, lit2pid map[string]int, combinedRe, nameRe *regexp.Regexp, linked map[int]map[int]map[string]bool) map[int]*epSubject {
+	temp := make(map[int]*epSubject)
+	for _, row := range rows {
+		if len(row) < 6 {
+			continue
+		}
+		episodeID, _ := strconv.Atoi(row[0])
+		sid, _ := strconv.Atoi(row[1])
+		subjName := row[2]
+		sortNum, _ := strconv.ParseFloat(row[3], 64)
+		epType, _ := strconv.Atoi(row[4])
+		desc := row[5]
+
+		label := epLabel(sortNum, epType)
+		cleanDesc := strings.ReplaceAll(desc, "\r", "")
+
+		if temp[sid] == nil {
+			temp[sid] = &epSubject{
+				Name:     subjName,
+				Episodes: make(map[int][]string),
+			}
+		}
+		temp[sid].AllEps = append(temp[sid].AllEps, unmatchedEp{EpisodeID: episodeID, Label: label})
+
+		allMatches := combinedRe.FindAllStringIndex(cleanDesc, -1)
+		if allMatches == nil {
+			continue
+		}
+
+		accepted := resolveOverlaps(allMatches)
+
+		for i, m := range accepted {
+			matchedStr := cleanDesc[m[0]:m[1]]
+			posID, ok := lit2pid[matchedStr]
+			if !ok {
+				continue
+			}
+
+			if linked[posID] != nil {
+				if epLabels, ok := linked[posID][sid]; ok {
+					if epLabels[label] {
+						if temp[sid].LinkedSet == nil {
+							temp[sid].LinkedSet = make(map[string]bool)
+						}
+						temp[sid].LinkedSet[label] = true
+						continue
+					}
+				}
+			}
+
+			segEnd := len(cleanDesc)
+			if i+1 < len(accepted) {
+				segEnd = accepted[i+1][0]
+			}
+			seg := cleanDesc[m[1]:segEnd]
+
+			if !nameRe.MatchString(seg) {
+				continue
+			}
+
+			temp[sid].Episodes[posID] = append(temp[sid].Episodes[posID], label)
+		}
+	}
+	return temp
+}
+
+// splitMatched partitions a subject's position→labels map, returning the
+// map along with the set of matched labels (used to exclude matched
+// episodes from the unmatched list).
+func splitMatched(episodes map[int][]string) (map[int][]string, map[string]bool) {
+	matchedSet := make(map[string]bool)
+	m := make(map[int][]string)
+	for pid, labels := range episodes {
+		m[pid] = labels
+		for _, l := range labels {
+			matchedSet[l] = true
+		}
+	}
+	return m, matchedSet
 }
 
 func expandAppearEps(appearEps string) map[string]bool {

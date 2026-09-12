@@ -72,7 +72,7 @@ pnpm format:check                          # Check formatting (CI)
 #   - wikiMissingPositions: bump version (header.js) → eslint + stylelint + prettier + build (auto-adds dist/)
 #   - wikiPersonAlias: bump version → eslint + prettier
 #   - wikiBatch: bump version (header.js) → eslint + stylelint + typecheck + build (auto-adds dist/)
-#   - Frontend (bgq): lint-staged (ESLint + Stylelint + Prettier)
+#   - Frontend (bgq): lint-staged (ESLint incl. sonarjs + Stylelint + Prettier) + knip
 # Setup: git config core.hooksPath .husky (run once after clone)
 ```
 
@@ -230,6 +230,19 @@ Two separate workflows:
 2. **`bgq_build.yml`** — Triggered on push to `bgq/**`. Cross-compiles bgq for linux/amd64, darwin/arm64, darwin/amd64, windows/amd64 + bundles DuckDB CLI. Publishes to `latest` Release.
 
 Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
+
+## Duplication Check (jscpd, on-demand)
+
+jscpd is intentionally **not** in dependencies, hooks, or CI — run it manually when refactoring. Test fixtures (`builder_snapshot_test.go`, `missing_persons.go` cases) and Svelte template branches duplicate by design; only cross-file logic clones are worth fixing.
+
+```bash
+cd bgq
+pnpm dlx jscpd@latest . --format go,js,svelte,css --min-lines 10 --min-tokens 40 \
+  --reporters console --output /tmp/opencode/jscpd-bgq \
+  --ignore "**/node_modules/**,**/dist/**,**/bin/**,**/internal/model/templates/**,**/cmd/gen-model/templates/**"
+```
+
+Baseline (2026-09, after cleanup): 1.03% overall (Go 2.10%). Already fixed: `cmd/bgq/missing.go` ↔ `missing_episodes.go` shared episode core (`collectEpMatches`, `queryLinked`, `buildEpSearchSQL`, `splitMatched`, flag helpers), `cmd/gen-model/main.go` meta_tags loops (`collectMetaTags`, `sortedTagLists`), `internal/query/builder.go` (`buildClauses` delegates to `buildClausesWithOp`). Remaining clones are intentional: test fixtures (`builder_snapshot_test.go`, `missing_persons.go` cases), Svelte template branches, and small same-file builder repetitions.
 
 ## Commit Conventions
 
