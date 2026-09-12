@@ -11,7 +11,8 @@
     "lint:css": "stylelint \"src/**/*.{css,svelte}\"",
     "lint:css:fix": "stylelint \"src/**/*.{css,svelte}\" --fix",
     "format": "prettier --write src/",
-    "format:check": "prettier --check src/"
+    "format:check": "prettier --check src/",
+    "knip": "knip"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -19,6 +20,7 @@
     "eslint": "^10.8.1",
     "eslint-plugin-svelte": "^3.23.0",
     "globals": "^17.11.0",
+    "knip": "^6.35.1",
     "lint-staged": "^17.3.0",
     "postcss-html": "^1.8.1",
     "prettier": "^3.9.6",

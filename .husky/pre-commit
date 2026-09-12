@@ -93,7 +93,9 @@ if [ -n "$GO_FILES" ]; then
 fi
 
 if [ -n "$FE_FILES" ]; then
-  cd bgq/frontend && pnpm exec lint-staged || exit 1
+  cd bgq/frontend || exit 1
+  pnpm exec lint-staged || exit 1
+  pnpm exec knip || exit 1
   cd ../..
 fi
 

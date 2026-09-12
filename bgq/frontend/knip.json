@@ -1,0 +1,5 @@
+{
+  // lint-staged is driven via the "lint-staged" key in package.json +
+  // .husky/pre-commit, which knip cannot detect — ignore the false positive.
+  "ignoreDependencies": ["lint-staged"]
+}
