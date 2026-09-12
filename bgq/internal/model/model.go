@@ -104,15 +104,6 @@ var CharacterAssociationTypes = map[int]string{
 	6: "声库",
 }
 
-// CharacterAssociationTypeNames returns all character association type names.
-func CharacterAssociationTypeNames() []string {
-	var names []string
-	for _, name := range CharacterAssociationTypes {
-		names = append(names, name)
-	}
-	return names
-}
-
 // PersonCharacter represents a person-character-subject three-way relationship.
 type PersonCharacter struct {
 	PersonID    int    `json:"person_id"`
@@ -131,15 +122,6 @@ var PersonCharacterTypes = map[int]string{
 	4: "日配",
 	5: "英配",
 	6: "韩配",
-}
-
-// PersonCharacterTypeNames returns all person character type names.
-func PersonCharacterTypeNames() []string {
-	var names []string
-	for _, name := range PersonCharacterTypes {
-		names = append(names, name)
-	}
-	return names
 }
 
 // SubjectType represents a Bangumi subject type.

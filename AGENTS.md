@@ -35,7 +35,8 @@ go test ./cmd/bgq/ -run TestBuildCheckSQL -v           # Missing subjects SQL te
 
 gofmt -w .                                 # Format
 go vet ./...                               # Static analysis
-go tool golangci-lint run ./...            # Lint (pinned via go.mod tool directive)
+go tool golangci-lint run ./...            # Lint
+go tool deadcode ./...                   # Unreachable functions
 # After modifying Go code, run all three above before committing
 
 ./bin/bgq query --config query.yaml --data-dir ./bangumi_archive
@@ -256,7 +257,7 @@ Examples: `feat(bgq): add new feature`, `fix(bgq): resolve bug`, `docs: update r
 - `bgq/internal/query/builder_generic.go` — Generic filter SQL generation
 - `bgq/internal/query/builder_target.go` — Target-specific SQL (subject/person/character/episode)
 - `bgq/internal/query/engine.go` — DuckDB subprocess, CSV parsing
-- `bgq/internal/model/helpers.go` — Lookup helpers (PlatformsByType, RelationsByType, etc.)
+- `bgq/internal/model/helpers.go` — RelationTypes grouping map (per-type lookup helpers removed as deadcode-confirmed dead code)
 - `bgq/cmd/gen-model/main.go` — Code generator for schema constants (run via `go generate`)
 - `bgq/cmd/bgq/main.go` — CLI dispatch + ingest logic
 - `bgq/cmd/bgq/missing.go` — `missing` CLI subcommand dispatcher (subjects, episodes)
