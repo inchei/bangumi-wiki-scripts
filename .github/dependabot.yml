@@ -1,0 +1,17 @@
+version: 2
+updates:
+  # Security updates only: open-pull-requests-limit 0 disables routine
+  # version bumps, CVE fix PRs still flow.
+  # The pnpm workspace is resolved from the root (requires the minimal root
+  # package.json above; do NOT add per-package entries — Dependabot errors on
+  # subdirectory updates inside a pnpm workspace).
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
+  - package-ecosystem: "gomod"
+    directory: "/bgq"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 0
