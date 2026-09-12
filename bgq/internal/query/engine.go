@@ -81,12 +81,28 @@ func (e *Engine) ExecuteRaw(ctx context.Context, sql string) (*QueryResult, erro
 	return e.executeSQL(ctx, sql)
 }
 
+// lockdownPrefix disables DuckDB external access (COPY, file readers,
+// extension INSTALL/LOAD). Only for database-backed queries, which need
+// just tables inside the attached .db.
+const lockdownPrefix = "SET enable_external_access=false;\n"
+
+func (e *Engine) applyLockdown(sql string) string {
+	if e.dbPath != "" {
+		return lockdownPrefix + sql
+	}
+	return sql
+}
+
 // executeSQL runs a SQL query via DuckDB CLI and returns parsed results.
 func (e *Engine) executeSQL(ctx context.Context, sql string) (*QueryResult, error) {
 	// Validate DuckDB binary exists
 	if _, err := os.Stat(DuckDBPath); os.IsNotExist(err) {
 		return nil, fmt.Errorf("DuckDB 可执行文件不存在: %s\n请设置 DUCKDB_PATH 环境变量或确保 duckdb 在 PATH 中", DuckDBPath)
 	}
+
+	// Database-backed queries run locked down; JSON-dir and ingest paths
+	// keep file access (see applyLockdown).
+	sql = e.applyLockdown(sql)
 
 	// Write SQL to temp file (avoids shell escaping issues)
 	tmpFile, err := os.CreateTemp("", "bgq-query-*.sql")

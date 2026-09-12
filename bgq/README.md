@@ -30,6 +30,8 @@ chmod +x download-archive.sh
 
 或从 https://github.com/bangumi/Archive/releases/tag/archive 手动下载。
 
+**实际部署强烈建议 `bgq ingest` 建库并以 `--db` 模式运行：更快，且查询自动关闭 DuckDB 外部文件/网络访问，参考[使用数据库加速查询](#使用数据库加速查询)。**
+
 ## 数据更新
 
 ### 前提
