@@ -88,6 +88,7 @@ if [ -n "$GO_FILES" ]; then
   git add $GO_FILES
   cd bgq && go vet ./... 2>&1 || exit 1
   go tool golangci-lint run ./... 2>&1 || exit 1
+  go tool deadcode ./... 2>&1 || exit 1
   go test ./internal/query/ -run 'Test[^E]' 2>&1 || exit 1
   cd ..
 fi

@@ -97,7 +97,7 @@ pnpm format:check       # 检查格式
 
 提交时自动运行（`.husky/pre-commit`）：
 
-- **Go 文件**：`gofmt -w`（自动修复）+ `go vet` + `golangci-lint` + `go test`
+- **Go 文件**：`gofmt -w`（自动修复）+ `go vet` + `golangci-lint` + `deadcode` + `go test`
 - **前端文件**：`lint-staged`（ESLint 含 sonarjs + Stylelint + Prettier）+ `knip`
 
 ## 全栈开发
