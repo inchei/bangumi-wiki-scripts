@@ -3,7 +3,7 @@ FROM node:24-alpine AS frontend
 WORKDIR /app
 COPY pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY bgq/frontend/package.json bgq/frontend/package.json
-RUN corepack enable && pnpm install --frozen-lockfile --filter frontend
+RUN npm install -g pnpm@11 && pnpm install --frozen-lockfile --filter frontend
 COPY bgq/frontend/ bgq/frontend/
 WORKDIR /app/bgq/frontend
 RUN pnpm build
