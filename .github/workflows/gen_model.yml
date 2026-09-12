@@ -2,6 +2,11 @@ name: update common
 
 on:
   workflow_dispatch:
+    inputs:
+      no_meta_tags:
+        description: '跳过归档依赖输出（不下载归档，仅更新 common 部分）'
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -22,10 +27,17 @@ jobs:
           cache-dependency-path: bgq/go.sum
 
       - name: 下载 Bangumi 归档
+        if: ${{ !inputs.no_meta_tags }}
         run: bash bgq/download-archive.sh bangumi_archive
 
       - name: 运行 go generate
-        run: cd bgq && go generate ./internal/model/
+        run: |
+          cd bgq
+          if [ "${{ inputs.no_meta_tags }}" = "true" ]; then
+            go run ./cmd/gen-model --data-dir ../bangumi_archive --no-meta-tags
+          else
+            go generate ./internal/model/
+          fi
 
       - name: 提交变更
         run: |

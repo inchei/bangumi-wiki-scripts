@@ -25,6 +25,7 @@ const bangumiCommonBase = "https://ghfast.top/https://raw.githubusercontent.com/
 func main() {
 	dataDir := "../bangumi_archive"
 	outDir := "internal/model"
+	noMetaTags := false
 
 	for i := 1; i < len(os.Args); i++ {
 		switch os.Args[i] {
@@ -38,6 +39,10 @@ func main() {
 				outDir = os.Args[i+1]
 				i++
 			}
+		case "--no-meta-tags":
+			// Skip archive-dependent outputs (metatags.go, schema-data.js
+			// meta tags) so the rest can regenerate without a local archive.
+			noMetaTags = true
 		}
 	}
 
@@ -85,8 +90,12 @@ func main() {
 
 	frontendDir := "../../frontend/src"
 	if _, err := os.Stat(frontendDir); err == nil {
-		fmt.Println("  Generating schema-data.js...")
-		generateSchemaData(platformsYAML, subjectRelationsYAML, personRelationsYAML, staffYAML, dataDir, frontendDir, tmplDir)
+		if noMetaTags {
+			fmt.Println("  Skipping schema-data.js (meta tags need local archive, --no-meta-tags)")
+		} else {
+			fmt.Println("  Generating schema-data.js...")
+			generateSchemaData(platformsYAML, subjectRelationsYAML, personRelationsYAML, staffYAML, dataDir, frontendDir, tmplDir)
+		}
 	}
 
 	wikiMPDir := "../../../wikiMissingPositions/src"
@@ -101,8 +110,12 @@ func main() {
 		generateInfoboxFieldOrder(wikiTemplateYAML, wikiBatchDir)
 	}
 
-	fmt.Println("  Generating metatags.go...")
-	generateMetaTags(dataDir, outDir, tmplDir)
+	if noMetaTags {
+		fmt.Println("  Skipping metatags.go (--no-meta-tags)")
+	} else {
+		fmt.Println("  Generating metatags.go...")
+		generateMetaTags(dataDir, outDir, tmplDir)
+	}
 
 	fmt.Println("Done!")
 }
