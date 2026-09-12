@@ -204,6 +204,11 @@ func quoteIdent(s string) string {
 	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 }
 
+// quotedLabel builds a quoted output-column label (`AS "..."`) from parts.
+func quotedLabel(parts ...string) string {
+	return quoteIdent(strings.Join(parts, "."))
+}
+
 // toSQLOp converts a config operator (gt, gte, lt, lte, eq) to a SQL operator.
 func toSQLOp(op string) string {
 	switch op {

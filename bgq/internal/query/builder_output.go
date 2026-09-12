@@ -100,7 +100,7 @@ func (b *SQLBuilder) buildSelect() []string {
 			result = append(result, a+".name AS name_cn")
 		default:
 			expr := b.infoboxExtractExpr(col, a)
-			result = append(result, fmt.Sprintf("%s AS \"%s\"", expr, col))
+			result = append(result, expr+" AS "+quotedLabel(col))
 		}
 	}
 	return result
@@ -229,7 +229,7 @@ func (b *SQLBuilder) buildRelationOutput(relType, field string) (string, error) 
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "subject_relations", ja: "r", mainFK: "subject_id",
 		entityJoin: relatedJoin, typeCond: typeCond, extraWhere: relatedWhere,
-		entityAlias: "rs", entityPK: "id", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
+		entityAlias: "rs", entityPK: "id", field: field, label: quotedLabel(relType, field),
 		directFields: subjectDirectFields,
 	})
 }
@@ -257,7 +257,7 @@ func (b *SQLBuilder) buildStaffOutput(position, field string) (string, error) {
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "subject_persons", ja: "sp", mainFK: "subject_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: personWhere,
-		entityAlias: "p", entityPK: "person_id", field: field, label: fmt.Sprintf("\"%s.%s\"", position, field),
+		entityAlias: "p", entityPK: "person_id", field: field, label: quotedLabel(position, field),
 		directFields: personDirectFields,
 	})
 }
@@ -289,7 +289,7 @@ func (b *SQLBuilder) buildStaffOutputForPerson(position, field string) (string, 
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "subject_persons", ja: "sp", mainFK: "person_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: subjectWhere,
-		entityAlias: "rs", entityPK: "id", field: field, label: fmt.Sprintf("\"%s.%s\"", position, field),
+		entityAlias: "rs", entityPK: "id", field: field, label: quotedLabel(position, field),
 		directFields: subjectDirectFields,
 	})
 }
@@ -340,7 +340,7 @@ func (b *SQLBuilder) buildPersonCharacterOutput(typeName, field string) (string,
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "person_characters", ja: "pc", mainFK: "person_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: charWhere,
-		entityAlias: "c", entityPK: "character_id", field: field, label: fmt.Sprintf("\"%s.%s\"", typeName, field),
+		entityAlias: "c", entityPK: "character_id", field: field, label: quotedLabel(typeName, field),
 		directFields: characterDirectFields, distinct: true, subjectAlias: subjectAlias,
 	})
 }
@@ -375,7 +375,7 @@ func (b *SQLBuilder) buildCharacterPersonOutput(typeName, field string) (string,
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "person_characters", ja: "pc", mainFK: "character_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: personWhere,
-		entityAlias: "p", entityPK: "person_id", field: field, label: fmt.Sprintf("\"%s.%s\"", typeName, field),
+		entityAlias: "p", entityPK: "person_id", field: field, label: quotedLabel(typeName, field),
 		directFields: personDirectFields, distinct: true, subjectAlias: subjectAlias,
 	})
 }
@@ -464,7 +464,7 @@ func (b *SQLBuilder) buildPersonCharacterSubjectOutput(typeName, field string) (
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "person_characters", ja: "pc", mainFK: "person_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: combineWhere(charWhere, subjectWhere),
-		entityAlias: "rs", entityPK: "id", field: field, label: fmt.Sprintf("\"%s.s.%s\"", typeName, field),
+		entityAlias: "rs", entityPK: "id", field: field, label: quotedLabel(typeName, "s", field),
 		directFields: subjectDirectFields, distinct: true,
 	})
 }
@@ -502,7 +502,7 @@ func (b *SQLBuilder) buildCharacterPersonSubjectOutput(typeName, field string) (
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "person_characters", ja: "pc", mainFK: "character_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: combineWhere(personWhere, subjectWhere),
-		entityAlias: "rs", entityPK: "id", field: field, label: fmt.Sprintf("\"%s.s.%s\"", typeName, field),
+		entityAlias: "rs", entityPK: "id", field: field, label: quotedLabel(typeName, "s", field),
 		directFields: subjectDirectFields, distinct: true,
 	})
 }
@@ -564,7 +564,7 @@ func (b *SQLBuilder) buildCharacterOutput(charType, field string, typeID int) (s
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "subject_characters", ja: "sc", mainFK: "subject_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: charWhere,
-		entityAlias: "c", entityPK: "character_id", field: field, label: fmt.Sprintf("\"%s.%s\"", charType, field),
+		entityAlias: "c", entityPK: "character_id", field: field, label: quotedLabel(charType, field),
 		directFields: characterDirectFields,
 	})
 }
@@ -586,7 +586,7 @@ func (b *SQLBuilder) buildEpisodeOutput(field string) (string, error) {
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "episodes", ja: "e", mainFK: "subject_id",
 		entityJoin: "", typeCond: "TRUE", extraWhere: epWhere,
-		entityAlias: "e", entityPK: "episode_id", field: field, label: fmt.Sprintf("\"episode.%s\"", field),
+		entityAlias: "e", entityPK: "episode_id", field: field, label: quotedLabel("episode", field),
 		directFields: episodeDirectFields,
 	})
 }
@@ -617,7 +617,7 @@ func (b *SQLBuilder) buildPersonRelationOutput(relType, field string) (string, e
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "person_relations", ja: "pr", mainFK: "person_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: relatedWhere,
-		entityAlias: "rp", entityPK: "person_id", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
+		entityAlias: "rp", entityPK: "person_id", field: field, label: quotedLabel(relType, field),
 		directFields: personDirectFields,
 	})
 }
@@ -648,7 +648,7 @@ func (b *SQLBuilder) buildCharacterRelationOutput(relType, field string) (string
 	return b.buildAssocSubquery(assocSubConfig{
 		junction: "character_relations", ja: "cr", mainFK: "person_id",
 		entityJoin: entityJoin, typeCond: typeCond, extraWhere: relatedWhere,
-		entityAlias: "rc", entityPK: "character_id", field: field, label: fmt.Sprintf("\"%s.%s\"", relType, field),
+		entityAlias: "rc", entityPK: "character_id", field: field, label: quotedLabel(relType, field),
 		directFields: characterDirectFields,
 	})
 }
