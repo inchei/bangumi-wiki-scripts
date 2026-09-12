@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/csv"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io/fs"
@@ -226,8 +228,8 @@ func (s *server) handleQuery(w http.ResponseWriter, r *http.Request) {
 	engine := query.NewEngine(s.dbPath, s.dataDir)
 	result, err := engine.Execute(ctx, cfg)
 	if err != nil {
-		log.Printf("查询失败: %v", err)
-		writeJSON(w, http.StatusInternalServerError, apiError{Error: "查询执行失败: " + err.Error()})
+		id := s.logQueryFailure(r, "handleQuery", err)
+		writeJSON(w, http.StatusInternalServerError, apiError{Error: "查询执行失败（请求 ID: " + id + "）"})
 		return
 	}
 
@@ -370,6 +372,14 @@ func writeJSON(w http.ResponseWriter, status int, data interface{}) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(status)
 	_ = json.NewEncoder(w).Encode(data)
+}
+
+func (s *server) logQueryFailure(r *http.Request, where string, err error) string {
+	var id [4]byte
+	_, _ = rand.Read(id[:])
+	idStr := hex.EncodeToString(id[:])
+	log.Printf("查询失败 [%s] %s %s: %v", idStr, where, r.URL.Path, err)
+	return idStr
 }
 
 // writeCSVToWriter writes query results as CSV to an io.Writer.

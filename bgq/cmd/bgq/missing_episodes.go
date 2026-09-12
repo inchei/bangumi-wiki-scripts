@@ -225,7 +225,8 @@ func (s *server) handleMissingEpisodes(w http.ResponseWriter, r *http.Request) {
 	engine := query.NewEngine(s.dbPath, s.dataDir)
 	result, err := engine.ExecuteRaw(r.Context(), sql)
 	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, apiError{Error: "查询失败: " + err.Error()})
+		id := s.logQueryFailure(r, "missing-episodes", err)
+		writeJSON(w, http.StatusInternalServerError, apiError{Error: "查询失败（请求 ID: " + id + "）"})
 		return
 	}
 

@@ -204,7 +204,6 @@ func quoteIdent(s string) string {
 	return `"` + strings.ReplaceAll(s, `"`, `""`) + `"`
 }
 
-// quotedLabel builds a quoted output-column label (`AS "..."`) from parts.
 func quotedLabel(parts ...string) string {
 	return quoteIdent(strings.Join(parts, "."))
 }

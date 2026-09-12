@@ -176,6 +176,12 @@ Four query targets supported via `config.Config.Target`:
 - **Schema data auto-generated to frontend.** `go generate` in `internal/model/` produces `schema-data.js` (platforms, relations, positions, meta tags) from bangumi/common YAML + archive data. Frontend imports these constants directly — no runtime API calls for schema.
 - **Frontend embedded in Go binary.** `go generate ./internal/server/` runs `pnpm build` and copies `frontend/dist/` to `internal/server/dist/`, embedded via `//go:embed dist/*`.
 
+### Security Decisions (bgq)
+
+- **DuckDB external access locked down in db mode.** With `--db`/`database` set, `Engine.executeSQL` prepends `SET enable_external_access=false` (`internal/query/engine.go`), disabling `COPY`, file readers (`read_csv`/`glob`/`read_text`), and extension INSTALL/LOAD. JSON-dir mode and `ingest` keep file access.
+- **Output-column labels are quote-escaped.** Columns/sort parameters are user-controlled; labels are built with `quotedLabel()` (`quotedLabel` is defined in `internal/query/builder_util.go`) instead of string interpolation.
+- **Server errors reply generic text with a request ID.** HTTP handlers return `查询失败（请求 ID: xxxx）`; the full engine error (SQL text, tmp path, stderr) goes only to the server log with the same ID. Never add `err.Error()` back to the response. Userscripts must treat the ID as opaque.
+
 ### Filter Types (exactly-one union pattern)
 
 Each `config.Filter` holds exactly one non-nil pointer field:
@@ -244,6 +250,10 @@ pnpm dlx jscpd@latest . --format go,js,svelte,css --min-lines 10 --min-tokens 40
 ```
 
 Baseline (2026-09, after cleanup): 1.03% overall (Go 2.10%). Already fixed: `cmd/bgq/missing.go` ↔ `missing_episodes.go` shared episode core (`collectEpMatches`, `queryLinked`, `buildEpSearchSQL`, `splitMatched`, flag helpers), `cmd/gen-model/main.go` meta_tags loops (`collectMetaTags`, `sortedTagLists`), `internal/query/builder.go` (`buildClauses` delegates to `buildClausesWithOp`). Remaining clones are intentional: test fixtures (`builder_snapshot_test.go`, `missing_persons.go` cases), Svelte template branches, and small same-file builder repetitions.
+
+## Code Style
+
+DO NOT add code comments unless explicitly asked. Never pre-emptively explain new code with comments; if a comment is truly needed, ask or let the user request it.
 
 ## Commit Conventions
 
