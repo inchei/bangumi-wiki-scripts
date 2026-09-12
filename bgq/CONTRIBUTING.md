@@ -33,7 +33,7 @@ go test ./cmd/bgq/ -run "TestExpand|TestEpLabel|TestResolveOverlaps|TestBuildEpP
 # 代码质量
 gofmt -w .
 go vet ./...
-golangci-lint run ./...
+go tool golangci-lint run ./...
 
 # 热重载（Air）
 ./bin/bgq serve --dev
@@ -97,8 +97,8 @@ pnpm format:check       # 检查格式
 
 提交时自动运行（`.husky/pre-commit`）：
 
-- **Go 文件**：`gofmt -w`（自动修复）+ `go vet` + `go test`
-- **前端文件**：`lint-staged`（ESLint + Stylelint + Prettier）
+- **Go 文件**：`gofmt -w`（自动修复）+ `go vet` + `golangci-lint` + `go test`
+- **前端文件**：`lint-staged`（ESLint 含 sonarjs + Stylelint + Prettier）+ `knip`
 
 ## 全栈开发
 

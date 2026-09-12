@@ -35,7 +35,7 @@ go test ./cmd/bgq/ -run TestBuildCheckSQL -v           # Missing subjects SQL te
 
 gofmt -w .                                 # Format
 go vet ./...                               # Static analysis
-golangci-lint run ./...                    # Lint
+go tool golangci-lint run ./...            # Lint (pinned via go.mod tool directive)
 # After modifying Go code, run all three above before committing
 
 ./bin/bgq query --config query.yaml --data-dir ./bangumi_archive
