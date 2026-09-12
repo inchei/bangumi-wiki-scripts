@@ -119,12 +119,8 @@
 
   function getNewTypeOptions(currentCtx, qTarget) {
     const opts = [];
-    if (currentCtx === CTX_EPISODE && qTarget === "episode") {
-      // Episode as primary target: specific fields
-      for (const f of EPISODE_FIELDS)
-        opts.push({ value: "ep_" + f, label: EPISODE_FIELD_LABELS[f] });
-    } else if (currentCtx === CTX_EPISODE) {
-      // Episode as nested context (inside subject query)
+    if (currentCtx === CTX_EPISODE) {
+      // Episode fields, both as primary target and as nested context (inside subject query)
       for (const f of EPISODE_FIELDS)
         opts.push({ value: "ep_" + f, label: EPISODE_FIELD_LABELS[f] });
     } else if (currentCtx === CTX_CHARACTER) {
