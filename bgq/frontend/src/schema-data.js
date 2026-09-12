@@ -54,7 +54,7 @@ const PLATFORMS_BY_TYPE = {
 };
 
 /** @param {number} typeCode 0=all */
-export function platformsByType(typeCode) {
+function platformsByType(typeCode) {
   return PLATFORMS_BY_TYPE[typeCode] || PLATFORMS_BY_TYPE[0];
 }
 
@@ -946,20 +946,7 @@ const META_TAGS_TYPE_6 = [
   "香港",
 ];
 
-const META_TAGS_BY_TYPE = {
-  1: META_TAGS_TYPE_1,
-  2: META_TAGS_TYPE_2,
-  3: META_TAGS_TYPE_3,
-  4: META_TAGS_TYPE_4,
-  6: META_TAGS_TYPE_6,
-};
 const META_TAGS_SET = new Set([...META_TAGS_TYPE_1, ...META_TAGS_TYPE_2, ...META_TAGS_TYPE_3, ...META_TAGS_TYPE_4, ...META_TAGS_TYPE_6]);
-
-/** @param {number} typeCode 0=all */
-export function metaTagsByType(typeCode) {
-  if (typeCode === 0) return [...META_TAGS_SET].sort();
-  return META_TAGS_BY_TYPE[typeCode] || [];
-}
 
 // All meta tags across all subject types (convenience).
 export const META_TAGS = [...META_TAGS_SET].sort();

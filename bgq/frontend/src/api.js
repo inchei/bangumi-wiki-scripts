@@ -34,26 +34,3 @@ export async function runQuery(
   }
   return r.json();
 }
-
-export function exportCSV(filters, columns, target, limit, sort, assocLimit) {
-  fetch("/api/query", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      target,
-      filters,
-      columns,
-      format: "csv",
-      limit: Math.min(limit * 10, 10000),
-      assoc_limit: assocLimit,
-      sort: sort && sort.length > 0 ? sort : undefined,
-    }),
-  })
-    .then((r) => r.blob())
-    .then((blob) => {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "bangumi_results.csv";
-      a.click();
-    });
-}

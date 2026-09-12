@@ -129,83 +129,7 @@ function findAndReplace(node, id, replacer) {
   return changed ? { ...node, items: newItems } : node;
 }
 
-export function findLogicGroup(node, id) {
-  if (node._id === id) return node;
-  for (const item of node.items) {
-    if (item.logic) {
-      const r = findLogicGroup(item.logic, id);
-      if (r) return r;
-    }
-    let found = null;
-    forEachCondArray(item, (conds) => {
-      if (found) return;
-      for (const c of conds) {
-        if (c.logic) {
-          found = findLogicGroup(c.logic, id);
-          if (found) return;
-        }
-      }
-    });
-    if (found) return found;
-    // episode.logic (direct, not in conditions array)
-    for (const key of Object.keys(item)) {
-      const val = item[key];
-      if (
-        val &&
-        typeof val === "object" &&
-        val.logic &&
-        typeof val.logic === "object" &&
-        !Array.isArray(val.logic) &&
-        !val.conditions
-      ) {
-        const r = findLogicGroup(val.logic, id);
-        if (r) return r;
-      }
-    }
-  }
-  return null;
-}
-
-export function removeLogicItemById(node, id) {
-  for (let i = 0; i < node.items.length; i++) {
-    const item = node.items[i];
-    if (item.logic) {
-      if (item.logic._id === id) {
-        node.items.splice(i, 1);
-        return true;
-      }
-      if (removeLogicItemById(item.logic, id)) return true;
-    }
-    let found = false;
-    forEachCondArray(item, (conds) => {
-      if (found) return;
-      for (const c of conds) {
-        if (c.logic && removeLogicItemById(c.logic, id)) {
-          found = true;
-          return;
-        }
-      }
-    });
-    if (found) return true;
-    // episode.logic (direct, not in conditions array)
-    for (const key of Object.keys(item)) {
-      const val = item[key];
-      if (
-        val &&
-        typeof val === "object" &&
-        val.logic &&
-        typeof val.logic === "object" &&
-        !Array.isArray(val.logic) &&
-        !val.conditions
-      ) {
-        if (removeLogicItemById(val.logic, id)) return true;
-      }
-    }
-  }
-  return false;
-}
-
-export function logicToFilter(lg) {
+function logicToFilter(lg) {
   return {
     logic: {
       op: lg.op,
@@ -223,7 +147,7 @@ export function getFiltersForAPI() {
   return [logicToFilter(root)];
 }
 
-export function createEmptyCondition(type) {
+function createEmptyCondition(type) {
   switch (type) {
     case "field":
       return { field: { field: "", operator: "contains", value: "" } };
@@ -341,7 +265,7 @@ function applyMutation(targetGroupId, mutator) {
   );
 }
 
-export function addToGroup(group, filter) {
+function addToGroup(group, filter) {
   applyMutation(group._id, (items) => {
     items.push(filter);
     return items;

@@ -18,7 +18,7 @@ const SUBJECT_DIRECT_FIELDS = [
 ];
 
 // Version counter — incremented on every mutation to trigger reactivity
-export const logicVersion = writable(0);
+const logicVersion = writable(0);
 
 // Focus request — set after add operations so FilterTree can focus the new element
 export const focusRequest = writable(null);
@@ -174,10 +174,6 @@ export function restoreClearSnapshot() {
   return true;
 }
 
-export function hasClearSnapshot() {
-  return _clearSnapshot !== null;
-}
-
 export function clearClearSnapshot() {
   _clearSnapshot = null;
 }
@@ -188,12 +184,6 @@ export function newLogicGroup(op) {
   return { op: op || "and", items: [], _id: ++_logicIdCounter };
 }
 
-export function getLogicIdCounter() {
-  return _logicIdCounter;
-}
-export function setLogicIdCounter(v) {
-  _logicIdCounter = v;
-}
 export function resetLogicIdCounter() {
   _logicIdCounter = 0;
 }
@@ -203,7 +193,7 @@ export function incLogicIdCounter() {
 
 const STORAGE_KEY = "bgq_state";
 
-export function saveToStorage() {
+function saveToStorage() {
   try {
     const oc = get(outputColumns);
     const cleanedTargetSettings = {};
@@ -230,48 +220,6 @@ export function saveToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
     // ignore quota errors
-  }
-}
-
-export function loadFromStorage() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return false;
-    const state = JSON.parse(raw);
-    if (!state) return false;
-    if (state.target) queryTarget.set(state.target);
-    if (state.subject) subjectRootLogic.set(state.subject);
-    if (state.person) personRootLogic.set(state.person);
-    if (state.character) characterRootLogic.set(state.character);
-    if (state.episode) episodeRootLogic.set(state.episode);
-    if (state.outputColumns != null) outputColumns.set(state.outputColumns);
-    if (state.sortRules != null) sortRules.set(state.sortRules);
-    if (state.resultLimit != null) resultLimit.set(state.resultLimit);
-    if (state.assocLimit != null)
-      assocLimit.set(
-        Math.min(
-          100,
-          Math.max(1, Number(state.assocLimit) || ASSOC_LIMIT_DEFAULT),
-        ),
-      );
-    if (state.targetSettings) {
-      const cleaned = {};
-      for (const [k, v] of Object.entries(state.targetSettings)) {
-        if (!v) continue;
-        cleaned[k] = v;
-      }
-      Object.assign(_targetSettings, cleaned);
-    }
-    if (state.manualAssoc) {
-      const norm = normalizeManualAssoc(state.manualAssoc);
-      if (norm) manualAssoc.set(norm);
-    }
-    if (state.assocSeeded) assocSeeded.set(state.assocSeeded);
-    if (state._assocIdCounter != null) _assocIdCounter = state._assocIdCounter;
-    if (state._idCounter != null) _logicIdCounter = state._idCounter;
-    return true;
-  } catch {
-    return false;
   }
 }
 
@@ -342,12 +290,7 @@ export function getRootLogic() {
   return get(getTargetStore());
 }
 
-export function updateRootLogic(lg) {
-  getTargetStore().set(lg);
-  bumpVersion();
-}
-
-export function resetLogicBuilder() {
+function resetLogicBuilder() {
   _logicIdCounter = 0;
   subjectRootLogic.set(newLogicGroup("and"));
   personRootLogic.set(newLogicGroup("and"));
@@ -389,17 +332,6 @@ export const EPISODE_FIELD_LABELS = {
   disc: "碟片",
   episode_id: "ID",
 };
-export const EPISODE_FIELD_OPS = {
-  name: ["contains", "not_contains", "eq", "regex", "not_regex"],
-  name_cn: ["contains", "not_contains", "eq", "regex", "not_regex"],
-  description: ["contains", "not_contains", "eq", "regex", "not_regex"],
-  airdate: ["before", "after"],
-  duration: ["contains", "not_contains", "eq", "regex", "not_regex"],
-  sort: ["gt", "gte", "lt", "lte", "eq"],
-  type: ["gt", "gte", "lt", "lte", "eq"],
-  disc: ["gt", "gte", "lt", "lte", "eq"],
-  episode_id: ["gt", "gte", "lt", "lte", "eq"],
-};
 
 export const EPISODE_FIELD_CONFIGS = {
   type: {
@@ -418,7 +350,7 @@ export const EPISODE_FIELD_CONFIGS = {
   },
 };
 
-export const PERSON_FIELDS = [
+const PERSON_FIELDS = [
   "name",
   "id",
   "type",
@@ -432,7 +364,7 @@ export const PERSON_FIELDS = [
   "生日",
 ];
 
-export const CHARACTER_FIELDS = [
+const CHARACTER_FIELDS = [
   "name",
   "id",
   "role",
@@ -445,7 +377,7 @@ export const CHARACTER_FIELDS = [
   "生日",
 ];
 
-export const SUBJECT_FIELD_CONFIGS = {
+const SUBJECT_FIELD_CONFIGS = {
   type: { label: "类型", ops: ["eq"], type: "select", dynamic: "type" },
   platform: {
     label: "子类型",
@@ -496,7 +428,7 @@ export const CAREER_OPTIONS = [
   ["producer", "制作人员"],
 ];
 
-export const PERSON_FIELD_CONFIGS = {
+const PERSON_FIELD_CONFIGS = {
   type: {
     label: "类型",
     ops: ["eq"],
@@ -526,7 +458,7 @@ export const PERSON_FIELD_CONFIGS = {
   },
 };
 
-export const CHARACTER_FIELD_CONFIGS = {
+const CHARACTER_FIELD_CONFIGS = {
   role: {
     label: "类型",
     ops: ["eq"],
@@ -564,25 +496,6 @@ export function ctxFields(ctx) {
   return SUBJECT_DIRECT_FIELDS;
 }
 
-export function ctxTypeOpts(ctx) {
-  if (isPersonCtx(ctx))
-    return [
-      ["", "全部"],
-      ["1", "个人"],
-      ["2", "公司"],
-      ["3", "组合"],
-    ];
-  if (ctx === CTX_EPISODE) return [];
-  return [
-    ["", "全部"],
-    ["1", "书籍"],
-    ["2", "动画"],
-    ["3", "音乐"],
-    ["4", "游戏"],
-    ["6", "三次元"],
-  ];
-}
-
 export function fieldSelectOptions(fc) {
   if (fc.dynamic === "type") {
     return [
@@ -597,10 +510,6 @@ export function fieldSelectOptions(fc) {
     return PLATFORMS.map((p) => [String(p.code), p.name]);
   }
   return fc.options || [];
-}
-
-export function isSpecialField(f, ctx) {
-  return f in ctxFieldConfigs(ctx || CTX_SUBJECT);
 }
 
 export function opLabel(op) {
