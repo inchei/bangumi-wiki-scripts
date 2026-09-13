@@ -8,7 +8,7 @@ services:
       - "${PORT:-7860}:${PORT:-7860}"
     volumes:
       - bgq-data:/data
-    restart: always
+    restart: unless-stopped
     read_only: true
     tmpfs:
       - /tmp:uid=1000,gid=1000,mode=1777
