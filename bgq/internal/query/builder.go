@@ -137,7 +137,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 	subjectFile := b.dataDir + "/subject.jsonlines"
 	ctes = append(ctes, fmt.Sprintf(
 		`subjects AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
-		escapeSQLString(subjectFile),
+		EscapeLiteral(subjectFile),
 	))
 
 	// For person target: also load persons as main table
@@ -146,7 +146,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		personFile := b.dataDir + "/person.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary FROM read_json_auto('%s', format='newline_delimited'))`,
-			escapeSQLString(personFile),
+			EscapeLiteral(personFile),
 		))
 		personsLoaded = true
 	}
@@ -157,7 +157,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		charFile := b.dataDir + "/character.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('%s', format='newline_delimited'))`,
-			escapeSQLString(charFile),
+			EscapeLiteral(charFile),
 		))
 		charactersLoaded = true
 	}
@@ -167,7 +167,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		relFile := b.dataDir + "/subject-relations.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`subject_relations AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
-			escapeSQLString(relFile),
+			EscapeLiteral(relFile),
 		))
 	}
 
@@ -176,14 +176,14 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		persFile := b.dataDir + "/subject-persons.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`subject_persons AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
-			escapeSQLString(persFile),
+			EscapeLiteral(persFile),
 		))
 		// Also load person data for name lookups and infobox field extraction (skip if already loaded as main)
 		if !personsLoaded {
 			personFile := b.dataDir + "/person.jsonlines"
 			ctes = append(ctes, fmt.Sprintf(
 				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('%s', format='newline_delimited'))`,
-				escapeSQLString(personFile),
+				EscapeLiteral(personFile),
 			))
 		}
 	}
@@ -193,14 +193,14 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		persRelFile := b.dataDir + "/person-relations.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`person_relations AS (SELECT * FROM read_json_auto('%s', format='newline_delimited') WHERE person_type = 'prsn')`,
-			escapeSQLString(persRelFile),
+			EscapeLiteral(persRelFile),
 		))
 		// Ensure persons table is loaded for related person lookups
 		if !personsLoaded {
 			personFile := b.dataDir + "/person.jsonlines"
 			ctes = append(ctes, fmt.Sprintf(
 				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('%s', format='newline_delimited'))`,
-				escapeSQLString(personFile),
+				EscapeLiteral(personFile),
 			))
 			personsLoaded = true
 		}
@@ -211,14 +211,14 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		charRelFile := b.dataDir + "/person-relations.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`character_relations AS (SELECT * FROM read_json_auto('%s', format='newline_delimited') WHERE person_type = 'crt')`,
-			escapeSQLString(charRelFile),
+			EscapeLiteral(charRelFile),
 		))
 		// Ensure characters table is loaded for related character lookups
 		if !charactersLoaded {
 			charFile := b.dataDir + "/character.jsonlines"
 			ctes = append(ctes, fmt.Sprintf(
 				`characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('%s', format='newline_delimited'))`,
-				escapeSQLString(charFile),
+				EscapeLiteral(charFile),
 			))
 			charactersLoaded = true
 		}
@@ -229,14 +229,14 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		subCharFile := b.dataDir + "/subject-characters.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`subject_characters AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
-			escapeSQLString(subCharFile),
+			EscapeLiteral(subCharFile),
 		))
 		// Ensure characters table is loaded for character lookups
 		if !charactersLoaded {
 			charFile := b.dataDir + "/character.jsonlines"
 			ctes = append(ctes, fmt.Sprintf(
 				`characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('%s', format='newline_delimited'))`,
-				escapeSQLString(charFile),
+				EscapeLiteral(charFile),
 			))
 			charactersLoaded = true
 		}
@@ -247,14 +247,14 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		perCharFile := b.dataDir + "/person-characters.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`person_characters AS (SELECT * FROM read_json_auto('%s', format='newline_delimited'))`,
-			escapeSQLString(perCharFile),
+			EscapeLiteral(perCharFile),
 		))
 		// Ensure characters table is loaded
 		if !charactersLoaded {
 			charFile := b.dataDir + "/character.jsonlines"
 			ctes = append(ctes, fmt.Sprintf(
 				`characters AS (SELECT id as character_id, role, name, COALESCE(infobox,'') as infobox, summary, comments, collects FROM read_json_auto('%s', format='newline_delimited'))`,
-				escapeSQLString(charFile),
+				EscapeLiteral(charFile),
 			))
 		}
 		// Ensure persons table is loaded
@@ -262,7 +262,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 			personFile := b.dataDir + "/person.jsonlines"
 			ctes = append(ctes, fmt.Sprintf(
 				`persons AS (SELECT id as person_id, name, type as person_type, career, COALESCE(infobox,'') as infobox, summary, collects, comments FROM read_json_auto('%s', format='newline_delimited'))`,
-				escapeSQLString(personFile),
+				EscapeLiteral(personFile),
 			))
 		}
 	}
@@ -273,7 +273,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		epFile := b.dataDir + "/episode.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('%s', format='newline_delimited'))`,
-			escapeSQLString(epFile),
+			EscapeLiteral(epFile),
 		))
 		episodesLoaded = true
 	}
@@ -281,7 +281,7 @@ func (b *SQLBuilder) buildCTEs() ([]string, error) {
 		epFile := b.dataDir + "/episode.jsonlines"
 		ctes = append(ctes, fmt.Sprintf(
 			`episodes AS (SELECT id AS episode_id, * EXCLUDE (id) FROM read_json_auto('%s', format='newline_delimited'))`,
-			escapeSQLString(epFile),
+			EscapeLiteral(epFile),
 		))
 	}
 

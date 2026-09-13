@@ -214,7 +214,7 @@ func (s *server) handleMissingEpisodes(w http.ResponseWriter, r *http.Request) {
 	nameRe := regexp.MustCompile(fmt.Sprintf(`(?i)(^|%s|\n)%s($|%s|\n)`,
 		delimClass, regexp.QuoteMeta(nameClean), delimClass))
 
-	escapedNameSQL := strings.ReplaceAll(name, "'", "''")
+	escapedNameSQL := query.EscapeLiteral(name)
 
 	// Phase 0: pre-load linked subjects for this person
 	linked := queryLinked(r.Context(), s.dbPath, s.dataDir, escapedNameSQL, targetID)
@@ -384,8 +384,7 @@ FROM episodes e
 JOIN subjects s ON e.subject_id = s.id
 WHERE e.disc = 0
   AND s.type = 2
-  AND REPLACE(REPLACE(e.description, '　', ''), ' ', '')
-        LIKE '%%' || REPLACE(REPLACE('%s', '　', ''), ' ', '') || '%%'
+  AND contains(REPLACE(REPLACE(e.description, '　', ''), ' ', ''), REPLACE(REPLACE('%s', '　', ''), ' ', ''))
 ORDER BY e.subject_id, e.sort, e.type
 `, escapedNameSQL)
 }

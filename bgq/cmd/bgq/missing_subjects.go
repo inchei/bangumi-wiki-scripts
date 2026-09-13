@@ -111,7 +111,7 @@ func (s *server) handleCheckMissingStaff(w http.ResponseWriter, r *http.Request)
 func buildCheckSQL(typeCode int, personName string, positions map[int]string, targetID int) string {
 	cleanName := strings.ReplaceAll(strings.ReplaceAll(personName, "　", ""), " ", "")
 	escapedName := regexp.QuoteMeta(cleanName)
-	escapedNameSQL := strings.ReplaceAll(personName, "'", "''")
+	escapedNameSQL := query.EscapeLiteral(personName)
 	snamePattern := strings.ReplaceAll(
 		fmt.Sprintf(`(?i)(^|%s|\n)%s($|%s|\n)`, delimClass, escapedName, delimClass),
 		"'", "''",
@@ -126,13 +126,13 @@ func buildCheckSQL(typeCode int, personName string, positions map[int]string, ta
 		if i > 0 {
 			posValues.WriteString(",")
 		}
-		posNameSQL := strings.ReplaceAll(positions[posID], "'", "''")
+		posNameSQL := query.EscapeLiteral(positions[posID])
 		fmt.Fprintf(&posValues, "(%d, '%s')", posID, posNameSQL)
 	}
 
 	// infobox pair pattern (single-quoted SQL string; no single quotes in
 	// the pattern itself, so no doubling needed).
-	infoboxPatternSQL := strings.ReplaceAll(infoboxPairPattern, "'", "''")
+	infoboxPatternSQL := query.EscapeLiteral(infoboxPairPattern)
 
 	var sb strings.Builder
 

@@ -164,7 +164,7 @@ func runMissingEpisodes(ctx context.Context, name string, dbPath string) {
 	nameRe := regexp.MustCompile(fmt.Sprintf(`(?i)(^|%s|\n)%s($|%s|\n)`,
 		delimClass, regexp.QuoteMeta(nameClean), delimClass))
 
-	escapedNameSQL := strings.ReplaceAll(name, "'", "''")
+	escapedNameSQL := query.EscapeLiteral(name)
 	// CLI has no archive dataDir and no target person-ID ("0" → name lookup).
 	linked := queryLinked(ctx, dbPath, "", escapedNameSQL, 0)
 

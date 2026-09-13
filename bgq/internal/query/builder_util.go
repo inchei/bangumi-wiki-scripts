@@ -108,7 +108,7 @@ func (b *SQLBuilder) infoboxExtractExpr(fieldName, alias string) string {
 	// Excludes \r to avoid CRLF line-ending artifacts in comparison operators.
 	escapedField := regexEscapeLiteral(fieldName)
 	pattern := fmt.Sprintf(`(?i)\|%s\s*[:=]\s*(\{(?:[^}]|\n)*\}|[^|}\n\r]*)`, escapedField)
-	return fmt.Sprintf("regexp_extract(%s.infobox, '%s', 1)", alias, sqlEscapeRegexString(pattern))
+	return fmt.Sprintf("regexp_extract(%s.infobox, '%s', 1)", alias, EscapeLiteral(pattern))
 }
 
 // infoboxFirstDateExpr extracts the first date from an infobox field value.
@@ -140,9 +140,7 @@ func regexEscapeLiteral(s string) string {
 	return result.String()
 }
 
-// sqlEscapeRegexString escapes a regex pattern string for use in a SQL string literal.
-// Only needs to escape single quotes (since the pattern is in single-quoted SQL string).
-func sqlEscapeRegexString(s string) string {
+func EscapeLiteral(s string) string {
 	return strings.ReplaceAll(s, "'", "''")
 }
 
@@ -234,12 +232,9 @@ func intListToSQL(ids []int) string {
 	return strings.Join(strs, ", ")
 }
 
-func escapeSQLString(s string) string {
-	return strings.ReplaceAll(s, "'", "''")
-}
-
 func escapeLike(s string) string {
-	s = strings.ReplaceAll(s, "'", "''")
+	s = EscapeLiteral(s)
+	s = strings.ReplaceAll(s, "\\", "\\\\")
 	s = strings.ReplaceAll(s, "%", "\\%")
 	s = strings.ReplaceAll(s, "_", "\\_")
 	return s

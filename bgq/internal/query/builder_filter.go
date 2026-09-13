@@ -78,9 +78,17 @@ func (b *SQLBuilder) buildFieldCompare(lhsField, rhsField, rhsModifier, op, lhsA
 	case "lte":
 		return fmt.Sprintf("%s <= %s", lhs, rhs), nil
 	case "before":
-		return fmt.Sprintf("%s < %s", normalizeDate(lhs), b.applyDateModifier(normalizeDate(rhs), rhsModifier)), nil
+		rm, err := b.applyDateModifier(normalizeDate(rhs), rhsModifier)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%s < %s", normalizeDate(lhs), rm), nil
 	case "after":
-		return fmt.Sprintf("%s > %s", normalizeDate(lhs), b.applyDateModifier(normalizeDate(rhs), rhsModifier)), nil
+		rm, err := b.applyDateModifier(normalizeDate(rhs), rhsModifier)
+		if err != nil {
+			return "", err
+		}
+		return fmt.Sprintf("%s > %s", normalizeDate(lhs), rm), nil
 	case "contains":
 		return fmt.Sprintf("CAST(%s AS VARCHAR) LIKE '%%' || CAST(%s AS VARCHAR) || '%%'", lhs, rhs), nil
 	case "not_contains":
@@ -94,11 +102,17 @@ func (b *SQLBuilder) buildFieldCompare(lhsField, rhsField, rhsModifier, op, lhsA
 
 // applyDateModifier wraps a date expression with an optional arithmetic modifier.
 // E.g., for expr=TRY_CAST(date AS DATE) and modifier="+300" → (TRY_CAST(date AS DATE) + 300)
-func (b *SQLBuilder) applyDateModifier(expr, modifier string) string {
+func (b *SQLBuilder) applyDateModifier(expr, modifier string) (string, error) {
 	if modifier == "" {
-		return expr
+		return expr, nil
 	}
-	return fmt.Sprintf("(%s %s)", expr, modifier)
+	if len(modifier) < 2 || !strings.Contains("+-*/", modifier[:1]) {
+		return "", fmt.Errorf("无效的日期偏移: %q", modifier)
+	}
+	if _, err := strconv.Atoi(modifier[1:]); err != nil {
+		return "", fmt.Errorf("无效的日期偏移: %q", modifier)
+	}
+	return fmt.Sprintf("(%s %s)", expr, modifier), nil
 }
 
 func (b *SQLBuilder) fieldFilter(f *config.FieldFilter, tableAlias string) (string, error) {
@@ -131,13 +145,13 @@ func (b *SQLBuilder) fieldFilter(f *config.FieldFilter, tableAlias string) (stri
 	if b.target == "person" && fieldName == "career" {
 		switch f.Operator {
 		case "regex":
-			return fmt.Sprintf("regexp_matches(%s.career::VARCHAR, '%s')", tableAlias, sqlEscapeRegexString(valueStr)), nil
+			return fmt.Sprintf("regexp_matches(%s.career::VARCHAR, '%s')", tableAlias, EscapeLiteral(valueStr)), nil
 		case "not_contains":
-			return fmt.Sprintf("NOT LIST_CONTAINS(COALESCE(%s.career, []), '%s')", tableAlias, escapeSQLString(valueStr)), nil
+			return fmt.Sprintf("NOT LIST_CONTAINS(COALESCE(%s.career, []), '%s')", tableAlias, EscapeLiteral(valueStr)), nil
 		case "empty":
 			return fmt.Sprintf("LEN(COALESCE(%s.career, [])) = 0", tableAlias), nil
 		default:
-			return fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.career, []), '%s')", tableAlias, escapeSQLString(valueStr)), nil
+			return fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.career, []), '%s')", tableAlias, EscapeLiteral(valueStr)), nil
 		}
 	}
 
@@ -182,13 +196,13 @@ func (b *SQLBuilder) globalFilter(f *config.GlobalFilter) (string, error) {
 
 	switch f.Operator {
 	case "regex":
-		return fmt.Sprintf("regexp_matches(%s, '%s')", infobox, sqlEscapeRegexString(valueStr)), nil
+		return fmt.Sprintf("regexp_matches(%s, '%s')", infobox, EscapeLiteral(valueStr)), nil
 	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(%s, '%s')", infobox, sqlEscapeRegexString(valueStr)), nil
+		return fmt.Sprintf("NOT regexp_matches(%s, '%s')", infobox, EscapeLiteral(valueStr)), nil
 	case "contains":
-		return fmt.Sprintf("%s LIKE '%%%s%%'", infobox, escapeLike(valueStr)), nil
+		return fmt.Sprintf("%s LIKE '%%%s%%' ESCAPE '\\'", infobox, escapeLike(valueStr)), nil
 	case "eq":
-		return fmt.Sprintf("%s = '%s'", infobox, escapeSQLString(valueStr)), nil
+		return fmt.Sprintf("%s = '%s'", infobox, EscapeLiteral(valueStr)), nil
 	default:
 		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
 	}
@@ -198,7 +212,7 @@ func (b *SQLBuilder) tagFilter(f *config.TagFilter) (string, error) {
 	switch f.Operator {
 	case "contains", "eq":
 		cond := fmt.Sprintf("EXISTS (SELECT 1 FROM (SELECT UNNEST(%s.tags) AS t) WHERE t.name = '%s')",
-			b.mainAlias, escapeSQLString(f.Value))
+			b.mainAlias, EscapeLiteral(f.Value))
 		if f.Negate {
 			return "NOT " + cond, nil
 		}
@@ -216,7 +230,7 @@ func (b *SQLBuilder) metaTagFilter(f *config.TagFilter) (string, error) {
 	case "contains", "eq":
 		// DuckDB: LIST_CONTAINS for simple arrays
 		// COALESCE to handle NULL meta_tags (some entries don't have meta tags)
-		cond := fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.meta_tags, []), '%s')", b.mainAlias, escapeSQLString(f.Value))
+		cond := fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.meta_tags, []), '%s')", b.mainAlias, EscapeLiteral(f.Value))
 		if f.Negate {
 			return "NOT " + cond, nil
 		}
@@ -470,11 +484,11 @@ func (b *SQLBuilder) globalFilterForAlias(f *config.GlobalFilter, alias string) 
 	valueStr := fmt.Sprintf("%v", f.Value)
 	switch f.Operator {
 	case "regex":
-		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", alias, sqlEscapeRegexString(valueStr)), nil
+		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", alias, EscapeLiteral(valueStr)), nil
 	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(%s.infobox, '%s')", alias, sqlEscapeRegexString(valueStr)), nil
+		return fmt.Sprintf("NOT regexp_matches(%s.infobox, '%s')", alias, EscapeLiteral(valueStr)), nil
 	case "contains":
-		return fmt.Sprintf("%s.infobox LIKE '%%%s%%'", alias, escapeLike(valueStr)), nil
+		return fmt.Sprintf("%s.infobox LIKE '%%%s%%' ESCAPE '\\'", alias, escapeLike(valueStr)), nil
 	default:
 		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
 	}
@@ -482,7 +496,7 @@ func (b *SQLBuilder) globalFilterForAlias(f *config.GlobalFilter, alias string) 
 
 func (b *SQLBuilder) tagFilterForAlias(f *config.TagFilter, alias string) (string, error) {
 	cond := fmt.Sprintf("EXISTS (SELECT 1 FROM (SELECT UNNEST(%s.tags) AS t) WHERE t.name = '%s')",
-		alias, escapeSQLString(f.Value))
+		alias, EscapeLiteral(f.Value))
 	if f.Negate {
 		return "NOT " + cond, nil
 	}
@@ -490,7 +504,7 @@ func (b *SQLBuilder) tagFilterForAlias(f *config.TagFilter, alias string) (strin
 }
 
 func (b *SQLBuilder) metaTagFilterForAlias(f *config.TagFilter, alias string) (string, error) {
-	cond := fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.meta_tags, []), '%s')", alias, escapeSQLString(f.Value))
+	cond := fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.meta_tags, []), '%s')", alias, EscapeLiteral(f.Value))
 	if f.Negate {
 		return "NOT " + cond, nil
 	}
@@ -1051,7 +1065,7 @@ func (b *SQLBuilder) filterForNestedContext(f config.Filter, idx int, nestedAlia
 		if typeCol == "" {
 			return "", fmt.Errorf("此上下文不支持类型筛选 (index %d)", idx)
 		}
-		return fmt.Sprintf("%s = '%s'", typeCol, escapeSQLString(fmt.Sprintf("%v", f.Type.Value))), nil
+		return fmt.Sprintf("%s = '%s'", typeCol, EscapeLiteral(fmt.Sprintf("%v", f.Type.Value))), nil
 	default:
 		return "", fmt.Errorf("此上下文不支持此条件类型 (index %d)", idx)
 	}
@@ -1106,9 +1120,9 @@ func (b *SQLBuilder) fieldFilterForNested(f *config.FieldFilter, nestedAlias str
 	// Special case: career field (person only) — LIST_CONTAINS
 	if f.Field == "career" {
 		if f.Operator == "regex" {
-			return fmt.Sprintf("regexp_matches(%s.career::VARCHAR, '%s')", nestedAlias, sqlEscapeRegexString(valueStr)), nil
+			return fmt.Sprintf("regexp_matches(%s.career::VARCHAR, '%s')", nestedAlias, EscapeLiteral(valueStr)), nil
 		}
-		return fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.career, []), '%s')", nestedAlias, escapeSQLString(valueStr)), nil
+		return fmt.Sprintf("LIST_CONTAINS(COALESCE(%s.career, []), '%s')", nestedAlias, EscapeLiteral(valueStr)), nil
 	}
 
 	// Special case: 性别=其他
@@ -1133,11 +1147,11 @@ func (b *SQLBuilder) globalFilterForNested(f *config.GlobalFilter, nestedAlias s
 	valueStr := fmt.Sprintf("%v", f.Value)
 	switch f.Operator {
 	case "regex":
-		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", nestedAlias, sqlEscapeRegexString(valueStr)), nil
+		return fmt.Sprintf("regexp_matches(%s.infobox, '%s')", nestedAlias, EscapeLiteral(valueStr)), nil
 	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(%s.infobox, '%s')", nestedAlias, sqlEscapeRegexString(valueStr)), nil
+		return fmt.Sprintf("NOT regexp_matches(%s.infobox, '%s')", nestedAlias, EscapeLiteral(valueStr)), nil
 	case "contains":
-		return fmt.Sprintf("%s.infobox LIKE '%%%s%%'", nestedAlias, escapeLike(valueStr)), nil
+		return fmt.Sprintf("%s.infobox LIKE '%%%s%%' ESCAPE '\\'", nestedAlias, escapeLike(valueStr)), nil
 	default:
 		return "", fmt.Errorf("global filter: unsupported operator %q", f.Operator)
 	}
@@ -1228,17 +1242,17 @@ func (b *SQLBuilder) episodeFieldFilter(f *config.FieldFilter) (string, error) {
 func (b *SQLBuilder) buildCondition(expr, op, value string) (string, error) {
 	switch op {
 	case "eq":
-		return fmt.Sprintf("CAST(%s AS VARCHAR) = '%s'", expr, escapeSQLString(value)), nil
+		return fmt.Sprintf("CAST(%s AS VARCHAR) = '%s'", expr, EscapeLiteral(value)), nil
 	case "contains":
-		return fmt.Sprintf("CAST(%s AS VARCHAR) LIKE '%%%s%%'", expr, escapeLike(value)), nil
+		return fmt.Sprintf("CAST(%s AS VARCHAR) LIKE '%%%s%%' ESCAPE '\\'", expr, escapeLike(value)), nil
 	case "not_contains":
-		return fmt.Sprintf("CAST(%s AS VARCHAR) NOT LIKE '%%%s%%' AND TRIM(CAST(%s AS VARCHAR)) <> ''", expr, escapeLike(value), expr), nil
+		return fmt.Sprintf("CAST(%s AS VARCHAR) NOT LIKE '%%%s%%' ESCAPE '\\' AND TRIM(CAST(%s AS VARCHAR)) <> ''", expr, escapeLike(value), expr), nil
 	case "regex":
 		// CAST is required: regexp_matches has no overload for non-VARCHAR
 		// first arguments (e.g. DOUBLE columns like s.score).
-		return fmt.Sprintf("regexp_matches(CAST(%s AS VARCHAR), '%s')", expr, sqlEscapeRegexString(value)), nil
+		return fmt.Sprintf("regexp_matches(CAST(%s AS VARCHAR), '%s')", expr, EscapeLiteral(value)), nil
 	case "not_regex":
-		return fmt.Sprintf("NOT regexp_matches(CAST(%s AS VARCHAR), '%s') AND TRIM(CAST(%s AS VARCHAR)) <> ''", expr, sqlEscapeRegexString(value), expr), nil
+		return fmt.Sprintf("NOT regexp_matches(CAST(%s AS VARCHAR), '%s') AND TRIM(CAST(%s AS VARCHAR)) <> ''", expr, EscapeLiteral(value), expr), nil
 	case "empty":
 		return fmt.Sprintf("COALESCE(CAST(%s AS VARCHAR), '') = ''", expr), nil
 	case "gt":
@@ -1266,9 +1280,9 @@ func (b *SQLBuilder) buildCondition(expr, op, value string) (string, error) {
 		}
 		return fmt.Sprintf("CAST(%s AS DOUBLE) <= %s", expr, num), nil
 	case "before":
-		return fmt.Sprintf("%s < CAST('%s' AS DATE)", normalizeDate(expr), escapeSQLString(value)), nil
+		return fmt.Sprintf("%s < CAST('%s' AS DATE)", normalizeDate(expr), EscapeLiteral(value)), nil
 	case "after":
-		return fmt.Sprintf("%s > CAST('%s' AS DATE)", normalizeDate(expr), escapeSQLString(value)), nil
+		return fmt.Sprintf("%s > CAST('%s' AS DATE)", normalizeDate(expr), EscapeLiteral(value)), nil
 	default:
 		return "", fmt.Errorf("unknown operator: %q (supported: eq, contains, regex, gt, gte, lt, lte, before, after)", op)
 	}
