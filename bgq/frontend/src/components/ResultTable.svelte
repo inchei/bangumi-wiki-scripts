@@ -113,6 +113,7 @@
     }
     const cn = raw.toLowerCase();
     const target = get(lastQueryTarget);
+    const h = escapeHtml(host);
     // Try association-aware type for "prefix.id" columns
     const dot = cn.lastIndexOf(".");
     if (dot >= 0) {
@@ -134,7 +135,7 @@
           CHAR_ASSOC_SET.has(base) ||
           prefix.toLowerCase().endsWith(".s");
         if (recognized) {
-          return `<a href="https://${host}/${t}/${encodeURIComponent(s)}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
+          return `<a href="https://${h}/${t}/${encodeURIComponent(s)}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
         }
       }
     }
@@ -143,7 +144,7 @@
     else if (target === "character" || cn.includes("character"))
       type = "character";
     else if (target === "episode" || cn.includes("episode")) type = "ep";
-    return `<a href="https://${host}/${type}/${encodeURIComponent(s)}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
+    return `<a href="https://${h}/${type}/${encodeURIComponent(s)}" target="_blank" rel="noopener">${escapeHtml(s)}</a>`;
   }
 
   function cellClass(col) {
