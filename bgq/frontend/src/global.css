@@ -235,7 +235,16 @@ a:hover {
    (pointer: fine) and tablets (wide) keep the compact sizes. */
 @media (pointer: coarse) and (width < 768px) {
   .input,
-  .select {
+  .select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+@media (pointer: coarse) and (orientation: landscape) and (width < 1024px) {
+  .input,
+  .select,
+  textarea {
     font-size: 16px;
   }
 }
