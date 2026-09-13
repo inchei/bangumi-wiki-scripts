@@ -58,6 +58,7 @@ html.no-transitions *::after {
 
 html {
   color-scheme: light;
+  -webkit-text-size-adjust: 100%;
 }
 
 html[data-theme="dark"] {
