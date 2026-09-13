@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
+	"encoding/base64"
 	"encoding/csv"
 	"encoding/hex"
 	"encoding/json"
@@ -85,8 +86,7 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string, allowedHosts [
 	mux.HandleFunc("/sitemap.xml", s.handleSitemap)
 	mux.HandleFunc("/", s.handleStatic)
 
-	// CORS middleware wrapper
-	handler := s.corsMiddleware(mux)
+	handler := securityHeaders(s.corsMiddleware(mux))
 
 	duckdbPath := query.GetDuckDBPath()
 	duckdbOK := fileExists(duckdbPath)
@@ -130,6 +130,18 @@ func startServer(dataDir, listenAddr, dbPath, aliasesFile string, allowedHosts [
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("服务器启动失败: %v", err)
 	}
+}
+
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		h := w.Header()
+		h.Set("X-Content-Type-Options", "nosniff")
+		h.Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
+		if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+			h.Set("Strict-Transport-Security", "max-age=31536000; includeSubDomains")
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 func (s *server) corsMiddleware(next http.Handler) http.Handler {
@@ -347,8 +359,28 @@ func fileExists(path string) bool {
 }
 
 func (s *server) handleStatic(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/" || r.URL.Path == "/index.html" {
+		s.handleIndex(w, r)
+		return
+	}
 	staticFS, _ := fs.Sub(srv.StaticFS, "dist")
 	http.FileServer(http.FS(staticFS)).ServeHTTP(w, r)
+}
+
+func (s *server) handleIndex(w http.ResponseWriter, r *http.Request) {
+	var rb [16]byte
+	_, _ = rand.Read(rb[:])
+	nonce := base64.StdEncoding.EncodeToString(rb[:])
+	data, err := srv.StaticFS.ReadFile("dist/index.html")
+	if err != nil {
+		http.NotFound(w, r)
+		return
+	}
+	page := strings.Replace(string(data), "<script", `<script nonce="`+nonce+`"`, 1)
+	h := w.Header()
+	h.Set("Content-Type", "text/html; charset=utf-8")
+	h.Set("Content-Security-Policy", "default-src 'self'; script-src 'self' 'nonce-"+nonce+"'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'")
+	_, _ = w.Write([]byte(page))
 }
 
 func (s *server) handleSitemap(w http.ResponseWriter, r *http.Request) {
