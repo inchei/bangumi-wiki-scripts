@@ -19,15 +19,17 @@ RUN CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/bgq ./cmd/bgq/
 
 # 阶段 3：运行（需要 glibc 运行 DuckDB CLI）
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates && rm -rf /var/lib/apt/lists/* \
+RUN apt-get update && apt-get install -y --no-install-recommends curl unzip ca-certificates python3 && rm -rf /var/lib/apt/lists/* \
     && useradd -m -u 1000 -s /bin/sh bgq \
     && mkdir -p /data && chown bgq:bgq /data
 RUN curl -fsSL https://github.com/duckdb/duckdb/releases/download/v1.2.0/duckdb_cli-linux-amd64.zip -o /tmp/duckdb.zip \
     && unzip /tmp/duckdb.zip -d /usr/local/bin/ \
     && chmod +x /usr/local/bin/duckdb \
     && rm /tmp/duckdb.zip
-RUN curl -LsSf https://astral.sh/uv/install.sh | HOME=/home/bgq sh \
-    && chown -R bgq:bgq /home/bgq
+RUN curl -LsSf https://astral.sh/uv/0.12.13/install.sh | HOME=/tmp/uvhome sh \
+    && cp /tmp/uvhome/.local/bin/uv /usr/local/bin/uv \
+    && rm -rf /tmp/uvhome
+ENV UV_CACHE_DIR=/data/uv-cache UV_PYTHON_INSTALL_DIR=/data/uv-python
 COPY --from=builder /app/bin/bgq /usr/local/bin/bgq
 COPY person_alias.py /
 COPY bgq/download-archive.sh /download-archive.sh
@@ -35,6 +37,5 @@ COPY bgq/docker-entrypoint.sh /entrypoint.sh
 COPY bgq/update-data.sh /update-data.sh
 RUN chmod +x /download-archive.sh /entrypoint.sh /update-data.sh
 ENV DUCKDB_PATH=/usr/local/bin/duckdb
-ENV PATH="/home/bgq/.local/bin:${PATH}"
 USER bgq
 CMD ["/entrypoint.sh"]

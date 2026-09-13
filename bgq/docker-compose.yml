@@ -9,6 +9,10 @@ services:
     volumes:
       - bgq-data:/data
     restart: always
+    read_only: true
+    tmpfs:
+      - /tmp:uid=1000,gid=1000,mode=1777
+      - /home/bgq:uid=1000,gid=1000,exec
     cap_drop:
       - ALL
     security_opt:
