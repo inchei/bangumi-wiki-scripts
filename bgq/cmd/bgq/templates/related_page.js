@@ -12,8 +12,8 @@ function renderSubjects(idx, container) {
     const bgm = typeof mpGetBgm === 'function' ? mpGetBgm() : 'https://bgm.tv';
     const posText = entry.positions.map((p) => _posNames[p] || p).join('、');
     li.innerHTML = `<span class="type">[${_typeNames[stype] || stype}]</span> `
-      + `<a href="${bgm}/subject/${sid}" target="_blank">${entry.name}</a> `
-      + `<span class="pos">[${posText}]</span>`;
+      + `<a href="${bgm}/subject/${sid}" target="_blank">${escHtml(entry.name)}</a> `
+      + `<span class="pos">[${escHtml(posText)}]</span>`;
     ul.appendChild(li);
   }
   container.appendChild(ul);

@@ -31,7 +31,7 @@
 
   function rowMarkup(it) {
     const href = `${it.href}#:~:text=${encodeURIComponent(it.displayName)}`;
-    return `<div class="search-result"><a class="name-link" href="${href}" target="_blank">${it.displayName}</a></div>`;
+    return `<div class="search-result"><a class="name-link" href="${href}" target="_blank">${escHtml(it.displayName)}</a></div>`;
   }
 
   function render(query) {

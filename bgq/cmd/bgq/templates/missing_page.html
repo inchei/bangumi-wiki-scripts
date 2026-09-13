@@ -21,6 +21,7 @@
 
 <script>{{.JS}}</script>
 <script>const _pendingData = {{.PendingData}}; let _bgmMpPending = null; let _bgmMpRelateData = null;</script>
+<script>{{template "esc_html"}}</script>
 <script>const _posNames = { {{.PosTable}} }; const _typeNames = {1:'书籍',2:'动画',3:'音乐',4:'游戏',6:'三次元'};</script>
 <script>
 (() => {

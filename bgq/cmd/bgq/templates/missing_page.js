@@ -67,8 +67,8 @@ function renderSubjects(idx, container) {
     const bgm = typeof mpGetBgm === 'function' ? mpGetBgm() : 'https://bgm.tv';
     const posText = entry.positions.map((p) => _posNames[p] || p).join('、');
     li.innerHTML = `<span class="type">[${_typeNames[stype] || stype}]</span> `
-      + `<a href="${bgm}/subject/${sid}" target="_blank">${entry.name}</a> `
-      + `<span class="pos">[${posText}]</span>`;
+      + `<a href="${bgm}/subject/${sid}" target="_blank">${escHtml(entry.name)}</a> `
+      + `<span class="pos">[${escHtml(posText)}]</span>`;
     ul.appendChild(li);
   }
   container.appendChild(ul);
@@ -123,7 +123,7 @@ document.addEventListener('click', (e) => {
       if (results.length) {
         _bgmMpPending = null;
         const links = results.map((p) =>
-          `<a href="${bgmBase}/person/${p.id}" target="_blank">${p.name} (ID:${p.id})</a>`
+          `<a href="${bgmBase}/person/${p.id}" target="_blank">${escHtml(p.name)} (ID:${p.id})</a>`
           + `<a class="btn btn-relate" href="#relate-${p.id}" data-idx="${idx}" data-id="${p.id}">关联</a>`
         ).join(' ');
         showResult(btn, `✅ ${links} <a class="btn btn-create-still" href="${bgmBase}/person/new?name=${encodeURIComponent(name)}&bgm_mp=1" target="_blank">仍然创建</a>`, 'sr-found');

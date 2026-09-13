@@ -793,6 +793,9 @@ var relatedPageJS string
 //go:embed templates/relate_common.js
 var relateCommonJS string
 
+//go:embed templates/esc_html.js
+var escHtmlJS string
+
 //go:embed templates/config_bar.html
 var configBarHTML string
 
@@ -815,6 +818,7 @@ func buildTpl(name, body string) *template.Template {
 	base := template.New(name)
 	template.Must(base.Parse(configBarHTML))
 	template.Must(base.Parse(navHTML))
+	template.Must(base.Parse(`{{define "esc_html"}}` + escHtmlJS + `{{end}}`))
 	return template.Must(base.Parse(body))
 }
 
