@@ -9,6 +9,10 @@ services:
     volumes:
       - bgq-data:/data
     restart: always
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   bgq-data:

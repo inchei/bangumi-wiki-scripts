@@ -14,19 +14,18 @@ if [ ! -f "${ALIAS_FILE}" ]; then
   cd /data && uv run /person_alias.py
 fi
 
-DB_ARG=""
+set -- bgq serve --data-dir "${DATA_DIR}" --listen ":${PORT}" --aliases-file "${ALIAS_FILE}"
 if [ -n "${DB_PATH}" ]; then
   if [ ! -f "${DB_PATH}" ]; then
     echo "=== Building database ==="
     bgq ingest --data-dir "${DATA_DIR}" --db "${DB_PATH}"
   fi
-  DB_ARG="--db ${DB_PATH}"
+  set -- "$@" --db "${DB_PATH}"
 fi
 
-ORIGINS_ARG=""
 if [ -n "${ALLOWED_ORIGINS}" ]; then
-  ORIGINS_ARG="--allowed-origins ${ALLOWED_ORIGINS}"
+  set -- "$@" --allowed-origins "${ALLOWED_ORIGINS}"
 fi
 
 echo "=== Starting bgq server ==="
-exec bgq serve --data-dir "${DATA_DIR}" --listen ":${PORT}" --aliases-file "${ALIAS_FILE}" ${DB_ARG} ${ORIGINS_ARG}
+exec "$@"
