@@ -110,7 +110,7 @@
 
     {#if availOps.length > 1}
       <select
-        class="select select-sm"
+        class="select"
         value={item.field.operator}
         onchange={(e) =>
           updateCondition(group, idx, "field", "operator", e.target.value)}
@@ -191,7 +191,7 @@
         updateCondition(group, idx, "tag", "value", e.target.value)}
     />
     <select
-      class="select select-sm"
+      class="select"
       value={item.tag.negate ? "negate" : "contains"}
       onchange={(e) =>
         updateCondition(
@@ -215,7 +215,7 @@
       placeholder="公共标签"
     />
     <select
-      class="select select-sm"
+      class="select"
       value={item.meta_tag.negate ? "negate" : "contains"}
       onchange={(e) =>
         updateCondition(
@@ -232,7 +232,7 @@
   {:else if condType === "global"}
     <span class="cond-type">全局</span>
     <select
-      class="select select-sm"
+      class="select"
       value={item.global.operator}
       onchange={(e) =>
         updateCondition(group, idx, "global", "operator", e.target.value)}
@@ -266,7 +266,7 @@
         ]}
     <span class="cond-type">分类</span>
     <select
-      class="select select-sm"
+      class="select"
       value={String(item.type.value)}
       onchange={(e) =>
         updateCondition(group, idx, "type", "value", e.target.value)}
@@ -375,7 +375,7 @@
         placeholder="出演类型"
       />
       <select
-        class="select select-sm"
+        class="select"
         value={ca.mode}
         onchange={(e) =>
           updateCondition(group, idx, condType, "mode", e.target.value)}
@@ -387,7 +387,7 @@
       </select>
       {#if ca.mode === "count"}
         <select
-          class="select select-sm"
+          class="select"
           value={ca.count_op || "gte"}
           onchange={(e) =>
             updateCondition(group, idx, condType, "count_op", e.target.value)}
@@ -426,7 +426,7 @@
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
           <span class="cond-type">相关条目</span>
           <select
-            class="select select-sm"
+            class="select"
             value={ca.subject_mode || "any"}
             onchange={(e) =>
               updateCondition(
@@ -443,7 +443,7 @@
           </select>
           {#if (ca.subject_mode || "any") === "count"}
             <select
-              class="select select-sm"
+              class="select"
               value={ca.subject_count_op || "gte"}
               onchange={(e) =>
                 updateCondition(
@@ -493,7 +493,7 @@
         placeholder="出演类型"
       />
       <select
-        class="select select-sm"
+        class="select"
         value={pcs.mode}
         onchange={(e) =>
           updateCondition(group, idx, condType, "mode", e.target.value)}
@@ -505,7 +505,7 @@
       </select>
       {#if pcs.mode === "count"}
         <select
-          class="select select-sm"
+          class="select"
           value={pcs.count_op || "gte"}
           onchange={(e) =>
             updateCondition(group, idx, condType, "count_op", e.target.value)}
@@ -544,7 +544,7 @@
         <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
           <span class="cond-type">相关角色</span>
           <select
-            class="select select-sm"
+            class="select"
             value={pcs.character_mode || "any"}
             onchange={(e) =>
               updateCondition(
@@ -561,7 +561,7 @@
           </select>
           {#if (pcs.character_mode || "any") === "count"}
             <select
-              class="select select-sm"
+              class="select"
               value={pcs.character_count_op || "gte"}
               onchange={(e) =>
                 updateCondition(
@@ -611,7 +611,7 @@
         placeholder="角色类型"
       />
       <select
-        class="select select-sm"
+        class="select"
         value={sc.mode}
         onchange={(e) =>
           updateCondition(group, idx, condType, "mode", e.target.value)}
@@ -623,7 +623,7 @@
       </select>
       {#if sc.mode === "count"}
         <select
-          class="select select-sm"
+          class="select"
           value={sc.count_op || "gte"}
           onchange={(e) =>
             updateCondition(group, idx, condType, "count_op", e.target.value)}
@@ -714,7 +714,7 @@
     <div class="cond-row-inner">
       <span class="cond-type">剧集</span>
       <select
-        class="select select-sm"
+        class="select"
         value={ep.mode}
         onchange={(e) =>
           updateCondition(group, idx, "episode", "mode", e.target.value)}
@@ -725,7 +725,7 @@
       </select>
       {#if ep.mode === "count"}
         <select
-          class="select select-sm"
+          class="select"
           value={ep.count_op || "gte"}
           onchange={(e) =>
             updateCondition(group, idx, "episode", "count_op", e.target.value)}

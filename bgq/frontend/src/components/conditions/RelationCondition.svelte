@@ -51,7 +51,7 @@
   {/if}
   {@render children?.()}
   <select
-    class="select select-sm"
+    class="select"
     value={mode}
     onchange={(e) => onModeChange(e.target.value)}
   >
@@ -62,7 +62,7 @@
   </select>
   {#if mode === "count"}
     <select
-      class="select select-sm"
+      class="select"
       value={countOp || "gte"}
       onchange={(e) => onCountOpChange?.(e.target.value)}
     >

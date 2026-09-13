@@ -215,7 +215,7 @@
 
   <div class="add-row">
     <select
-      class="select select-sm"
+      class="select"
       value={newTypeSelect}
       onchange={(e) => setNewTypeSelect(e.target.value)}
     >
@@ -295,16 +295,7 @@
     width: auto;
     min-width: 40px;
     height: 36px;
-    font-size: 13px;
     padding: 0 12px;
-  }
-
-  /* iOS Safari auto-zooms on focus when form text < 16px: phones only */
-  @media (pointer: coarse) and (width < 768px) {
-    .logic-group :global(select),
-    .logic-group :global(input.input) {
-      font-size: 16px;
-    }
   }
 
   .logic-group :global(select) {

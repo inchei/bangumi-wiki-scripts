@@ -330,6 +330,12 @@
     }
   }
 
+  @media (pointer: coarse) and (orientation: landscape) and (width < 1024px) {
+    .yaml-editor {
+      font-size: 16px;
+    }
+  }
+
   .yaml-actions {
     margin-top: 8px;
     display: flex;
