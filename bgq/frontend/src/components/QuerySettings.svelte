@@ -43,8 +43,15 @@
   import { get } from "svelte/store";
   import { SvelteMap } from "svelte/reactivity";
   import AwesompleteInput from "./AwesompleteInput.svelte";
+  import { TextMorph } from "torph/svelte";
   import { MorphIcon } from "morphicons/svelte";
-  import { ArrowDownWideNarrow, ArrowDownNarrowWide, Search, X } from "lucide";
+  import {
+    ArrowDownWideNarrow,
+    ArrowDownNarrowWide,
+    Loader,
+    Search,
+    X,
+  } from "lucide";
 
   let loading = $state(false);
 
@@ -779,10 +786,12 @@
       : `执行查询，快捷键 ${IS_APPLE ? "Command 回车" : "Ctrl 回车"}`}
     style="height:42px;font-size:15px"
   >
-    {#if loading}
-      查询中...
-    {:else}
-      <MorphIcon icon={Search} size={16} /> 执行查询
+    <MorphIcon icon={loading ? Loader : Search} size={16} aria-hidden="true" />
+    <TextMorph
+      text={loading ? "查询中..." : "执行查询"}
+      ease={{ stiffness: 420, damping: 30 }}
+    />
+    {#if !loading}
       <kbd class="kbd-hint" aria-hidden="true">{SHORTCUT_HINT}</kbd>
     {/if}
   </button>
