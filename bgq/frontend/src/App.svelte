@@ -419,4 +419,59 @@
       overflow-y: visible;
     }
   }
+
+  /* ===== Foldable / dual-screen ===== */
+  @media (horizontal-viewport-segments: 2) {
+    :global(.container) {
+      flex-direction: row;
+      height: calc(100vh - var(--header-h));
+      min-height: calc(100vh - var(--header-h));
+    }
+
+    :global(.panel-left) {
+      width: env(viewport-segment-width 0 0, 50vw);
+      min-width: 0;
+      max-width: none;
+      flex: none;
+      overflow-y: auto;
+    }
+
+    :global(.panel-right) {
+      width: env(viewport-segment-width 1 0, 50vw);
+      min-width: 0;
+      flex: none;
+      overflow-y: auto;
+      margin-left: calc(
+        env(viewport-segment-left 1 0, 0px) -
+          env(viewport-segment-right 0 0, 0px)
+      );
+    }
+  }
+
+  @media (vertical-viewport-segments: 2) {
+    :global(.container) {
+      flex-direction: column;
+      height: calc(100vh - var(--header-h));
+      min-height: calc(100vh - var(--header-h));
+    }
+
+    :global(.panel-left) {
+      width: 100%;
+      min-width: 0;
+      max-height: none;
+      height: calc(env(viewport-segment-height 0 0, 50vh) - var(--header-h));
+      overflow-y: auto;
+    }
+
+    :global(.panel-right) {
+      width: 100%;
+      flex: none;
+      height: env(viewport-segment-height 0 1, 50vh);
+      overflow-y: auto;
+      margin-top: calc(
+        env(viewport-segment-top 0 1, 0px) -
+          env(viewport-segment-bottom 0 0, 0px)
+      );
+    }
+  }
 </style>

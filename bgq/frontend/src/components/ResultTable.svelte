@@ -1705,4 +1705,25 @@
       min-height: 40vh;
     }
   }
+
+  @media (horizontal-viewport-segments: 2), (vertical-viewport-segments: 2) {
+    .results-sticky-bar {
+      top: calc(-1 * var(--panel-pad-top, 0px));
+    }
+
+    .results-table-frame {
+      margin-left: 0;
+      margin-right: 0;
+      border-radius: var(--radius);
+      border: 1px solid var(--border-light);
+    }
+
+    .scroll-arrow-left {
+      left: 10px;
+    }
+
+    .scroll-arrow-right {
+      right: 10px;
+    }
+  }
 </style>
