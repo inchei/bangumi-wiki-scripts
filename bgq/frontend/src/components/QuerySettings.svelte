@@ -48,12 +48,13 @@
 
   let loading = $state(false);
 
-  // Ctrl+Enter triggers the query; macOS has no Ctrl convention, so Cmd
-  // (both accepted) and the hint label differ per platform.
-  const IS_MAC = /mac/i.test(
-    navigator.platform || navigator.userAgent || navigator.userAgentData || "",
+  const IS_APPLE = /mac|iphone|ipad|ipod/i.test(
+    navigator.userAgentData?.platform ||
+      navigator.platform ||
+      navigator.userAgent ||
+      "",
   );
-  const SHORTCUT_HINT = IS_MAC ? "⌘↵" : "Ctrl↵";
+  const SHORTCUT_HINT = IS_APPLE ? "⌘↵" : "Ctrl↵";
   const SHORTCUT_TITLE = `焦点在筛选或输出设置时按 ${SHORTCUT_HINT} 直接查询`;
 
   function handleShortcut(e) {
@@ -775,7 +776,7 @@
     title={SHORTCUT_TITLE}
     aria-label={loading
       ? "查询中"
-      : `执行查询，快捷键 ${IS_MAC ? "Command 回车" : "Ctrl 回车"}`}
+      : `执行查询，快捷键 ${IS_APPLE ? "Command 回车" : "Ctrl 回车"}`}
     style="height:42px;font-size:15px"
   >
     {#if loading}
