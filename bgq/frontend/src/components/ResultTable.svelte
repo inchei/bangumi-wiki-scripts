@@ -88,6 +88,19 @@
       .replace(/"/g, "&quot;");
   }
 
+  function detectLang(s) {
+    if (/[\u3040-\u30FF]/.test(s)) return "ja";
+    if (/[\uAC00-\uD7AF]/.test(s)) return "ko";
+    if (/[\u4E00-\u9FFF]/.test(s)) return "zh";
+    if (/[A-Za-z]/.test(s)) return "en";
+    return null;
+  }
+
+  function langAttr(s) {
+    const lang = detectLang(s);
+    return lang ? ` lang="${lang}"` : "";
+  }
+
   function headerId(dc) {
     return "colh-" + dc.ci;
   }
@@ -478,7 +491,7 @@
     const isExpanded = expanded[key];
     const display = isExpanded ? s : s.slice(0, MAX_DISPLAY_LEN);
     const suffix = !isExpanded && s.length > MAX_DISPLAY_LEN ? "…" : "";
-    return escapeHtml(display + suffix).replace(/\n/g, "<br>");
+    return `<span${langAttr(display)}>${escapeHtml(display + suffix).replace(/\n/g, "<br>")}</span>`;
   }
 
   // Keep in sync with backend builder.go:

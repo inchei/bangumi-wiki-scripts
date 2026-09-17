@@ -44,8 +44,14 @@
   --error-pre-bg: #fff5f5;
   --dropdown-bg: rgb(254 254 254 / 82%);
   --dropdown-shadow: 0 4px 24px rgb(80 80 80 / 12%);
-  --font: system-ui, -apple-system, sans-serif;
-  --font-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+
+  /* sans-serif (not system-ui): system-ui pins the OS-locale font and
+     ignores lang for CJK glyph selection (e.g. JP glyphs on a CN page);
+     sans-serif is language-aware. See
+     https://github.com/vuejs/vitepress/issues/4946 and
+     https://github.com/facebook/docusaurus/issues/11727 */
+  --font: sans-serif;
+  --font-mono: monospace;
 }
 
 /* Initial mount guard: prevent the global color transition from flashing the
