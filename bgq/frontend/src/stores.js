@@ -37,6 +37,7 @@ export function announce(msg, ms = 4000) {
   setTimeout(() => liveMsg.set(msg), 100);
   liveTimer = setTimeout(() => liveMsg.set(""), ms + 100);
 }
+
 export const sortState = writable({ col: -1, asc: true, field: "" });
 export const queryTarget = writable("subject");
 export const lastQueryTarget = writable("subject");

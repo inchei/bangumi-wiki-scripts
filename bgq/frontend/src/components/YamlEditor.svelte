@@ -25,7 +25,6 @@
 
   let expanded = $state(false);
   let yamlText = $state("");
-  let error = $state("");
   let dirty = $state(false);
   let undoState = $state(null);
   let taEl = $state(null);
@@ -59,7 +58,6 @@
   });
 
   function syncFromFilters() {
-    error = "";
     dirty = false;
     try {
       yamlText = filtersToYAML(
@@ -77,7 +75,7 @@
         taEl.setSelectionRange(end, end);
       }
     } catch (e) {
-      error = "导出失败: " + e.message;
+      alert("导出失败: " + e.message);
     }
   }
 
@@ -100,7 +98,6 @@
       alert("配置有误:\n" + shown + more);
       return;
     }
-    error = "";
     undoState = {
       target: get(queryTarget),
       filters: getFiltersForAPI(),
@@ -143,7 +140,6 @@
     const u = undoState;
     undoState = null;
     announce("已撤销 YAML 更改");
-    error = "";
     dirty = false;
     queryTarget.set(u.target);
     applyFiltersFromAPI(u.filters);
@@ -164,11 +160,10 @@
     void $characterRootLogic;
     void $episodeRootLogic;
     if (!expanded || dirty) return;
-    error = "";
     try {
       yamlText = filtersToYAML(target, getFiltersForAPI(), cols, lim, sr, al);
     } catch (e) {
-      error = "导出失败: " + e.message;
+      console.error("YAML 自动同步失败: " + e.message);
     }
   });
 
@@ -278,9 +273,6 @@
       autocapitalize="off"
       autocorrect="off"
       placeholder="在此编辑 YAML 配置..."></textarea>
-    {#if error}
-      <div class="yaml-error">{error}</div>
-    {/if}
     <div class="yaml-actions">
       <div class="yaml-actions-left">
         <button class="btn btn-primary btn-sm" onclick={handleApply}>
@@ -361,11 +353,5 @@
   .yaml-actions-left {
     display: flex;
     gap: 8px;
-  }
-
-  .yaml-error {
-    color: var(--error-text);
-    font-size: 12px;
-    margin-top: 4px;
   }
 </style>

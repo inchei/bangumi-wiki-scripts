@@ -164,8 +164,8 @@
       try {
         const state = await decodeShareState(payload);
         applyShareState(state);
-      } catch {
-        // Ignore invalid/corrupt share links; keep current state.
+      } catch (e) {
+        console.error("分享链接还原失败，已忽略:", e);
       }
     }
   });
