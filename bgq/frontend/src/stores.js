@@ -28,6 +28,15 @@ function bumpVersion() {
 
 export const lastResult = writable(null);
 export const queryLoading = writable(false);
+
+export const liveMsg = writable("");
+let liveTimer = 0;
+export function announce(msg, ms = 4000) {
+  clearTimeout(liveTimer);
+  liveMsg.set("");
+  setTimeout(() => liveMsg.set(msg), 100);
+  liveTimer = setTimeout(() => liveMsg.set(""), ms + 100);
+}
 export const sortState = writable({ col: -1, asc: true, field: "" });
 export const queryTarget = writable("subject");
 export const lastQueryTarget = writable("subject");

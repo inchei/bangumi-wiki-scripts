@@ -34,6 +34,8 @@
     maxItems = Infinity,
     getTokenList = null,
     disabled = false,
+    // Accessible name; falls back to the placeholder text.
+    label = "",
     // Awesomplete sort option; false keeps the caller's list order (e.g.
     // priority-pinned items) instead of the default length-based sort.
     sort = undefined,
@@ -321,6 +323,7 @@
     {placeholder}
     {id}
     {disabled}
+    aria-label={label || placeholder}
   />
 </div>
 

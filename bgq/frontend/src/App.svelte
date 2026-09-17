@@ -21,6 +21,7 @@
     manualAssoc,
     assocSeeded,
     sortState,
+    liveMsg,
   } from "./stores.js";
   import { decodeShareState, applyShareState, SHARE_PARAM } from "./share.js";
   import FilterTree from "./components/FilterTree.svelte";
@@ -177,6 +178,7 @@
       class="logo-sprite"
       style="background-position: {logoX}px {logoY}px"
       onclick={cycleLogo}
+      aria-hidden="true"
     ></div>
     <h1 class="app-name">Bangumi Query</h1>
   </div>
@@ -207,6 +209,7 @@
     class="btn btn-default"
     onclick={cycleTheme}
     title="主题: {resolvedTheme() === 'dark' ? '深色' : '浅色'}"
+    aria-label="切换主题"
   >
     <MorphIcon icon={resolvedTheme() === "light" ? Sun : Moon} size={16} />
   </button>
@@ -214,33 +217,50 @@
 
 <!-- Main Container -->
 <main class="container">
+  <span class="sr-only" role="status">{$liveMsg}</span>
   <!-- Left Panel -->
   <div class="panel panel-left">
     <div class="target-toggle-bar">
-      <div class="target-toggle">
-        <button
-          class="radio-pill"
-          class:active={$queryTarget === "subject"}
-          onclick={() => setTarget("subject")}
-          ><MorphIcon icon={Book} size={14} /> 条目</button
+      <div class="target-toggle" role="radiogroup" aria-label="查询类型">
+        <label class="radio-pill" class:active={$queryTarget === "subject"}>
+          <input
+            class="sr-radio"
+            type="radio"
+            name="target"
+            value="subject"
+            checked={$queryTarget === "subject"}
+            onchange={() => setTarget("subject")}
+          /><MorphIcon icon={Book} size={14} /> 条目</label
         >
-        <button
-          class="radio-pill"
-          class:active={$queryTarget === "person"}
-          onclick={() => setTarget("person")}
-          ><MorphIcon icon={User} size={14} /> 人物</button
+        <label class="radio-pill" class:active={$queryTarget === "person"}>
+          <input
+            class="sr-radio"
+            type="radio"
+            name="target"
+            value="person"
+            checked={$queryTarget === "person"}
+            onchange={() => setTarget("person")}
+          /><MorphIcon icon={User} size={14} /> 人物</label
         >
-        <button
-          class="radio-pill"
-          class:active={$queryTarget === "character"}
-          onclick={() => setTarget("character")}
-          ><MorphIcon icon={Drama} size={14} /> 角色</button
+        <label class="radio-pill" class:active={$queryTarget === "character"}>
+          <input
+            class="sr-radio"
+            type="radio"
+            name="target"
+            value="character"
+            checked={$queryTarget === "character"}
+            onchange={() => setTarget("character")}
+          /><MorphIcon icon={Drama} size={14} /> 角色</label
         >
-        <button
-          class="radio-pill"
-          class:active={$queryTarget === "episode"}
-          onclick={() => setTarget("episode")}
-          ><MorphIcon icon={Film} size={14} /> 剧集</button
+        <label class="radio-pill" class:active={$queryTarget === "episode"}>
+          <input
+            class="sr-radio"
+            type="radio"
+            name="target"
+            value="episode"
+            checked={$queryTarget === "episode"}
+            onchange={() => setTarget("episode")}
+          /><MorphIcon icon={Film} size={14} /> 剧集</label
         >
       </div>
       <button class="btn btn-outline btn-xs" onclick={clearAll}
@@ -249,7 +269,7 @@
     </div>
     <div class="card card-filter">
       <div class="card-header">
-        <h2 class="card-title"><span class="dot-indicator"></span>筛选条件</h2>
+        <h2 class="card-title">筛选条件</h2>
       </div>
       <FilterTree />
     </div>

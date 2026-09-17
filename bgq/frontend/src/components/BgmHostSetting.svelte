@@ -27,9 +27,9 @@
   }
 </script>
 
-<button class="bgm-host-btn" onclick={editHost} title="修改 Bangumi 主机">
+<button class="bgm-host-btn" onclick={editHost} aria-label="修改 Bangumi 主机">
   <MorphIcon icon={Link2} size={12} />
-  {$bgmHost}
+  <span aria-hidden="true">{$bgmHost}</span>
 </button>
 
 <style>
@@ -38,6 +38,7 @@
     align-items: center;
     gap: 4px;
     padding: 0;
+    min-height: 24px;
 
     /* Matches .btn-sm's right padding so the host text edge aligns with the
        button text edge in the right-aligned layout. */

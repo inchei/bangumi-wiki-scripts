@@ -23,6 +23,7 @@
     assocSeeded,
     nextAssocId,
     DEFAULT_SETTINGS,
+    announce,
   } from "../stores.js";
   import { getFiltersForAPI } from "../logic-tree.js";
   import { positionsByType, PERSON_CHAR_TYPES } from "../schema-data.js";
@@ -43,7 +44,7 @@
   import { SvelteMap } from "svelte/reactivity";
   import AwesompleteInput from "./AwesompleteInput.svelte";
   import { MorphIcon } from "morphicons/svelte";
-  import { ArrowDownWideNarrow, ArrowDownNarrowWide, Search } from "lucide";
+  import { ArrowDownWideNarrow, ArrowDownNarrowWide, Search, X } from "lucide";
 
   let loading = $state(false);
 
@@ -52,7 +53,7 @@
   const IS_MAC = /mac/i.test(
     navigator.platform || navigator.userAgent || navigator.userAgentData || "",
   );
-  const SHORTCUT_HINT = IS_MAC ? "⌘↵" : "Ctrl+↵";
+  const SHORTCUT_HINT = IS_MAC ? "⌘↵" : "Ctrl↵";
   const SHORTCUT_TITLE = `焦点在筛选或输出设置时按 ${SHORTCUT_HINT} 直接查询`;
 
   function handleShortcut(e) {
@@ -523,11 +524,13 @@
     const sort = $sortRules.filter((r) => r.field);
     if (filters.length === 0 && sort.length === 0) {
       lastResult.set({ error: "请先添加筛选条件或排序" });
+      announce("请先添加筛选条件或排序");
       return;
     }
     loading = true;
     queryLoading.set(true);
     lastResult.set(null);
+    announce("查询中");
     const cols =
       $outputColumns
         .split(",")
@@ -582,6 +585,7 @@
       }
     } catch (e) {
       lastResult.set({ error: e.message });
+      announce(`查询失败，${e.message}`);
     } finally {
       loading = false;
       queryLoading.set(false);
@@ -593,7 +597,7 @@
 
 <div class="card card-settings">
   <div class="card-header">
-    <h2 class="card-title"><span class="dot-indicator"></span>输出设置</h2>
+    <h2 class="card-title">输出设置</h2>
   </div>
   <div class="form-group">
     <label class="form-label" for="outputColumns">输出列（逗号分隔）</label>
@@ -682,10 +686,11 @@
           {/if}
           <button
             class="tag-remove"
-            title="移除该关联行"
+            title="删除该关联行"
+            aria-label="删除该关联行"
             onclick={() => removeRow(row)}
           >
-            &times;
+            <MorphIcon icon={X} size={14} />
           </button>
         </div>
       {/each}
@@ -728,8 +733,9 @@
           class="tag-remove"
           onclick={() => removeSortRule(i)}
           title="删除"
+          aria-label="删除排序"
         >
-          &times;
+          <MorphIcon icon={X} size={14} />
         </button>
       </div>
     {/each}
@@ -767,13 +773,16 @@
     onclick={handleRun}
     disabled={loading}
     title={SHORTCUT_TITLE}
+    aria-label={loading
+      ? "查询中"
+      : `执行查询，快捷键 ${IS_MAC ? "Command 回车" : "Ctrl 回车"}`}
     style="height:42px;font-size:15px"
   >
     {#if loading}
       查询中...
     {:else}
       <MorphIcon icon={Search} size={16} /> 执行查询
-      <kbd class="kbd-hint">{SHORTCUT_HINT}</kbd>
+      <kbd class="kbd-hint" aria-hidden="true">{SHORTCUT_HINT}</kbd>
     {/if}
   </button>
 </div>

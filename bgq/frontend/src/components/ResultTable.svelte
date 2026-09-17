@@ -88,6 +88,10 @@
       .replace(/"/g, "&quot;");
   }
 
+  function headerId(dc) {
+    return "colh-" + dc.ci;
+  }
+
   const idRegex = /^((person|character|episode)_)?id$/;
 
   function isIDColumn(colName) {
@@ -191,6 +195,16 @@
 
   let displayCols = $derived(expandColumns($lastResult?.columns));
 
+  let countEl = $state(null);
+  let prevResult = null;
+  $effect(() => {
+    const result = $lastResult;
+    if (result?.rows && prevResult === null) {
+      tick().then(() => countEl?.focus());
+    }
+    prevResult = result;
+  });
+
   // Body columns merge a group's sub-field columns into one spanning cell so
   // the entries render as real aligned sub-rows (not just <br>-separated).
   function buildBodyCols(cols) {
@@ -236,22 +250,6 @@
   // scrollable width small. Toggling re-runs the effect below (fillMode
   // dep), which re-measures track widths after the class lands.
   let fillMode = $state(false);
-
-  // After a query settles (new result or error arrives), move focus to the
-  // results panel so keyboard/SR users land on the outcome. The panel is
-  // tabindex=-1 (programmatic focus only); :focus-visible styling shows a
-  // ring only for keyboard-initiated runs. Sorting/reordering also writes
-  // lastResult with a fresh object ({...res, rows}), so track the previous
-  // result: only focus on null→result (fresh query) or any →error.
-  let panelEl = $state(null);
-  let prevResult = null;
-  $effect(() => {
-    const result = $lastResult;
-    if (result && (prevResult === null || result.error)) {
-      tick().then(() => panelEl?.focus());
-    }
-    prevResult = result;
-  });
 
   // Native-sticky header bar. The in-grid thead can't be sticky itself: the
   // wrap's overflow-x:auto forces overflow-y to compute to auto per spec,
@@ -819,7 +817,7 @@
         ? "ascending"
         : "descending"
       : "none"}
-    title={dc.label}
+    title={`${dc.label}${$sortState.col === dc.ci && $sortState.field === dc.field ? ($sortState.asc ? "（升序）" : "（降序）") : ""}`}
     style:width={width === null ? undefined : `${width}px`}
   >
     <span
@@ -828,6 +826,7 @@
       onkeydown={(e) => e.key === "Enter" && handleHeaderClick(di)}
       tabindex="0"
       role="button"
+      aria-label={`按${dc.label}排序${$sortState.col === dc.ci && $sortState.field === dc.field ? ($sortState.asc ? "，当前升序" : "，当前降序") : ""}`}
       ><span class="th-label"
         >{dc.label.length > 20
           ? dc.label.substring(0, 18) + "…"
@@ -842,13 +841,7 @@
   </div>
 {/snippet}
 
-<div
-  class="results-panel"
-  tabindex="-1"
-  role="region"
-  aria-label="查询结果"
-  bind:this={panelEl}
->
+<div class="results-panel" role="region" aria-label="查询结果">
   {#if $lastResult?.error}
     <div class="error-card">
       <div class="error-header">
@@ -864,7 +857,7 @@
     </div>
   {:else if $queryLoading}
     <div class="results-loading">
-      <div class="bouncy" role="status" aria-label="查询中...">
+      <div class="bouncy">
         <div class="bouncy-cube"><div class="bouncy-cube-inner"></div></div>
         <div class="bouncy-cube"><div class="bouncy-cube-inner"></div></div>
         <div class="bouncy-cube"><div class="bouncy-cube-inner"></div></div>
@@ -873,7 +866,7 @@
   {:else if $lastResult?.rows}
     {@const res = $lastResult}
     <div class="results-toolbar">
-      <span class="results-count"
+      <span class="results-count" tabindex="-1" bind:this={countEl}
         >共 <b>{res.total_rows}</b> 条结果<span class="time"
           >{res.duration}</span
         ></span
@@ -924,7 +917,7 @@
             type="button"
             class="scroll-arrow scroll-arrow-left"
             class:visible={canScrollLeft}
-            aria-label="向左滚动查看更多列"
+            aria-hidden="true"
             tabindex="-1"
             onclick={() => nudgeScroll(-1)}
           >
@@ -934,7 +927,7 @@
             type="button"
             class="scroll-arrow scroll-arrow-right"
             class:visible={canScrollRight}
-            aria-label="向右滚动查看更多列"
+            aria-hidden="true"
             tabindex="-1"
             onclick={() => nudgeScroll(1)}
           >
@@ -957,9 +950,19 @@
             class="results-table"
             class:fill={fillMode}
             role="table"
+            aria-label="查询结果表"
             bind:this={tableEl}
             style="grid-template-columns: repeat({displayCols.length}, minmax(0, auto))"
           >
+            <div class="sr-only" role="row">
+              {#each displayCols as dc, di (dc.ci + ":" + dc.field)}
+                {#if di === 0 || displayCols[di - 1].ci !== dc.ci}
+                  <span role="columnheader" id={headerId(dc)}
+                    >{dc.prefix || dc.label}</span
+                  >
+                {/if}
+              {/each}
+            </div>
             <div
               class="results-thead"
               class:thead-hidden={barReady}
@@ -978,6 +981,7 @@
                     <div
                       class="results-td results-td-group"
                       role="cell"
+                      aria-describedby={headerId(displayCols[bc.ci])}
                       style="grid-column: span {bc.span}"
                     >
                       {#each mergedGroupRows(row[bc.ci], bc.fields) as m, ei (ei)}
@@ -1010,14 +1014,23 @@
                                     style="grid-column: {fi +
                                       1}; grid-row: {vi + 1}"
                                   >
+                                    <span class="sr-only"
+                                      >{bc.prefix}.{f}：</span
+                                    >
                                     {#if vhref}
                                       <a
                                         href={vhref}
                                         target="_blank"
-                                        rel="noopener">{v}</a
+                                        rel="noopener"
+                                        lang={detectLang(v) ?? undefined}>{v}</a
                                       >
                                     {:else}
-                                      {v}
+                                      {@const vl = detectLang(v)}
+                                      {#if vl}
+                                        <span lang={vl}>{v}</span>
+                                      {:else}
+                                        {v}
+                                      {/if}
                                     {/if}
                                   </div>
                                 {/each}
@@ -1036,14 +1049,24 @@
                                 style="grid-column: {fi +
                                   1}; grid-row: 1 / span {workRows}"
                               >
+                                <span class="sr-only">{bc.prefix}.{f}：</span>
                                 {#if m.entry[f] === null || m.entry[f] === undefined || m.entry[f] === ""}
                                   <span class="cell-null">—</span>
                                 {:else if href}
-                                  <a {href} target="_blank" rel="noopener"
+                                  <a
+                                    {href}
+                                    target="_blank"
+                                    rel="noopener"
+                                    lang={detectLang(m.entry[f]) ?? undefined}
                                     >{m.entry[f]}</a
                                   >
                                 {:else}
-                                  {m.entry[f]}
+                                  {@const ml = detectLang(m.entry[f])}
+                                  {#if ml}
+                                    <span lang={ml}>{m.entry[f]}</span>
+                                  {:else}
+                                    {m.entry[f]}
+                                  {/if}
                                 {/if}
                               </div>
                             {/if}
@@ -1057,6 +1080,9 @@
                     <div
                       class="results-td {cellClass(bc.label)}"
                       role={long ? "button" : "cell"}
+                      aria-describedby={long
+                        ? undefined
+                        : headerId(displayCols[bc.ci])}
                       class:cell-expanded={expanded[ri + "_" + bi]}
                       class:cell-expandable={long}
                       onclick={long ? () => toggleExpand(ri, bi) : undefined}

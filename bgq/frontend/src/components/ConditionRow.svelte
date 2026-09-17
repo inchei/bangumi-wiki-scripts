@@ -32,6 +32,8 @@
   import FilterTree from "./FilterTree.svelte";
   import AwesompleteInput from "./AwesompleteInput.svelte";
   import RelationCondition from "./conditions/RelationCondition.svelte";
+  import { MorphIcon } from "morphicons/svelte";
+  import { X } from "lucide";
 
   /** @type {{ item: object, group: object, idx: number, ctx: string }} */
   let { item, group, idx, ctx } = $props();
@@ -84,22 +86,40 @@
   // Context-aware field suggestions for autocomplete
   const fieldSuggestions = $derived(ctxFields(ctx));
 
+  const valueAriaByOp = {
+    before: "日期",
+    after: "日期",
+    gt: "数量",
+    gte: "数量",
+    lt: "数量",
+    lte: "数量",
+    eq: "字段值",
+    regex: "正则表达式",
+    not_regex: "正则表达式",
+  };
+
   // Reactive field select options
   const selectOpts = $derived(
     fc && fc.type === "select" ? fieldSelectOptions(fc) : [],
   );
 </script>
 
-<div class="cond-row">
+<div
+  class="cond-row"
+  role="group"
+  aria-labelledby={`rowtitle-${group._id}-${idx}`}
+>
   {#if condType === "field"}
     {#if fc}
-      <span class="cond-type">{fc.label}</span>
+      <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}
+        >{fc.label}</span
+      >
     {:else if isEpCtx}
-      <span class="cond-type"
+      <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}
         >{EPISODE_FIELD_LABELS[item.field.field] || item.field.field}</span
       >
     {:else}
-      <span class="cond-type">字段</span>
+      <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>字段</span>
       <AwesompleteInput
         value={item.field.field}
         suggestions={fieldSuggestions}
@@ -112,6 +132,7 @@
       <select
         class="select"
         value={item.field.operator}
+        aria-label="匹配方式"
         onchange={(e) =>
           updateCondition(group, idx, "field", "operator", e.target.value)}
       >
@@ -135,15 +156,25 @@
           }}
           placeholder="子类型"
         />
-      {:else if fc && fc.type === "select"}
-        {#each selectOpts as [v, l] (v)}
-          <button
-            class="radio-pill"
-            class:active={v === String(item.field.value)}
-            onclick={() => updateCondition(group, idx, "field", "value", v)}
-            >{l}</button
-          >
-        {/each}
+      {:else if fc && fc.type === "select" && fc.dynamic !== "platform"}
+        <span class="radio-group" role="radiogroup" aria-label={fc.label}>
+          {#each selectOpts as [v, l] (v)}
+            <label
+              class="radio-pill"
+              class:active={v === String(item.field.value)}
+            >
+              <input
+                class="sr-radio"
+                type="radio"
+                name="field-{group._id}-{idx}"
+                value={v}
+                checked={v === String(item.field.value)}
+                onchange={() =>
+                  updateCondition(group, idx, "field", "value", v)}
+              />{l}</label
+            >
+          {/each}
+        </span>
       {:else if fc?.ac === "career"}
         <AwesompleteInput
           value={CAREER_OPTIONS.find(
@@ -170,6 +201,9 @@
             : fc
               ? fc.type || "text"
               : opInputType(item.field.operator)}
+          aria-label={isRef
+            ? "字段值"
+            : (valueAriaByOp[item.field.operator] ?? "关键字")}
           value={item.field.value || ""}
           onchange={(e) =>
             updateCondition(group, idx, "field", "value", e.target.value)}
@@ -183,9 +217,10 @@
       {/if}
     {/if}
   {:else if condType === "tag"}
-    <span class="cond-type">标签</span>
+    <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>标签</span>
     <input
       class="input"
+      aria-label="标签"
       value={item.tag.value}
       onchange={(e) =>
         updateCondition(group, idx, "tag", "value", e.target.value)}
@@ -193,6 +228,7 @@
     <select
       class="select"
       value={item.tag.negate ? "negate" : "contains"}
+      aria-label="筛选方式"
       onchange={(e) =>
         updateCondition(
           group,
@@ -206,7 +242,7 @@
       <option value="negate">排除</option>
     </select>
   {:else if condType === "meta_tag"}
-    <span class="cond-type">公共标签</span>
+    <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>公共标签</span>
     <AwesompleteInput
       restrict={true}
       value={item.meta_tag.value}
@@ -217,6 +253,7 @@
     <select
       class="select"
       value={item.meta_tag.negate ? "negate" : "contains"}
+      aria-label="筛选方式"
       onchange={(e) =>
         updateCondition(
           group,
@@ -230,10 +267,11 @@
       <option value="negate">排除</option>
     </select>
   {:else if condType === "global"}
-    <span class="cond-type">全局</span>
+    <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>全局</span>
     <select
       class="select"
       value={item.global.operator}
+      aria-label="匹配方式"
       onchange={(e) =>
         updateCondition(group, idx, "global", "operator", e.target.value)}
     >
@@ -244,6 +282,7 @@
     </select>
     <input
       class="input"
+      aria-label="关键字"
       value={item.global.value || ""}
       onchange={(e) =>
         updateCondition(group, idx, "global", "value", e.target.value)}
@@ -264,10 +303,11 @@
           ["4", "游戏"],
           ["6", "三次元"],
         ]}
-    <span class="cond-type">分类</span>
+    <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>分类</span>
     <select
       class="select"
       value={String(item.type.value)}
+      aria-label="条目类型"
       onchange={(e) =>
         updateCondition(group, idx, "type", "value", e.target.value)}
     >
@@ -365,8 +405,10 @@
             condLabel: "人物条件",
             condCtx: CTX_PERSON,
           }}
-    <div class="cond-row-inner">
-      <span class="cond-type">{caCfg.label}</span>
+    <div class="cond-row-inner" role="group" aria-label={caCfg.label}>
+      <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}
+        >{caCfg.label}</span
+      >
       <AwesompleteInput
         restrict={true}
         value={ca.type || ""}
@@ -377,6 +419,7 @@
       <select
         class="select"
         value={ca.mode}
+        aria-label="限定方式"
         onchange={(e) =>
           updateCondition(group, idx, condType, "mode", e.target.value)}
       >
@@ -389,6 +432,7 @@
         <select
           class="select"
           value={ca.count_op || "gte"}
+          aria-label="比较方式"
           onchange={(e) =>
             updateCondition(group, idx, condType, "count_op", e.target.value)}
         >
@@ -400,6 +444,7 @@
           class="input"
           type="number"
           value={ca.count_val || ""}
+          aria-label="数量"
           onchange={(e) =>
             updateCondition(group, idx, condType, "count_val", e.target.value)}
         />
@@ -407,84 +452,92 @@
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
-        title="删除">&times;</button
+        title="删除"
+        aria-label={`删除${caCfg.label}条件`}
+        ><MorphIcon icon={X} size={14} /></button
       >
-    </div>
-    {#if ca.conditions?.length > 0 && ca.conditions[0].logic}
-      <div class="nested">
-        <span class="cond-type">{caCfg.condLabel}</span>
-        <FilterTree
-          lg={ca.conditions[0].logic}
-          isRoot={false}
-          ctx={caCfg.condCtx}
-          hideDelete={true}
-        />
-      </div>
-    {/if}
-    {#if ca.subject_conditions?.length > 0 && ca.subject_conditions[0].logic}
-      <div class="nested">
-        <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
-          <span class="cond-type">相关条目</span>
-          <select
-            class="select"
-            value={ca.subject_mode || "any"}
-            onchange={(e) =>
-              updateCondition(
-                group,
-                idx,
-                condType,
-                "subject_mode",
-                e.target.value,
-              )}
+      {#if ca.conditions?.length > 0 && ca.conditions[0].logic}
+        <div class="nested">
+          <span class="cond-type">{caCfg.condLabel}</span>
+          <FilterTree
+            lg={ca.conditions[0].logic}
+            isRoot={false}
+            ctx={caCfg.condCtx}
+            hideDelete={true}
+          />
+        </div>
+      {/if}
+      {#if ca.subject_conditions?.length > 0 && ca.subject_conditions[0].logic}
+        <div class="nested">
+          <div
+            style="display:flex;align-items:center;gap:4px;margin-bottom:2px"
           >
-            <option value="any">任意</option>
-            <option value="all">全部</option>
-            <option value="count">数量</option>
-          </select>
-          {#if (ca.subject_mode || "any") === "count"}
+            <span class="cond-type">相关条目</span>
             <select
               class="select"
-              value={ca.subject_count_op || "gte"}
+              value={ca.subject_mode || "any"}
+              aria-label="主条目限定方式"
               onchange={(e) =>
                 updateCondition(
                   group,
                   idx,
                   condType,
-                  "subject_count_op",
+                  "subject_mode",
                   e.target.value,
                 )}
             >
-              {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
-                <option value={op}>{opLabel(op)}</option>
-              {/each}
+              <option value="any">任意</option>
+              <option value="all">全部</option>
+              <option value="count">数量</option>
             </select>
-            <input
-              class="input"
-              type="number"
-              value={ca.subject_count_val || ""}
-              onchange={(e) =>
-                updateCondition(
-                  group,
-                  idx,
-                  condType,
-                  "subject_count_val",
-                  e.target.value,
-                )}
-            />
-          {/if}
+            {#if (ca.subject_mode || "any") === "count"}
+              <select
+                class="select"
+                value={ca.subject_count_op || "gte"}
+                aria-label="比较方式"
+                onchange={(e) =>
+                  updateCondition(
+                    group,
+                    idx,
+                    condType,
+                    "subject_count_op",
+                    e.target.value,
+                  )}
+              >
+                {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+                  <option value={op}>{opLabel(op)}</option>
+                {/each}
+              </select>
+              <input
+                class="input"
+                type="number"
+                value={ca.subject_count_val || ""}
+                aria-label="主条目数量"
+                onchange={(e) =>
+                  updateCondition(
+                    group,
+                    idx,
+                    condType,
+                    "subject_count_val",
+                    e.target.value,
+                  )}
+              />
+            {/if}
+          </div>
+          <FilterTree
+            lg={ca.subject_conditions[0].logic}
+            isRoot={false}
+            ctx={CTX_SUBJECT}
+            hideDelete={true}
+          />
         </div>
-        <FilterTree
-          lg={ca.subject_conditions[0].logic}
-          isRoot={false}
-          ctx={CTX_SUBJECT}
-          hideDelete={true}
-        />
-      </div>
-    {/if}
+      {/if}
+    </div>
   {:else if condType === "person_cast_subject"}
     {@const pcs = item.person_cast_subject}
-    <div class="cond-row-inner">
-      <span class="cond-type">出演作品</span>
+    <div class="cond-row-inner" role="group" aria-label="出演作品">
+      <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>出演作品</span
+      >
       <AwesompleteInput
         restrict={true}
         value={pcs.type || ""}
@@ -495,6 +548,7 @@
       <select
         class="select"
         value={pcs.mode}
+        aria-label="限定方式"
         onchange={(e) =>
           updateCondition(group, idx, condType, "mode", e.target.value)}
       >
@@ -507,6 +561,7 @@
         <select
           class="select"
           value={pcs.count_op || "gte"}
+          aria-label="比较方式"
           onchange={(e) =>
             updateCondition(group, idx, condType, "count_op", e.target.value)}
         >
@@ -518,6 +573,7 @@
           class="input"
           type="number"
           value={pcs.count_val || ""}
+          aria-label="数量"
           onchange={(e) =>
             updateCondition(group, idx, condType, "count_val", e.target.value)}
         />
@@ -525,84 +581,90 @@
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
-        title="删除">&times;</button
+        title="删除"
+        aria-label="删除出演作品条件"><MorphIcon icon={X} size={14} /></button
       >
-    </div>
-    {#if pcs.conditions?.length > 0 && pcs.conditions[0].logic}
-      <div class="nested">
-        <span class="cond-type">作品条件</span>
-        <FilterTree
-          lg={pcs.conditions[0].logic}
-          isRoot={false}
-          ctx={CTX_SUBJECT}
-          hideDelete={true}
-        />
-      </div>
-    {/if}
-    {#if pcs.character_conditions?.length > 0 && pcs.character_conditions[0].logic}
-      <div class="nested">
-        <div style="display:flex;align-items:center;gap:4px;margin-bottom:2px">
-          <span class="cond-type">相关角色</span>
-          <select
-            class="select"
-            value={pcs.character_mode || "any"}
-            onchange={(e) =>
-              updateCondition(
-                group,
-                idx,
-                condType,
-                "character_mode",
-                e.target.value,
-              )}
+      {#if pcs.conditions?.length > 0 && pcs.conditions[0].logic}
+        <div class="nested">
+          <span class="cond-type">作品条件</span>
+          <FilterTree
+            lg={pcs.conditions[0].logic}
+            isRoot={false}
+            ctx={CTX_SUBJECT}
+            hideDelete={true}
+          />
+        </div>
+      {/if}
+      {#if pcs.character_conditions?.length > 0 && pcs.character_conditions[0].logic}
+        <div class="nested">
+          <div
+            style="display:flex;align-items:center;gap:4px;margin-bottom:2px"
           >
-            <option value="any">任意</option>
-            <option value="all">全部</option>
-            <option value="count">数量</option>
-          </select>
-          {#if (pcs.character_mode || "any") === "count"}
+            <span class="cond-type">相关角色</span>
             <select
               class="select"
-              value={pcs.character_count_op || "gte"}
+              value={pcs.character_mode || "any"}
+              aria-label="角色限定方式"
               onchange={(e) =>
                 updateCondition(
                   group,
                   idx,
                   condType,
-                  "character_count_op",
+                  "character_mode",
                   e.target.value,
                 )}
             >
-              {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
-                <option value={op}>{opLabel(op)}</option>
-              {/each}
+              <option value="any">任意</option>
+              <option value="all">全部</option>
+              <option value="count">数量</option>
             </select>
-            <input
-              class="input"
-              type="number"
-              value={pcs.character_count_val || ""}
-              onchange={(e) =>
-                updateCondition(
-                  group,
-                  idx,
-                  condType,
-                  "character_count_val",
-                  e.target.value,
-                )}
-            />
-          {/if}
+            {#if (pcs.character_mode || "any") === "count"}
+              <select
+                class="select"
+                value={pcs.character_count_op || "gte"}
+                aria-label="比较方式"
+                onchange={(e) =>
+                  updateCondition(
+                    group,
+                    idx,
+                    condType,
+                    "character_count_op",
+                    e.target.value,
+                  )}
+              >
+                {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
+                  <option value={op}>{opLabel(op)}</option>
+                {/each}
+              </select>
+              <input
+                class="input"
+                type="number"
+                value={pcs.character_count_val || ""}
+                aria-label="角色数量"
+                onchange={(e) =>
+                  updateCondition(
+                    group,
+                    idx,
+                    condType,
+                    "character_count_val",
+                    e.target.value,
+                  )}
+              />
+            {/if}
+          </div>
+          <FilterTree
+            lg={pcs.character_conditions[0].logic}
+            isRoot={false}
+            ctx={CTX_CHARACTER}
+            hideDelete={true}
+          />
         </div>
-        <FilterTree
-          lg={pcs.character_conditions[0].logic}
-          isRoot={false}
-          ctx={CTX_CHARACTER}
-          hideDelete={true}
-        />
-      </div>
-    {/if}
+      {/if}
+    </div>
   {:else if condType === "subject_cast"}
     {@const sc = item.subject_cast}
-    <div class="cond-row-inner">
-      <span class="cond-type">出演</span>
+    <div class="cond-row-inner" role="group" aria-label="出演">
+      <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>出演</span>
       <AwesompleteInput
         restrict={true}
         value={sc.type || ""}
@@ -613,6 +675,7 @@
       <select
         class="select"
         value={sc.mode}
+        aria-label="限定方式"
         onchange={(e) =>
           updateCondition(group, idx, condType, "mode", e.target.value)}
       >
@@ -625,6 +688,7 @@
         <select
           class="select"
           value={sc.count_op || "gte"}
+          aria-label="比较方式"
           onchange={(e) =>
             updateCondition(group, idx, condType, "count_op", e.target.value)}
         >
@@ -636,6 +700,7 @@
           class="input"
           type="number"
           value={sc.count_val || ""}
+          aria-label="数量"
           onchange={(e) =>
             updateCondition(group, idx, condType, "count_val", e.target.value)}
         />
@@ -643,31 +708,32 @@
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
-        title="删除">&times;</button
+        title="删除"
+        aria-label="删除出演条件"><MorphIcon icon={X} size={14} /></button
       >
+      {#if sc.person_conditions?.length > 0 && sc.person_conditions[0].logic}
+        <div class="nested">
+          <span class="cond-type">人物条件</span>
+          <FilterTree
+            lg={sc.person_conditions[0].logic}
+            isRoot={false}
+            ctx={CTX_PERSON}
+            hideDelete={true}
+          />
+        </div>
+      {/if}
+      {#if sc.character_conditions?.length > 0 && sc.character_conditions[0].logic}
+        <div class="nested">
+          <span class="cond-type">角色条件</span>
+          <FilterTree
+            lg={sc.character_conditions[0].logic}
+            isRoot={false}
+            ctx={CTX_CHARACTER}
+            hideDelete={true}
+          />
+        </div>
+      {/if}
     </div>
-    {#if sc.person_conditions?.length > 0 && sc.person_conditions[0].logic}
-      <div class="nested">
-        <span class="cond-type">人物条件</span>
-        <FilterTree
-          lg={sc.person_conditions[0].logic}
-          isRoot={false}
-          ctx={CTX_PERSON}
-          hideDelete={true}
-        />
-      </div>
-    {/if}
-    {#if sc.character_conditions?.length > 0 && sc.character_conditions[0].logic}
-      <div class="nested">
-        <span class="cond-type">角色条件</span>
-        <FilterTree
-          lg={sc.character_conditions[0].logic}
-          isRoot={false}
-          ctx={CTX_CHARACTER}
-          hideDelete={true}
-        />
-      </div>
-    {/if}
   {:else if condType === "staff"}
     {@const s = item.staff}
     {@const posText =
@@ -711,11 +777,12 @@
     </RelationCondition>
   {:else if condType === "episode"}
     {@const ep = item.episode}
-    <div class="cond-row-inner">
-      <span class="cond-type">剧集</span>
+    <div class="cond-row-inner" role="group" aria-label="剧集">
+      <span class="cond-type" id={`rowtitle-${group._id}-${idx}`}>剧集</span>
       <select
         class="select"
-        value={ep.mode}
+        value={ep.mode || "any"}
+        aria-label="限定方式"
         onchange={(e) =>
           updateCondition(group, idx, "episode", "mode", e.target.value)}
       >
@@ -727,6 +794,7 @@
         <select
           class="select"
           value={ep.count_op || "gte"}
+          aria-label="比较方式"
           onchange={(e) =>
             updateCondition(group, idx, "episode", "count_op", e.target.value)}
         >
@@ -738,6 +806,7 @@
           class="input"
           type="number"
           value={ep.count_val || ""}
+          aria-label="数量"
           onchange={(e) =>
             updateCondition(group, idx, "episode", "count_val", e.target.value)}
         />
@@ -745,7 +814,8 @@
       <button
         class="tag-remove"
         onclick={() => removeLogicLeaf(group, idx)}
-        title="删除">&times;</button
+        title="删除"
+        aria-label="删除条件"><MorphIcon icon={X} size={14} /></button
       >
     </div>
     {#if ep.logic}
@@ -766,12 +836,20 @@
     <button
       class="tag-remove"
       onclick={() => removeLogicLeaf(group, idx)}
-      title="删除">&times;</button
+      title="删除"
+      aria-label="删除条件"><MorphIcon icon={X} size={14} /></button
     >
   {/if}
 </div>
 
 <style>
+  .radio-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    min-width: 0;
+  }
+
   .cond-row {
     display: flex;
     gap: 3px;

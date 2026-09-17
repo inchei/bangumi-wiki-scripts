@@ -1,5 +1,7 @@
 <script>
   import { opLabel } from "../../stores.js";
+  import { MorphIcon } from "morphicons/svelte";
+  import { X } from "lucide";
   import FilterTree from "../FilterTree.svelte";
   import AwesompleteInput from "../AwesompleteInput.svelte";
 
@@ -38,7 +40,7 @@
   } = $props();
 </script>
 
-<div class="cond-row-inner">
+<div class="cond-row-inner" role="group" aria-label={label}>
   <span class="cond-type">{label}</span>
   {#if onTypeChange}
     <AwesompleteInput
@@ -53,6 +55,7 @@
   <select
     class="select"
     value={mode}
+    aria-label="限定方式"
     onchange={(e) => onModeChange(e.target.value)}
   >
     <option value="any">任意</option>
@@ -64,6 +67,7 @@
     <select
       class="select"
       value={countOp || "gte"}
+      aria-label="比较方式"
       onchange={(e) => onCountOpChange?.(e.target.value)}
     >
       {#each ["gt", "gte", "lt", "lte", "eq"] as op (op)}
@@ -73,19 +77,25 @@
     <input
       class="input"
       type="number"
+      aria-label="数量"
       value={countVal || ""}
       onchange={(e) => onCountValChange?.(e.target.value)}
     />
   {/if}
-  <button class="tag-remove" onclick={onDelete} title="删除">&times;</button>
+  <button
+    class="tag-remove"
+    onclick={onDelete}
+    title="删除"
+    aria-label="删除条件"><MorphIcon icon={X} size={14} /></button
+  >
+  {#if logic?.conditions?.length > 0 && logic.conditions[0].logic}
+    <div class="nested">
+      <FilterTree
+        lg={logic.conditions[0].logic}
+        isRoot={false}
+        ctx={nestedCtx}
+        hideDelete={true}
+      />
+    </div>
+  {/if}
 </div>
-{#if logic?.conditions?.length > 0 && logic.conditions[0].logic}
-  <div class="nested">
-    <FilterTree
-      lg={logic.conditions[0].logic}
-      isRoot={false}
-      ctx={nestedCtx}
-      hideDelete={true}
-    />
-  </div>
-{/if}

@@ -12,6 +12,7 @@
     personRootLogic,
     characterRootLogic,
     episodeRootLogic,
+    announce,
   } from "../stores.js";
   import { getFiltersForAPI, applyFiltersFromAPI } from "../logic-tree.js";
   import { filtersToYAML, parseYAML, validateConfig } from "../yaml.js";
@@ -37,12 +38,18 @@
   function pulse(which) {
     if (which === "apply") {
       appliedFlash = true;
+      announce("已应用当前配置");
       clearTimeout(applyTimer);
-      applyTimer = setTimeout(() => (appliedFlash = false), FLASH_MS);
+      applyTimer = setTimeout(() => {
+        appliedFlash = false;
+      }, FLASH_MS);
     } else {
       syncedFlash = true;
+      announce("已从筛选器同步配置");
       clearTimeout(syncTimer);
-      syncTimer = setTimeout(() => (syncedFlash = false), FLASH_MS);
+      syncTimer = setTimeout(() => {
+        syncedFlash = false;
+      }, FLASH_MS);
     }
   }
 
@@ -135,6 +142,7 @@
     if (!undoState) return;
     const u = undoState;
     undoState = null;
+    announce("已撤销 YAML 更改");
     error = "";
     dirty = false;
     queryTarget.set(u.target);
@@ -242,9 +250,15 @@
     onclick={() => (expanded = !expanded)}
     role="button"
     tabindex="0"
-    onkeydown={(e) => e.key === "Enter" && (expanded = !expanded)}
+    aria-expanded={expanded}
+    onkeydown={(e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        expanded = !expanded;
+      }
+    }}
   >
-    <span class="dot-indicator"></span>YAML 配置
+    <h2 class="card-title">YAML 配置</h2>
     <span class="yaml-chevron">
       <MorphIcon
         icon={expanded ? ChevronUp : ChevronDown}

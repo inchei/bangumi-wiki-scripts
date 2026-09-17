@@ -25,6 +25,8 @@
   } from "../logic-tree.js";
   import ConditionRow from "./ConditionRow.svelte";
   import Self from "./FilterTree.svelte";
+  import { MorphIcon } from "morphicons/svelte";
+  import { X } from "lucide";
 
   /** @type {{ lg?: object, isRoot?: boolean, ctx?: string, hideDelete?: boolean }} */
   let {
@@ -169,24 +171,40 @@
   }
 </script>
 
-<div class="logic-group" class:root={isRoot} bind:this={containerEl}>
+<div
+  class="logic-group"
+  class:root={isRoot}
+  bind:this={containerEl}
+  role="group"
+  aria-label="条件组"
+>
   <div class="logic-header">
-    <div class="logic-op-toggle">
-      <button
-        class="op-btn"
-        class:active={logic.op === "and"}
-        onclick={(e) => {
-          e.stopPropagation();
-          toggleLogicOp(logic, "and");
-        }}>AND</button
+    <div class="logic-op-toggle" role="radiogroup" aria-label="条件逻辑">
+      <label class="op-btn" class:active={logic.op === "and"}>
+        <input
+          class="sr-radio"
+          type="radio"
+          name="op-{logic._id}"
+          value="and"
+          checked={logic.op === "and"}
+          onclick={(e) => {
+            e.stopPropagation();
+            toggleLogicOp(logic, "and");
+          }}
+        />AND</label
       >
-      <button
-        class="op-btn"
-        class:active={logic.op === "or"}
-        onclick={(e) => {
-          e.stopPropagation();
-          toggleLogicOp(logic, "or");
-        }}>OR</button
+      <label class="op-btn" class:active={logic.op === "or"}>
+        <input
+          class="sr-radio"
+          type="radio"
+          name="op-{logic._id}"
+          value="or"
+          checked={logic.op === "or"}
+          onclick={(e) => {
+            e.stopPropagation();
+            toggleLogicOp(logic, "or");
+          }}
+        />OR</label
       >
     </div>
     {#if !isRoot && !hideDelete}
@@ -196,7 +214,8 @@
           e.stopPropagation();
           removeLogicGroup(logic._id);
         }}
-        title="删除此组">&times;</button
+        title="删除此组"
+        aria-label="删除此组"><MorphIcon icon={X} size={14} /></button
       >
     {/if}
   </div>
@@ -217,6 +236,7 @@
     <select
       class="select"
       value={newTypeSelect}
+      aria-label="条件类型"
       onchange={(e) => setNewTypeSelect(e.target.value)}
     >
       {#each typeOptions as opt (opt.value)}
@@ -261,6 +281,9 @@
   }
 
   .op-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 1px 8px;
     font-size: 11px;
     font-weight: 600;
@@ -270,6 +293,12 @@
     transition: all 0.15s;
     border: none;
     font-family: inherit;
+    min-height: 24px;
+  }
+
+  .op-btn:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 1px;
   }
 
   .op-btn.active {
