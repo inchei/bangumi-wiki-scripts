@@ -13,6 +13,7 @@
     characterRootLogic,
     episodeRootLogic,
     announce,
+    resetStructureVersions,
   } from "../stores.js";
   import { getFiltersForAPI, applyFiltersFromAPI } from "../logic-tree.js";
   import { filtersToYAML, parseYAML, validateConfig } from "../yaml.js";
@@ -132,6 +133,7 @@
           : ASSOC_LIMIT_DEFAULT,
     );
     pulse("apply");
+    resetStructureVersions();
     document.getElementById("btn-run")?.focus();
   }
 
@@ -147,6 +149,7 @@
     sortRules.set(u.sort);
     resultLimit.set(u.limit);
     if (u.assocLimit != null) assocLimit.set(u.assocLimit);
+    resetStructureVersions();
   }
 
   $effect(() => {

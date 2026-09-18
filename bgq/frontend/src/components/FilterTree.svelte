@@ -22,8 +22,10 @@
     addCondition,
     addLogicGroupTo,
     removeLogicGroup,
+    undoLogicGroupDelete,
   } from "../logic-tree.js";
   import ConditionRow from "./ConditionRow.svelte";
+  import PendingDelete from "./PendingDelete.svelte";
   import Self from "./FilterTree.svelte";
   import { MorphIcon } from "morphicons/svelte";
   import { X } from "lucide";
@@ -221,7 +223,14 @@
   </div>
 
   {#each logic.items as item, i (item.logic?._id ?? i)}
-    {#if item.logic}
+    {#if item._pendingDelete && item.logic}
+      <PendingDelete
+        label="已删除条件组"
+        margin="2px 0"
+        focusOnMount={true}
+        onUndo={() => undoLogicGroupDelete(item.logic._id)}
+      />
+    {:else if item.logic}
       <Self
         lg={item.logic}
         isRoot={false}

@@ -7,6 +7,9 @@ import {
   EPISODE_FIELD_CONFIGS,
   resetLogicIdCounter,
   incLogicIdCounter,
+  setPendingDeleteExempt,
+  announce,
+  bumpConditionStructureVersion,
 } from "./stores.js";
 
 // ---- Logic tree helpers ----
@@ -115,8 +118,191 @@ function logicToFilter(lg) {
   };
 }
 
-export function getFiltersForAPI() {
+function purgeNode(node, exempt = null) {
+  const newItems = [];
+  let changed = false;
+  for (let idx = 0; idx < node.items.length; idx++) {
+    const item = node.items[idx];
+    if (item._pendingDelete) {
+      const id = item.logic
+        ? `group:${item.logic._id}`
+        : `leaf:${node._id}:${idx}`;
+      if (id === exempt) {
+        newItems.push(item);
+        continue;
+      }
+      changed = true;
+      continue;
+    }
+    const newItem = { ...item };
+    let itemChanged = false;
+    if (
+      item.logic &&
+      typeof item.logic === "object" &&
+      !Array.isArray(item.logic)
+    ) {
+      const updated = purgeNode(item.logic, exempt);
+      if (updated !== item.logic) {
+        newItem.logic = updated;
+        itemChanged = true;
+      }
+    }
+    forEachCondArray(item, (conds, key, condKey) => {
+      const newConds = [];
+      let condChanged = false;
+      for (const c of conds) {
+        if (c._pendingDelete) {
+          condChanged = true;
+          continue;
+        }
+        if (c.logic) {
+          const updated = purgeNode(c.logic, exempt);
+          if (updated !== c.logic) {
+            newConds.push({ ...c, logic: updated });
+            condChanged = true;
+            continue;
+          }
+        }
+        newConds.push(c);
+      }
+      if (condChanged) {
+        newItem[key] = { ...item[key], [condKey]: newConds };
+        itemChanged = true;
+      }
+    });
+    let dropItem = false;
+    for (const key of Object.keys(item)) {
+      const val = item[key];
+      if (
+        val &&
+        typeof val === "object" &&
+        val.logic &&
+        typeof val.logic === "object" &&
+        !Array.isArray(val.logic) &&
+        !val.conditions
+      ) {
+        if (val._pendingDelete) {
+          dropItem = true;
+          break;
+        }
+        const updated = purgeNode(val.logic, exempt);
+        if (updated !== val.logic) {
+          newItem[key] = { ...val, logic: updated };
+          itemChanged = true;
+        }
+      }
+    }
+    if (dropItem) {
+      changed = true;
+      continue;
+    }
+    newItems.push(itemChanged ? newItem : item);
+    if (itemChanged) changed = true;
+  }
+  return changed ? { ...node, items: newItems } : node;
+}
+
+function mutateGroupWrapper(node, groupId, mutator) {
+  const newItems = [];
+  let changed = false;
+  for (const item of node.items) {
+    if (item.logic && item.logic._id === groupId) {
+      newItems.push(mutator(item));
+      changed = true;
+      continue;
+    }
+    if (
+      item.logic &&
+      typeof item.logic === "object" &&
+      !Array.isArray(item.logic)
+    ) {
+      const updated = mutateGroupWrapper(item.logic, groupId, mutator);
+      if (updated !== item.logic) {
+        newItems.push({ ...item, logic: updated });
+        changed = true;
+        continue;
+      }
+    }
+    let found = false;
+    forEachCondArray(item, (conds, key, condKey) => {
+      if (found) return;
+      const newConds = [];
+      let condChanged = false;
+      for (const c of conds) {
+        if (c.logic) {
+          const updated = mutateGroupWrapper(c.logic, groupId, mutator);
+          if (updated !== c.logic) {
+            condChanged = true;
+            newConds.push({ logic: updated });
+            continue;
+          }
+        }
+        newConds.push(c);
+      }
+      if (condChanged) {
+        newItems.push({
+          ...item,
+          [key]: { ...item[key], [condKey]: newConds },
+        });
+        found = true;
+        changed = true;
+      }
+    });
+    if (!found) {
+      for (const key of Object.keys(item)) {
+        if (found) break;
+        const val = item[key];
+        if (
+          val?.logic &&
+          typeof val.logic === "object" &&
+          !Array.isArray(val.logic) &&
+          !val.conditions
+        ) {
+          if (val.logic._id === groupId) {
+            newItems.push({ ...item, [key]: mutator(val) });
+            found = true;
+            changed = true;
+            break;
+          }
+          const updated = mutateGroupWrapper(val.logic, groupId, mutator);
+          if (updated !== val.logic) {
+            newItems.push({ ...item, [key]: { ...val, logic: updated } });
+            found = true;
+            changed = true;
+          }
+        }
+      }
+    }
+    if (!found) newItems.push(item);
+  }
+  return changed ? { ...node, items: newItems } : node;
+}
+
+function markGroupWrapperPendingDelete(node, groupId) {
+  return mutateGroupWrapper(node, groupId, (item) => ({
+    ...item,
+    _pendingDelete: true,
+  }));
+}
+
+function unmarkGroupWrapperPendingDelete(node, groupId) {
+  return mutateGroupWrapper(node, groupId, (item) => {
+    const rest = { ...item };
+    delete rest._pendingDelete;
+    return rest;
+  });
+}
+
+export function purgeLogicPendingDeletes(exempt = null) {
   const root = getRootLogic();
+  const purged = purgeNode(root, exempt);
+  if (purged !== root) {
+    getTargetStore().set(purged);
+  }
+}
+
+export function getFiltersForAPI() {
+  const root = purgeNode(getRootLogic());
   if (root.items.length === 0) return [];
   return [logicToFilter(root)];
 }
@@ -287,94 +473,40 @@ export function addCondition(group, type, ctx) {
       addToGroup(group, createEmptyCondition(type));
     }
   }
+  bumpConditionStructureVersion();
   focusRequest.set({ groupId: group._id, isGroup: false });
 }
 
 export function removeLogicGroup(groupId) {
-  getTargetStore().update((root) => removeItemById(root, groupId));
+  setPendingDeleteExempt(`group:${groupId}`);
+  announce("已删除条件组");
+  getTargetStore().update((root) =>
+    markGroupWrapperPendingDelete(root, groupId),
+  );
+  bumpConditionStructureVersion();
 }
 
-// Immutable removal: returns a new tree with the item removed.
-function removeItemById(node, id) {
-  // Check if any direct child matches
-  const newItems = [];
-  let changed = false;
-  for (const item of node.items) {
-    if (item.logic && item.logic._id === id) {
-      changed = true;
-      continue; // skip this item
-    }
-    // Recurse into nested logic groups
-    if (
-      item.logic &&
-      typeof item.logic === "object" &&
-      !Array.isArray(item.logic)
-    ) {
-      const updated = removeItemById(item.logic, id);
-      if (updated !== item.logic) {
-        newItems.push({ ...item, logic: updated });
-        changed = true;
-        continue;
-      }
-    }
-    // Recurse into condition arrays
-    let found = false;
-    forEachCondArray(item, (conds, key, condKey) => {
-      if (found) return;
-      const newConds = [];
-      let condChanged = false;
-      for (const c of conds) {
-        if (c.logic) {
-          const updated = removeItemById(c.logic, id);
-          if (updated !== c.logic) {
-            condChanged = true;
-            newConds.push({ logic: updated });
-            continue;
-          }
-        }
-        newConds.push(c);
-      }
-      if (condChanged) {
-        const val = item[key];
-        newItems.push({ ...item, [key]: { ...val, [condKey]: newConds } });
-        found = true;
-        changed = true;
-      }
-    });
-    // episode.logic (direct, not in conditions array)
-    if (!found) {
-      for (const key of Object.keys(item)) {
-        if (found) break;
-        const val = item[key];
-        if (
-          val?.logic &&
-          typeof val.logic === "object" &&
-          !Array.isArray(val.logic) &&
-          !val.conditions
-        ) {
-          if (val.logic._id === id) {
-            newItems.push({ ...item, [key]: { ...val, logic: undefined } });
-            found = true;
-            changed = true;
-            break;
-          }
-          const updated = removeItemById(val.logic, id);
-          if (updated !== val.logic) {
-            newItems.push({ ...item, [key]: { ...val, logic: updated } });
-            found = true;
-            changed = true;
-          }
-        }
-      }
-    }
-    if (!found) newItems.push(item);
-  }
-  return changed ? { ...node, items: newItems } : node;
+export function undoLogicGroupDelete(groupId) {
+  getTargetStore().update((root) =>
+    unmarkGroupWrapperPendingDelete(root, groupId),
+  );
 }
 
 export function removeLogicLeaf(group, idx) {
+  setPendingDeleteExempt(`leaf:${group._id}:${idx}`);
+  announce("已删除条件");
   applyMutation(group._id, (items) => {
-    items.splice(idx, 1);
+    items[idx] = { ...items[idx], _pendingDelete: true };
+    return items;
+  });
+  bumpConditionStructureVersion();
+}
+
+export function undoLogicLeafDelete(group, idx) {
+  applyMutation(group._id, (items) => {
+    const rest = { ...items[idx] };
+    delete rest._pendingDelete;
+    items[idx] = rest;
     return items;
   });
 }
@@ -385,6 +517,7 @@ export function addLogicGroupTo(group) {
     items.push({ logic: ng });
     return items;
   });
+  bumpConditionStructureVersion();
   focusRequest.set({ groupId: group._id, isGroup: true });
 }
 

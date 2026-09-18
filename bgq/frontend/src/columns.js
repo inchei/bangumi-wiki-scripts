@@ -103,7 +103,7 @@ export function assocRowsFromFilters(target, rootItems) {
     rows.push({ key: `${target}:${prefix}`, prefix, entity, dual: !!dual });
   };
   for (const item of rootItems || []) {
-    if (!item || item.logic) continue;
+    if (!item || item.logic || item._pendingDelete) continue;
     if (target === "subject") {
       if (item.relation) push(item.relation.type, "subject");
       if (item.staff) {

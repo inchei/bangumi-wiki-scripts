@@ -47,7 +47,8 @@ export function filtersToYAML(
   } else if (assocLimit != null && assocLimit !== 1) {
     cfg.output = { assoc_limit: assocLimit };
   }
-  if (sort && sort.length > 0) cfg.sort = sort;
+  const cleanSort = (sort || []).filter((r) => !r._pendingDelete);
+  if (cleanSort.length > 0) cfg.sort = cleanSort;
   if (limit) cfg.limit = limit;
   return dump(cfg, { indent: 2, lineWidth: -1, noRefs: true });
 }

@@ -22,8 +22,14 @@
     manualAssoc,
     assocSeeded,
     nextAssocId,
+    removeSortRule,
+    undoSortRuleRemove,
+    removeManualAssocRow,
+    undoManualAssocRowRemove,
     DEFAULT_SETTINGS,
     announce,
+    bumpSortStructureVersion,
+    bumpAssocStructureVersion,
   } from "../stores.js";
   import { getFiltersForAPI } from "../logic-tree.js";
   import { positionsByType, PERSON_CHAR_TYPES } from "../schema-data.js";
@@ -43,6 +49,7 @@
   import { get } from "svelte/store";
   import { SvelteMap } from "svelte/reactivity";
   import AwesompleteInput from "./AwesompleteInput.svelte";
+  import PendingDelete from "./PendingDelete.svelte";
   import { TextMorph } from "torph/svelte";
   import { MorphIcon } from "morphicons/svelte";
   import {
@@ -123,9 +130,17 @@
 
   let assocRows = $derived.by(() => {
     return ($manualAssoc[target] || [])
-      .map(({ prefix, _id }) => {
+      .map(({ prefix, _id, _pendingDelete, _pendingDeleteToken }) => {
         if (!prefix)
-          return { key: `a${_id}`, _id, prefix: "", entity: null, dual: false };
+          return {
+            key: `a${_id}`,
+            _id,
+            prefix: "",
+            entity: null,
+            dual: false,
+            _pendingDelete,
+            _pendingDeleteToken,
+          };
         const info = prefixInfoMap.get(prefix);
         return info
           ? {
@@ -134,6 +149,8 @@
               prefix,
               entity: info.entity,
               dual: !!info.dual,
+              _pendingDelete,
+              _pendingDeleteToken,
             }
           : null;
       })
@@ -285,6 +302,7 @@
     );
     if (validRows.length !== rows.length) {
       manualAssoc.update((m) => ({ ...m, [target]: validRows }));
+      bumpAssocStructureVersion();
     }
     const tokens = splitTokens(get(outputColumns));
     const validTokens = tokens.filter((tok) => {
@@ -333,6 +351,7 @@
           ...toSeed.map((p) => ({ prefix: p, _id: nextAssocId() })),
         ],
       }));
+      bumpAssocStructureVersion();
       const tokens = splitTokens(get(outputColumns));
       let added = false;
       for (const p of toSeed) {
@@ -459,14 +478,21 @@
   }
 
   function removeRow(row) {
-    manualAssoc.update((m) => ({
-      ...m,
-      [target]: (m[target] || []).filter((r) => r._id !== row._id),
-    }));
     const tokens = splitTokens(get(outputColumns));
     const idx = findManagedIndex(tokens, row.prefix);
+    const removedToken = idx >= 0 ? tokens[idx] : null;
     if (idx >= 0) {
       tokens.splice(idx, 1);
+      writeTokens(tokens);
+    }
+    removeManualAssocRow(target, row._id, removedToken);
+  }
+
+  function undoRow(row) {
+    undoManualAssocRowRemove(target, row._id);
+    if (row._pendingDeleteToken) {
+      const tokens = splitTokens(get(outputColumns));
+      tokens.push(row._pendingDeleteToken);
       writeTokens(tokens);
     }
   }
@@ -481,6 +507,7 @@
       ...m,
       [target]: [...(m[target] || []), { prefix: "", _id: newId }],
     }));
+    bumpAssocStructureVersion();
     await tick();
     document
       .querySelector(
@@ -498,14 +525,19 @@
 
   async function addSortRule() {
     sortRules.update((rules) => [...rules, { field: "", direction: "asc" }]);
+    bumpSortStructureVersion();
     await tick();
     const rows = document.querySelectorAll(".sort-row");
     const last = rows[rows.length - 1];
     last?.querySelector("input")?.focus();
   }
 
-  function removeSortRule(idx) {
-    sortRules.update((rules) => rules.filter((_, i) => i !== idx));
+  function undoSortRule(idx) {
+    undoSortRuleRemove(idx);
+  }
+
+  function removeSortRuleLocal(idx) {
+    removeSortRule(idx);
   }
 
   function updateSortField(idx, field) {
@@ -625,35 +657,70 @@
     <div class="form-group">
       <span class="form-label">关联输出</span>
       {#each assocRowViews as row (row.key)}
-        <div class="assoc-row" data-assoc-id={row._id}>
-          <div
-            class="assoc-prefix-box"
-            title="切换该行输出的关联前缀；清空右侧字段即不输出该列"
-          >
-            <AwesompleteInput
-              value={row.prefix}
-              suggestions={prefixSuggestionsFor(row)}
-              placeholder="关联前缀"
-              onchange={(v) => renameRow(row, v)}
-            />
-          </div>
-          {#if !row.prefix}
-            <div class="assoc-fields">
+        {#if row._pendingDelete}
+          <PendingDelete
+            label="已删除关联输出"
+            margin="0 0 6px 0"
+            focusOnMount={true}
+            onUndo={() => undoRow(row)}
+          />
+        {:else}
+          <div class="assoc-row" data-assoc-id={row._id}>
+            <div
+              class="assoc-prefix-box"
+              title="切换该行输出的关联前缀；清空右侧字段即不输出该列"
+            >
               <AwesompleteInput
-                value=""
-                suggestions={[]}
-                placeholder=""
-                multiple={true}
-                separator="|"
-                disabled={true}
+                value={row.prefix}
+                suggestions={prefixSuggestionsFor(row)}
+                placeholder="关联前缀"
+                onchange={(v) => renameRow(row, v)}
               />
             </div>
-          {:else if row.dual}
-            <!-- Dual boxes stacked full-width; persistent left labels tell
-                 the two boxes apart even when filled. -->
-            <div class="assoc-fields assoc-dual">
-              <div class="assoc-field-line">
-                <span class="assoc-entity">{ENTITY_LABELS[row.entity]}</span>
+            {#if !row.prefix}
+              <div class="assoc-fields">
+                <AwesompleteInput
+                  value=""
+                  suggestions={[]}
+                  placeholder=""
+                  multiple={true}
+                  separator="|"
+                  disabled={true}
+                />
+              </div>
+            {:else if row.dual}
+              <!-- Dual boxes stacked full-width; persistent left labels tell
+                   the two boxes apart even when filled. -->
+              <div class="assoc-fields assoc-dual">
+                <div class="assoc-field-line">
+                  <span class="assoc-entity">{ENTITY_LABELS[row.entity]}</span>
+                  <AwesompleteInput
+                    value={row.fields.length ? row.fields.join("|") + "|" : ""}
+                    suggestions={ENTITY_FIELDS[row.entity]}
+                    placeholder="{ENTITY_LABELS[row.entity]}字段"
+                    multiple={true}
+                    separator="|"
+                    onchange={(v) =>
+                      updateRowToken(row, parseFieldList(v), row.subjectFields)}
+                  />
+                </div>
+                <div class="assoc-field-line">
+                  <span class="assoc-entity">{ENTITY_LABELS.subject}</span>
+                  <AwesompleteInput
+                    value={row.subjectFields.length
+                      ? row.subjectFields.join("|") + "|"
+                      : ""}
+                    suggestions={ENTITY_FIELDS.subject}
+                    placeholder="{ENTITY_LABELS.subject}字段"
+                    multiple={true}
+                    separator="|"
+                    onchange={(v) =>
+                      updateRowToken(row, row.fields, parseFieldList(v))}
+                  />
+                </div>
+              </div>
+            {:else}
+              <div class="assoc-fields">
                 <AwesompleteInput
                   value={row.fields.length ? row.fields.join("|") + "|" : ""}
                   suggestions={ENTITY_FIELDS[row.entity]}
@@ -664,43 +731,17 @@
                     updateRowToken(row, parseFieldList(v), row.subjectFields)}
                 />
               </div>
-              <div class="assoc-field-line">
-                <span class="assoc-entity">{ENTITY_LABELS.subject}</span>
-                <AwesompleteInput
-                  value={row.subjectFields.length
-                    ? row.subjectFields.join("|") + "|"
-                    : ""}
-                  suggestions={ENTITY_FIELDS.subject}
-                  placeholder="{ENTITY_LABELS.subject}字段"
-                  multiple={true}
-                  separator="|"
-                  onchange={(v) =>
-                    updateRowToken(row, row.fields, parseFieldList(v))}
-                />
-              </div>
-            </div>
-          {:else}
-            <div class="assoc-fields">
-              <AwesompleteInput
-                value={row.fields.length ? row.fields.join("|") + "|" : ""}
-                suggestions={ENTITY_FIELDS[row.entity]}
-                placeholder="{ENTITY_LABELS[row.entity]}字段"
-                multiple={true}
-                separator="|"
-                onchange={(v) =>
-                  updateRowToken(row, parseFieldList(v), row.subjectFields)}
-              />
-            </div>
-          {/if}
-          <button
-            class="tag-remove"
-            title="删除该关联行"
-            aria-label="删除该关联行"
-            onclick={() => removeRow(row)}
-          >
-            <MorphIcon icon={X} size={14} />
-          </button>
-        </div>
+            {/if}
+            <button
+              class="tag-remove"
+              title="删除该关联行"
+              aria-label="删除该关联行"
+              onclick={() => removeRow(row)}
+            >
+              <MorphIcon icon={X} size={14} />
+            </button>
+          </div>
+        {/if}
       {/each}
       {#if addablePrefixes.length > 0}
         <button class="btn btn-outline btn-xs" onclick={addManualRow}>
@@ -712,40 +753,49 @@
   <div class="form-group">
     <span class="form-label">排序</span>
     {#each $sortRules as rule, i (i)}
-      <div class="sort-row">
-        <div style="flex:1">
-          <AwesompleteInput
-            value={rule.field}
-            suggestions={sortSuggestions}
-            getTokenList={getSortTokenList}
-            sort={false}
-            maxItems={30}
-            onchange={(v) => updateSortField(i, v)}
-            oninput={(v) => updateSortField(i, v)}
-            placeholder="字段名"
-          />
+      {#if rule._pendingDelete}
+        <PendingDelete
+          label="已删除排序"
+          margin="0 0 6px 0"
+          focusOnMount={true}
+          onUndo={() => undoSortRule(i)}
+        />
+      {:else}
+        <div class="sort-row">
+          <div style="flex:1">
+            <AwesompleteInput
+              value={rule.field}
+              suggestions={sortSuggestions}
+              getTokenList={getSortTokenList}
+              sort={false}
+              maxItems={30}
+              onchange={(v) => updateSortField(i, v)}
+              oninput={(v) => updateSortField(i, v)}
+              placeholder="字段名"
+            />
+          </div>
+          <button
+            class="btn btn-sm btn-default"
+            onclick={() => toggleSortDirection(i)}
+          >
+            <MorphIcon
+              icon={rule.direction === "asc"
+                ? ArrowDownNarrowWide
+                : ArrowDownWideNarrow}
+              size={14}
+            />
+            {rule.direction === "asc" ? "升序" : "降序"}
+          </button>
+          <button
+            class="tag-remove"
+            onclick={() => removeSortRuleLocal(i)}
+            title="删除"
+            aria-label="删除排序"
+          >
+            <MorphIcon icon={X} size={14} />
+          </button>
         </div>
-        <button
-          class="btn btn-sm btn-default"
-          onclick={() => toggleSortDirection(i)}
-        >
-          <MorphIcon
-            icon={rule.direction === "asc"
-              ? ArrowDownNarrowWide
-              : ArrowDownWideNarrow}
-            size={14}
-          />
-          {rule.direction === "asc" ? "升序" : "降序"}
-        </button>
-        <button
-          class="tag-remove"
-          onclick={() => removeSortRule(i)}
-          title="删除"
-          aria-label="删除排序"
-        >
-          <MorphIcon icon={X} size={14} />
-        </button>
-      </div>
+      {/if}
     {/each}
     <button class="btn btn-outline btn-xs" onclick={addSortRule}>+ 排序</button>
   </div>

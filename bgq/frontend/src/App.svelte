@@ -22,7 +22,14 @@
     assocSeeded,
     sortState,
     liveMsg,
+    getPendingDeleteExempt,
+    purgeSortRulePendingDeletes,
+    purgeManualAssocPendingDeletes,
+    conditionStructureVersion,
+    sortStructureVersion,
+    assocStructureVersion,
   } from "./stores.js";
+  import { purgeLogicPendingDeletes } from "./logic-tree.js";
   import { decodeShareState, applyShareState, SHARE_PARAM } from "./share.js";
   import FilterTree from "./components/FilterTree.svelte";
   import ResultTable from "./components/ResultTable.svelte";
@@ -111,6 +118,7 @@
     });
   }
 
+  // Clear-all undo window: any mutation besides the clear itself invalidates it.
   $effect(() => {
     void $subjectRootLogic;
     void $personRootLogic;
@@ -126,6 +134,30 @@
     if (canUndo && !ignoreNextChange) {
       clearClearSnapshot();
       canUndo = false;
+    }
+  });
+
+  // Pending-delete undo windows: only expire when the same scope adds/removes
+  // an item. Edits within the scope keep the undo opportunity.
+  let prevConditionVersion = 0;
+  let prevSortVersion = 0;
+  let prevAssocVersion = 0;
+  $effect(() => {
+    const cv = $conditionStructureVersion;
+    const sv = $sortStructureVersion;
+    const av = $assocStructureVersion;
+    const exempt = getPendingDeleteExempt();
+    if (cv !== prevConditionVersion) {
+      prevConditionVersion = cv;
+      purgeLogicPendingDeletes(exempt);
+    }
+    if (sv !== prevSortVersion) {
+      prevSortVersion = sv;
+      purgeSortRulePendingDeletes(exempt);
+    }
+    if (av !== prevAssocVersion) {
+      prevAssocVersion = av;
+      purgeManualAssocPendingDeletes(exempt);
     }
   });
 

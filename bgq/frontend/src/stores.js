@@ -66,6 +66,121 @@ export function nextAssocId() {
   return ++_assocIdCounter;
 }
 
+let _pendingDeleteExempt = null;
+export function getPendingDeleteExempt() {
+  return _pendingDeleteExempt;
+}
+export function setPendingDeleteExempt(id) {
+  _pendingDeleteExempt = id;
+  if (id != null) {
+    setTimeout(() => {
+      if (_pendingDeleteExempt === id) _pendingDeleteExempt = null;
+    }, 0);
+  }
+}
+
+// Per-scope structure versions: only increment on add/remove (not edit).
+// Used to decide when pending-delete undo windows expire.
+export const conditionStructureVersion = writable(0);
+export const sortStructureVersion = writable(0);
+export const assocStructureVersion = writable(0);
+
+export function bumpConditionStructureVersion() {
+  conditionStructureVersion.update((n) => n + 1);
+}
+export function bumpSortStructureVersion() {
+  sortStructureVersion.update((n) => n + 1);
+}
+export function bumpAssocStructureVersion() {
+  assocStructureVersion.update((n) => n + 1);
+}
+export function resetStructureVersions() {
+  conditionStructureVersion.set(0);
+  sortStructureVersion.set(0);
+  assocStructureVersion.set(0);
+}
+
+// ---- Pending-delete helpers for in-place undo ----
+
+export function removeSortRule(idx) {
+  setPendingDeleteExempt(`sort:${idx}`);
+  announce("已删除排序");
+  sortRules.update((rules) =>
+    rules.map((r, i) => (i === idx ? { ...r, _pendingDelete: true } : r)),
+  );
+  bumpSortStructureVersion();
+}
+
+export function undoSortRuleRemove(idx) {
+  sortRules.update((rules) =>
+    rules.map((r, i) => {
+      if (i !== idx) return r;
+      const rest = { ...r };
+      delete rest._pendingDelete;
+      return rest;
+    }),
+  );
+}
+
+export function purgeSortRulePendingDeletes(exempt = null) {
+  const rules = get(sortRules);
+  const purged = rules.filter(
+    (r, i) => !r._pendingDelete || `sort:${i}` === exempt,
+  );
+  if (purged.length !== rules.length) sortRules.set(purged);
+}
+
+export function removeManualAssocRow(target, rowId, removedToken = null) {
+  setPendingDeleteExempt(`assoc:${target}:${rowId}`);
+  announce("已删除关联输出");
+  manualAssoc.update((m) => {
+    const rows = m[target] || [];
+    return {
+      ...m,
+      [target]: rows.map((r) =>
+        r._id === rowId
+          ? { ...r, _pendingDelete: true, _pendingDeleteToken: removedToken }
+          : r,
+      ),
+    };
+  });
+  bumpAssocStructureVersion();
+}
+
+export function undoManualAssocRowRemove(target, rowId) {
+  manualAssoc.update((m) => {
+    const rows = m[target] || [];
+    return {
+      ...m,
+      [target]: rows.map((r) => {
+        if (r._id !== rowId) return r;
+        const rest = { ...r };
+        delete rest._pendingDelete;
+        delete rest._pendingDeleteToken;
+        return rest;
+      }),
+    };
+  });
+}
+
+export function purgeManualAssocPendingDeletes(
+  exempt = null,
+  target = get(queryTarget),
+) {
+  const m = get(manualAssoc);
+  const rows = m[target];
+  if (!Array.isArray(rows)) return;
+  const list = rows.filter(
+    (r) => !r._pendingDelete || `assoc:${target}:${r._id}` === exempt,
+  );
+  if (list.length !== rows.length) {
+    const out = { ...m };
+    if (list.length > 0) out[target] = list;
+    else delete out[target];
+    manualAssoc.set(out);
+  }
+}
+
 // Old localStorage shape was { [target]: string[] } — upgrade to objects.
 function normalizeManualAssoc(v) {
   if (!v || typeof v !== "object") return null;
@@ -180,6 +295,7 @@ export function restoreClearSnapshot() {
   queryTarget.set(s.queryTarget);
   _clearSnapshot = null;
   bumpVersion();
+  resetStructureVersions();
   saveToStorage();
   return true;
 }

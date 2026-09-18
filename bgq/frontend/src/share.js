@@ -11,6 +11,7 @@ import {
   outputColumns,
   sortRules,
   resultLimit,
+  resetStructureVersions,
 } from "./stores.js";
 import { getFiltersForAPI, applyFiltersFromAPI } from "./logic-tree.js";
 import { get } from "svelte/store";
@@ -81,7 +82,7 @@ export function buildShareState() {
       .split(",")
       .map((s) => s.trim())
       .filter(Boolean) || [];
-  const sort = get(sortRules).filter((r) => r.field);
+  const sort = get(sortRules).filter((r) => r.field && !r._pendingDelete);
   return {
     v: STATE_VERSION,
     target: get(queryTarget),
@@ -116,6 +117,7 @@ export function applyShareState(state) {
   if (state.columns?.length > 0) outputColumns.set(state.columns.join(","));
   if (state.sort) sortRules.set(state.sort);
   if (state.limit) resultLimit.set(state.limit);
+  resetStructureVersions();
 }
 
 /** Build the full shareable URL for the current query, or null if too long. */
