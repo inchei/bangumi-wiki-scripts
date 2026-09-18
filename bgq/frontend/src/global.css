@@ -419,6 +419,7 @@ a:hover {
 
 .cond-row-inner .nested,
 .nested {
+  flex-basis: 100%;
   margin-left: 12px;
   margin-top: 2px;
 }
