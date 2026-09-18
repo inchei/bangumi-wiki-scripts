@@ -214,37 +214,38 @@
     ></div>
     <h1 class="app-name">Bangumi Query</h1>
   </div>
-  <span class="spacer"></span>
-  <a
-    class="btn btn-default"
-    href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/bgq"
-    target="_blank"
-    rel="noopener"
-    title="GitHub"
-  >
-    <svg
-      viewBox="0 0 24 24"
-      width="16"
-      height="16"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      style="transform: translateY(1px)"
-      ><path
-        d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
-      /></svg
+  <div class="header-actions">
+    <a
+      class="btn btn-default"
+      href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/bgq"
+      target="_blank"
+      rel="noopener"
+      title="GitHub"
     >
-  </a>
-  <button
-    class="btn btn-default"
-    onclick={cycleTheme}
-    title="主题: {resolvedTheme() === 'dark' ? '深色' : '浅色'}"
-    aria-label="切换主题"
-  >
-    <MorphIcon icon={resolvedTheme() === "light" ? Sun : Moon} size={16} />
-  </button>
+      <svg
+        viewBox="0 0 24 24"
+        width="16"
+        height="16"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        style="transform: translateY(1px)"
+        ><path
+          d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+        /></svg
+      >
+    </a>
+    <button
+      class="btn btn-default"
+      onclick={cycleTheme}
+      title="主题: {resolvedTheme() === 'dark' ? '深色' : '浅色'}"
+      aria-label="切换主题"
+    >
+      <MorphIcon icon={resolvedTheme() === "light" ? Sun : Moon} size={16} />
+    </button>
+  </div>
 </header>
 
 <!-- Main Container -->
@@ -336,6 +337,7 @@
       padding: 0;
       border: none;
       font-size: 16px;
+      min-width: 30px;
     }
   }
 
@@ -369,8 +371,11 @@
     }
   }
 
-  .spacer {
-    flex: 1;
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
   }
 
   /* ===== Layout ===== */
