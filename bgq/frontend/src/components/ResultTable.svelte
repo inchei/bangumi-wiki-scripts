@@ -494,6 +494,30 @@
     return `<span${langAttr(display)}>${escapeHtml(display + suffix).replace(/\n/g, "<br>")}</span>`;
   }
 
+  // Date sort applies to date fields only (mirrors backend dateFields in
+  // builder_util.go; sub-field names like "导演.生日" / "s.date" match by the
+  // part after the last "."). Other columns sort numeric → string so plain
+  // numbers never get misread as years.
+  const DATE_FIELDS = new Set([
+    "date",
+    "airdate",
+    "生日",
+    "放送开始",
+    "播放结束",
+    "发售日",
+    "连载开始",
+    "连载结束",
+    "开始",
+    "结束",
+  ]);
+
+  function isDateField(name) {
+    let f = String(name ?? "");
+    const dot = f.lastIndexOf(".");
+    if (dot >= 0) f = f.slice(dot + 1);
+    return DATE_FIELDS.has(f);
+  }
+
   // Keep in sync with backend builder.go:
   // - extractNum() — first number from multi-value fields like "{ [121页] [128页] }"
   // - infoboxFirstDateExpr + normalizeDate — first date from "|发售日={ [2004-08-14] }" / "13 June 1892"
@@ -534,7 +558,8 @@
     const rankZero = (v) => isRank && String(v ?? "").trim() === "0";
     const rows = [...res.rows];
     const vals = rows.map((r) => parseSortVal(r[ci]));
-    const hasDate = vals.some((p) => !p.empty && !isNaN(p.ts));
+    const hasDate =
+      isDateField(label) && vals.some((p) => !p.empty && !isNaN(p.ts));
     const hasNumeric = vals.some((p) => !p.empty && !isNaN(p.num));
     rows.sort((a, b) => {
       const pa = parseSortVal(a[ci]),
@@ -570,7 +595,8 @@
       .filter((v) => v !== null && v !== undefined && v !== "" && !rankZero(v));
     if (vals.length === 0) return { empty: true, key: 0 };
     const parsed = vals.map((v) => parseSortVal(v));
-    const hasDate = parsed.some((p) => !p.empty && !isNaN(p.ts));
+    const hasDate =
+      isDateField(field) && parsed.some((p) => !p.empty && !isNaN(p.ts));
     const hasNumeric = parsed.some((p) => !p.empty && !isNaN(p.num));
     let best = null;
     for (const p of parsed) {
@@ -643,7 +669,8 @@
         if (px.empty) return 1;
         if (py.empty) return -1;
         let cmp;
-        if (!isNaN(px.ts) && !isNaN(py.ts)) cmp = px.ts - py.ts;
+        if (isDateField(dc.field) && !isNaN(px.ts) && !isNaN(py.ts))
+          cmp = px.ts - py.ts;
         else if (!isNaN(px.num) && !isNaN(py.num)) cmp = px.num - py.num;
         else cmp = px.str.localeCompare(py.str, "zh");
         return asc ? cmp : -cmp;
