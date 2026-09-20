@@ -82,6 +82,11 @@ jobs:
           mkdir -p results
           uv run find_alias_staff_needs_realname.py --archive-dir bangumi_archive --aliases-file person_alias.json --output results/alias-annotate.csv
 
+      - name: 清除改名後殘餘的本名標註
+        run: |
+          mkdir -p results
+          uv run find_stale_realname_annotations.py --archive-dir bangumi_archive --aliases-file person_alias.json --output results/stale-realname-annotations.csv
+
       - name: 查找可转换简体中文名的人物/角色
         run: |
           mkdir -p results
