@@ -1,6 +1,7 @@
 import fastDiff from 'fast-diff';
 import {
     DiffLineType,
+    changeMaxLengthToIgnoreLineDiff,
     getPlainDiffTemplateByFastDiff,
     type DiffFile,
     type DiffLine,
@@ -13,6 +14,10 @@ type Seg = {
     endIndex: number;
     length: number;
 };
+
+const MAX_INLINE_CHARS = 10000;
+
+changeMaxLengthToIgnoreLineDiff(MAX_INLINE_CHARS);
 
 function toSegments(ops: fastDiff.Diff[], keep: (t: number) => boolean): Seg[] {
     let start = 0;
@@ -32,19 +37,23 @@ function toSegments(ops: fastDiff.Diff[], keep: (t: number) => boolean): Seg[] {
 }
 
 function refinePair(deletion: DiffLine, addition: DiffLine): void {
+    if (deletion.text.length > MAX_INLINE_CHARS || addition.text.length > MAX_INLINE_CHARS) return;
     const ops = fastDiff(deletion.text, addition.text, 0, false);
     const addSegs = toSegments(ops, (t) => t !== -1);
     const delSegs = toSegments(ops, (t) => t !== 1);
     const hasLineChange = addSegs.some((s) => s.type === 0 && s.str.trim().length > 0);
+    const addChanges = addition.changes;
+    const delChanges = deletion.changes;
+    if (!addChanges || !delChanges) return;
     addition.diffChanges = {
         range: addSegs,
         hasLineChange,
-        newLineSymbol: addition.changes?.newLineSymbol,
+        newLineSymbol: addChanges.newLineSymbol,
     };
     deletion.diffChanges = {
         range: delSegs,
         hasLineChange,
-        newLineSymbol: deletion.changes?.newLineSymbol,
+        newLineSymbol: delChanges.newLineSymbol,
     };
     addition._diffChanges = deletion.diffChanges;
     deletion._diffChanges = addition.diffChanges;
