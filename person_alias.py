@@ -37,7 +37,11 @@ def process_brackets(text, is_primary_name):
         return text, []
     return text, brackets
 
+NO_SLASH_SPLIT_ALIASES = {"Dios/シグナルP"}
+
 def split_aliases(alias, is_exception_name):
+    if alias.strip() in NO_SLASH_SPLIT_ALIASES:
+        return [alias.strip()]
     parts = [p.strip() for p in re.split(r'\s*[／/]\s*', alias) if p.strip()]
     if not parts:
         return []
