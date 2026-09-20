@@ -161,7 +161,7 @@ export function updateTagsDiffDisplay(oldTags: string[], newTags: string[], cont
 export function getFieldUpdates(csvItem: CsvItem, _oldInfobox: string): Record<string, string> {
     const updates: Record<string, string> = {};
     Object.keys(csvItem).forEach(key => {
-        if (!['id', 'tags', 'series', 'type'].includes(key.toLowerCase())) {
+        if (!['id', 'tags', 'series', 'type', 'infobox'].includes(key.toLowerCase())) {
             const val = csvItem[key];
             if (val !== undefined) {
                 updates[key] = val;
@@ -169,6 +169,14 @@ export function getFieldUpdates(csvItem: CsvItem, _oldInfobox: string): Record<s
         }
     });
     return updates;
+}
+
+export function getFullInfobox(csvItem: CsvItem): string | null {
+    const key = Object.keys(csvItem).find(k => k.toLowerCase() === 'infobox');
+    if (!key) return null;
+    const val = csvItem[key]?.replaceAll('\\n', '\n');
+    if (!val || !val.trim()) return null;
+    return val;
 }
 
 export function getTagUpdates(csvItem: CsvItem, _oldTags: string[]): TagUpdates {

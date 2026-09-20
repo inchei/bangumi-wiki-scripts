@@ -27,10 +27,14 @@ function syncData(): SyncData {
 }
 
 function applySyncData(data: SyncData): void {
-  localStorage.setItem('bgmCsvData', data.csvData)
-  localStorage.setItem('bgmCurrentIndex', data.currentIndex.toString())
-  localStorage.setItem('bgmEntityType', data.entityType)
-  localStorage.setItem('bgmTotalItems', data.totalItems.toString())
+  try {
+    localStorage.setItem('bgmCsvData', data.csvData)
+    localStorage.setItem('bgmCurrentIndex', data.currentIndex.toString())
+    localStorage.setItem('bgmEntityType', data.entityType)
+    localStorage.setItem('bgmTotalItems', data.totalItems.toString())
+  } catch {
+    throw new Error('同步数据过大，超出本地存储配额')
+  }
   GM_setValue('bgmRetryCount', data.retryCount)
   if (data.previousItem) localStorage.setItem('bgmPreviousItem', data.previousItem)
   else localStorage.removeItem('bgmPreviousItem')

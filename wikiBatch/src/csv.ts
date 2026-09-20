@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import { state, type CsvItem } from './core';
+import { state, persistCsvData, type CsvItem } from './core';
 import { showLoadingOverlay, hideLoadingOverlay, showStatusMessage } from './ui';
 import { switchToSetupView } from './views';
 
@@ -10,10 +10,11 @@ function loadCSVContent(csvContent: string, sourceLabel: string): void {
         state.currentIndex = 0;
         state.retryCount = {};
         state.previousItem = null;
-        localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
+        state.csvPersistDenied = false;
+        const persisted = persistCsvData();
         localStorage.setItem('bgmCurrentIndex', '0');
         switchToSetupView();
-        showStatusMessage(sourceLabel + '加载成功');
+        showStatusMessage(sourceLabel + '加载成功' + (persisted ? '' : '（内存模式：刷新页面后需重新加载）'));
     } catch (error: unknown) {
         showStatusMessage('CSV解析错误: ' + (error as Error).message);
         console.error(error);

@@ -15,6 +15,7 @@ import {
 } from './ui';
 import {
     getFieldUpdates,
+    getFullInfobox,
     getTagUpdates,
     getSeriesUpdate,
     updateInfobox,
@@ -107,6 +108,7 @@ export function switchToSetupView(): void {
                                 必备ID列，条目id，人物person_id，角色character_id<br>
                                 tags列使用空格分隔标签，前缀带"-"的标签表示删除该标签<br>
                                 series列使用true或false表示是否标记为系列<br>
+                                infobox列将整体替换Wiki文本（其余列仍按字段名逐项更新）<br>
                                 可使用 <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/bgq" target="_blank">Bangumi Query</a> 辅助生成（<a href="https://bgq.iccci.cc.cd" target="_blank">demo</a>）
                             </p>
                         </div>
@@ -306,6 +308,7 @@ export function switchToProcessingView(itemData: {
     const oldTags = entityType === 'subject' ? (wikiData.metaTags || []) : [];
     const oldSeries = entityType === 'subject' ? (wikiData.series || false) : false;
     const fieldUpdates = getFieldUpdates(currentItem, oldInfobox);
+    const fullInfobox = getFullInfobox(currentItem);
     const tagUpdates = getTagUpdates(currentItem, oldTags);
     const seriesUpdate = getSeriesUpdate(currentItem, oldSeries);
     state.currentFieldUpdates = fieldUpdates;
@@ -363,7 +366,7 @@ export function switchToProcessingView(itemData: {
 
     const wcodeInput = document.getElementById('static-wcode-input') as HTMLTextAreaElement;
     const contentDiffSection = document.getElementById('static-content-diff-container');
-    const newInfobox = updateInfobox(oldInfobox, fieldUpdates);
+    const newInfobox = updateInfobox(fullInfobox ?? oldInfobox, fieldUpdates);
     wcodeInput.value = newInfobox;
     updateDiffDisplay(oldInfobox, newInfobox, 'static-content-diff-container');
     if (contentDiffSection) contentDiffSection.style.display = 'block';

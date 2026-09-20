@@ -56,6 +56,7 @@ export interface State {
   submitMethod: 'patch' | 'post';
   entityType: EntityType;
   csvData: CsvItem[] | null;
+  csvPersistDenied: boolean;
   currentIndex: number;
   totalItems: number;
   processing: boolean;
@@ -84,6 +85,7 @@ export const state: State = {
     submitMethod: (GM_getValue('bgmSubmitMethod') as 'patch' | 'post') || 'patch',
     entityType: (localStorage.getItem('bgmEntityType') as EntityType) || 'subject',
     csvData: JSON.parse(localStorage.getItem('bgmCsvData') || 'null'),
+    csvPersistDenied: false,
     currentIndex: parseInt(localStorage.getItem('bgmCurrentIndex') || '0'),
     totalItems: parseInt(localStorage.getItem('bgmTotalItems') || '0'),
     processing: false,
@@ -111,7 +113,7 @@ export function saveState(): void {
     GM_setValue('bgmFormhash', state.formhash);
     GM_setValue('bgmSubmitMethod', state.submitMethod);
     localStorage.setItem('bgmEntityType', state.entityType);
-    localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
+    persistCsvData();
     localStorage.setItem('bgmCurrentIndex', state.currentIndex.toString());
     localStorage.setItem('bgmTotalItems', state.totalItems.toString());
     GM_setValue('bgmRetryCount', JSON.stringify(state.retryCount));
@@ -122,6 +124,17 @@ export function saveState(): void {
     }
     localStorage.setItem('bgmDiffViewMode', state.diffViewMode);
     localStorage.setItem('bgmTheme', state.theme);
+}
+
+export function persistCsvData(): boolean {
+    if (state.csvPersistDenied) return false;
+    try {
+        localStorage.setItem('bgmCsvData', JSON.stringify(state.csvData));
+        return true;
+    } catch {
+        state.csvPersistDenied = true;
+        return false;
+    }
 }
 
 export function getEntityApiConfig(type: EntityType, id: string): EntityConfig {
