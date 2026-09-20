@@ -3,6 +3,7 @@ import { DiffView, DiffModeEnum } from '@git-diff-view/svelte';
 import { mount, unmount } from 'svelte';
 import { state, type EntityType, type TagUpdates, type SeriesUpdate, type CsvItem } from './core';
 import { sanitizeRegExp, arraysEqual } from './utils';
+import { refineInlineHighlights } from './inline-diff';
 import { INFOBOX_FIELD_ORDER, INFOBOX_HEADER_MAP } from './infobox-field-order';
 
 export function getResolvedTheme(): 'light' | 'dark' {
@@ -88,6 +89,7 @@ export function updateDiffDisplay(oldText: string, newText: string, containerId:
         const file = generateDiffFile(oldFileName, normalizedOld, newFileName, normalizedNew, 'text', 'text', { context: 1 });
         file.init();
         file.buildSplitDiffLines();
+        refineInlineHighlights(file);
 
         const container = document.getElementById(containerId);
         if (!container) return;
