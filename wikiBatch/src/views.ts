@@ -21,10 +21,10 @@ import {
     updateInfobox,
     applyTagUpdates,
     generateCommitMessage,
-    updateDiffDisplay,
-    updateTagsDiffDisplay,
     updateConfirmButtonState,
+    getResolvedTheme,
 } from './diff';
+import { getDoc, setDiffContent, WCODE_CONTAINER_ID, TAGS_CONTAINER_ID } from './cm-diff';
 import { isRecentUpdate, resetProcessingState } from './utils';
 import { handleFileUpload, handlePasteCSV } from './csv';
 
@@ -364,25 +364,26 @@ export function switchToProcessingView(itemData: {
     lockCommitBtn.innerHTML = `<i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>`;
     lockCommitBtn.title = state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要';
 
-    const wcodeInput = document.getElementById('static-wcode-input') as HTMLTextAreaElement;
-    const contentDiffSection = document.getElementById('static-content-diff-container');
     const newInfobox = updateInfobox(fullInfobox ?? oldInfobox, fieldUpdates);
-    wcodeInput.value = newInfobox;
-    updateDiffDisplay(oldInfobox, newInfobox, 'static-content-diff-container');
-    if (contentDiffSection) contentDiffSection.style.display = 'block';
+    setDiffContent(WCODE_CONTAINER_ID, oldInfobox, newInfobox, getResolvedTheme() === 'dark', () => {
+        if (state.currentView === 'processing' && state.currentSubjectData) {
+            state.currentWcode = getDoc(WCODE_CONTAINER_ID);
+            updateConfirmButtonState();
+        }
+    });
 
     const tagsArea = document.getElementById('static-tags-area');
-    const tagsDiffWrapper = document.getElementById('static-tags-diff-wrapper');
     if (entityType === 'subject') {
-        const tagsInput = document.getElementById('static-tags-input') as HTMLInputElement;
         const newTags = applyTagUpdates(oldTags, tagUpdates);
-        tagsInput.value = newTags.join(' ');
-        updateTagsDiffDisplay(oldTags, newTags, 'static-tags-diff-container');
+        setDiffContent(TAGS_CONTAINER_ID, oldTags.join(' '), newTags.join(' '), getResolvedTheme() === 'dark', () => {
+            if (state.currentView === 'processing' && state.currentSubjectData) {
+                state.currentTags = getDoc(TAGS_CONTAINER_ID);
+                updateConfirmButtonState();
+            }
+        });
         if (tagsArea) tagsArea.style.display = 'block';
-        if (tagsDiffWrapper) tagsDiffWrapper.style.display = 'block';
     } else {
         if (tagsArea) tagsArea.style.display = 'none';
-        if (tagsDiffWrapper) tagsDiffWrapper.style.display = 'none';
     }
 
     const seriesArea = document.getElementById('static-series-area');

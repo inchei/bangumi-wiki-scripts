@@ -687,6 +687,25 @@
     outline: none;
 }
 
+#static-cm-diff,
+#static-tags-cm-diff {
+    min-height: 120px;
+}
+
+#static-cm-diff .cm-editor,
+#static-tags-cm-diff .cm-editor {
+    height: 100%;
+}
+
+#static-tags-cm-diff {
+    min-height: 40px;
+}
+
+.cm-merge-revert button {
+    font-size: 20px !important;
+    padding: 0 !important;
+}
+
 .tags-edit-area {
     margin: 0;
     display: flex;

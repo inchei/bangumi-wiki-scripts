@@ -1,9 +1,6 @@
-import { generateDiffFile } from '@git-diff-view/file';
-import { DiffView, DiffModeEnum } from '@git-diff-view/svelte';
-import { mount, unmount } from 'svelte';
 import { state, type EntityType, type TagUpdates, type SeriesUpdate, type CsvItem } from './core';
 import { sanitizeRegExp, arraysEqual } from './utils';
-import { refineInlineHighlights } from './inline-diff';
+import { getDoc, refreshEditorTheme, TAGS_CONTAINER_ID } from './cm-diff';
 import { INFOBOX_FIELD_ORDER, INFOBOX_HEADER_MAP } from './infobox-field-order';
 
 export function getResolvedTheme(): 'light' | 'dark' {
@@ -20,15 +17,14 @@ export function checkForUpdates(): boolean {
     if (!state.currentSubjectData) return false;
 
     const entityType = getCurrentEntityType();
-    const currentWcode = (document.getElementById('static-wcode-input') as HTMLTextAreaElement).value;
+    const currentWcode = getDoc('static-cm-diff');
     const normalizedCurrentWcode = currentWcode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
     const originalWcode = state.currentSubjectData.infobox || '';
     const normalizedOriginalWcode = originalWcode.replace(/\r\n/g, '\n').replace(/\r/g, '\n').trim();
     const wcodeChanged = normalizedCurrentWcode !== normalizedOriginalWcode;
 
     if (entityType === 'subject') {
-        const tagsInput = document.getElementById('static-tags-input') as HTMLInputElement;
-        const currentTags = tagsInput.value.split(' ').filter(t => t);
+        const currentTags = getDoc(TAGS_CONTAINER_ID).split(' ').filter(t => t);
         const currentSeries = (document.getElementById('static-series-checkbox') as HTMLInputElement).checked;
         const originalTags = state.currentSubjectData.metaTags || [];
         const originalSeries = state.currentSubjectData.series || false;
@@ -79,85 +75,11 @@ export function generateCommitMessage(
     return messages.filter(s => s).join('；') || '更新条目信息';
 }
 
-export function updateDiffDisplay(oldText: string, newText: string, containerId: string): void {
-    try {
-        const normalizedOld = (oldText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-        const normalizedNew = (newText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-        const oldFileName = '编辑前';
-        const newFileName = '编辑后';
-
-        const file = generateDiffFile(oldFileName, normalizedOld, newFileName, normalizedNew, 'text', 'text', { context: 1 });
-        file.init();
-        file.buildSplitDiffLines();
-        refineInlineHighlights(file);
-
-        const container = document.getElementById(containerId);
-        if (!container) return;
-
-        const oldInstance = (container as any)._diffViewInstance;
-        if (oldInstance) {
-            unmount(oldInstance);
-        }
-
-        container.innerHTML = '';
-
-        const instance = mount(DiffView, {
-            target: container,
-            props: {
-                diffFile: file,
-                diffViewMode: state.diffViewMode === 'unified' ? DiffModeEnum.Unified : DiffModeEnum.Split,
-                diffViewFontSize: 13,
-                diffViewTheme: getResolvedTheme(),
-                diffViewHighlight: true,
-                diffViewWrap: true,
-            },
-        });
-        (container as any)._diffViewInstance = instance;
-
-        if (containerId === 'static-content-diff-container') {
-            setTimeout(() => {
-                const textarea = document.getElementById('static-wcode-input') as HTMLTextAreaElement | null;
-                if (!textarea) return;
-                textarea.style.height = '';
-            }, 0);
-        }
-
-        const diffError = document.getElementById('diff-error');
-        if (diffError) diffError.style.display = 'none';
-    } catch (e: unknown) {
-        console.error('Diff generation error:', e);
-        const diffError = document.getElementById('diff-error');
-        if (diffError) {
-            diffError.textContent = `差异显示错误: ${(e as Error).message}`;
-            diffError.style.display = 'block';
-        }
-    }
-}
-
 export function refreshDiffDisplays(): void {
     const subjectData = state.currentSubjectData;
     if (!subjectData) return;
 
-    const entityType = getCurrentEntityType();
-    const oldInfobox = subjectData.infobox || '';
-    const newInfobox = (document.getElementById('static-wcode-input') as HTMLTextAreaElement | null)?.value;
-    if (newInfobox !== undefined) {
-        updateDiffDisplay(oldInfobox, newInfobox, 'static-content-diff-container');
-    }
-
-    if (entityType === 'subject') {
-        const oldTags = subjectData.metaTags || [];
-        const newTags = (document.getElementById('static-tags-input') as HTMLInputElement | null)?.value.split(' ').filter(t => t);
-        if (newTags !== undefined) {
-            updateTagsDiffDisplay(oldTags, newTags, 'static-tags-diff-container');
-        }
-    }
-}
-
-export function updateTagsDiffDisplay(oldTags: string[], newTags: string[], containerId: string): void {
-    const oldText = oldTags.join('\n');
-    const newText = newTags.join('\n');
-    updateDiffDisplay(oldText, newText, containerId);
+    refreshEditorTheme(getResolvedTheme() === 'dark');
 }
 
 export function getFieldUpdates(csvItem: CsvItem, _oldInfobox: string): Record<string, string> {

@@ -3,8 +3,6 @@ import { switchToSetupView } from './views';
 import { hideStatusMessage } from './ui';
 import {
     updateConfirmButtonState,
-    updateDiffDisplay,
-    updateTagsDiffDisplay,
     generateCommitMessage,
     refreshDiffDisplays,
     getResolvedTheme,
@@ -183,10 +181,10 @@ export function createStaticDOM(): void {
                     <div class="edit-rows">
                         <div class="edit-row">
                             <div class="edit-area" id="static-wcode-area">
-                                <label for="static-wcode-input">Wcode</label>
-                                <textarea id="static-wcode-input"></textarea>
+                                <label>Wcode</label>
+                                <div id="static-cm-diff"></div>
                             </div>
-                            <div>
+                            <div class="wcode-diff-col" style="display: none;">
                                 <div class="diff-section-label">Wcode 变更</div>
                                 <div class="diff-section wcode-diff-section">
                                     <div id="static-content-diff-container" class="diff-container"></div>
@@ -194,15 +192,9 @@ export function createStaticDOM(): void {
                             </div>
                         </div>
                         <div class="edit-row">
-                            <div class="tags-edit-area" id="static-tags-area">
-                                <label for="static-tags-input">标签 (空格分隔)</label>
-                                <input type="text" id="static-tags-input">
-                            </div>
-                            <div id="static-tags-diff-wrapper">
-                                <div class="diff-section-label">标签变更</div>
-                                <div class="diff-section tags-diff-section" id="static-tags-diff-section">
-                                    <div id="static-tags-diff-container" class="diff-container"></div>
-                                </div>
+                            <div class="edit-area" id="static-tags-area">
+                                <label>标签（空格分隔）</label>
+                                <div id="static-tags-cm-diff"></div>
                             </div>
                         </div>
                         <div class="edit-row" id="static-series-area">
@@ -340,32 +332,6 @@ function bindEditRegionEvents(): void {
         }
         saveState();
         updateConfirmButtonState();
-    });
-
-    const wcodeInput = document.getElementById('static-wcode-input') as HTMLTextAreaElement;
-    wcodeInput.addEventListener('input', (e) => {
-        if (state.currentView === 'processing' && state.currentSubjectData) {
-            state.currentWcode = (e.target as HTMLTextAreaElement).value;
-            updateDiffDisplay(
-                state.currentSubjectData.infobox || '',
-                (e.target as HTMLTextAreaElement).value,
-                'static-content-diff-container',
-            );
-            updateConfirmButtonState();
-        }
-    });
-
-    const tagsInput = document.getElementById('static-tags-input') as HTMLInputElement;
-    tagsInput.addEventListener('input', (e) => {
-        if (state.currentView === 'processing' && state.currentSubjectData) {
-            state.currentTags = (e.target as HTMLInputElement).value;
-            updateTagsDiffDisplay(
-                state.currentSubjectData.metaTags || [],
-                (e.target as HTMLInputElement).value.split(' ').filter(t => t),
-                'static-tags-diff-container',
-            );
-            updateConfirmButtonState();
-        }
     });
 
     const seriesCheckbox = document.getElementById('static-series-checkbox') as HTMLInputElement;

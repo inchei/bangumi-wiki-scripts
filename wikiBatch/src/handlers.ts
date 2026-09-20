@@ -5,6 +5,7 @@ import { showStatusMessage, showLoadingOverlay, hideLoadingOverlay } from './ui'
 import { switchToSetupView, switchToUpdateErrorView } from './views';
 import { resetProcessingState } from './utils';
 import { saveState } from './core';
+import { getDoc, TAGS_CONTAINER_ID, WCODE_CONTAINER_ID } from './cm-diff';
 import { authorizeWithGitHub, uploadToGist, downloadFromGist, clearGistAuth } from './gist-sync';
 
 export function handleSetupViewButtons(btnId: string): void {
@@ -92,10 +93,10 @@ export function handleProcessingViewButtons(btnId: string): void {
 
     switch (btnId) {
         case 'process-confirm-update': {
-            const finalWcode = (document.getElementById('static-wcode-input') as HTMLTextAreaElement).value;
+            const finalWcode = getDoc(WCODE_CONTAINER_ID);
 
             const finalTags = entityType === 'subject'
-                ? (document.getElementById('static-tags-input') as HTMLInputElement).value.split(' ').filter(t => t)
+                ? getDoc(TAGS_CONTAINER_ID).split(' ').filter(t => t)
                 : [];
             const finalSeries = entityType === 'subject'
                 ? (document.getElementById('static-series-checkbox') as HTMLInputElement).checked

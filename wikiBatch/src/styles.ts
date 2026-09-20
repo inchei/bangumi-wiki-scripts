@@ -1,8 +1,6 @@
 import appCss from './styles.css';
-import diffViewCss from '@git-diff-view/svelte/styles/diff-view.css';
 
 GM_addStyle(appCss);
-GM_addStyle(diffViewCss);
 
 const fontAwesome = document.createElement('link');
 fontAwesome.rel = 'stylesheet';
