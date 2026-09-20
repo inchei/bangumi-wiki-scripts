@@ -14,9 +14,9 @@ os.makedirs(output_dir, exist_ok=True)
 HTML_MAX_BYTES = 2_000_000
 
 DATA_FILES = [
-    ('person_alias.json.gz', '人物别名数据（wikiPersonAlias 用户脚本用）'),
-    ('missing-cn-name-person.csv', '可自动转换简体中文名的人物列表'),
-    ('missing-cn-name-character.csv', '可自动转换简体中文名的角色列表'),
+    'person_alias.json.gz',
+    'missing-cn-name-person.csv',
+    'missing-cn-name-character.csv',
 ]
 
 DARK_MODE = '''<style>
@@ -54,7 +54,7 @@ for fname in sorted(os.listdir(results_dir)):
     src = os.path.join(results_dir, fname)
     if os.path.getsize(src) > HTML_MAX_BYTES:
         shutil.copy(src, os.path.join(output_dir, fname))
-        downloads.append((fname, f'{fname}（文件较大，仅提供下载）'))
+        downloads.append(fname)
         continue
     target = filter_target(fname[:-4])
 
@@ -111,7 +111,7 @@ if os.path.exists(txt_src):
     pages.append(('duplicate_check_results.html', 'duplicate_check_results.txt'))
 
 data_links = []
-for name, desc in DATA_FILES:
+for name in DATA_FILES:
     src = os.path.join(results_dir, name)
     if name == 'person_alias.json.gz':
         src = name
@@ -119,7 +119,7 @@ for name, desc in DATA_FILES:
         continue
     dst = os.path.join(output_dir, name)
     shutil.copy(src, dst)
-    data_links.append((name, desc))
+    data_links.append(name)
 for entry in sorted(os.listdir(results_dir)):
     parts_dir = os.path.join(results_dir, entry)
     if not (os.path.isdir(parts_dir) and entry.endswith('_parts')):
@@ -128,8 +128,7 @@ for entry in sorted(os.listdir(results_dir)):
     shutil.copytree(parts_dir, dst_dir, dirs_exist_ok=True)
     for pf in sorted(os.listdir(dst_dir)):
         if pf.endswith('.csv'):
-            m = re.search(r'-p(\d+)\.csv$', pf)
-            downloads.append((f'{entry}/{pf}', m.group(1) if m else pf))
+            downloads.append(f'{entry}/{pf}')
 if data_links:
     with open(os.path.join(output_dir, 'data_version.txt'), 'w') as f:
         f.write(datetime.datetime.now().strftime('%Y-%m-%d'))
@@ -140,16 +139,16 @@ idx_body = ['<h1>Bangumi 筛选结果</h1>',
 for out, src in pages:
     idx_body.append(f'<li><a href="{html.escape(out)}" target="_blank">{html.escape(src)}</a></li>')
 if os.path.exists(os.path.join(output_dir, 'volume_order_report.html')):
-    idx_body.append('<li><a href="volume_order_report.html" target="_blank">volume_order_report.html</a> — 可疑单行本排序错误</li>')
+    idx_body.append('<li><a href="volume_order_report.html" target="_blank">volume_order_report.html</a></li>')
 if os.path.isdir(os.path.join(output_dir, 'missing-persons')):
-    idx_body.append('<li><a href="missing-persons/" target="_blank">missing-persons</a> — 缺失或缺失关联的人物</li>')
+    idx_body.append('<li><a href="missing-persons/" target="_blank">missing-persons</a></li>')
 idx_body.append('</ul>')
 if data_links or downloads:
     idx_body.append('<h2>下载文件</h2><ul>')
-    for name, desc in data_links:
-        idx_body.append(f'<li><a href="{html.escape(name)}" download>{html.escape(name)}</a> — {html.escape(desc)}</li>')
-    for name, desc in downloads:
-        idx_body.append(f'<li><a href="{html.escape(name)}" download>{html.escape(name)}</a> — {html.escape(desc)}</li>')
+    for name in data_links:
+        idx_body.append(f'<li><a href="{html.escape(name)}" download>{html.escape(name)}</a></li>')
+    for name in downloads:
+        idx_body.append(f'<li><a href="{html.escape(name)}" download>{html.escape(name)}</a></li>')
     idx_body.append('</ul>')
 idx = page_wrap('筛选结果', idx_body)
 with open(os.path.join(output_dir, 'index.html'), 'w') as f:
