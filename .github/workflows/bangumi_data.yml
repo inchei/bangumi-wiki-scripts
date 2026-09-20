@@ -132,6 +132,14 @@ jobs:
           echo ""
           echo "  筛选完成: ${success} 成功, ${fail} 失败"
 
+      - name: 分隔超大 CSV
+        run: |
+          chmod +x split_csv.sh
+          for f in results/*.csv; do
+            [ -f "$f" ] || continue
+            ./split_csv.sh "$f" --out-dir "results/$(basename "$f" .csv)_parts" --threshold 1000000
+          done
+
       - name: 检查单行本卷序
         env:
           DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
