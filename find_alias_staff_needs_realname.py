@@ -10,6 +10,8 @@
     若該行值中沒有出現人物本名，
     則檢查該人物別名是否出現；若出現，將命中 token 改寫為 `別名[本名]`。
     若命中的別名本身包含本名（如 月刊Asuka 之於 ASUKA），則跳過該別名。
+    `(現:Y)` / `(现:Y)` 中的 Y 視為本名已出現。
+    僅檢查動畫條目（type 2）。
 
 輸出：`id,infobox` 兩列 CSV（infobox 為改寫後的全文，僅命中行被修改，
 其餘行、前綴空格、換行格式原樣保留）。
@@ -35,6 +37,9 @@ from collections import Counter, defaultdict
 
 KATA_TO_HIRA = str.maketrans({chr(c): chr(c - 0x60) for c in range(0x30A1, 0x30F7)})
 
+# 反對 bangumi 對日劇雙重標準及其帶來的低質量條目
+INCLUDE_TYPES = {2}
+
 
 def _norm(s):
     s = unicodedata.normalize('NFKC', s)
@@ -43,6 +48,7 @@ def _norm(s):
 
 DELIM_CHARS = '()[]{}（）<>《》「」『』【】+×·→/／、,，;；：&＆\\等'
 LINE_RE = re.compile(r'^\|([^|=\n]+?)\s*=\s*([^\n\r|]*)')
+GEN_RE = re.compile(r'[（(]\s*[現现]\s*[:：]?\s*([^（）()\n\r]+?)\s*[）)]')
 
 _SPLIT_CACHE = {}
 
@@ -117,6 +123,9 @@ def annotate_value(value, canon, alias_set):
     skip |= {unicodedata.normalize('NFKC', c) for c in list(skip)}
     split_re = split_re_for(skip)
     canon_n = _norm(canon)
+    for m in GEN_RE.finditer(value):
+        if _norm(m.group(1)) == canon_n:
+            return None
     segs = split_re.split(value)
     for i in range(0, len(segs), 2):
         if segs[i] and _norm(segs[i]) == canon_n:
@@ -144,6 +153,8 @@ def annotate_value(value, canon, alias_set):
 
 
 def process_subject(sid, stype, infobox, links, staff, id_to_canon, id_to_aliases, stats):
+    if stype not in INCLUDE_TYPES:
+        return None
     pos_map = staff.get(stype)
     if not pos_map or not links:
         return None
