@@ -356,7 +356,7 @@ export function switchToProcessingView(itemData: {
             state.currentWcode = getDoc(WCODE_CONTAINER_ID);
             updateConfirmButtonState();
         }
-    });
+    }, true);
 
     const tagsArea = document.getElementById('static-tags-area');
     if (entityType === 'subject') {

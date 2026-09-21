@@ -868,6 +868,15 @@ morph-icon.spin svg {
     height: 100%;
 }
 
+.cm-activeLine {
+    background-image: linear-gradient(rgb(127 127 127 / 10%), rgb(127 127 127 / 10%));
+}
+
+#static-cm-diff .cm-panels,
+#static-tags-cm-diff .cm-panels {
+    z-index: 5;
+}
+
 #static-tags-cm-diff {
     min-height: 40px;
 }

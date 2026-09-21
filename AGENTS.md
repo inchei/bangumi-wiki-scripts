@@ -257,7 +257,7 @@ DO NOT add code comments unless explicitly asked. Never pre-emptively explain ne
 
 ## Commit Conventions
 
-Use conventional commits with scope parentheses.
+Use conventional commits with scope parentheses. Commit messages must be in English, one-line title only (no detailed body).
 Examples: `feat(bgq): add new feature`, `fix(bgq): resolve bug`, `docs: update readme`.
 
 ## Key Files

@@ -1,6 +1,15 @@
 import { Compartment, EditorState } from '@codemirror/state';
-import { EditorView } from '@codemirror/view';
+import {
+    EditorView,
+    drawSelection,
+    highlightActiveLine,
+    highlightSpecialChars,
+    keymap,
+} from '@codemirror/view';
+import { defaultKeymap, history, historyKeymap } from '@codemirror/commands';
+import { searchKeymap, openSearchPanel } from '@codemirror/search';
 import { MergeView, unifiedMergeView } from '@codemirror/merge';
+import { wikiHighlight, wikiLint } from './cm-wiki';
 
 const NARROW_PX = 640;
 
@@ -40,13 +49,39 @@ const zhCN = EditorState.phrases.of({
     'Revert this chunk': '撤销此块',
     'Accept': '接受',
     'Reject': '撤销',
+    'Find': '查找',
+    'Replace': '替换',
+    'next': '下一个',
+    'previous': '上一个',
+    'all': '全部',
+    'match case': '区分大小写',
+    'by word': '全字匹配',
+    'regular expression': '正则表达式',
+    'replace: $': '替换: $',
+    'replace all: $': '替换全部: $',
+    'close': '关闭',
+    'current match': '当前匹配',
+    'replaced $ matches': '已替换 $ 处匹配',
+    'replaced $ match on $ line': '已在第 $ 行替换 $ 处匹配',
+    'goto line: $': '跳转到行: $',
 });
 
 function baseExtensions(onChange: () => void, narrow: boolean, dark: boolean) {
     const fontSize = narrow ? '16px' : '13px';
     return [
         EditorView.lineWrapping,
+        EditorState.allowMultipleSelections.of(true),
+        drawSelection(),
         zhCN,
+        highlightSpecialChars(),
+        EditorView.contentAttributes.of({ spellcheck: 'false' }),
+        keymap.of([
+            ...defaultKeymap,
+            ...searchKeymap,
+            { key: 'Mod-h', run: openSearchPanel, scope: 'editor search-panel', preventDefault: true },
+            ...historyKeymap,
+        ]),
+        history(),
         themeCompartment.of(dark ? cmDark(fontSize) : cmLight(fontSize)),
         EditorView.updateListener.of((u) => {
             if (u.docChanged) onChange();
@@ -69,6 +104,7 @@ interface EditableHandle {
     narrow: boolean;
     oldText: string;
     onChange: () => void;
+    wikiMode?: boolean;
 }
 
 const editableViews = new Map<string, EditableHandle>();
@@ -107,7 +143,7 @@ export function refreshDiffLayout(dark: boolean): void {
         const narrow = parent.clientWidth < NARROW_PX || window.innerWidth < NARROW_PX;
         if (narrow === h.narrow) continue;
         const current = getDoc(containerId);
-        setDiffContent(containerId, h.oldText, current, dark, h.onChange);
+        setDiffContent(containerId, h.oldText, current, dark, h.onChange, h.wikiMode ?? false);
     }
 }
 
@@ -117,6 +153,7 @@ export function setDiffContent(
     newText: string,
     dark: boolean,
     onChange: () => void,
+    wikiMode = false,
 ): void {
     const parent = document.getElementById(containerId);
     if (!parent) return;
@@ -125,12 +162,15 @@ export function setDiffContent(
     parent.replaceChildren();
     const narrow = parent.clientWidth < NARROW_PX || window.innerWidth < NARROW_PX;
     const shared = (cb: () => void) => baseExtensions(cb, narrow, dark);
+    const wiki = wikiMode ? [...wikiHighlight, highlightActiveLine()] : [];
+    const wikiEdit = wikiMode ? [...wikiHighlight, wikiLint, highlightActiveLine()] : [];
     if (narrow) {
         const v = new EditorView({
             doc: newText,
             parent,
             extensions: [
                 ...shared(onChange),
+                ...wikiEdit,
                 unifiedMergeView({
                     original: oldText,
                     mergeControls: false,
@@ -139,19 +179,19 @@ export function setDiffContent(
                 }),
             ],
         });
-        editableViews.set(containerId, { view: v, narrow, oldText, onChange });
+        editableViews.set(containerId, { view: v, narrow, oldText, onChange, wikiMode });
         return;
     }
     const v = new MergeView({
         a: {
             doc: oldText,
-            extensions: [...shared(() => {}), EditorState.readOnly.of(true)],
+            extensions: [...shared(() => {}), ...wiki, EditorState.readOnly.of(true)],
         },
-        b: { doc: newText, extensions: shared(onChange) },
+        b: { doc: newText, extensions: [...shared(onChange), ...wikiEdit] },
         parent,
         orientation: 'a-b',
         revertControls: 'a-to-b',
         ...mergeConfig,
     });
-    editableViews.set(containerId, { view: v, narrow, oldText, onChange });
+    editableViews.set(containerId, { view: v, narrow, oldText, onChange, wikiMode });
 }
