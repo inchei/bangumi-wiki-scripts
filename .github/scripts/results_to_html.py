@@ -13,11 +13,16 @@ os.makedirs(output_dir, exist_ok=True)
 
 HTML_MAX_BYTES = 2_000_000
 
-DATA_FILES = [
-    'person_alias.json.gz',
+# 只提供下载、不制作 HTML 浏览页的输出（全文 infobox 类机器向输出、wikiBatch 批处理输入）
+SKIP_HTML = {
+    'stale-realname-annotations.csv',
+    'alias-annotate.csv',
     'missing-cn-name-person.csv',
     'missing-cn-name-character.csv',
-]
+}
+
+# 供下载的数据文件（非 results CSV）
+DATA_FILES = ['person_alias.json.gz']
 
 DARK_MODE = '''<style>
 :root{color-scheme:light dark}
@@ -52,9 +57,11 @@ for fname in sorted(os.listdir(results_dir)):
     if not fname.endswith('.csv'):
         continue
     src = os.path.join(results_dir, fname)
+    shutil.copy(src, os.path.join(output_dir, fname))
+    downloads.append(fname)
+    if fname in SKIP_HTML:
+        continue
     if os.path.getsize(src) > HTML_MAX_BYTES:
-        shutil.copy(src, os.path.join(output_dir, fname))
-        downloads.append(fname)
         continue
     target = filter_target(fname[:-4])
 
@@ -112,13 +119,10 @@ if os.path.exists(txt_src):
 
 data_links = []
 for name in DATA_FILES:
-    src = os.path.join(results_dir, name)
-    if name == 'person_alias.json.gz':
-        src = name
+    src = os.path.join(results_dir, '..', name)
     if not os.path.exists(src):
         continue
-    dst = os.path.join(output_dir, name)
-    shutil.copy(src, dst)
+    shutil.copy(src, os.path.join(output_dir, name))
     data_links.append(name)
 for entry in sorted(os.listdir(results_dir)):
     parts_dir = os.path.join(results_dir, entry)
