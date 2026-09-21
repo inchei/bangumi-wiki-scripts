@@ -206,6 +206,11 @@ export function createStaticDOM(): void {
                             <button id="static-lock-commit" class="secondary" title="${state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要'}">
                                 <morph-icon size="16" reduced-motion="user"></morph-icon>
                             </button>
+                            <label class="toggle-switch" title="自动生成编辑摘要">
+                                <input type="checkbox" id="static-auto-commit" ${state.isCommitMessageAuto ? 'checked' : ''}>
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <label for="static-auto-commit" title="自动生成编辑摘要">自动</label>
                         </div>
                     </div>
                     <div class="edit-rows">
@@ -369,16 +374,29 @@ function bindEditRegionEvents(): void {
             setLockIcon(true, true);
         } else {
             setLockIcon(false, true);
-
-            state.currentCommitMessage = generateCommitMessage(
-                state.currentFieldUpdates,
-                state.currentTagUpdates,
-                state.currentSeriesUpdate,
-                state.entityType,
-            );
-            commitInput2.value = state.currentCommitMessage;
         }
+        const autoCommitCheckbox2 = document.getElementById('static-auto-commit') as HTMLInputElement;
+        autoCommitCheckbox2.disabled = state.isCommitMessageLocked;
         saveState();
+        updateConfirmButtonState();
+    });
+
+    const autoCommitCheckbox = document.getElementById('static-auto-commit') as HTMLInputElement;
+    autoCommitCheckbox.disabled = state.isCommitMessageLocked;
+    autoCommitCheckbox.addEventListener('change', (e) => {
+        state.isCommitMessageAuto = (e.target as HTMLInputElement).checked;
+        saveState();
+        if (!state.isCommitMessageAuto) return;
+        if (state.currentView !== 'processing' || !state.currentSubjectData) return;
+        if (state.isCommitMessageLocked) return;
+
+        state.currentCommitMessage = generateCommitMessage(
+            state.currentFieldUpdates,
+            state.currentTagUpdates,
+            state.currentSeriesUpdate,
+            state.entityType,
+        );
+        (document.getElementById('static-commit-input') as HTMLInputElement).value = state.currentCommitMessage;
         updateConfirmButtonState();
     });
 

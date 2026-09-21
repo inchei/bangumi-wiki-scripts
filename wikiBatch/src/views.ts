@@ -347,8 +347,19 @@ export function switchToProcessingView(itemData: {
     const commitInput = document.getElementById('static-commit-input') as HTMLInputElement;
 
     const defaultCommitMsg = generateCommitMessage(fieldUpdates, tagUpdates, seriesUpdate, entityType);
-    commitInput.value = state.isCommitMessageLocked ? state.lockedCommitMessage : defaultCommitMsg;
+    if (state.isCommitMessageLocked) {
+        commitInput.value = state.lockedCommitMessage;
+    } else if (state.isCommitMessageAuto || !commitInput.value.trim()) {
+        state.currentCommitMessage = defaultCommitMsg;
+        commitInput.value = defaultCommitMsg;
+    }
     setLockIcon(state.isCommitMessageLocked, false);
+
+    const autoCommitCheckbox = document.getElementById('static-auto-commit') as HTMLInputElement | null;
+    if (autoCommitCheckbox) {
+        autoCommitCheckbox.checked = state.isCommitMessageAuto;
+        autoCommitCheckbox.disabled = state.isCommitMessageLocked;
+    }
 
     const newInfobox = updateInfobox(fullInfobox ?? oldInfobox, fieldUpdates);
     setDiffContent(WCODE_CONTAINER_ID, oldInfobox, newInfobox, getResolvedTheme() === 'dark', () => {

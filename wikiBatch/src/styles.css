@@ -992,6 +992,19 @@ morph-icon.spin svg {
     box-shadow: 0 0 0 2px var(--accent);
 }
 
+.toggle-switch:has(input:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.toggle-switch:has(input:disabled) .toggle-slider {
+    cursor: not-allowed;
+}
+
+.toggle-switch:has(input:disabled) + label {
+    opacity: 0.5;
+}
+
 .last-update-info {
     font-size: 13px;
     color: var(--text-secondary);

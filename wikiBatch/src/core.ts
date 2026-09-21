@@ -71,6 +71,7 @@ export interface State {
   currentCommitMessage: string | null;
   isCommitMessageLocked: boolean;
   lockedCommitMessage: string;
+  isCommitMessageAuto: boolean;
   retryCount: Record<string, number>;
   currentItemId: string | null;
   previousItem: PreviousItem | null;
@@ -99,6 +100,7 @@ export const state: State = {
     currentCommitMessage: null,
     isCommitMessageLocked: localStorage.getItem('bgmIsCommitMessageLocked') === 'true' || false,
     lockedCommitMessage: localStorage.getItem('bgmLockedCommitMessage') || '',
+    isCommitMessageAuto: localStorage.getItem('bgmIsCommitMessageAuto') === 'true' || false,
     retryCount: JSON.parse(GM_getValue('bgmRetryCount', '{}')),
     currentItemId: null,
     previousItem: JSON.parse(localStorage.getItem('bgmPreviousItem') || 'null'),
@@ -116,6 +118,7 @@ export function saveState(): void {
     GM_setValue('bgmRetryCount', JSON.stringify(state.retryCount));
     localStorage.setItem('bgmIsCommitMessageLocked', state.isCommitMessageLocked.toString());
     localStorage.setItem('bgmLockedCommitMessage', state.lockedCommitMessage);
+    localStorage.setItem('bgmIsCommitMessageAuto', state.isCommitMessageAuto.toString());
     if (state.previousItem) {
         localStorage.setItem('bgmPreviousItem', JSON.stringify(state.previousItem));
     }
