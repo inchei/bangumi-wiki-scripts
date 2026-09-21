@@ -1,0 +1,13 @@
+{
+  "extends": "stylelint-config-standard",
+  "ignoreFiles": ["dist/", "node_modules/"],
+  "rules": {
+    "property-no-vendor-prefix": [
+      true,
+      {
+        "ignoreProperties": ["-webkit-text-size-adjust"]
+      }
+    ],
+    "selector-class-pattern": "^([a-z][a-z0-9-]*|cm-[A-Za-z0-9]+(-[A-Za-z0-9]+)*)$"
+  }
+}

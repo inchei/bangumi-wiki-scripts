@@ -1,0 +1,20 @@
+# wbt 示例配置，复制为 wbt.toml 后修改
+base_url = "https://wbt.example.com"      # 对外访问地址（OAuth 回跳使用）
+listen = ":8090"                          # 监听地址
+db_path = "wbt.db"                        # SQLite 数据库路径
+
+[bgm]
+# 可选：配置后开放 Bangumi OAuth 登录入口（在 bgm.tv 注册应用获取）；未配置时仅可用 access token 登录
+client_id = ""                            # 留空则读取环境变量 BGM_CLIENT_ID
+client_secret = ""                        # 留空则读取环境变量 BGM_CLIENT_SECRET
+
+# 定期下载的 CSV 来源（cron 为标准 5 字段：分 时 日 月 周）
+[[sources]]
+name = "novel系列"
+url = "https://example.com/novel.csv"
+cron = "0 4 * * *"
+
+[[sources]]
+name = "manga系列"
+url = "https://example.com/manga.csv"
+cron = "30 4 * * 2"

@@ -253,7 +253,7 @@ Baseline (2026-09, after cleanup): 1.03% overall (Go 2.10%). Already fixed: `cmd
 
 ## Code Style
 
-DO NOT add code comments unless explicitly asked. Never pre-emptively explain new code with comments; if a comment is truly needed, ask or let the user request it.
+DO NOT add code comments unless explicitly asked. Never pre-emptively explain new code with comments; if a comment is truly needed, ask or let the user request it. All comments must be written in English.
 
 ## Commit Conventions
 

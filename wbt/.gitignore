@@ -1,0 +1,12 @@
+node_modules/
+bin/
+tmp/
+
+# Local runtime config/data (contains secrets)
+wbt.toml
+wbt.db
+wbt.db-wal
+wbt.db-shm
+*.db
+.air-dev.toml
+*.csv

@@ -3,6 +3,7 @@ packages:
   - 'wikiBatch'
   - 'wikiMissingPositions'
   - 'wikiPersonAlias'
+  - 'wbt/frontend'
 
 allowBuilds:
   esbuild: true
