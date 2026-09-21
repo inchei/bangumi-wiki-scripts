@@ -1,5 +1,17 @@
 import { state } from './core';
 
+export const IS_APPLE_PLATFORM = /mac|iphone|ipad|ipod/i.test(
+    (navigator as any).userAgentData?.platform ||
+        navigator.platform ||
+        navigator.userAgent ||
+        '',
+);
+export const CONFIRM_SHORTCUT_HINT = IS_APPLE_PLATFORM ? '⌘↵' : 'Ctrl↵';
+export const CONFIRM_SHORTCUT_TITLE = `焦点在批量更新面板时按 ${CONFIRM_SHORTCUT_HINT} 直接确认更新`;
+export const SKIP_SHORTCUT_HINT = 'Shift↵';
+export const SKIP_SHORTCUT_TITLE = `焦点在批量更新面板时按 ${SKIP_SHORTCUT_HINT} 直接跳过`;
+export const RETRY_SHORTCUT_TITLE = `焦点在批量更新面板时按 ${CONFIRM_SHORTCUT_HINT} 直接重试`;
+
 export function sanitizeRegExp(str: string): string {
     const regexSpecialChars = /[.*+?^${}()|[\]\\]/g;
     return str.replace(regexSpecialChars, '\\$&');

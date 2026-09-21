@@ -26,7 +26,7 @@ import {
 } from './diff';
 import { getDoc, setDiffContent, WCODE_CONTAINER_ID, TAGS_CONTAINER_ID } from './cm-diff';
 import { paintStaticIcons, setLockIcon } from './morph';
-import { isRecentUpdate, resetProcessingState } from './utils';
+import { isRecentUpdate, resetProcessingState, CONFIRM_SHORTCUT_HINT, CONFIRM_SHORTCUT_TITLE, IS_APPLE_PLATFORM, SKIP_SHORTCUT_HINT, SKIP_SHORTCUT_TITLE, RETRY_SHORTCUT_TITLE } from './utils';
 import { handleFileUpload, handlePasteCSV } from './csv';
 
 export function switchToSetupView(): void {
@@ -398,8 +398,8 @@ export function switchToProcessingView(itemData: {
 
     if (buttonsContainer) {
         buttonsContainer.innerHTML = `
-            <button id="process-skip-update" class="secondary">跳过</button>
-            <button id="process-confirm-update" class="primary">确认更新</button>
+            <button id="process-skip-update" class="secondary" title="${SKIP_SHORTCUT_TITLE}" aria-label="跳过，快捷键 Shift 回车">跳过<kbd class="kbd-hint" aria-hidden="true">${SKIP_SHORTCUT_HINT}</kbd></button>
+            <button id="process-confirm-update" class="primary" title="${CONFIRM_SHORTCUT_TITLE}" aria-label="确认更新，快捷键 ${IS_APPLE_PLATFORM ? 'Command 回车' : 'Ctrl 回车'}"><span class="confirm-label">确认更新</span><kbd class="kbd-hint" aria-hidden="true">${CONFIRM_SHORTCUT_HINT}</kbd></button>
         `;
     }
 
@@ -444,8 +444,8 @@ export function switchToProcessingErrorView(currentItem: CsvItem, errorMsg: stri
 
     if (buttonsContainer) {
         buttonsContainer.innerHTML = `
-            <button id="process-skip-error" class="secondary">跳过</button>
-            <button id="process-retry-error" class="primary">重试</button>
+            <button id="process-skip-error" class="secondary" title="${SKIP_SHORTCUT_TITLE}" aria-label="跳过，快捷键 Shift 回车">跳过<kbd class="kbd-hint" aria-hidden="true">${SKIP_SHORTCUT_HINT}</kbd></button>
+            <button id="process-retry-error" class="primary" title="${RETRY_SHORTCUT_TITLE}" aria-label="重试，快捷键 ${IS_APPLE_PLATFORM ? 'Command 回车' : 'Ctrl 回车'}">重试<kbd class="kbd-hint" aria-hidden="true">${CONFIRM_SHORTCUT_HINT}</kbd></button>
         `;
     }
 }
@@ -486,8 +486,8 @@ export function switchToUpdateErrorView(errorMsg: string): void {
 
     if (buttonsContainer) {
         buttonsContainer.innerHTML = `
-            <button id="process-skip-update-fail" class="secondary">跳过</button>
-            <button id="process-retry-update" class="primary">重试</button>
+            <button id="process-skip-update-fail" class="secondary" title="${SKIP_SHORTCUT_TITLE}" aria-label="跳过，快捷键 Shift 回车">跳过<kbd class="kbd-hint" aria-hidden="true">${SKIP_SHORTCUT_HINT}</kbd></button>
+            <button id="process-retry-update" class="primary" title="${RETRY_SHORTCUT_TITLE}" aria-label="重试，快捷键 ${IS_APPLE_PLATFORM ? 'Command 回车' : 'Ctrl 回车'}">重试<kbd class="kbd-hint" aria-hidden="true">${CONFIRM_SHORTCUT_HINT}</kbd></button>
         `;
     }
 }

@@ -16,7 +16,6 @@ import {
     WandSparkles,
     Wrench,
 } from 'lucide';
-import { MorphController } from 'torph';
 
 let defined = false;
 
@@ -78,15 +77,7 @@ export function setLockIcon(locked: boolean, animate: boolean): void {
     btn.title = locked ? '解锁编辑摘要' : '固定编辑摘要';
 }
 
-let confirmMorph: MorphController | null = null;
-let lastConfirmText = '';
-
 export function setConfirmButtonText(btn: HTMLButtonElement, text: string): void {
-    if (confirmMorph && text === lastConfirmText) return;
-    lastConfirmText = text;
-    if (!confirmMorph) {
-        confirmMorph = new MorphController();
-        confirmMorph.attach(btn, { ease: { stiffness: 420, damping: 30 } });
-    }
-    confirmMorph.update(text);
+    const target = (btn.querySelector('.confirm-label') as HTMLElement | null) ?? btn;
+    if (target.textContent !== text) target.textContent = text;
 }

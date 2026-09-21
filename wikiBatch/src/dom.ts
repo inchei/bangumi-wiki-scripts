@@ -24,6 +24,34 @@ let logoCol = Math.floor(Math.random() * spriteCols);
 const TOOL_ID = 'bgm-tool-container';
 const FLOAT_ID = 'bgm-float-button';
 let hiddenElements: Array<{ el: Element; origDisplay: string }> | null = null;
+let shortcutBound = false;
+
+function handleProcessShortcut(e: KeyboardEvent): void {
+    if (e.key !== 'Enter') return;
+    if (e.isComposing || e.keyCode === 229) return;
+    if (!e.ctrlKey && !e.metaKey && !e.shiftKey) return;
+    if (state.currentView !== 'processing') return;
+    const container = document.getElementById(TOOL_ID);
+    if (!container || container.style.display === 'none') return;
+    const active = document.activeElement as HTMLElement | null;
+    if (active && active !== document.body && !container.contains(active)) return;
+    const ids = (e.ctrlKey || e.metaKey)
+        ? ['process-confirm-update', 'process-retry-error', 'process-retry-update']
+        : ['process-skip-update', 'process-skip-error', 'process-skip-update-fail'];
+    const btn = document.querySelector(
+        ids.map((id) => `#static-buttons-container button#${id}`).join(','),
+    ) as HTMLButtonElement | null;
+    if (!btn || btn.disabled) return;
+    e.preventDefault();
+    e.stopPropagation();
+    btn.click();
+}
+
+function bindProcessShortcut(): void {
+    if (shortcutBound) return;
+    shortcutBound = true;
+    document.addEventListener('keydown', handleProcessShortcut, true);
+}
 
 function hidePageContent(): void {
     if (hiddenElements) return;
@@ -227,6 +255,7 @@ export function createStaticDOM(): void {
     hidePageContent();
 
     bindEventDelegation();
+    bindProcessShortcut();
 
     const closeBtn = document.getElementById('bgm-tool-close');
     if (closeBtn) {

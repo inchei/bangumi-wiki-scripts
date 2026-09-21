@@ -343,6 +343,25 @@ morph-icon.spin svg {
     cursor: not-allowed;
 }
 
+#bgm-tool-container button .kbd-hint {
+    margin-left: 8px;
+    font: inherit;
+    font-size: 12px;
+    font-weight: normal;
+    line-height: 1;
+    color: #fff;
+    background: rgb(0 0 0 / 5%);
+    border: 1px solid rgb(0 0 0 / 8%);
+    border-radius: 4px;
+    padding: 3px 8px;
+}
+
+#bgm-tool-container button.secondary .kbd-hint {
+    color: var(--text-secondary);
+    background: rgb(0 0 0 / 4%);
+    border-color: var(--border);
+}
+
 /* ===== Layout Helpers ===== */
 .row-flex {
     display: flex;
