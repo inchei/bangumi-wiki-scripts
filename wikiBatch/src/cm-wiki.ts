@@ -44,6 +44,10 @@ const wikiLanguage = StreamLanguage.define<WikiState>({
     name: 'bangumi-infobox',
     startState: () => ({ state: 'start' }),
     token(stream, st) {
+        if (st.state === 'infobox' && !stream.sol() && stream.peek() === '|') {
+            stream.next();
+            return 'string';
+        }
         for (const [re, tok, next] of RULES[st.state]) {
             if (stream.match(re)) {
                 if (next) st.state = next;
