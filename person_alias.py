@@ -12,6 +12,31 @@ from bgm_tv_wiki import parse
 # 匹配括号及内容的正则表达式（支持中英文括号）
 BRACKET_PATTERN = re.compile(r'([\(（])(.*?)([\)）])')
 
+# 公司全名中的地名限定词（如 某某（北京）有限公司），不应作为别名
+PLACE_NAMES = {
+    '北京', '上海', '天津', '重庆',
+    '河北', '石家庄', '唐山', '山西', '太原', '内蒙古', '呼和浩特',
+    '辽宁', '沈阳', '大连', '吉林', '长春', '黑龙江', '哈尔滨',
+    '江苏', '南京', '苏州', '无锡', '浙江', '杭州', '宁波',
+    '安徽', '合肥', '福建', '福州', '厦门', '江西', '南昌',
+    '山东', '济南', '青岛', '河南', '郑州', '湖北', '武汉',
+    '湖南', '长沙', '广东', '广州', '深圳', '广西', '南宁',
+    '海南', '海口', '四川', '成都', '贵州', '贵阳', '云南', '昆明',
+    '西藏', '拉萨', '陕西', '西安', '甘肃', '兰州', '青海', '西宁',
+    '宁夏', '银川', '新疆', '乌鲁木齐', '香港', '澳门', '台湾', '台北',
+}
+
+# 人名括号里的通用限定词（如 りお（动画人）、龟山忠义（本名）），并非别名
+GENERIC_QUALIFIERS = {
+    '动画人', '动画师', '漫画家', '声优', '演员', '歌手',
+    '作曲家', '作词家', '编剧', '脚本家', '演出家', '导演', '监督',
+    '原画', '原画师', '音乐人', '制作人', '制片人', '画师', '插画家',
+    '小说家', '作家', '偶像', '主播', '配音员', '旁白', '主持人',
+    '艺人', '模特', '舞者',
+    '本名', '全名', '旧芸名', '旧名', '曾用名', '前身', '误记', '误译',
+    '同人社团', '微博', '港', '台', '?', '？',
+}
+
 def process_brackets(text, is_primary_name):
     """
     处理文本中的括号内容
@@ -27,8 +52,10 @@ def process_brackets(text, is_primary_name):
     matches = BRACKET_PATTERN.findall(text)
     if matches:
         for left, content, right in matches:
-            if content.strip():  # 只处理非空内容
-                brackets.append(content.strip())
+            content = content.strip()
+            # 地名括号与通用限定词不作为别名
+            if content and content not in PLACE_NAMES and content not in GENERIC_QUALIFIERS:
+                brackets.append(content)
         # 移除所有括号及内容
         text = BRACKET_PATTERN.sub('', text).strip()
 
