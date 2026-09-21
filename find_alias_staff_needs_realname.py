@@ -7,10 +7,10 @@
 邏輯：
     對每個 subject 的每條 subject-persons 關聯 (person_id, position)，
     取該 type + position 對應的中文職位名作为 infobox key；
-    若該行值中沒有出現人物本名，
+    若該行值中沒有出現人物本名（歸一化後直接子串查找，無需 tokenize），
     則檢查該人物別名是否出現；若出現，將命中 token 改寫為 `別名[本名]`。
     若命中的別名本身包含本名（如 月刊Asuka 之於 ASUKA），則跳過該別名。
-    `(現:Y)` / `(现:Y)` 中的 Y 視為本名已出現。
+    中點 `·`/`・` 等在歸一化時去除。
     僅檢查動畫條目（type 2）。
 
 輸出：`id,infobox` 兩列 CSV（infobox 為改寫後的全文，僅命中行被修改，
@@ -43,12 +43,11 @@ INCLUDE_TYPES = {2}
 
 def _norm(s):
     s = unicodedata.normalize('NFKC', s)
-    return re.sub(r'[\s-]', '', s).translate(KATA_TO_HIRA).lower()
+    return re.sub(r'[\s\-\u00B7\u30FB]', '', s).translate(KATA_TO_HIRA).lower()
 
 
 DELIM_CHARS = '()[]{}（）<>《》「」『』【】+×·→/／、,，;；：&＆\\等'
 LINE_RE = re.compile(r'^\|([^|=\n]+?)\s*=\s*([^\n\r|]*)')
-GEN_RE = re.compile(r'[（(]\s*[現现]\s*[:：]?\s*([^（）()\n\r]+?)\s*[）)]')
 
 _SPLIT_CACHE = {}
 
@@ -123,13 +122,9 @@ def annotate_value(value, canon, alias_set):
     skip |= {unicodedata.normalize('NFKC', c) for c in list(skip)}
     split_re = split_re_for(skip)
     canon_n = _norm(canon)
-    for m in GEN_RE.finditer(value):
-        if _norm(m.group(1)) == canon_n:
-            return None
+    if canon_n and canon_n in _norm(value):
+        return None
     segs = split_re.split(value)
-    for i in range(0, len(segs), 2):
-        if segs[i] and _norm(segs[i]) == canon_n:
-            return None
     patched = False
     for i in range(0, len(segs), 2):
         tok = segs[i]
