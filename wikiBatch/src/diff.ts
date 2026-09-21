@@ -1,6 +1,7 @@
 import { state, type EntityType, type TagUpdates, type SeriesUpdate, type CsvItem } from './core';
 import { sanitizeRegExp, arraysEqual } from './utils';
 import { getDoc, refreshEditorTheme, TAGS_CONTAINER_ID } from './cm-diff';
+import { setConfirmButtonText } from './morph';
 import { INFOBOX_FIELD_ORDER, INFOBOX_HEADER_MAP } from './infobox-field-order';
 
 export function getResolvedTheme(): 'light' | 'dark' {
@@ -45,10 +46,10 @@ export function updateConfirmButtonState(): void {
     const hasUpdates = checkForUpdates();
 
     if (hasUpdates) {
-        confirmBtn.textContent = '确认更新';
+        setConfirmButtonText(confirmBtn, '确认更新');
         confirmBtn.disabled = false;
     } else {
-        confirmBtn.textContent = '确认更新（无实质修改）';
+        setConfirmButtonText(confirmBtn, '确认更新（无实质修改）');
         confirmBtn.disabled = false;
     }
 }

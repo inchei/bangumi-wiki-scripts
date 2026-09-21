@@ -13,6 +13,8 @@ import {
     handleCompletedViewButtons,
 } from './handlers';
 
+import { paintStaticIcons, setLockIcon, setThemeIcon } from './morph';
+import { refreshDiffLayout } from './cm-diff';
 import { spriteDataUrl } from './sprite';
 
 const spriteCols = 7;
@@ -56,6 +58,7 @@ function cycleLogo(): void {
 function applyTheme(mode: ThemeMode): void {
     const container = document.getElementById('bgm-tool-container');
     if (!container) return;
+    container.classList.add('no-transitions');
     const isDark =
         mode === 'dark' ||
         (mode === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -64,6 +67,8 @@ function applyTheme(mode: ThemeMode): void {
     } else {
         container.removeAttribute('data-theme');
     }
+    void container.offsetWidth;
+    container.classList.remove('no-transitions');
 }
 
 function systemTheme(): 'light' | 'dark' {
@@ -93,20 +98,16 @@ function cycleTheme(): void {
         }
     }
     applyTheme(state.theme);
-    updateThemeButton();
+    updateThemeButton(true);
     if (state.currentView === 'processing') {
         refreshDiffDisplays();
     }
 }
 
-function updateThemeButton(): void {
+function updateThemeButton(animate = false): void {
     const btn = document.getElementById('bgm-tool-theme');
     if (!btn) return;
-    const resolved = getResolvedTheme();
-    btn.innerHTML = resolved === 'dark'
-        ? '<i class="fas fa-moon"></i>'
-        : '<i class="fas fa-sun"></i>';
-    btn.title = '主题: ' + (resolved === 'dark' ? '深色' : '浅色');
+    setThemeIcon(getResolvedTheme() === 'dark', animate);
 }
 
 function createFloatButton(): HTMLElement {
@@ -114,8 +115,9 @@ function createFloatButton(): HTMLElement {
     if (!floatBtn) {
         floatBtn = document.createElement('div');
         floatBtn.id = 'bgm-float-button';
-        floatBtn.innerHTML = '<i class="fas fa-tools"></i>';
+        floatBtn.innerHTML = '<morph-icon data-icon="wrench" size="20"></morph-icon>';
         document.body.appendChild(floatBtn);
+        paintStaticIcons(floatBtn);
 
         floatBtn.addEventListener('click', () => {
             const container = document.getElementById(TOOL_ID);
@@ -149,9 +151,9 @@ export function createStaticDOM(): void {
             </div>
             <span class="header-spacer"></span>
             <div id="bgm-tool-header-actions">
-                <button id="bgm-tool-theme" class="btn btn-default" title="主题" tabindex="0"><i class="fas fa-adjust"></i></button>
-                <button id="bgm-tool-settings" class="btn btn-default" title="设置" tabindex="0"><i class="fas fa-cog"></i></button>
-                <button id="bgm-tool-close" class="btn btn-default" title="关闭" tabindex="0"><i class="fas fa-sign-out-alt"></i></button>
+                <button id="bgm-tool-theme" class="btn btn-default" title="主题" tabindex="0"><morph-icon size="16" reduced-motion="user"></morph-icon></button>
+                <button id="bgm-tool-settings" class="btn btn-default" title="设置" tabindex="0"><morph-icon data-icon="settings" size="16"></morph-icon></button>
+                <button id="bgm-tool-close" class="btn btn-default" title="关闭" tabindex="0"><morph-icon data-icon="logout" size="16"></morph-icon></button>
             </div>
         </div>
         <div id="bgm-tool-progress">
@@ -174,7 +176,7 @@ export function createStaticDOM(): void {
                         <div class="row-flex">
                             <input type="text" id="static-commit-input" placeholder="请输入编辑摘要">
                             <button id="static-lock-commit" class="secondary" title="${state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要'}">
-                                <i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>
+                                <morph-icon size="16" reduced-motion="user"></morph-icon>
                             </button>
                         </div>
                     </div>
@@ -211,7 +213,11 @@ export function createStaticDOM(): void {
             </div>
             <div class="buttons-container" id="static-buttons-container"></div>
             <div id="bgm-loading-overlay">
-                <div id="loading-spinner"></div>
+                <div class="bouncy" role="status" aria-label="加载中">
+                    <div class="bouncy-cube"><div class="bouncy-cube-inner"></div></div>
+                    <div class="bouncy-cube"><div class="bouncy-cube-inner"></div></div>
+                    <div class="bouncy-cube"><div class="bouncy-cube-inner"></div></div>
+                </div>
                 <div id="loading-text"></div>
             </div>
         </div>
@@ -253,6 +259,7 @@ export function createStaticDOM(): void {
 
     applyTheme(state.theme);
     updateThemeButton();
+    paintStaticIcons();
     window
         .matchMedia('(prefers-color-scheme: dark)')
         .addEventListener('change', () => {
@@ -299,6 +306,20 @@ function bindEventDelegation(): void {
 }
 
 function bindEditRegionEvents(): void {
+    let resizeTimer = 0;
+    const ro = new ResizeObserver(() => {
+        window.clearTimeout(resizeTimer);
+        resizeTimer = window.setTimeout(() => {
+            if (state.currentView === 'processing') {
+                refreshDiffLayout(getResolvedTheme() === 'dark');
+            }
+        }, 200);
+    });
+    for (const id of ['static-cm-diff', 'static-tags-cm-diff']) {
+        const el = document.getElementById(id);
+        if (el) ro.observe(el);
+    }
+
     const commitInput = document.getElementById('static-commit-input') as HTMLInputElement;
     commitInput.addEventListener('input', (e) => {
         if (state.currentView === 'processing' && state.currentSubjectData) {
@@ -316,11 +337,9 @@ function bindEditRegionEvents(): void {
 
         if (state.isCommitMessageLocked) {
             state.lockedCommitMessage = commitInput2.value;
-            lockCommitBtn.innerHTML = '<i class="fas fa-lock"></i>';
-            lockCommitBtn.title = '解锁编辑摘要';
+            setLockIcon(true, true);
         } else {
-            lockCommitBtn.innerHTML = '<i class="fas fa-lock-open"></i>';
-            lockCommitBtn.title = '固定编辑摘要';
+            setLockIcon(false, true);
 
             state.currentCommitMessage = generateCommitMessage(
                 state.currentFieldUpdates,
@@ -341,4 +360,6 @@ function bindEditRegionEvents(): void {
             updateConfirmButtonState();
         }
     });
+
+    setLockIcon(state.isCommitMessageLocked, false);
 }

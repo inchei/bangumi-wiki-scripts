@@ -67,6 +67,8 @@ export const TAGS_CONTAINER_ID = 'static-tags-cm-diff';
 interface EditableHandle {
     view: MergeView | EditorView;
     narrow: boolean;
+    oldText: string;
+    onChange: () => void;
 }
 
 const editableViews = new Map<string, EditableHandle>();
@@ -98,6 +100,17 @@ export function refreshEditorTheme(dark: boolean): void {
     }
 }
 
+export function refreshDiffLayout(dark: boolean): void {
+    for (const [containerId, h] of [...editableViews]) {
+        const parent = document.getElementById(containerId);
+        if (!parent) continue;
+        const narrow = parent.clientWidth < NARROW_PX || window.innerWidth < NARROW_PX;
+        if (narrow === h.narrow) continue;
+        const current = getDoc(containerId);
+        setDiffContent(containerId, h.oldText, current, dark, h.onChange);
+    }
+}
+
 export function setDiffContent(
     containerId: string,
     oldText: string,
@@ -126,7 +139,7 @@ export function setDiffContent(
                 }),
             ],
         });
-        editableViews.set(containerId, { view: v, narrow });
+        editableViews.set(containerId, { view: v, narrow, oldText, onChange });
         return;
     }
     const v = new MergeView({
@@ -140,5 +153,5 @@ export function setDiffContent(
         revertControls: 'a-to-b',
         ...mergeConfig,
     });
-    editableViews.set(containerId, { view: v, narrow });
+    editableViews.set(containerId, { view: v, narrow, oldText, onChange });
 }

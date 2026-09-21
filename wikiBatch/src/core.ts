@@ -41,7 +41,6 @@ export interface HistoryEntry {
 }
 
 export type ViewName = 'setup' | 'processing' | 'completed';
-export type DiffViewMode = 'split' | 'unified';
 export type ThemeMode = 'light' | 'dark' | 'system';
 
 export interface PreviousItem {
@@ -75,7 +74,6 @@ export interface State {
   retryCount: Record<string, number>;
   currentItemId: string | null;
   previousItem: PreviousItem | null;
-    diffViewMode: DiffViewMode;
     theme: ThemeMode;
 }
 
@@ -104,7 +102,6 @@ export const state: State = {
     retryCount: JSON.parse(GM_getValue('bgmRetryCount', '{}')),
     currentItemId: null,
     previousItem: JSON.parse(localStorage.getItem('bgmPreviousItem') || 'null'),
-    diffViewMode: (localStorage.getItem('bgmDiffViewMode') as DiffViewMode) || 'split',
     theme: (localStorage.getItem('bgmTheme') as ThemeMode) || 'system',
 };
 
@@ -122,7 +119,6 @@ export function saveState(): void {
     if (state.previousItem) {
         localStorage.setItem('bgmPreviousItem', JSON.stringify(state.previousItem));
     }
-    localStorage.setItem('bgmDiffViewMode', state.diffViewMode);
     localStorage.setItem('bgmTheme', state.theme);
 }
 

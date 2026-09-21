@@ -25,6 +25,7 @@ import {
     getResolvedTheme,
 } from './diff';
 import { getDoc, setDiffContent, WCODE_CONTAINER_ID, TAGS_CONTAINER_ID } from './cm-diff';
+import { paintStaticIcons, setLockIcon } from './morph';
 import { isRecentUpdate, resetProcessingState } from './utils';
 import { handleFileUpload, handlePasteCSV } from './csv';
 
@@ -69,7 +70,7 @@ export function switchToSetupView(): void {
                             <label for="setup-formhash">Formhash</label>
                             <div class="row-flex">
                                 <input type="text" id="setup-formhash" value="${state.formhash}">
-                                <button type="button" class="secondary" id="setup-fetch-formhash"><i class="fas fa-magic"></i> 自动获取</button>
+                                <button type="button" class="secondary" id="setup-fetch-formhash"><morph-icon data-icon="wand" size="16"></morph-icon> 自动获取</button>
                             </div>
                             <p class="formhash-hint">
                                 如何获取formhash：<br>
@@ -79,26 +80,16 @@ export function switchToSetupView(): void {
                                 <strong>自动获取</strong>：通过后台请求编辑页面自动提取 formhash（需已登录）
                             </p>
                         </div>
-
-                        <div class="form-group">
-                            <label>Diff 显示模式</label>
-                            <div class="method-option-group">
-                                <input type="radio" id="diff-mode-split" name="diff-view-mode" value="split" ${state.diffViewMode === 'split' ? 'checked' : ''}>
-                                <label for="diff-mode-split">左右对照</label>
-                                <input type="radio" id="diff-mode-unified" name="diff-view-mode" value="unified" ${state.diffViewMode === 'unified' ? 'checked' : ''}>
-                                <label for="diff-mode-unified">上下统一</label>
-                            </div>
-                        </div>
                     </div>
                     <div class="setup-column">
                         <div class="form-group">
                             <label for="setup-csv-file">CSV文件 (包含ID列、要更新的字段列、tags列或series列)</label>
                             <div class="file-upload-group">
                                 <button type="button" class="secondary" id="setup-csv-btn">
-                                    <i class="fas fa-upload"></i> 选择 CSV 文件
+                                    <morph-icon data-icon="upload" size="16"></morph-icon> 选择 CSV 文件
                                 </button>
                                 <button type="button" class="secondary" id="setup-paste-csv-btn">
-                                    <i class="fas fa-paste"></i> 从剪贴板粘贴
+                                    <morph-icon data-icon="paste" size="16"></morph-icon> 从剪贴板粘贴
                                 </button>
                                 <span class="file-upload-name" id="setup-csv-file-name"></span>
                             </div>
@@ -129,23 +120,23 @@ export function switchToSetupView(): void {
                     <div class="sync-status" id="sync-status">未同步</div>
                     <div class="row-flex">
                         <button type="button" class="secondary" id="sync-auth-btn">
-                            <i class="fab fa-github"></i> 授权 GitHub
+                            <morph-icon data-icon="key" size="16"></morph-icon> 授权 GitHub
                         </button>
                         <button type="button" class="secondary" id="sync-upload-btn">
-                            <i class="fas fa-upload"></i> 上传进度
+                            <morph-icon data-icon="upload" size="16"></morph-icon> 上传进度
                         </button>
                         <button type="button" class="secondary" id="sync-download-btn">
-                            <i class="fas fa-download"></i> 下载进度
+                            <morph-icon data-icon="download" size="16"></morph-icon> 下载进度
                         </button>
                         <button type="button" class="secondary" id="sync-clear-btn">
-                            <i class="fas fa-trash-alt"></i> 清除授权
+                            <morph-icon data-icon="trash" size="16"></morph-icon> 清除授权
                         </button>
                     </div>
 
                 </div>
                 <div class="setup-footer">
                     <a href="https://github.com/inchei/bangumi-wiki-scripts/tree/main/wikiBatch" target="_blank">
-                        <i class="fab fa-github"></i> GitHub
+                        <morph-icon data-icon="github" size="16"></morph-icon> GitHub
                     </a>
                 </div>
             </div>
@@ -179,7 +170,8 @@ export function switchToSetupView(): void {
         fetchBtn.addEventListener('click', () => {
             if (!formhashInput) return;
             fetchBtn.disabled = true;
-            fetchBtn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> 获取中...';
+            fetchBtn.innerHTML = '<morph-icon data-icon="loader" size="16" class="spin"></morph-icon> 获取中...';
+            paintStaticIcons(fetchBtn);
             GM.xmlHttpRequest({
                 method: 'GET',
                 url: 'https://bgm.tv/subject/1/edit_detail',
@@ -197,14 +189,16 @@ export function switchToSetupView(): void {
                         alert('解析编辑页面失败');
                     } finally {
                         fetchBtn.disabled = false;
-                        fetchBtn.innerHTML = '<i class="fas fa-magic"></i> 自动获取';
+                        fetchBtn.innerHTML = '<morph-icon data-icon="wand" size="16"></morph-icon> 自动获取';
+                        paintStaticIcons(fetchBtn);
                     }
                 },
                 onerror: () => {
-                    alert('网络请求失败，请手动获取 formhash');
-                    fetchBtn.disabled = false;
-                    fetchBtn.innerHTML = '<i class="fas fa-magic"></i> 自动获取';
-                },
+                        alert('网络请求失败，请手动获取 formhash');
+                        fetchBtn.disabled = false;
+                        fetchBtn.innerHTML = '<morph-icon data-icon="wand" size="16"></morph-icon> 自动获取';
+                        paintStaticIcons(fetchBtn);
+                    },
             });
         });
     }
@@ -219,14 +213,6 @@ export function switchToSetupView(): void {
             const postOptions = document.getElementById('post-method-options');
             if (patchOptions) patchOptions.classList.toggle('hidden', state.submitMethod !== 'patch');
             if (postOptions) postOptions.classList.toggle('hidden', state.submitMethod !== 'post');
-        });
-    });
-
-    const diffModeRadios = document.querySelectorAll('input[name="diff-view-mode"]');
-    diffModeRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            state.diffViewMode = (e.target as HTMLInputElement).value as 'split' | 'unified';
-            localStorage.setItem('bgmDiffViewMode', state.diffViewMode);
         });
     });
 
@@ -276,6 +262,7 @@ export function switchToSetupView(): void {
             statusEl.textContent = '未同步';
         }
     }
+    paintStaticIcons();
 }
 
 export function switchToProcessingView(itemData: {
@@ -346,23 +333,22 @@ export function switchToProcessingView(itemData: {
         const prevType = state.previousItem.type as EntityType;
         const { editPagePath: prevEditPath } = getEntityApiConfig(prevType, state.previousItem.id);
         prevLinkEl.innerHTML = `
-            <i class="fas fa-arrow-left"></i> 上一个:
+            <morph-icon data-icon="arrow-left" size="14"></morph-icon> 上一个:
             <a href="${prevEditPath}" target="_blank">
                 ${state.previousItem.name}（${state.previousItem.id}）
             </a>
         `;
+        paintStaticIcons(prevLinkEl);
         prevLinkEl.style.display = 'block';
     } else if (prevLinkEl) {
         prevLinkEl.style.display = 'none';
     }
 
     const commitInput = document.getElementById('static-commit-input') as HTMLInputElement;
-    const lockCommitBtn = document.getElementById('static-lock-commit') as HTMLButtonElement;
 
     const defaultCommitMsg = generateCommitMessage(fieldUpdates, tagUpdates, seriesUpdate, entityType);
     commitInput.value = state.isCommitMessageLocked ? state.lockedCommitMessage : defaultCommitMsg;
-    lockCommitBtn.innerHTML = `<i class="fas ${state.isCommitMessageLocked ? 'fa-lock' : 'fa-lock-open'}"></i>`;
-    lockCommitBtn.title = state.isCommitMessageLocked ? '解锁编辑摘要' : '固定编辑摘要';
+    setLockIcon(state.isCommitMessageLocked, false);
 
     const newInfobox = updateInfobox(fullInfobox ?? oldInfobox, fieldUpdates);
     setDiffContent(WCODE_CONTAINER_ID, oldInfobox, newInfobox, getResolvedTheme() === 'dark', () => {
@@ -417,6 +403,7 @@ export function switchToProcessingView(itemData: {
         `;
     }
 
+    paintStaticIcons();
     updateConfirmButtonState();
 }
 

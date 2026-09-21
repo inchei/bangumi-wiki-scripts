@@ -1,4 +1,12 @@
 {
   "extends": "stylelint-config-standard",
-  "ignoreFiles": ["dist/", "node_modules/"]
+  "ignoreFiles": ["dist/", "node_modules/"],
+  "rules": {
+    "property-no-vendor-prefix": [
+      true,
+      {
+        "ignoreProperties": ["-webkit-text-size-adjust"]
+      }
+    ]
+  }
 }
