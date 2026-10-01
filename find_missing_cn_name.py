@@ -29,6 +29,12 @@ HAS_KANA = re.compile(r'[\u3040-\u30cd\u30cf-\u30ff\u31f0-\u31ff\u33a0-\u33ff]')
 INFOBOX_CN = re.compile(r'\|\s*简体中文名\s*=\s*([^\n|]*)')
 
 
+def infobox_supported(s: str) -> bool:
+    """infobox 实测仅支持 BMP（CJK: 基本区/ExtA/兼容区）；含 astral
+    字符（如 ExtB 及以后的汉字𠮷𬶮）的转换结果写不进去，调用方应跳过。"""
+    return all(ord(c) <= 0xFFFF for c in s)
+
+
 def load_whitelist(paths):
     """从白名单文件加载 ID 集合（每行一个 ID，`#` 开头为注释）。"""
     ids = set()
@@ -47,6 +53,7 @@ def load_whitelist(paths):
 
 def scan_jsonlines(jsonlines_path, exclude_ids=None):
     results = []
+    skipped_astral = []
     exclude_ids = exclude_ids or set()
     with open(jsonlines_path, 'r', encoding='utf-8') as f:
         for line in f:
@@ -74,8 +81,11 @@ def scan_jsonlines(jsonlines_path, exclude_ids=None):
             result = refined_to_cn(name)
 
             if result != name:
+                if not infobox_supported(result):
+                    skipped_astral.append((item_id, name))
+                    continue
                 results.append((item_id, result))
-    return results
+    return results, skipped_astral
 
 
 def main():
@@ -106,7 +116,7 @@ def main():
             print(f'{jsonlines_path} 不存在，跳过', file=sys.stderr)
             continue
 
-        results = scan_jsonlines(jsonlines_path, exclude_ids if entity_type == 'person' else None)
+        results, skipped = scan_jsonlines(jsonlines_path, exclude_ids if entity_type == 'person' else None)
         output_path = os.path.join(output_dir, f'missing-cn-name-{entity_type}.csv')
         with open(output_path, 'w', newline='') as out:
             w = csv.writer(out)
@@ -115,6 +125,11 @@ def main():
                 w.writerow([item_id, cn_name])
 
         print(f'{label}: {len(results)} → {output_path}', file=sys.stderr)
+        if skipped:
+            print(f'{label}: 跳过 {len(skipped)} 个含 infobox 不支持字符(BMP 外)的结果',
+                  file=sys.stderr)
+            for item_id, name in skipped[:20]:
+                print(f'  跳过 {item_id} {name}', file=sys.stderr)
 
 
 if __name__ == '__main__':
