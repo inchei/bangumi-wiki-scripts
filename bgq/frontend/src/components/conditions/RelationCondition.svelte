@@ -47,6 +47,7 @@
       restrict={true}
       value={typeValue || ""}
       suggestions={typeSuggestions}
+      sort={false}
       onchange={onTypeChange}
       placeholder="类型"
     />

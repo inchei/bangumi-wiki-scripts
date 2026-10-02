@@ -15,6 +15,8 @@
 import {
   relationsByType,
   positionsByType,
+  metaTagsByType,
+  META_TAGS,
   PERSON_CHAR_TYPES,
   PERSON_RELATIONS,
   CHARACTER_RELATIONS,
@@ -51,8 +53,13 @@ export const ENTITY_LABELS = {
 // entity = which entity the non-"s." fields resolve against; dual marks
 // person_character/character_person prefixes whose group members may also
 // include subject-level "s." fields (GUI exposes them as a second field box).
-export function assocPrefixesForTarget(target) {
-  const positions = positionsByType(0);
+// When typeCode is a subject type (1/2/3/4/6), relation/position prefixes of
+// that type sort first; other prefixes keep their relative order. For the
+// subject target the matching relations AND positions come before the rest
+// of either kind (rather than all relations first, then all positions).
+export function assocPrefixesForTarget(target, typeCode = 0) {
+  const positions = prioritizedPositions(typeCode);
+  const relations = prioritizedRelations(typeCode);
   switch (target) {
     case "person":
       return [
@@ -78,16 +85,33 @@ export function assocPrefixesForTarget(target) {
       ];
     case "episode":
       return [];
-    default:
+    default: {
+      let rels = relations;
+      let poss = positions;
+      if (typeCode) {
+        const relSet = new Set(relationsByType(typeCode));
+        const posSet = new Set(positionsByType(typeCode));
+        rels = relations.filter((r) => relSet.has(r));
+        poss = positions.filter((p) => posSet.has(p));
+      }
+      const rest = (all, kept) => {
+        const want = new Set(kept);
+        return all.filter((x) => !want.has(x));
+      };
+      const toSubject = (prefix) => ({ prefix, entity: "subject" });
+      const toPerson = (prefix) => ({ prefix, entity: "person" });
       return [
-        ...relationsByType(0).map((prefix) => ({ prefix, entity: "subject" })),
-        ...positions.map((prefix) => ({ prefix, entity: "person" })),
+        ...rels.map(toSubject),
+        ...poss.map(toPerson),
+        ...rest(relations, rels).map(toSubject),
+        ...rest(positions, poss).map(toPerson),
         ...CHARACTER_ASSOC_TYPES.map((prefix) => ({
           prefix,
           entity: "character",
         })),
         { prefix: "episode", entity: "episode" },
       ];
+    }
   }
 }
 
@@ -329,8 +353,8 @@ export const DEFAULT_ROW_FIELDS = ["id", "name"];
 //                              input (whole-column replacement only happens
 //                              for full-token stages). Trailing "|" is
 //                              harmless — the backend skips empty members.
-export function makeOutputTokenLister(target, plainFields) {
-  const infos = assocPrefixesForTarget(target);
+export function makeOutputTokenLister(target, plainFields, typeCode = 0) {
+  const infos = assocPrefixesForTarget(target, typeCode);
   const prefixMap = new Map(infos.map((i) => [i.prefix, i]));
   const stage1 = [...new Set([...plainFields, ...infos.map((i) => i.prefix)])];
   return (token) => {
@@ -375,10 +399,11 @@ export function makeOutputTokenLister(target, plainFields) {
 }
 
 // sortColumnSuggestions: flat combos for the sort field input (sorting uses
-// scalar fields; group columns are not sortable, count is).
-export function sortColumnSuggestions(target, plainFields) {
+// scalar fields; group columns are not sortable, count is). When typeCode is
+// a subject type, that type's relation/position prefixes sort first.
+export function sortColumnSuggestions(target, plainFields, typeCode = 0) {
   const out = [...plainFields];
-  for (const info of assocPrefixesForTarget(target)) {
+  for (const info of assocPrefixesForTarget(target, typeCode)) {
     out.push(`${info.prefix}.count`);
     if (info.dual) out.push(`${info.prefix}.s.count`);
     for (const f of ENTITY_FIELDS[info.entity]) {
@@ -409,4 +434,72 @@ export function prioritize(list, priority) {
     (a, b) =>
       (rank.has(a) ? rank.get(a) : max) - (rank.has(b) ? rank.get(b) : max),
   );
+}
+
+// normalizeSubjectType maps a type filter value (numeric code, numeric
+// string, or Chinese name) to a subject type code (1/2/3/4/6); 0 = all/unknown.
+function normalizeSubjectType(v) {
+  if (v == null || v === "" || v === "任意") return 0;
+  const s = String(v).trim();
+  const byName = { 书籍: 1, 动画: 2, 音乐: 3, 游戏: 4, 三次元: 6 };
+  if (byName[s]) return byName[s];
+  const n = Number(s);
+  if ([1, 2, 3, 4, 6].includes(n)) return n;
+  return 0;
+}
+
+// detectSubjectTypeCode returns the subject type code when the FIRST level
+// of the filter tree contains exactly one distinct subject-type constraint
+// (`type.value` or `field.field === "type"`); 0 otherwise. Nested groups
+// and other targets' `type` (e.g. person 个人/公司/组合) never count.
+export function detectSubjectTypeCode(items) {
+  const found = new Set();
+  for (const item of items || []) {
+    if (!item || typeof item !== "object" || item.logic || item._pendingDelete)
+      continue;
+    if (item.type) found.add(normalizeSubjectType(item.type.value));
+    if (item.field?.field === "type")
+      found.add(normalizeSubjectType(item.field.value));
+  }
+  found.delete(0);
+  return found.size === 1 ? [...found][0] : 0;
+}
+
+// orderByTypePriority returns `all` reordered so `preferred` entries come
+// first (in `preferred` order); the rest keep their `all` order.
+function orderByTypePriority(all, preferred) {
+  if (!Array.isArray(all)) return all;
+  if (!Array.isArray(preferred) || preferred.length === 0) return [...all];
+  const want = new Set(preferred);
+  const first = [];
+  for (const p of preferred) {
+    if (all.includes(p) && !first.includes(p)) first.push(p);
+  }
+  for (const a of all) {
+    if (!want.has(a)) first.push(a);
+  }
+  return first;
+}
+
+export function prioritizedRelations(typeCode) {
+  const all = relationsByType(0);
+  if (!typeCode) return [...all];
+  return orderByTypePriority(all, relationsByType(typeCode));
+}
+
+export function prioritizedPositions(typeCode) {
+  const all = positionsByType(0);
+  if (!typeCode) return [...all];
+  return orderByTypePriority(all, positionsByType(typeCode));
+}
+
+export function prioritizedMetaTags(typeCode) {
+  if (!typeCode) return [...META_TAGS];
+  const preferred = metaTagsByType(typeCode);
+  const want = new Set(preferred);
+  const out = [...preferred];
+  for (const t of META_TAGS) {
+    if (!want.has(t)) out.push(t);
+  }
+  return out;
 }

@@ -1,6 +1,6 @@
 import { writable, get } from "svelte/store";
 
-import { PLATFORMS } from "./schema-data.js";
+import { platformsByType } from "./schema-data.js";
 
 // Subject direct fields for autocomplete
 const SUBJECT_DIRECT_FIELDS = [
@@ -622,7 +622,7 @@ export function ctxFields(ctx) {
   return SUBJECT_DIRECT_FIELDS;
 }
 
-export function fieldSelectOptions(fc) {
+export function fieldSelectOptions(fc, typeCode = 0) {
   if (fc.dynamic === "type") {
     return [
       ["1", "书籍"],
@@ -633,7 +633,17 @@ export function fieldSelectOptions(fc) {
     ];
   }
   if (fc.dynamic === "platform") {
-    return PLATFORMS.map((p) => [String(p.code), p.name]);
+    const all = platformsByType(0);
+    let ordered = all;
+    if (typeCode) {
+      const preferred = platformsByType(typeCode);
+      const seen = new Set(preferred.map((p) => p.code + ":" + p.name));
+      ordered = [...preferred];
+      for (const p of all) {
+        if (!seen.has(p.code + ":" + p.name)) ordered.push(p);
+      }
+    }
+    return ordered.map((p) => [String(p.code), p.name]);
   }
   return fc.options || [];
 }

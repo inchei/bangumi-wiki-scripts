@@ -22,7 +22,7 @@ const PLATFORMS_BY_TYPE = {
 };
 
 /** @param {number} typeCode 0=all */
-function platformsByType(typeCode) {
+export function platformsByType(typeCode) {
   return PLATFORMS_BY_TYPE[typeCode] || PLATFORMS_BY_TYPE[0];
 }
 
@@ -114,6 +114,17 @@ const META_TAGS_TYPE_{{.TypeCode}} = [
 ];
 {{end}}
 const META_TAGS_SET = new Set([{{range $i, $m := .MetaTagEntries}}{{if $i}}, {{end}}...META_TAGS_TYPE_{{$m.TypeCode}}{{end}}]);
+const META_TAGS_BY_TYPE = {
+  0: [...META_TAGS_SET].sort(),
+{{- range .MetaTagEntries}}
+  {{.TypeCode}}: [...META_TAGS_TYPE_{{.TypeCode}}].sort(),
+{{- end}}
+};
+
+/** @param {number} typeCode 0=all */
+export function metaTagsByType(typeCode) {
+  return META_TAGS_BY_TYPE[typeCode] || META_TAGS_BY_TYPE[0];
+}
 
 // All meta tags across all subject types (convenience).
-export const META_TAGS = [...META_TAGS_SET].sort();
+export const META_TAGS = META_TAGS_BY_TYPE[0];

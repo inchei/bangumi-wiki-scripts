@@ -32,7 +32,7 @@
     bumpAssocStructureVersion,
   } from "../stores.js";
   import { getFiltersForAPI } from "../logic-tree.js";
-  import { positionsByType, PERSON_CHAR_TYPES } from "../schema-data.js";
+  import { PERSON_CHAR_TYPES } from "../schema-data.js";
   import {
     assocRowsFromFilters,
     assocFieldsFromFilters,
@@ -42,6 +42,8 @@
     makeOutputTokenLister,
     sortColumnSuggestions,
     prioritize,
+    detectSubjectTypeCode,
+    prioritizedPositions,
     ENTITY_FIELDS,
     ENTITY_LABELS,
     DEFAULT_ROW_FIELDS,
@@ -84,21 +86,20 @@
     if (!loading) handleRun();
   }
 
-  const STAFF_POSITIONS = positionsByType(0);
-
-  const TARGET_COLUMNS = {
-    subject: [...ctxFields(CTX_SUBJECT), ...STAFF_POSITIONS],
+  const TARGET_COLUMNS_BASE = {
+    subject: [...ctxFields(CTX_SUBJECT)],
     // name_cn：后端 person target 特例（name AS name_cn）
-    person: [
-      ...ctxFields(CTX_PERSON),
-      "name_cn",
-      ...STAFF_POSITIONS,
-      ...PERSON_CHAR_TYPES,
-    ],
-    character: [...ctxFields(CTX_CHARACTER), ...PERSON_CHAR_TYPES],
+    person: [...ctxFields(CTX_PERSON), "name_cn"],
+    character: [...ctxFields(CTX_CHARACTER)],
     // subject_id：后端支持 episode target 输出所属条目 id。
     // 刻意不提供 infobox 原始列（整段 wiki 文本，噪声大、无筛选价值）。
     episode: [...EPISODE_FIELDS, "subject_id"],
+  };
+  const TARGET_COLUMNS_TAIL = {
+    subject: [],
+    person: [...PERSON_CHAR_TYPES],
+    character: [...PERSON_CHAR_TYPES],
+    episode: [],
   };
 
   let target = $derived($queryTarget);
@@ -129,10 +130,16 @@
     return out;
   });
 
+  let subjectType = $derived(
+    target === "subject" ? detectSubjectTypeCode(rootItems) : 0,
+  );
+  let staffPositions = $derived(prioritizedPositions(subjectType));
   let plainColumns = $derived([
     ...new Set([
       ...filterNames,
-      ...(TARGET_COLUMNS[target] || TARGET_COLUMNS.subject),
+      ...(TARGET_COLUMNS_BASE[target] || TARGET_COLUMNS_BASE.subject),
+      ...(target === "subject" || target === "person" ? staffPositions : []),
+      ...(TARGET_COLUMNS_TAIL[target] || []),
     ]),
   ]);
   let outputPlaceholder = $derived(
@@ -142,7 +149,9 @@
   );
 
   let prefixInfoMap = $derived(
-    new Map(assocPrefixesForTarget(target).map((i) => [i.prefix, i])),
+    new Map(
+      assocPrefixesForTarget(target, subjectType).map((i) => [i.prefix, i]),
+    ),
   );
 
   let assocRows = $derived.by(() => {
@@ -268,7 +277,7 @@
   });
 
   let sortSuggestions = $derived.by(() => {
-    const base = sortColumnSuggestions(target, plainColumns);
+    const base = sortColumnSuggestions(target, plainColumns, subjectType);
     const extra = [];
     for (const [p, e] of filterAssocFieldMap) {
       if (!prefixInfoMap.has(p)) continue;
@@ -297,7 +306,7 @@
   // fragment inside {...}) is empty — i.e. not searching — priority
   // suggestions are pinned to the top of the list.
   let getColumnTokenList = $derived.by(() => {
-    const base = makeOutputTokenLister(target, plainColumns);
+    const base = makeOutputTokenLister(target, plainColumns, subjectType);
     const { general, members } = suggestionPriority;
     return (token, inner) => {
       const list = base(token);
@@ -727,6 +736,7 @@
               <AwesompleteInput
                 value={row.prefix}
                 suggestions={prefixSuggestionsFor(row)}
+                sort={false}
                 placeholder="关联前缀"
                 onchange={(v) => renameRow(row, v)}
               />

@@ -1,6 +1,7 @@
 <script>
   import {
     queryTarget,
+    subjectRootLogic,
     ctxFieldConfigs,
     fieldSelectOptions,
     opLabel,
@@ -22,14 +23,17 @@
     updateStaffPositions,
   } from "../logic-tree.js";
   import {
-    relationsByType,
-    positionsByType,
-    META_TAGS,
     PERSON_RELATIONS,
     CHARACTER_RELATIONS,
     CHARACTER_ASSOC_TYPES,
     PERSON_CHAR_TYPES,
   } from "../schema-data.js";
+  import {
+    detectSubjectTypeCode,
+    prioritizedRelations,
+    prioritizedPositions,
+    prioritizedMetaTags,
+  } from "../columns.js";
   import FilterTree from "./FilterTree.svelte";
   import AwesompleteInput from "./AwesompleteInput.svelte";
   import PendingDelete from "./PendingDelete.svelte";
@@ -88,6 +92,19 @@
   // Context-aware field suggestions for autocomplete
   const fieldSuggestions = $derived(ctxFields(ctx));
 
+  const subjectType = $derived(
+    $queryTarget === "subject"
+      ? detectSubjectTypeCode($subjectRootLogic?.items)
+      : 0,
+  );
+  const relationSuggestions = $derived(
+    ["任意"].concat(prioritizedRelations(subjectType)),
+  );
+  const positionSuggestions = $derived(
+    ["任意"].concat(prioritizedPositions(subjectType)),
+  );
+  const metaTagSuggestions = $derived(prioritizedMetaTags(subjectType));
+
   const valueAriaByOp = {
     before: "日期",
     after: "日期",
@@ -102,7 +119,7 @@
 
   // Reactive field select options
   const selectOpts = $derived(
-    fc && fc.type === "select" ? fieldSelectOptions(fc) : [],
+    fc && fc.type === "select" ? fieldSelectOptions(fc, subjectType) : [],
   );
 </script>
 
@@ -160,6 +177,7 @@
             )?.[1] || ""}
             suggestions={selectOpts.map((opt) => opt[1])}
             restrict={true}
+            sort={false}
             onchange={(label) => {
               const code =
                 selectOpts.find((opt) => opt[1] === label)?.[0] ?? "";
@@ -258,7 +276,8 @@
       <AwesompleteInput
         restrict={true}
         value={item.meta_tag.value}
-        suggestions={META_TAGS}
+        suggestions={metaTagSuggestions}
+        sort={false}
         onchange={(v) => updateCondition(group, idx, "meta_tag", "value", v)}
         placeholder="公共标签"
       />
@@ -331,7 +350,7 @@
       <RelationCondition
         label="条目关系"
         typeValue={item.relation.type}
-        typeSuggestions={["任意"].concat(relationsByType(0))}
+        typeSuggestions={relationSuggestions}
         onTypeChange={(v) => updateCondition(group, idx, "relation", "type", v)}
         mode={item.relation.mode}
         onModeChange={(v) => updateCondition(group, idx, "relation", "mode", v)}
@@ -787,7 +806,7 @@
       >
         <AwesompleteInput
           value={posText}
-          suggestions={["任意"].concat(positionsByType(0))}
+          suggestions={positionSuggestions}
           oninput={(v) => {
             const parts = v
               .split(",")
@@ -806,6 +825,7 @@
           multiple={true}
           separator=","
           restrict={true}
+          sort={false}
         />
       </RelationCondition>
     {:else if condType === "episode"}
