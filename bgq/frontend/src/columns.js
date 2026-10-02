@@ -503,3 +503,7 @@ export function prioritizedMetaTags(typeCode) {
   }
   return out;
 }
+
+export function subjectFieldSuggestions(typeCode = 0) {
+  return [...ctxFields(CTX_SUBJECT), ...prioritizedPositions(typeCode)];
+}

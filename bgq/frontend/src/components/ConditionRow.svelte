@@ -33,6 +33,7 @@
     prioritizedRelations,
     prioritizedPositions,
     prioritizedMetaTags,
+    subjectFieldSuggestions,
   } from "../columns.js";
   import FilterTree from "./FilterTree.svelte";
   import AwesompleteInput from "./AwesompleteInput.svelte";
@@ -90,7 +91,9 @@
   );
 
   // Context-aware field suggestions for autocomplete
-  const fieldSuggestions = $derived(ctxFields(ctx));
+  const fieldSuggestions = $derived(
+    ctx === CTX_SUBJECT ? subjectFieldSuggestions(subjectType) : ctxFields(ctx),
+  );
 
   const subjectType = $derived(
     $queryTarget === "subject"
@@ -149,6 +152,7 @@
         <AwesompleteInput
           value={item.field.field}
           suggestions={fieldSuggestions}
+          sort={false}
           onchange={(v) => updateCondition(group, idx, "field", "field", v)}
           oninput={(v) => updateCondition(group, idx, "field", "field", v)}
           placeholder="字段名"
