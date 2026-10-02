@@ -356,6 +356,7 @@
 
   .aw-input :global(~ ul > li) {
     padding: 5px 10px;
+    line-height: 20px;
     cursor: pointer;
     white-space: nowrap;
     color: var(--text);
