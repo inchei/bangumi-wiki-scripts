@@ -160,6 +160,11 @@ function findInsertIndex(lines: string[], fieldOrder: string[], fieldIdx: number
     return lines.length - 1;
 }
 
+function formatFieldLine(field: string, value: string): string {
+    const v = value.replace(/^\s+/, '');
+    return v.startsWith('{') ? `|${field}=${v}` : `|${field}= ${v}`;
+}
+
 export function updateInfobox(oldInfobox: string, fieldUpdates: Record<string, string>): string {
     const templateName = getTemplateName(oldInfobox);
     const fieldOrder = templateName ? INFOBOX_FIELD_ORDER[templateName] : null;
@@ -169,9 +174,10 @@ export function updateInfobox(oldInfobox: string, fieldUpdates: Record<string, s
 
     Object.entries(fieldUpdates).forEach(([field, value]) => {
         value = value.replaceAll('\\n', '\n');
-        const regex = new RegExp(`\\|${sanitizeRegExp(field)}\\s*=.*`, 'i');
+        const escaped = sanitizeRegExp(field);
+        const regex = new RegExp(`\\|${escaped}\\s*=[\\s\\S]*?(?=\\r?\\n\\s*\\|[^|=\\r\\n]+?\\s*=|\\r?\\n\\s*\\}\\}|\\s*$)`, 'i');
         if (regex.test(newInfobox)) {
-            newInfobox = newInfobox.replace(regex, `|${field}= ${value}`);
+            newInfobox = newInfobox.replace(regex, formatFieldLine(field, value));
         } else {
             pendingAdd.push({
                 field,
@@ -195,9 +201,9 @@ export function updateInfobox(oldInfobox: string, fieldUpdates: Record<string, s
         for (let i = pendingAdd.length - 1; i >= 0; i--) {
             const f = pendingAdd[i];
             if (fieldOrder && f.fieldIdx >= 0) {
-                lines.splice(findInsertIndex(lines, fieldOrder, f.fieldIdx), 0, `|${f.field}= ${f.value}`);
+                lines.splice(findInsertIndex(lines, fieldOrder, f.fieldIdx), 0, formatFieldLine(f.field, f.value));
             } else {
-                lines.splice(-1, 0, `|${f.field}= ${f.value}`);
+                lines.splice(-1, 0, formatFieldLine(f.field, f.value));
             }
         }
         newInfobox = lines.join('\n');
