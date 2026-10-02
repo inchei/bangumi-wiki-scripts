@@ -395,4 +395,8 @@
   .aw-input :global(~ ul:empty) {
     display: none;
   }
+
+  .aw-input :global(~ ul::before) {
+    display: none;
+  }
 </style>
