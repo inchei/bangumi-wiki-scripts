@@ -295,7 +295,12 @@
     const strip = stripEl;
     const el = wrapEl;
     if (!strip || !el) return;
-    strip.style.transform = `translateX(${-Math.round(el.scrollLeft)}px)`;
+    // Clamp: iOS Safari reports out-of-range scrollLeft during rubber-band
+    // bounces; syncing it raw would slide the header into blank space.
+    // Evidence: https://github.com/discourse/discourse/commit/d567108
+    const max = Math.max(el.scrollWidth - el.clientWidth, 0);
+    const x = Math.min(Math.max(el.scrollLeft, 0), max);
+    strip.style.transform = `translateX(${-Math.round(x)}px)`;
   }
 
   // Keyboard nav: focusing a strip cell beyond the visible width must NOT
@@ -344,10 +349,16 @@
   function nudgeScroll(dir) {
     const el = wrapEl;
     if (!el) return;
-    el.scrollBy({
-      left: dir * Math.max(160, el.clientWidth * 0.75),
-      behavior: "smooth",
-    });
+    // Absolute clamped target: iOS Safari doesn't clamp smooth programmatic
+    // scrolls, so a relative scrollBy near an edge rubber-bands into blank
+    // overscroll space instead of stopping at the content edge.
+    // Evidence: https://github.com/discourse/discourse/commit/d567108
+    const max = Math.max(el.scrollWidth - el.clientWidth, 0);
+    const target = Math.min(
+      Math.max(el.scrollLeft + dir * Math.max(160, el.clientWidth * 0.75), 0),
+      max,
+    );
+    el.scrollTo({ left: target, behavior: "smooth" });
   }
 
   $effect(() => {
