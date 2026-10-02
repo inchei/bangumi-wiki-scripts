@@ -219,6 +219,11 @@
           onchange(trimmed);
         }
         oninput(inputEl.value);
+      } else {
+        // Multiple-value inputs (e.g. output columns) replace the token
+        // programmatically without firing input, so sync immediately —
+        // otherwise a query run right after picking reads the stale value.
+        oninput(inputEl.value);
       }
       // Reopen for the next stage when the picked item was a continuation
       // ("前缀.{" opens stage 3; "字段|" continues the member list).
