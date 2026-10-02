@@ -562,9 +562,15 @@
 
   // "+ 关联": append an empty row — the prefix input is focused and the
   // field boxes are present immediately; picking a prefix creates the token.
+  // A live empty row blocks stacking another one (focus it instead);
+  // pending-delete rows don't count (the version bump below purges them).
   async function addManualRow() {
     if (addablePrefixes.length === 0) return;
-    if (assocRows.some((r) => !r.prefix)) return;
+    const emptyRow = assocRows.find((r) => !r.prefix && !r._pendingDelete);
+    if (emptyRow) {
+      focusRowPrefixBox(emptyRow._id);
+      return;
+    }
     const newId = nextAssocId();
     manualAssoc.update((m) => ({
       ...m,
@@ -572,9 +578,13 @@
     }));
     bumpAssocStructureVersion();
     await tick();
+    focusRowPrefixBox(newId);
+  }
+
+  function focusRowPrefixBox(rowId) {
     document
       .querySelector(
-        `.assoc-row[data-assoc-id="${newId}"] .assoc-prefix-box input`,
+        `.assoc-row[data-assoc-id="${rowId}"] .assoc-prefix-box input`,
       )
       ?.focus();
   }
