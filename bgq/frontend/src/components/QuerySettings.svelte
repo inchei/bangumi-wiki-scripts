@@ -35,6 +35,7 @@
   import { positionsByType, PERSON_CHAR_TYPES } from "../schema-data.js";
   import {
     assocRowsFromFilters,
+    assocFieldsFromFilters,
     assocPrefixesForTarget,
     parseAssocToken,
     buildAssocToken,
@@ -101,12 +102,6 @@
   };
 
   let target = $derived($queryTarget);
-  let plainColumns = $derived(TARGET_COLUMNS[target] || TARGET_COLUMNS.subject);
-  let outputPlaceholder = $derived(
-    (
-      DEFAULT_SETTINGS[target] || DEFAULT_SETTINGS.subject
-    ).outputColumns.replace(/,+$/, ""),
-  );
 
   // ---- Association output rows ----
   // Rows are manual entries (persisted), seeded once from first-level filter
@@ -122,6 +117,28 @@
           ? $episodeRootLogic
           : $subjectRootLogic
     ).items,
+  );
+
+  let filterNames = $derived.by(() => {
+    const out = [];
+    for (const item of rootItems) {
+      if (!item || item.logic) continue;
+      const f = item.field?.field?.trim();
+      if (f && !out.includes(f)) out.push(f);
+    }
+    return out;
+  });
+
+  let plainColumns = $derived([
+    ...new Set([
+      ...filterNames,
+      ...(TARGET_COLUMNS[target] || TARGET_COLUMNS.subject),
+    ]),
+  ]);
+  let outputPlaceholder = $derived(
+    (
+      DEFAULT_SETTINGS[target] || DEFAULT_SETTINGS.subject
+    ).outputColumns.replace(/,+$/, ""),
   );
 
   let prefixInfoMap = $derived(
@@ -161,6 +178,8 @@
     assocRowsFromFilters(target, rootItems).map((r) => r.prefix),
   );
 
+  let filterAssocFieldMap = $derived(assocFieldsFromFilters(target, rootItems));
+
   // ---- Suggestion priority (pinned to the top while not searching) ----
   // Rank sources, in order: common fields of the default output columns →
   // content referenced by first-level filters → existing output columns →
@@ -168,8 +187,8 @@
   // sort fields), full sort entries (前缀.count etc.), and per-prefix group
   // members (stage-3 fields inside 前缀.{...}).
   let suggestionPriority = $derived.by(() => {
-    const general = [];
-    const sortEntries = [];
+    const general = [...filterNames];
+    const sortEntries = [...filterNames];
     const members = new SvelteMap();
     const push = (arr, v) => {
       if (v && !arr.includes(v)) arr.push(v);
@@ -187,13 +206,9 @@
       push(general, f);
       push(sortEntries, f);
     }
-    // 2. First-level filter content: plain fields + association prefixes
+    // 2. First-level filter content: type + association prefixes
     for (const item of rootItems) {
       if (!item || item.logic) continue;
-      if (item.field?.field) {
-        push(general, item.field.field);
-        push(sortEntries, item.field.field);
-      }
       if (item.type?.value) {
         push(general, "type");
         push(sortEntries, "type");
@@ -204,6 +219,13 @@
       push(general, p);
       push(sortEntries, `${p}.count`);
       if (prefixInfoMap.get(p).dual) push(sortEntries, `${p}.s.count`);
+    }
+    for (const [p, e] of filterAssocFieldMap) {
+      if (!prefixInfoMap.has(p)) continue;
+      for (const f of e.fields) push(sortEntries, `${p}.${f}`);
+      if (prefixInfoMap.get(p).dual) {
+        for (const f of e.subjectFields) push(sortEntries, `${p}.s.${f}`);
+      }
     }
     // 3. Existing output columns (assoc tokens also rank their prefix and
     //    member fields)
@@ -245,7 +267,31 @@
     return { general, sortEntries, members };
   });
 
-  let sortSuggestions = $derived(sortColumnSuggestions(target, plainColumns));
+  let sortSuggestions = $derived.by(() => {
+    const base = sortColumnSuggestions(target, plainColumns);
+    const extra = [];
+    for (const [p, e] of filterAssocFieldMap) {
+      if (!prefixInfoMap.has(p)) continue;
+      for (const f of e.fields) {
+        if (!extra.includes(`${p}.${f}`)) extra.push(`${p}.${f}`);
+      }
+      if (prefixInfoMap.get(p).dual) {
+        for (const f of e.subjectFields) {
+          if (!extra.includes(`${p}.s.${f}`)) extra.push(`${p}.s.${f}`);
+        }
+      }
+    }
+    if (extra.length === 0) return base;
+    return [...new Set([...extra, ...base])];
+  });
+
+  function rowFieldSuggestions(row, kind) {
+    const base = ENTITY_FIELDS[kind === "subject" ? "subject" : row.entity];
+    const extra = filterAssocFieldMap.get(row.prefix);
+    const names = kind === "subject" ? extra?.subjectFields : extra?.fields;
+    if (!names || names.length === 0) return base;
+    return [...new Set([...names, ...base])];
+  }
 
   // Output columns autocomplete: while the column token (or the field
   // fragment inside {...}) is empty — i.e. not searching — priority
@@ -257,13 +303,21 @@
       const list = base(token);
       if (inner) {
         if (inner.fieldFragment.trim()) return list;
-        const mp = members.get(token.slice(0, token.indexOf(".")));
-        return mp && mp.length > 0
-          ? prioritize(
-              list,
-              mp.map((m) => `${m}|`),
-            )
-          : list;
+        const pfx = token.slice(0, token.indexOf("."));
+        const pinned = [];
+        const extra = filterAssocFieldMap.get(pfx);
+        if (extra) {
+          for (const f of extra.fields) pinned.push(`${f}|`);
+          if (prefixInfoMap.get(pfx)?.dual) {
+            for (const f of extra.subjectFields) pinned.push(`s.${f}|`);
+          }
+        }
+        const mp = members.get(pfx);
+        if (mp) {
+          for (const m of mp) pinned.push(`${m}|`);
+        }
+        if (pinned.length === 0) return list;
+        return prioritize([...new Set([...pinned, ...list])], pinned);
       }
       if (token.trim()) return list;
       return prioritize(list, general);
@@ -696,7 +750,8 @@
                   <span class="assoc-entity">{ENTITY_LABELS[row.entity]}</span>
                   <AwesompleteInput
                     value={row.fields.length ? row.fields.join("|") + "|" : ""}
-                    suggestions={ENTITY_FIELDS[row.entity]}
+                    suggestions={rowFieldSuggestions(row)}
+                    sort={false}
                     placeholder="{ENTITY_LABELS[row.entity]}字段"
                     multiple={true}
                     separator="|"
@@ -710,7 +765,8 @@
                     value={row.subjectFields.length
                       ? row.subjectFields.join("|") + "|"
                       : ""}
-                    suggestions={ENTITY_FIELDS.subject}
+                    suggestions={rowFieldSuggestions(row, "subject")}
+                    sort={false}
                     placeholder="{ENTITY_LABELS.subject}字段"
                     multiple={true}
                     separator="|"
@@ -723,7 +779,8 @@
               <div class="assoc-fields">
                 <AwesompleteInput
                   value={row.fields.length ? row.fields.join("|") + "|" : ""}
-                  suggestions={ENTITY_FIELDS[row.entity]}
+                  suggestions={rowFieldSuggestions(row)}
+                  sort={false}
                   placeholder="{ENTITY_LABELS[row.entity]}字段"
                   multiple={true}
                   separator="|"

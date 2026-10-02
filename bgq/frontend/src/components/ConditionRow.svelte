@@ -133,6 +133,7 @@
           value={item.field.field}
           suggestions={fieldSuggestions}
           onchange={(v) => updateCondition(group, idx, "field", "field", v)}
+          oninput={(v) => updateCondition(group, idx, "field", "field", v)}
           placeholder="字段名"
         />
       {/if}

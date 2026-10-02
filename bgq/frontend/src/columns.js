@@ -139,6 +139,140 @@ export function assocRowsFromFilters(target, rootItems) {
   return rows;
 }
 
+export function assocFieldsFromFilters(target, rootItems) {
+  const map = new Map();
+  const entry = (prefix) => {
+    if (!prefix) return null;
+    let e = map.get(prefix);
+    if (!e) {
+      e = { fields: [], subjectFields: [] };
+      map.set(prefix, e);
+    }
+    return e;
+  };
+  const pushName = (arr, v) => {
+    const s = typeof v === "string" ? v.trim() : v;
+    if (s && !arr.includes(s)) arr.push(s);
+  };
+  const scan = (arr, list) => {
+    for (const item of list || []) {
+      if (!item || typeof item !== "object" || item._pendingDelete) continue;
+      if (item.logic) {
+        scan(arr, item.logic.items);
+        continue;
+      }
+      if (item.field?.field) pushName(arr, item.field.field);
+      for (const key of Object.keys(item)) {
+        const val = item[key];
+        if (!val || typeof val !== "object") continue;
+        for (const ck of [
+          "conditions",
+          "subject_conditions",
+          "character_conditions",
+          "person_conditions",
+        ]) {
+          if (Array.isArray(val[ck])) {
+            for (const c of val[ck]) {
+              if (c?.logic) scan(arr, c.logic.items);
+            }
+          }
+        }
+        if (
+          val.logic &&
+          typeof val.logic === "object" &&
+          !Array.isArray(val.logic)
+        ) {
+          scan(arr, val.logic.items);
+        }
+      }
+    }
+  };
+  const collectInto = (arr, node) => {
+    if (!node) return;
+    if (Array.isArray(node)) {
+      for (const c of node) {
+        if (c?.logic) scan(arr, c.logic.items);
+      }
+      return;
+    }
+    if (typeof node === "object") {
+      if (node.logic && typeof node.logic === "object") {
+        scan(arr, node.logic.items);
+      } else if (Array.isArray(node.items)) {
+        scan(arr, node.items);
+      }
+    }
+  };
+  const harvest = (prefix, assoc, fieldKeys, subjectKeys) => {
+    const e = entry(prefix);
+    if (!e || !assoc) return;
+    for (const k of fieldKeys || []) collectInto(e.fields, assoc[k]);
+    for (const k of subjectKeys || []) collectInto(e.subjectFields, assoc[k]);
+  };
+  const harvestStaff = (staff) => {
+    const parts =
+      staff.positions?.length > 0 ? staff.positions : [staff.position];
+    for (const p of parts) harvest(p, staff, ["conditions"], []);
+  };
+  for (const item of rootItems || []) {
+    if (!item || item.logic || item._pendingDelete) continue;
+    if (target === "subject") {
+      if (item.relation)
+        harvest(item.relation.type, item.relation, ["conditions"], []);
+      if (item.staff) harvestStaff(item.staff);
+      if (item.character)
+        harvest(item.character.type, item.character, ["conditions"], []);
+      if (item.subject_cast)
+        harvest(
+          item.subject_cast.type,
+          item.subject_cast,
+          ["character_conditions", "person_conditions"],
+          [],
+        );
+      if (item.episode) harvest("episode", item.episode, ["logic"], []);
+    } else if (target === "person") {
+      if (item.staff) harvestStaff(item.staff);
+      if (item.person_relation)
+        harvest(
+          item.person_relation.type,
+          item.person_relation,
+          ["conditions"],
+          [],
+        );
+      if (item.person_character)
+        harvest(
+          item.person_character.type,
+          item.person_character,
+          ["conditions"],
+          ["subject_conditions"],
+        );
+      if (item.person_cast_subject)
+        harvest(
+          item.person_cast_subject.type,
+          item.person_cast_subject,
+          ["character_conditions"],
+          ["conditions"],
+        );
+    } else if (target === "character") {
+      if (item.character_relation)
+        harvest(
+          item.character_relation.type,
+          item.character_relation,
+          ["conditions"],
+          [],
+        );
+      if (item.character_person)
+        harvest(
+          item.character_person.type,
+          item.character_person,
+          ["conditions"],
+          ["subject_conditions"],
+        );
+    }
+  }
+  return map;
+}
+
 // parseAssocToken parses one output-column token belonging to `prefix`.
 // Returns null when the token does not belong to the prefix, and { raw: true }
 // for forms the row editor does not manage (count / ~min / ~max), leaving them
