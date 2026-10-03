@@ -1157,7 +1157,7 @@
     <div class="results-empty">
       <div class="icon"><MorphIcon icon={ClipboardList} size={48} /></div>
       <div>点击 <b>"执行查询"</b> 开始筛选</div>
-      <div style="font-size:12px;margin-top:8px">
+      <div class="results-empty-hint">
         或访问 <a href="/api/debug" target="_blank">/api/debug</a> 检查状态
       </div>
     </div>
@@ -1172,9 +1172,14 @@
   }
 
   .results-empty .icon {
-    font-size: 48px;
+    font-size: 3rem;
     margin-bottom: 16px;
     opacity: 0.5;
+  }
+
+  .results-empty-hint {
+    font-size: 0.75rem;
+    margin-top: 8px;
   }
 
   .results-loading {
@@ -1334,7 +1339,7 @@
 
   .results-count {
     min-width: 0;
-    font-size: 14px;
+    font-size: 0.9rem;
     color: var(--text-secondary);
   }
 
@@ -1345,7 +1350,7 @@
 
   .results-count .time {
     color: var(--text-placeholder);
-    font-size: 12px;
+    font-size: 0.75rem;
     margin-left: 8px;
   }
 
@@ -1494,7 +1499,7 @@
     grid-auto-rows: auto;
     width: max-content;
     min-width: 100%;
-    font-size: 13px;
+    font-size: 0.8rem;
     background: var(--white);
   }
 
@@ -1538,7 +1543,7 @@
     text-align: left;
     font-weight: 600;
     color: var(--text-secondary);
-    font-size: 12px;
+    font-size: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
     max-width: 20ch;
@@ -1574,7 +1579,7 @@
   }
 
   .results-th :global(svg) {
-    font-size: 10px;
+    font-size: 0.65rem;
     margin-left: 4px;
     opacity: 0.7;
     vertical-align: middle;
@@ -1659,7 +1664,7 @@
 
   :global(.results-table .col-id) {
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: 500;
   }
 
@@ -1692,7 +1697,7 @@
     border-radius: var(--radius);
     padding: 16px 20px;
     color: var(--error-text);
-    font-size: 14px;
+    font-size: 0.9rem;
   }
 
   .error-card .error-header {
@@ -1710,7 +1715,7 @@
     background: var(--error-pre-bg);
     padding: 12px;
     border-radius: var(--radius-xs);
-    font-size: 12px;
+    font-size: 0.75rem;
     font-family: var(--font-mono);
     overflow-x: auto;
     max-height: 200px;

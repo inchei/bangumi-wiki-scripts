@@ -933,7 +933,7 @@
   }
 
   .cond-unknown {
-    font-size: 12px;
+    font-size: 0.75rem;
     flex: 1;
   }
 

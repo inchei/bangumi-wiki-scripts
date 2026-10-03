@@ -47,7 +47,7 @@
     background: none;
     color: var(--text-secondary);
     font-family: inherit;
-    font-size: 12px;
+    font-size: 0.75rem;
     cursor: pointer;
     transition: var(--transition);
     white-space: nowrap;

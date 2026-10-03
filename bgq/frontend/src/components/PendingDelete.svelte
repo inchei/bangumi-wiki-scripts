@@ -31,7 +31,7 @@
   }
 
   .pending-delete-label {
-    font-size: 12px;
+    font-size: 0.75rem;
     color: var(--text-muted);
     cursor: default;
   }

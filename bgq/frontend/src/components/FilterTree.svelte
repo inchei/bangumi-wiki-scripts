@@ -294,7 +294,7 @@
     align-items: center;
     justify-content: center;
     padding: 1px 8px;
-    font-size: 11px;
+    font-size: 0.7rem;
     font-weight: 600;
     cursor: pointer;
     background: var(--bg);

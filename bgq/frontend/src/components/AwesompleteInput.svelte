@@ -353,7 +353,7 @@
     list-style: none;
     padding: 4px 0;
     margin: 2px 0 0;
-    font-size: 12px;
+    font-size: 0.75rem;
     transition: none;
     animation: none;
     scrollbar-width: thin;

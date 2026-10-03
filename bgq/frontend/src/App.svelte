@@ -336,13 +336,13 @@
     .btn {
       padding: 0;
       border: none;
-      font-size: 16px;
+      font-size: 1rem;
       min-width: 30px;
     }
   }
 
   .header-logo {
-    font-size: 18px;
+    font-size: 1.15rem;
     font-weight: 700;
     color: var(--text);
     display: flex;

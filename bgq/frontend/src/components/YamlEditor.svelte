@@ -315,7 +315,7 @@
     width: 100%;
     min-height: 200px;
     font-family: var(--font-mono);
-    font-size: 12px;
+    font-size: 0.75rem;
     padding: 12px;
     border: 1px solid var(--border);
     border-radius: var(--radius-xs);
@@ -335,13 +335,13 @@
   /* iOS Safari auto-zooms on focus when form text < 16px: phones only */
   @media (pointer: coarse) and (width < 768px) {
     .yaml-editor {
-      font-size: 16px;
+      font-size: 1rem;
     }
   }
 
   @media (pointer: coarse) and (orientation: landscape) and (width < 1024px) {
     .yaml-editor {
-      font-size: 16px;
+      font-size: 1rem;
     }
   }
 

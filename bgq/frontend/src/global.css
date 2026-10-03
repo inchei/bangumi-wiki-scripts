@@ -123,7 +123,7 @@ a:hover {
 .tag-remove {
   cursor: pointer;
   color: var(--accent);
-  font-size: 18px;
+  font-size: 1.15rem;
   line-height: 1;
   flex-shrink: 0;
   transition: var(--transition);
@@ -150,7 +150,7 @@ a:hover {
 }
 
 .card-header {
-  font-size: 15px;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
   margin: 0 0 16px;
@@ -193,7 +193,7 @@ a:hover {
 }
 
 .form-label {
-  font-size: 13px;
+  font-size: 0.8rem;
   color: var(--text-secondary);
   margin-bottom: 4px;
   display: block;
@@ -204,7 +204,7 @@ a:hover {
   padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
-  font-size: 13px;
+  font-size: 0.8rem;
   font-family: var(--font);
   color: var(--text);
   background: var(--white);
@@ -237,7 +237,7 @@ a:hover {
   padding: 0 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-xs);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-family: var(--font);
   color: var(--text);
   background: var(--white);
@@ -260,7 +260,7 @@ a:hover {
   .input,
   .select,
   textarea {
-    font-size: 16px;
+    font-size: 1rem;
   }
 }
 
@@ -268,7 +268,7 @@ a:hover {
   .input,
   .select,
   textarea {
-    font-size: 16px;
+    font-size: 1rem;
   }
 }
 
@@ -282,7 +282,7 @@ a:hover {
   padding: 0 20px;
   border: none;
   border-radius: var(--radius-xs);
-  font-size: 13px;
+  font-size: 0.8rem;
   font-weight: 500;
   font-family: var(--font);
   cursor: pointer;
@@ -326,14 +326,14 @@ a:hover {
 .btn-sm {
   height: 30px;
   padding: 0 12px;
-  font-size: 12px;
+  font-size: 0.75rem;
   border-radius: var(--radius-xs);
 }
 
 .btn-xs {
   height: 24px;
   padding: 0 8px;
-  font-size: 11px;
+  font-size: 0.7rem;
   border-radius: 4px;
 }
 
@@ -352,7 +352,7 @@ a:hover {
   align-items: center;
   gap: 6px;
   cursor: pointer;
-  font-size: 12px;
+  font-size: 0.75rem;
   padding: 3px 10px;
   border: 1px solid var(--border);
   border-radius: 20px;
@@ -404,7 +404,7 @@ a:hover {
 
 /* ===== Condition Row ===== */
 .cond-type {
-  font-size: 13px;
+  font-size: 0.8rem;
   color: var(--accent);
   font-weight: 600;
 }

@@ -904,14 +904,13 @@
   </div>
   <button
     id="btn-run"
-    class="btn btn-primary btn-block"
+    class="btn btn-primary btn-block run-btn"
     onclick={handleRun}
     disabled={loading}
     title={SHORTCUT_TITLE}
     aria-label={loading
       ? "查询中"
       : `执行查询，快捷键 ${IS_APPLE ? "Command 回车" : "Ctrl 回车"}`}
-    style="height:42px;font-size:15px"
   >
     <MorphIcon icon={loading ? Loader : Search} size={16} aria-hidden="true" />
     <TextMorph
@@ -925,10 +924,15 @@
 </div>
 
 <style>
+  .run-btn {
+    height: 42px;
+    font-size: 0.95rem;
+  }
+
   .kbd-hint {
     margin-left: 8px;
     font: inherit;
-    font-size: 12px;
+    font-size: 0.75rem;
     font-weight: normal;
     line-height: 1;
     color: var(--white);
@@ -968,14 +972,14 @@
     field-sizing: content;
     width: auto;
     min-width: 5em;
-    font-size: 13px;
+    font-size: 0.8rem;
     font-weight: 500;
   }
 
   /* iOS Safari auto-zooms on focus when form text < 16px: phones only */
   @media (pointer: coarse) and (width < 768px) {
     .assoc-prefix-box :global(input.input) {
-      font-size: 16px;
+      font-size: 1rem;
     }
   }
 
@@ -986,7 +990,7 @@
     align-items: center;
     flex-shrink: 0;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 0.75rem;
     white-space: nowrap;
   }
 
@@ -1069,7 +1073,7 @@
 
   .assoc-entity {
     flex-shrink: 0;
-    font-size: 11px;
+    font-size: 0.7rem;
     line-height: 1;
     color: var(--text-secondary);
     background: var(--bg-alt);
