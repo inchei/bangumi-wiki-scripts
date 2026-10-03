@@ -512,9 +512,7 @@
         {/if}
         {#if ca.subject_conditions?.length > 0 && ca.subject_conditions[0].logic}
           <div class="nested">
-            <div
-              style="display:flex;align-items:center;gap:4px;margin-bottom:2px"
-            >
+            <div class="mode-row">
               <span class="cond-type">相关条目</span>
               <select
                 class="select"
@@ -647,9 +645,7 @@
         {/if}
         {#if pcs.character_conditions?.length > 0 && pcs.character_conditions[0].logic}
           <div class="nested">
-            <div
-              style="display:flex;align-items:center;gap:4px;margin-bottom:2px"
-            >
+            <div class="mode-row">
               <span class="cond-type">相关角色</span>
               <select
                 class="select"
@@ -927,6 +923,13 @@
     flex-wrap: wrap;
     margin: 2px 0;
     width: 100%;
+  }
+
+  .mode-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 2px;
   }
 
   .cond-unknown {

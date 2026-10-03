@@ -876,7 +876,7 @@
     {/each}
     <button class="btn btn-outline btn-xs" onclick={addSortRule}>+ 排序</button>
   </div>
-  <div class="form-group" style="display:flex;gap:16px">
+  <div class="form-group limit-row">
     <div>
       <label class="form-label" for="resultLimit">结果数量上限</label>
       <input
@@ -950,6 +950,12 @@
     gap: 8px;
     align-items: center;
     margin-bottom: 6px;
+  }
+
+  .limit-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
   }
 
   .assoc-prefix-box {
