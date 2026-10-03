@@ -44,6 +44,7 @@ def page_wrap(title, body):
     return ['<!DOCTYPE html>',
             '<html lang="zh"><head><meta charset="utf-8">',
             '<meta name="viewport" content="width=device-width,initial-scale=1">',
+            '<meta name="text-scale" content="scale">',
             f'<title>{html.escape(title)}</title>',
             DARK_MODE,
             '</head><body>',

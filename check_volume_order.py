@@ -675,6 +675,7 @@ def generate_html_report(problematic_series):
     lines = ['<!DOCTYPE html>',
              '<html lang="zh"><head><meta charset="utf-8">',
              '<meta name="viewport" content="width=device-width,initial-scale=1">',
+             '<meta name="text-scale" content="scale">',
              '<title>单行本卷序检查结果</title>',
              DARK_MODE,
              '</head><body>',
