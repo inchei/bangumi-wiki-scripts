@@ -272,7 +272,7 @@ func (s *server) handleHealth(w http.ResponseWriter, r *http.Request) {
 func (s *server) handleDebug(w http.ResponseWriter, r *http.Request) {
 	var aliasesMtime time.Time
 	if s.aliases != nil {
-		aliasesMtime = s.aliases.modTime
+		aliasesMtime = s.aliases.ModTime
 	}
 	resp := map[string]interface{}{
 		"duckdb_mtime":  formatMtime(modTime(query.GetDuckDBPath())),

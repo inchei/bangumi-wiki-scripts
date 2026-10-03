@@ -43,12 +43,13 @@ jobs:
           python3 -c "import zipfile; zipfile.ZipFile('/tmp/duckdb.zip').extractall('bgq/bin/')"
           chmod +x bgq/bin/duckdb
 
-      - name: 构建 bgq
+      - name: 构建 bgq 与 missing-persons
         run: |
           cd bgq
           mkdir -p internal/server/dist
           touch internal/server/dist/.keep
           go build -o bin/bgq ./cmd/bgq/
+          go build -o bin/missing-persons ./cmd/missing-persons/
 
       - name: 下载 Bangumi 归档
         run: bash bgq/download-archive.sh bangumi_archive
@@ -63,7 +64,7 @@ jobs:
         env:
           DUCKDB_PATH: ${{ github.workspace }}/bgq/bin/duckdb
         run: |
-          bgq/bin/bgq missing persons --db bgq/bangumi.db --archive-dir bangumi_archive --aliases-file person_alias.json
+          bgq/bin/missing-persons --db bgq/bangumi.db --archive-dir bangumi_archive --aliases-file person_alias.json
           mkdir -p _site
           cp -r docs/missing-persons _site/missing-persons
 

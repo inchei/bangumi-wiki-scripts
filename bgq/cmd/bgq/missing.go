@@ -37,8 +37,6 @@ func cmdMissing(args []string) {
 		cmdMissingSubjects(args[1:])
 	case "episodes":
 		cmdMissingEpisodes(args[1:])
-	case "persons":
-		cmdMissingPersons(args[1:])
 	default:
 		fmt.Fprintf(os.Stderr, "未知子命令: %s\n", subcommand)
 		printMissingUsage()
@@ -49,7 +47,6 @@ func cmdMissing(args []string) {
 func printMissingUsage() {
 	fmt.Fprintln(os.Stderr, "用法: bgq missing subjects <人名> --type <条目类型> [--db <数据库>]")
 	fmt.Fprintln(os.Stderr, "       bgq missing episodes <人名> [--db <数据库>]")
-	fmt.Fprintln(os.Stderr, "       bgq missing persons [--db <数据库>] [--archive-dir <归档目录>] [--aliases-file <别名文件>] [--stats-only] [--stats-json <路径>]")
 }
 
 func cmdMissingSubjects(args []string) {
@@ -194,46 +191,6 @@ func runMissingEpisodes(ctx context.Context, name string, dbPath string) {
 	if matchedCount == 0 {
 		fmt.Println("未发现匹配剧集")
 	}
-}
-
-func cmdMissingPersons(args []string) {
-	fs := flag.NewFlagSet("missing persons", flag.ExitOnError)
-	var dbPath, archiveDir, aliasFile, outputDir string
-	var statsOnly bool
-	var statsJSON string
-	fs.StringVar(&dbPath, "db", "", "数据库路径")
-	fs.StringVar(&archiveDir, "archive-dir", "", "归档目录")
-	fs.StringVar(&aliasFile, "aliases-file", "", "别名文件（person_alias.json）")
-	fs.StringVar(&outputDir, "output-dir", "", "输出目录")
-	fs.BoolVar(&statsOnly, "stats-only", false, "仅输出统计，不生成 HTML")
-	fs.StringVar(&statsJSON, "stats-json", "", "统计 JSON 输出路径（默认 stdout）")
-	_ = fs.Parse(args)
-
-	if dbPath == "" {
-		dbPath = findDefaultDB([]string{"bangumi.db", "bgq/bangumi.db", "../bangumi.db"})
-	}
-	if dbPath == "" {
-		fmt.Fprintln(os.Stderr, "错误: 未找到 bangumi.db，请先运行 bgq ingest 或指定 --db 参数")
-		os.Exit(1)
-	}
-
-	if archiveDir == "" {
-		archiveDir = resolveArchiveDir("bangumi_archive", "bgq/bangumi_archive", "../bangumi_archive")
-	}
-
-	if aliasFile == "" {
-		for _, p := range []string{"person_alias.json", "bgq/../person_alias.json", "../person_alias.json"} {
-			if fi, err := os.Stat(p); err == nil && !fi.IsDir() {
-				aliasFile = p
-				break
-			}
-		}
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), missingQueryTimeout)
-	defer cancel()
-
-	runMissingPersons(ctx, dbPath, archiveDir, aliasFile, "", outputDir, statsOnly, statsJSON)
 }
 
 func positionsName(pidStr string) string {

@@ -101,10 +101,22 @@ bgq/
 │   │   ├── aliases.go                # Person alias lookup endpoint (/api/aliases/{alias})
 │   │   ├── server.go                 # HTTP server + API handlers
 │   │   └── dev.go                    # Air hot-reload dev mode
+│   ├── missing-persons/
+│   │   └── main.go           # Offline missing-persons report CLI
 │   └── gen-model/
 │       ├── main.go           # Code generator (platforms, relations, staff, meta tags)
 │       └── templates/        # Go + JS templates for code generation
 ├── internal/
+│   ├── aliases/          # Person alias normalization + person_alias.json loading
+│   ├── missingpersons/   # Offline missing-persons analysis + HTML report
+│   │   ├── load.go           # Load persons/characters/subjects from archive/DB
+│   │   ├── match.go          # Missing-person detection
+│   │   ├── names.go          # Name noise filtering + variant normalization
+│   │   ├── related.go        # Related-person detection + already-linked filtering
+│   │   ├── render.go         # HTML/search page rendering
+│   │   ├── run.go            # Run entry point
+│   │   ├── stats.go          # Stats JSON
+│   │   └── templates/        # Report HTML/JS/CSS
 │   ├── model/            # Bangumi domain constants
 │   │   ├── model.go          # Go structs matching JSONLines schema
 │   │   ├── helpers.go        # Lookup helpers (PlatformsByType, RelationsByType, etc.)
@@ -240,7 +252,7 @@ Go version: read from `bgq/go.mod` via `go-version-file` (do not hardcode).
 
 ## Duplication Check (jscpd, on-demand)
 
-jscpd is intentionally **not** in dependencies, hooks, or CI — run it manually when refactoring. Test fixtures (`builder_snapshot_test.go`, `missing_persons.go` cases) and Svelte template branches duplicate by design; only cross-file logic clones are worth fixing.
+jscpd is intentionally **not** in dependencies, hooks, or CI — run it manually when refactoring. Test fixtures (`builder_snapshot_test.go`, `internal/missingpersons` cases) and Svelte template branches duplicate by design; only cross-file logic clones are worth fixing.
 
 ```bash
 cd bgq
@@ -249,7 +261,7 @@ pnpm dlx jscpd@latest . --format go,js,svelte,css --min-lines 10 --min-tokens 40
   --ignore "**/node_modules/**,**/dist/**,**/bin/**,**/internal/model/templates/**,**/cmd/gen-model/templates/**"
 ```
 
-Baseline (2026-09, after cleanup): 1.03% overall (Go 2.10%). Already fixed: `cmd/bgq/missing.go` ↔ `missing_episodes.go` shared episode core (`collectEpMatches`, `queryLinked`, `buildEpSearchSQL`, `splitMatched`, flag helpers), `cmd/gen-model/main.go` meta_tags loops (`collectMetaTags`, `sortedTagLists`), `internal/query/builder.go` (`buildClauses` delegates to `buildClausesWithOp`). Remaining clones are intentional: test fixtures (`builder_snapshot_test.go`, `missing_persons.go` cases), Svelte template branches, and small same-file builder repetitions.
+Baseline (2026-09, after cleanup): 1.03% overall (Go 2.10%). Already fixed: `cmd/bgq/missing.go` ↔ `missing_episodes.go` shared episode core (`collectEpMatches`, `queryLinked`, `buildEpSearchSQL`, `splitMatched`, flag helpers), `cmd/gen-model/main.go` meta_tags loops (`collectMetaTags`, `sortedTagLists`), `internal/query/builder.go` (`buildClauses` delegates to `buildClausesWithOp`). Remaining clones are intentional: test fixtures (`builder_snapshot_test.go`, `internal/missingpersons` cases), Svelte template branches, and small same-file builder repetitions.
 
 ## Code Style
 
@@ -275,8 +287,11 @@ Examples: `feat(bgq): add new feature`, `fix(bgq): resolve bug`, `docs: update r
 - `bgq/cmd/bgq/missing_subjects_test.go` — Tests for `buildCheckSQL` SQL generation
 - `bgq/cmd/bgq/missing_episodes.go` — Missing episodes check: `handleMissingEpisodes` + position matching + episode label helpers
 - `bgq/cmd/bgq/missing_episodes_test.go` — Tests for `expandAppearEps`, `epLabel`, `resolveOverlaps`, `buildEpPositionTable`
-- `bgq/cmd/bgq/aliases.go` — Person alias lookup handler: `handleAliases`, `normalizeAlias`, `loadAliasesFile`
+- `bgq/cmd/bgq/aliases.go` — Person alias lookup handler (`handleAliases`, hot reload); delegates to `internal/aliases` for `Load`/`Normalize`
 - `bgq/cmd/bgq/server.go` — HTTP server + API handlers (including aliases loading from `--aliases-file`)
+- `bgq/cmd/missing-persons/main.go` — Offline missing-persons report CLI entry
+- `bgq/internal/aliases/aliases.go` — `Load` (person_alias.json) + `Normalize` (shared with Python/JS)
+- `bgq/internal/missingpersons/` — Missing-persons analysis + HTML report (`Run`, name/variant rules, loaders, rendering, stats)
 - `bgq/internal/server/webui.go` — Embedded static files via `//go:embed dist/*` + `go:generate` frontend build
 - `bgq/frontend/src/schema-data.js` — Auto-generated schema constants (platforms, relations, positions, meta tags)
 - `bgq/frontend/src/stores.js` — Frontend global state (filters, conditions, logic tree)

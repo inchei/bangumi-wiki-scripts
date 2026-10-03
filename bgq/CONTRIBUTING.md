@@ -5,7 +5,7 @@
 - Go（版本见 `go.mod`）
 - Node.js + pnpm（前端开发）
 - DuckDB CLI（运行时需要；快照测试不需要，`-execute` 模式需要）
-- 源码文件均为 UTF-8；编辑器需设为 UTF-8 无 BOM 保存，字体建议覆盖 CJK 统一表意文字及兼容表意文字（如 `bgq/cmd/bgq/missing_persons.go:270` 的 `personNameVariantMap` 含 﨑 U+FA11 等），否则异体字可能显示为方块。若显示异常可安装 Noto Sans CJK / 思源字体，或以 `\uXXXX` 形式对照检查。
+- 源码文件均为 UTF-8；编辑器需设为 UTF-8 无 BOM 保存，字体建议覆盖 CJK 统一表意文字及兼容表意文字（如 `bgq/internal/missingpersons/names.go` 的 `personNameVariantMap` 含 﨑 U+FA11 等），否则异体字可能显示为方块。若显示异常可安装 Noto Sans CJK / 思源字体，或以 `\uXXXX` 形式对照检查。
 
 ## 后端（Go）
 
@@ -124,10 +124,14 @@ bgq/
 │   ├── missing_episodes_test.go # 剧集辅助函数测试
 │   ├── server.go              # Web 服务器 + API
 │   └── dev.go                 # Air 热重载开发模式
+├── cmd/missing-persons/
+│   └── main.go                # 缺失人物报告 CLI
 ├── cmd/gen-model/
 │   ├── main.go           # 模型数据生成脚本
 │   └── templates/        # Go 模板文件
 ├── internal/
+│   ├── aliases/          # 人物别名归一化 + person_alias.json 读取
+│   ├── missingpersons/   # 缺失人物分析 + HTML 报告
 │   ├── model/            # 数据模型 + Bangumi 常量
 │   │   ├── model.go          # Go 结构体
 │   │   ├── helpers.go        # 辅助函数（手写）

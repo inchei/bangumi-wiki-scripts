@@ -5,9 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
@@ -34,7 +32,7 @@ func main() {
 	}
 
 	// Find DuckDB binary
-	duckdbPath := findDuckDB()
+	duckdbPath := query.FindDuckDB()
 	query.SetDuckDBPath(duckdbPath)
 
 	switch os.Args[1] {
@@ -63,94 +61,22 @@ func printUsage() {
   bgq ingest --data-dir <数据目录> --db <数据库路径>
   bgq missing subjects <人名> --type <条目类型> --db <数据库>
   bgq missing episodes <人名> [--db <数据库>]
-  bgq missing persons [--db <数据库>] [--archive-dir <归档目录>]
   bgq help
 
- 子命令:
+  子命令:
   query       执行筛选查询（从YAML配置文件）
   serve       启动Web界面
   ingest      将数据导入DuckDB数据库（加速后续查询）
-  missing     检查缺失的条目 staff 关联、剧集标注 或 缺失人物
+  missing     检查缺失的条目 staff 关联 或 剧集标注
   help        显示此帮助信息
 
- 示例:
+  示例:
   bgq query --config query.yaml
   bgq serve --listen :8080
   bgq serve --allowed-origins "bgm.tv,bangumi.tv"
   bgq serve --dev
   bgq ingest --data-dir ./bangumi_archive --db ./bangumi.db
-  bgq missing persons --db ./bangumi.db --archive-dir ./bangumi_archive --multi`)
-}
-
-func findDuckDB() string {
-	// Check DUCKDB_PATH environment variable first
-	if envPath := os.Getenv("DUCKDB_PATH"); envPath != "" {
-		if _, err := os.Stat(envPath); err == nil {
-			if abs, err := filepath.Abs(envPath); err == nil {
-				return abs
-			}
-			return envPath
-		}
-	}
-
-	bin := "duckdb"
-	if runtime.GOOS == "windows" {
-		bin = "duckdb.exe"
-	}
-
-	// For development: look in common relative locations
-	candidates := []string{
-		filepath.Join("bin", bin),
-		filepath.Join("..", "bin", bin),
-	}
-
-	// Check relative to the executable
-	if execPath, err := os.Executable(); err == nil {
-		execDir := filepath.Dir(execPath)
-		candidates = append(candidates,
-			filepath.Join(execDir, bin),
-			filepath.Join(execDir, "bin", bin),
-		)
-	}
-
-	// Check relative to current working directory
-	if cwd, err := os.Getwd(); err == nil {
-		candidates = append(candidates,
-			filepath.Join(cwd, "bin", bin),
-		)
-		// Also check parent directories (for development from bgq/ subdirectory)
-		for dir := cwd; ; dir = filepath.Dir(dir) {
-			if dir == filepath.Dir(dir) {
-				break // reached root (works on both Linux and Windows)
-			}
-			candidates = append(candidates,
-				filepath.Join(dir, "bgq", "bin", bin),
-				filepath.Join(dir, "bin", bin),
-			)
-		}
-	}
-
-	for _, path := range candidates {
-		if _, err := os.Stat(path); err == nil {
-			if abs, err := filepath.Abs(path); err == nil {
-				return abs
-			}
-			return path
-		}
-	}
-
-	// Last resort: check PATH
-	name := "duckdb"
-	if runtime.GOOS == "windows" {
-		name = "duckdb.exe"
-	}
-	if p, err := exec.LookPath(name); err == nil {
-		if abs, err := filepath.Abs(p); err == nil {
-			return abs
-		}
-		return p
-	}
-	return name
+  bgq missing subjects 川原砾 --type 1 --db ./bangumi.db`)
 }
 
 func cmdQuery(args []string) {

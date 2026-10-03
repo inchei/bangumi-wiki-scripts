@@ -16,7 +16,7 @@
 故用 matplotlib 内置 xkcd 风格实现同等手绘效果。
 
 用法:
-  # CI 主流程：bgq 全量 run 已带 --stats-json sidecar，直接合并（不重跑 bgq）
+  # CI 主流程：missing-persons 全量 run 已带 --stats-json sidecar，直接合并（不重跑）
   uv run tools/missing_trend.py --history trend-history.json --stats /tmp/missing-stats.json --out _site/missing-trend.png
   # 仅用历史绘图（测试用）
   uv run tools/missing_trend.py --history trend.json --out missing-trend.png --plot-only
@@ -30,15 +30,15 @@ import sys
 import tempfile
 from pathlib import Path
 
-DEFAULT_BGQ = "bgq/bin/bgq"
+DEFAULT_BIN = "bgq/bin/missing-persons"
 DEFAULT_HISTORY = "trend.json"
 
 
-def run_bgq_stats(bgq, archive_dir=None, db=None, aliases_file=None):
+def run_stats(bin_path, archive_dir=None, db=None, aliases_file=None):
     with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as tf:
         tmp = tf.name
     try:
-        cmd = [bgq, "missing", "persons", "--stats-only", "--stats-json", tmp]
+        cmd = [bin_path, "--stats-only", "--stats-json", tmp]
         if db:
             cmd += ["--db", db]
         if archive_dir:
@@ -48,7 +48,7 @@ def run_bgq_stats(bgq, archive_dir=None, db=None, aliases_file=None):
         print(f"$ {' '.join(cmd)}", flush=True)
         result = subprocess.run(cmd, timeout=600)
         if result.returncode != 0:
-            print(f"bgq stats 失败 rc={result.returncode}", file=sys.stderr)
+            print(f"missing-persons stats 失败 rc={result.returncode}", file=sys.stderr)
             sys.exit(1)
         return json.loads(Path(tmp).read_text())
     finally:
@@ -118,12 +118,12 @@ def main():
     ap = argparse.ArgumentParser(description="缺失人物 weekly 趋势（历史 JSON + 最新统计，只生成图片）")
     ap.add_argument("--history", default=DEFAULT_HISTORY, help="历史 JSON 路径，每周增量更新")
     ap.add_argument("--out", default="missing-trend.png", help="输出 PNG 图片路径")
-    ap.add_argument("--bgq", default=DEFAULT_BGQ, help="bgq 二进制路径")
+    ap.add_argument("--bin", default=DEFAULT_BIN, help="missing-persons 二进制路径")
     ap.add_argument("--archive-dir", help="归档目录（默认自动探测）")
     ap.add_argument("--db", help="数据库路径（默认自动探测）")
     ap.add_argument("--aliases-file", help="别名文件")
-    ap.add_argument("--stats", help="已算好的 stats JSON（bgq 全量 run 的 --stats-json sidecar），有则直接合并，不跑 bgq")
-    ap.add_argument("--plot-only", action="store_true", help="仅用历史 JSON 绘图，不跑 bgq")
+    ap.add_argument("--stats", help="已算好的 stats JSON（missing-persons 全量 run 的 --stats-json sidecar），有则直接合并，不重跑")
+    ap.add_argument("--plot-only", action="store_true", help="仅用历史 JSON 绘图，不跑 missing-persons")
     args = ap.parse_args()
 
     history_path = Path(args.history)
@@ -133,7 +133,7 @@ def main():
     if args.stats:
         stats = json.loads(Path(args.stats).read_text())
     elif not args.plot_only:
-        stats = run_bgq_stats(args.bgq, args.archive_dir, args.db, args.aliases_file)
+        stats = run_stats(args.bin, args.archive_dir, args.db, args.aliases_file)
     else:
         stats = None
 
